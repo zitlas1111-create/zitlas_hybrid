@@ -85,7 +85,7 @@ class _ZinoFabState extends State<ZinoFab> with SingleTickerProviderStateMixin {
                         shape: BoxShape.circle,
                         border: Border.all(
                           // rgba(255,153,0,0.55)
-                          color: const Color(0xFFFF9900).withValues(alpha: 0.55 * opacity),
+                          color: const Color(0xFF16A34A).withValues(alpha: 0.55 * opacity),
                           width: 2,
                         ),
                       ),
@@ -100,7 +100,7 @@ class _ZinoFabState extends State<ZinoFab> with SingleTickerProviderStateMixin {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
-                border: Border.all(color: const Color(0xFFFF9900), width: 2.5),
+                border: Border.all(color: const Color(0xFF16A34A), width: 2.5),
                 boxShadow: [
                   // 0 8px 22px rgba(255,122,0,0.32)
                   BoxShadow(

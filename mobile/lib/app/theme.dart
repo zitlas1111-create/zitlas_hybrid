@@ -1,21 +1,30 @@
 import 'package:flutter/material.dart';
 
-/// Official ZITLAS color tokens, ported 1:1 from `frontend/assets/css/theme.css`
-/// (see `COLOR_GUIDELINES.md` at the repo root for usage rules).
+/// Official ZITLAS color tokens for the DARK premium surfaces (splash,
+/// loading, and a couple of legacy dark screens/sheets) — see
+/// `core/theme/zitlas_tokens.dart` for the LIGHT tokens the rest of the app
+/// (both dashboards, diet, training, experts, profile) uses. The two exist
+/// side by side deliberately: the brand's splash/loading experience is
+/// specified as dark+near-black with a green glow, while the main app
+/// surfaces are light+white+green — see the brand system doc for both.
 ///
-/// Orange = action/energy, green = health/progress, black = premium focus,
-/// cyan = AI intelligence. Keep orange out of body text and cyan off buttons.
+/// REBRAND (orange -> green, matches the green ZITLAS logo): brand accent
+/// was orange (`#FF8C00` family); now ZITLAS green (`#16A34A` family). The
+/// dark surface colors (bgPrimary/bgCard/border) are UNCHANGED — the splash
+/// is meant to stay dark/near-black, only its accent color moved to green.
+/// `aiAccent` (cyan) and `error` (red) are semantic, not brand, and UNCHANGED.
 abstract final class ZitlasColors {
   static const bgPrimary = Color(0xFF000000);
   static const bgCard = Color(0xFF111111);
   static const bgCardLight = Color(0xFF171717);
 
-  static const primary = Color(0xFFFF8C00);
-  static const primaryHover = Color(0xFFFFA726);
-  static const primaryDark = Color(0xFFE67E22);
+  /// Primary ZITLAS green.
+  static const primary = Color(0xFF16A34A);
+  static const primaryHover = Color(0xFF22C55E);
+  static const primaryDark = Color(0xFF14532D);
 
-  static const success = Color(0xFF22C55E);
-  static const successDark = Color(0xFF16A34A);
+  static const success = Color(0xFF16A34A);
+  static const successDark = Color(0xFF14532D);
 
   static const aiAccent = Color(0xFF00C2FF);
 
@@ -24,7 +33,7 @@ abstract final class ZitlasColors {
   static const textMuted = Color(0xFF6B7280);
 
   static const border = Color(0xFF222222);
-  static const shadow = Color(0x33FF8C00); // rgba(255,140,0,0.20)
+  static const shadow = Color(0x3316A34A); // rgba(22,163,74,0.20)
 
   /// Not an official brand token (COLOR_GUIDELINES.md forbids new brand
   /// accents) — used only to satisfy Flutter's mandatory ColorScheme.error.
@@ -124,7 +133,7 @@ class ZitlasTheme {
       // nav bar fine until their own migration.
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Color(0xFFFFFFFF),
-        selectedItemColor: Color(0xFFFF9800),
+        selectedItemColor: Color(0xFF16A34A),
         unselectedItemColor: Color(0xFF94A3B8),
         type: BottomNavigationBarType.fixed,
       ),

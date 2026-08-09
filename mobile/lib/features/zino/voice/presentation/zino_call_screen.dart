@@ -105,7 +105,7 @@ class _ZinoCallScreenState extends State<ZinoCallScreen> {
     final controller = _controller;
     if (_starting || controller == null) {
       return const _CallScaffold(
-        child: Center(child: CircularProgressIndicator(color: Color(0xFFFF9900))),
+        child: Center(child: CircularProgressIndicator(color: Color(0xFF16A34A))),
       );
     }
     return ChangeNotifierProvider.value(
@@ -272,9 +272,9 @@ class _AvatarState extends State<_Avatar> with SingleTickerProviderStateMixin {
         final (double amplitude, Color glow) = switch (widget.state) {
           ZinoCallState.listening => (0.22, const Color(0xFF34D399)),
           ZinoCallState.thinking => (0.10, const Color(0xFF60A5FA)),
-          ZinoCallState.speaking => (0.30, const Color(0xFFFF9900)),
+          ZinoCallState.speaking => (0.30, const Color(0xFF16A34A)),
           ZinoCallState.error => (0.05, const Color(0xFFE5484D)),
-          _ => (0.08, const Color(0xFFFF9900)),
+          _ => (0.08, const Color(0xFF16A34A)),
         };
         final wave = math.sin(t * 2 * math.pi);
 
@@ -428,7 +428,7 @@ class _WaveformState extends State<_Waveform> with SingleTickerProviderStateMixi
         widget.state == ZinoCallState.speaking;
     final color = widget.state == ZinoCallState.listening
         ? const Color(0xFF34D399)
-        : const Color(0xFFFF9900);
+        : const Color(0xFF16A34A);
 
     return SizedBox(
       height: 34,
