@@ -90,7 +90,7 @@ body {
   -webkit-backdrop-filter: blur(18px);
   border-radius: 28px;
   border: 1px solid rgba(255,255,255,0.6);
-  box-shadow: 0 15px 40px rgba(107,165,57,0.10), 0 8px 20px rgba(255,152,0,0.08);
+  box-shadow: 0 15px 40px rgba(22,163,74,0.10), 0 8px 20px rgba(22,163,74,0.08);
 }
 
 /* Frosted sticky header so the photo scrolls beneath it */

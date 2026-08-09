@@ -1953,15 +1953,15 @@ img { display: block; max-width: 100%; }
 .cp-sb-btn--coach {
   background: linear-gradient(135deg, #6BA539, #578A2C);
   color: #fff;
-  box-shadow: 0 10px 26px rgba(107,165,57,0.35);
+  box-shadow: 0 10px 26px rgba(22,163,74,0.35);
 }
 .cp-cta--coach:active, .cp-sb-btn--coach:active { transform: scale(0.97); }
 /* Active relationship state */
 .cp-cta--coach.cp-coach-active,
 .cp-sb-btn--coach.cp-coach-active {
-  background: rgba(107,165,57,0.12);
+  background: rgba(22,163,74,0.12);
   color: #578A2C;
-  border: 1.5px solid rgba(107,165,57,0.4);
+  border: 1.5px solid rgba(22,163,74,0.4);
   box-shadow: none;
 }
 
@@ -2007,17 +2007,17 @@ img { display: block; max-width: 100%; }
   transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
 }
 .cp-plan-card:active { transform: scale(0.98); }
-.cp-plan-card:hover { border-color: rgba(107,165,57,0.5); box-shadow: 0 10px 26px rgba(107,165,57,0.12); }
+.cp-plan-card:hover { border-color: rgba(22,163,74,0.5); box-shadow: 0 10px 26px rgba(22,163,74,0.12); }
 .cp-plan-card--popular {
-  border-color: rgba(255,152,0,0.5);
-  box-shadow: 0 12px 30px rgba(255,152,0,0.14), 0 0 24px rgba(255,152,0,0.10);
+  border-color: rgba(22,163,74,0.5);
+  box-shadow: 0 12px 30px rgba(22,163,74,0.14), 0 0 24px rgba(22,163,74,0.10);
 }
 .cp-plan-badge {
   position: absolute; top: -9px; right: 14px;
-  background: linear-gradient(135deg, #FF9800, #FFA726);
+  background: linear-gradient(135deg, #16A34A, #15803D);
   color: #fff; font-size: 10px; font-weight: 800;
   padding: 3px 10px; border-radius: 99px;
-  box-shadow: 0 4px 12px rgba(255,152,0,0.4);
+  box-shadow: 0 4px 12px rgba(22,163,74,0.4);
   letter-spacing: 0.3px;
 }
 .cp-plan-head { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
@@ -2034,8 +2034,8 @@ img { display: block; max-width: 100%; }
 
 /* Summary step */
 .cp-summary-rows {
-  background: rgba(107,165,57,0.06);
-  border: 1px solid rgba(107,165,57,0.18);
+  background: rgba(22,163,74,0.06);
+  border: 1px solid rgba(22,163,74,0.18);
   border-radius: 16px;
   padding: 6px 14px;
   margin-bottom: 12px;
@@ -2062,7 +2062,7 @@ img { display: block; max-width: 100%; }
 .cp-coaching-confirm {
   background: linear-gradient(135deg, #6BA539, #578A2C);
   border: none; color: #fff;
-  box-shadow: 0 8px 20px rgba(107,165,57,0.35);
+  box-shadow: 0 8px 20px rgba(22,163,74,0.35);
 }
 .cp-coaching-confirm:disabled { opacity: 0.6; }
 .cp-coaching-cancel:active, .cp-coaching-confirm:active { transform: scale(0.97); }

@@ -26,7 +26,7 @@
 }
 .hs-status-btn:active { transform: scale(0.97); }
 .hs-status-btn.active {
-  background: rgba(107,165,57,0.12);
+  background: rgba(22,163,74,0.12);
   border-color: #6BA539; color: #578A2C;
 }
 .hs-status-btn.active--warn {
@@ -59,7 +59,7 @@
   animation: hsFadeIn 0.35s ease;
 }
 .hs-recovery--danger { border-color: rgba(229,72,77,0.45); background: rgba(229,72,77,0.06); }
-.hs-recovery--ok     { border-color: rgba(107,165,57,0.4);  background: rgba(107,165,57,0.07); }
+.hs-recovery--ok     { border-color: rgba(22,163,74,0.4);  background: rgba(22,163,74,0.07); }
 @keyframes hsFadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .hs-rec-title { font-size: 13.5px; font-weight: 800; color: var(--text, #1E293B); margin: 0 0 8px; }
 .hs-rec-row { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; color: var(--text-sec, #475569); line-height: 1.6; margin-bottom: 3px; }
@@ -108,7 +108,7 @@
   font-size: 12.5px; font-weight: 700; color: var(--text, #1E293B);
   cursor: pointer; font-family: inherit;
 }
-.hs-chip.selected { border-color: #6BA539; background: rgba(107,165,57,0.12); color: #578A2C; }
+.hs-chip.selected { border-color: #6BA539; background: rgba(22,163,74,0.12); color: #578A2C; }
 .hs-severity-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 .hs-sev-btn {
   padding: 11px 8px; border-radius: 13px; text-align: center;
@@ -116,7 +116,7 @@
   font-size: 12.5px; font-weight: 700; color: var(--text, #1E293B);
   cursor: pointer; font-family: inherit;
 }
-.hs-sev-btn.selected--mild     { border-color: #6BA539; background: rgba(107,165,57,0.12); color: #578A2C; }
+.hs-sev-btn.selected--mild     { border-color: #6BA539; background: rgba(22,163,74,0.12); color: #578A2C; }
 .hs-sev-btn.selected--moderate { border-color: #F59E0B; background: rgba(245,158,11,0.12); color: #92600A; }
 .hs-sev-btn.selected--severe   { border-color: #E5484D; background: rgba(229,72,77,0.1);  color: #B3261E; }
 .hs-slider-val { font-size: 20px; font-weight: 800; color: #578A2C; text-align: center; display: block; margin: 4px 0; }
@@ -139,7 +139,7 @@
   flex: 1.4; padding: 12px; border-radius: 14px; cursor: pointer; border: none;
   background: linear-gradient(135deg, #6BA539, #578A2C);
   color: #fff; font-size: 13.5px; font-weight: 800; font-family: inherit;
-  box-shadow: 0 8px 20px rgba(107,165,57,0.35);
+  box-shadow: 0 8px 20px rgba(22,163,74,0.35);
 }
 .hs-confirm:disabled { opacity: 0.55; box-shadow: none; }
 

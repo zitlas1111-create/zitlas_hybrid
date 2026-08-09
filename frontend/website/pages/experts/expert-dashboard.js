@@ -1469,7 +1469,7 @@ function renderCoachingRequests() {
       req.status === 'withdrawn'? 'Withdrawn by athlete' : 'Completed';
 
     var _pcPremBadge = req.isPremium
-      ? ' <span style="background:linear-gradient(135deg,#FF8C00,#FFA726);color:#101010;font-weight:800;border-radius:999px;padding:1px 8px;font-size:9px;letter-spacing:.04em;vertical-align:middle;">⭐ PRIORITY</span>'
+      ? ' <span style="background:linear-gradient(135deg,#16A34A,#15803D);color:#101010;font-weight:800;border-radius:999px;padding:1px 8px;font-size:9px;letter-spacing:.04em;vertical-align:middle;">⭐ PRIORITY</span>'
       : '';
     var card = document.createElement('div');
     card.className = 'ed-athlete-card pc-req-card';
@@ -4693,7 +4693,7 @@ function _prBuildInboxCard(review, expert) {
   /* Premium athletes' requests are pinned first (see renderInbox sort) —
      the badge tells the expert WHY this card outranks older ones. */
   var premiumBadge = review.isPremium
-    ? '<span class="pr-inbox-stamp" style="background:linear-gradient(135deg,#FF8C00,#FFA726);color:#101010;font-weight:800;border-radius:999px;padding:2px 10px;font-size:10px;letter-spacing:.04em;">⭐ PRIORITY · PREMIUM</span>'
+    ? '<span class="pr-inbox-stamp" style="background:linear-gradient(135deg,#16A34A,#15803D);color:#101010;font-weight:800;border-radius:999px;padding:2px 10px;font-size:10px;letter-spacing:.04em;">⭐ PRIORITY · PREMIUM</span>'
     : '';
 
   card.innerHTML =

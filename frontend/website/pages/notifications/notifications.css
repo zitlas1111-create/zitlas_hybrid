@@ -4,7 +4,7 @@
  */
 :root {
   --nc-bg: #F4F1EA; --nc-text: #1E293B; --nc-text-sec: #64748B;
-  --nc-orange: #FF7A00; --nc-orange-soft: rgba(255,153,0,0.12);
+  --nc-orange: #15803D; --nc-orange-soft: rgba(22,163,74,0.12);
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -30,7 +30,7 @@ body {
 .nc-title { font-size: 16px; font-weight: 800; flex: 1; }
 .nc-mark-all {
   padding: 8px 13px; border-radius: 12px; cursor: pointer;
-  background: rgba(255,153,0,0.1); border: 1px solid rgba(255,153,0,0.3);
+  background: rgba(22,163,74,0.1); border: 1px solid rgba(22,163,74,0.3);
   color: #B35900; font-size: 12px; font-weight: 800; white-space: nowrap;
 }
 .nc-mark-all:disabled { opacity: 0.5; }
@@ -46,9 +46,9 @@ body {
   font-size: 12.5px; font-weight: 700; color: var(--nc-text-sec); white-space: nowrap;
 }
 .nc-filter-chip.active {
-  background: linear-gradient(135deg, #FFA940, #FF7A00);
+  background: linear-gradient(135deg, #22C55E, #15803D);
   border-color: transparent; color: #fff;
-  box-shadow: 0 6px 16px rgba(255,122,0,0.35);
+  box-shadow: 0 6px 16px rgba(21,128,61,0.35);
 }
 
 .nc-main { max-width: 640px; margin: 0 auto; padding: 8px 14px 60px; }
@@ -78,8 +78,8 @@ body {
 }
 @keyframes ncSlideIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
 .nc-item--unread {
-  border-color: rgba(255,153,0,0.35);
-  box-shadow: 0 0 0 1px rgba(255,153,0,0.15), 0 8px 22px rgba(255,153,0,0.12);
+  border-color: rgba(22,163,74,0.35);
+  box-shadow: 0 0 0 1px rgba(22,163,74,0.15), 0 8px 22px rgba(22,163,74,0.12);
 }
 .nc-item-icon {
   width: 42px; height: 42px; flex-shrink: 0; border-radius: 13px;
@@ -94,7 +94,7 @@ body {
 .nc-item-dot {
   width: 9px; height: 9px; border-radius: 50%; background: var(--nc-orange);
   flex-shrink: 0; margin-top: 5px;
-  box-shadow: 0 0 0 3px rgba(255,122,0,0.18);
+  box-shadow: 0 0 0 3px rgba(21,128,61,0.18);
 }
 .nc-priority-critical { border-left: 3px solid #E5484D; }
 .nc-priority-high { border-left: 3px solid #F59E0B; }

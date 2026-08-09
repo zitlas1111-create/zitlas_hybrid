@@ -30,7 +30,7 @@ button {
   -webkit-tap-highlight-color: transparent;
 }
 
-button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
+button:focus-visible { outline: 2px solid #16A34A; outline-offset: 2px; }
 
 /* =============================================
    HEADER
@@ -169,7 +169,7 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
 }
 
 .mb-toggle-btn.active {
-  background: #FF8C00;
+  background: #16A34A;
   color: #000;
 }
 
@@ -220,9 +220,9 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
 
 /* ── Premium card ── */
 .mb-card--premium {
-  border-color: rgba(255,140,0,0.45);
+  border-color: rgba(22,163,74,0.45);
   background: linear-gradient(135deg, #FFFFFF 0%, #FFF4DE 50%, #FFFFFF 100%);
-  box-shadow: 0 0 0 1px rgba(255,140,0,0.12), 0 8px 40px rgba(255,140,0,0.10);
+  box-shadow: 0 0 0 1px rgba(22,163,74,0.12), 0 8px 40px rgba(22,163,74,0.10);
 }
 
 .mb-premium-glow {
@@ -231,7 +231,7 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
   right: -60px;
   width: 200px;
   height: 200px;
-  background: radial-gradient(circle, rgba(255,140,0,0.18) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(22,163,74,0.18) 0%, transparent 70%);
   pointer-events: none;
   border-radius: 50%;
 }
@@ -240,7 +240,7 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
   position: absolute;
   top: 14px;
   right: -28px;
-  background: linear-gradient(90deg, #FF8C00, #FFA726);
+  background: linear-gradient(90deg, #16A34A, #15803D);
   color: #000;
   font-size: 10px;
   font-weight: 800;
@@ -271,7 +271,7 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
 }
 
 .mb-plan-icon-wrap--basic   { background: var(--bg-card-light); border: 1px solid var(--border); }
-.mb-plan-icon-wrap--premium { background: rgba(255,140,0,0.12); border: 1px solid rgba(255,140,0,0.3); }
+.mb-plan-icon-wrap--premium { background: rgba(22,163,74,0.12); border: 1px solid rgba(22,163,74,0.3); }
 
 .mb-plan-meta { flex: 1; min-width: 0; }
 
@@ -282,7 +282,7 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
   margin-bottom: 3px;
 }
 
-.mb-plan-name--premium { color: #FF8C00; }
+.mb-plan-name--premium { color: #16A34A; }
 
 .mb-plan-price-row { display: flex; align-items: baseline; gap: 2px; }
 
@@ -293,7 +293,7 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
   letter-spacing: -0.5px;
 }
 
-.mb-plan-price--premium { color: #FF8C00; }
+.mb-plan-price--premium { color: #16A34A; }
 
 .mb-plan-period {
   font-size: 13px;
@@ -315,9 +315,9 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
 }
 
 .mb-current-chip--premium {
-  color: #FF8C00;
-  background: rgba(255,140,0,0.08);
-  border-color: rgba(255,140,0,0.3);
+  color: #16A34A;
+  background: rgba(22,163,74,0.08);
+  border-color: rgba(22,163,74,0.3);
 }
 
 /* ── Description ── */
@@ -382,19 +382,19 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
 }
 
 .mb-action-btn--upgrade {
-  background: linear-gradient(90deg, #FF8C00 0%, #FFA726 100%);
+  background: linear-gradient(90deg, #16A34A 0%, #15803D 100%);
   color: #000;
   font-weight: 800;
-  box-shadow: 0 4px 20px rgba(255,140,0,0.35);
+  box-shadow: 0 4px 20px rgba(22,163,74,0.35);
 }
 
-.mb-action-btn--upgrade:hover  { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(255,140,0,0.45); }
+.mb-action-btn--upgrade:hover  { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 6px 28px rgba(22,163,74,0.45); }
 .mb-action-btn--upgrade:active { transform: scale(0.98); }
 
 .mb-action-btn--on-premium {
   background: var(--bg-card-light);
-  color: #FF8C00;
-  border: 1px solid rgba(255,140,0,0.3);
+  color: #16A34A;
+  border: 1px solid rgba(22,163,74,0.3);
   cursor: default;
 }
 
@@ -440,8 +440,8 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
 .mb-th--feat { text-align: left; }
 
 .mb-th--prem {
-  color: #FF8C00;
-  background: rgba(255,140,0,0.06);
+  color: #16A34A;
+  background: rgba(22,163,74,0.06);
 }
 
 .mb-td {
@@ -463,9 +463,9 @@ button:focus-visible { outline: 2px solid #FF8C00; outline-offset: 2px; }
 }
 
 .mb-td--prem {
-  color: #FF8C00;
+  color: #16A34A;
   font-weight: 600;
-  background: rgba(255,140,0,0.04);
+  background: rgba(22,163,74,0.04);
 }
 
 .mb-table tbody tr:last-child td { border-bottom: none; }

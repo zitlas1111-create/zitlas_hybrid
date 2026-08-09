@@ -833,7 +833,7 @@
         var done = r.goalCompleted;
         return '<div title="' + esc(r.date + ': ' + (r.steps || 0).toLocaleString() + ' steps') + '"' +
           ' style="width:16px;height:' + h + 'px;border-radius:5px 5px 2px 2px;' +
-          'background:' + (done ? 'linear-gradient(180deg,#FFA940,#FF7A00)' : 'rgba(148,163,184,0.4)') + '"></div>';
+          'background:' + (done ? 'linear-gradient(180deg,#22C55E,#15803D)' : 'rgba(148,163,184,0.4)') + '"></div>';
       }).join('');
 
       el.innerHTML =

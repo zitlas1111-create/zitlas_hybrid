@@ -229,7 +229,7 @@
       '.zpay-row span:last-child{font-weight:700;}' +
       '.zpay-btn{width:100%;padding:12px;border-radius:12px;font-size:14px;font-weight:700;margin-top:10px;' +
         'border:none;cursor:pointer;}' +
-      '.zpay-btn--primary{background:linear-gradient(90deg,#FF8C00,#FFA726);color:#000;}' +
+      '.zpay-btn--primary{background:linear-gradient(90deg,#16A34A,#15803D);color:#000;}' +
       '.zpay-btn--secondary{background:var(--bg-card-light,#F1F5F9);color:var(--text-secondary,#64748B);}';
     document.head.appendChild(style);
   }

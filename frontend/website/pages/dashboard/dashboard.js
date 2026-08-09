@@ -1444,7 +1444,7 @@
         adaptiveLine =
           `<p class="sac-remaining" style="font-size:12px">💡 ${sug.reason} ` +
           `<button id="sacApplyGoal" data-goal="${sug.suggestedGoal}" ` +
-          `style="border:none;background:rgba(255,152,0,0.14);color:#FF9800;font-weight:800;` +
+          `style="border:none;background:rgba(22,163,74,0.14);color:#16A34A;font-weight:800;` +
           `border-radius:8px;padding:3px 9px;cursor:pointer;font-family:inherit">` +
           `Set ${sug.suggestedGoal.toLocaleString()}</button></p>`;
       }
