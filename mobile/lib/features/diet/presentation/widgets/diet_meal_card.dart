@@ -59,12 +59,12 @@ class DietMealCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                   decoration: BoxDecoration(
-                    color: const Color(0x1F6BA539),
+                    color: const Color(0x1F3A8F8B),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: const Text(
                     '✏️ Expert',
-                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: ZitlasTokens.successDark),
+                    style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: ZitlasTokens.hydrationTeal),
                   ),
                 ),
             ],

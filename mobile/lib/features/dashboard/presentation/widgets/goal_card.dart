@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/utils/safe_image.dart';
 import '../../dashboard_controller.dart';
 import '../dashboard_visuals.dart';
-import 'reset_goal_dialog.dart';
-import 'set_goal_sheet.dart';
 
 /// `.goal-card` / `renderGoalCard()` — the Current Goal hero card. Ring
 /// math, days-left wording, and date formatting all match dashboard.js
@@ -219,14 +218,24 @@ class _GoalActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () async {
-        final controller = context.read<DashboardController>();
-        if (!hasGoal) {
-          await showSetGoalSheet(context, controller);
-        } else {
-          await showResetGoalDialog(context, controller);
-        }
-      },
+      // Set Goal / Reset Goal are BOTH entry points to a fresh Assessment —
+      // the goal is derived from the assessment, so a manual goal form or a
+      // pre-emptive wipe were both wrong doors.
+      //
+      // Nothing is cleared here on purpose. The previous Reset flow called
+      // DashboardController.resetGoal() BEFORE pushing the wizard, so an
+      // athlete who opened it and backed out had already lost their goal and
+      // plan. AssessmentRepository.saveAssessmentResult() writes the new
+      // `goal` in the same merge as the new plan, and only after generation
+      // succeeds — so the existing goal now survives an abandoned run and is
+      // replaced at exactly the moment a new one exists.
+      //
+      // Freshness needs no reset call either: /assessment builds a new
+      // ChangeNotifierProvider<AssessmentController> per push (keyed by uid),
+      // and that controller starts at screen=welcome with answers={} and
+      // index=0, so every entry is already a clean session for the
+      // authenticated user.
+      onTap: () => context.push('/assessment'),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
         decoration: BoxDecoration(
@@ -322,8 +331,8 @@ class _RingPainter extends CustomPainter {
     canvas.drawCircle(center, radius, track);
 
     final fill = Paint()
-      ..shader = const LinearGradient(
-        colors: [DashboardColors.primaryHover, DashboardColors.primary],
+      ..shader = LinearGradient(
+        colors: [DashboardColors.hydrationTeal, DashboardColors.hydrationTeal.withValues(alpha: 0.7)],
       ).createShader(Rect.fromCircle(center: center, radius: radius))
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
@@ -367,7 +376,7 @@ class _StatRow extends StatelessWidget {
         Text(
           value,
           style: TextStyle(
-            color: accent ? DashboardColors.primary : DashboardColors.textPrimary,
+            color: accent ? DashboardColors.hydrationTeal : DashboardColors.textPrimary,
             fontSize: 13,
             fontWeight: FontWeight.w900,
           ),

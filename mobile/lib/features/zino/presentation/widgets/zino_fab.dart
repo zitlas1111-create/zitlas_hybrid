@@ -12,10 +12,10 @@ import '../../tour/zino_tour_stops.dart';
 /// preserved here rather than "corrected" to the usual Android convention —
 /// see [ZinoFabOverlay], which owns the positioning.
 ///
-/// APPEARANCE: a white circle with a 2.5px `#FF9900` border carrying the
-/// Zino avatar, plus the `znPulse` ring that continuously scales 0.9 → 1.35
-/// while fading out. The pulse is what makes Zino read as *present and
-/// waiting* rather than as one more toolbar icon.
+/// APPEARANCE: a white circle with a 2.5px purple border (semantic: AI)
+/// carrying the Zino avatar, plus the `znPulse` ring that continuously scales
+/// 0.9 → 1.35 while fading out. The pulse is what makes Zino read as *present
+/// and waiting* rather than as one more toolbar icon.
 class ZinoFab extends StatefulWidget {
   const ZinoFab({super.key, required this.onTap, this.showBadge = false});
 
@@ -84,8 +84,8 @@ class _ZinoFabState extends State<ZinoFab> with SingleTickerProviderStateMixin {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         border: Border.all(
-                          // rgba(255,153,0,0.55)
-                          color: const Color(0xFF16A34A).withValues(alpha: 0.55 * opacity),
+                          // AI purple with fading opacity (semantic: Zino/intelligence)
+                          color: const Color(0xFF6B5878).withValues(alpha: 0.55 * opacity),
                           width: 2,
                         ),
                       ),
@@ -100,11 +100,10 @@ class _ZinoFabState extends State<ZinoFab> with SingleTickerProviderStateMixin {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: Colors.white,
-                border: Border.all(color: const Color(0xFF16A34A), width: 2.5),
+                border: Border.all(color: const Color(0xFF6B5878), width: 2.5), // AI purple
                 boxShadow: [
-                  // 0 8px 22px rgba(255,122,0,0.32)
                   BoxShadow(
-                    color: const Color(0xFFFF7A00).withValues(alpha: 0.32),
+                    color: const Color(0xFF6B5878).withValues(alpha: 0.32), // AI purple shadow
                     blurRadius: 22,
                     offset: const Offset(0, 8),
                   ),

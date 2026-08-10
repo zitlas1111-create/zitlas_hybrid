@@ -116,6 +116,12 @@ flutter:
     - assets/images/zino.png
     - assets/images/zino_intro.png
     - assets/images/zino_done.png
+    # Rest Timer completion chime — a synthesized two-note ascending sine
+    # tone (E6->A6, ~0.6s), not a licensed/stock sound. Played via audioplayers
+    # (already a dependency) only while the app is foregrounded; the
+    # background/locked-screen case relies on the scheduled notification's own
+    # OS-level sound instead — see RestTimerController.
+    - assets/sounds/rest_timer_complete.wav
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

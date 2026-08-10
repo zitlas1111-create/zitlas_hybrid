@@ -771,12 +771,40 @@ async def _generate_diet_plan(
         _DIET_SYSTEM
     )
 
-    is_veg = any(v in data.diet_preference.lower() for v in ("veg", "vegan", "eggetarian"))
-    veg_rule = (
-        "User is VEGETARIAN — no chicken, fish, meat, or seafood."
-        if is_veg
-        else "User eats non-vegetarian food — include eggs, chicken, or fish for protein."
-    )
+    # Canonical key, not substring guesswork. The previous line tested
+    # `"veg" in diet_preference`, which is TRUE for "non-vegetarian" — so every
+    # non-vegetarian was handed the vegetarian rule. And the vegetarian rule
+    # itself listed "chicken, fish, meat, seafood" but never EGGS, which is how
+    # "2 boiled eggs" kept landing in pure-vegetarian plans. Eggs are not
+    # vegetarian in ZITLAS; the rule now says so explicitly, per canonical key.
+    diet_key = food_engine.canonical_diet_key(data.diet_preference)
+    _VEG_RULES = {
+        food_engine.DIET_PURE_VEGETARIAN: (
+            "User is PURE VEGETARIAN — a HARD CONSTRAINT. NEVER include eggs "
+            "(no boiled eggs, omelette, bhurji made with egg, anda, mayonnaise), "
+            "chicken, mutton, fish, seafood, or any meat. Meet protein with dal, "
+            "paneer, curd, milk, soya, sprouts, chana, rajma, tofu and nuts."
+        ),
+        food_engine.DIET_VEGAN: (
+            "User is VEGAN — a HARD CONSTRAINT. NEVER include eggs, meat, fish, "
+            "seafood, OR any dairy (no milk, curd, paneer, cheese, butter, ghee, "
+            "whey). Meet protein with dal, soya, tofu, chana, rajma, sprouts, nuts "
+            "and seeds."
+        ),
+        food_engine.DIET_JAIN: (
+            "User follows a JAIN diet — a HARD CONSTRAINT. No eggs, meat, fish or "
+            "seafood, and no onion, garlic or root vegetables."
+        ),
+        food_engine.DIET_EGGETARIAN: (
+            "User is EGGETARIAN — eggs ARE allowed and are a good protein source, "
+            "but NEVER include chicken, mutton, fish, seafood or any meat."
+        ),
+        food_engine.DIET_NON_VEGETARIAN: (
+            "User eats non-vegetarian food — eggs, chicken and fish are all "
+            "available as protein sources alongside vegetarian options."
+        ),
+    }
+    veg_rule = _VEG_RULES[diet_key]
 
     # Medical conditions are a first-priority input, not inert profile text —
     # this renders "" for healthy users, leaving the prompt unchanged.
@@ -787,11 +815,21 @@ async def _generate_diet_plan(
     # asked — older clients) renders nothing, leaving the prompt unchanged.
     uses_supp = (getattr(data, "uses_supplements", "") or "").lower()
     if uses_supp == "no":
+        # The whole-food examples must respect the diet: this used to name
+        # "eggs" (and chicken/fish) to every user, actively prompting the model
+        # to put eggs in a pure-vegetarian plan.
+        _WHOLE_FOOD_SOURCES = {
+            food_engine.DIET_PURE_VEGETARIAN: "dal, paneer, curd, milk, soya chunks, sprouts, chana, rajma, tofu, nuts",
+            food_engine.DIET_VEGAN:           "dal, soya chunks, tofu, chana, rajma, sprouts, peanuts, seeds",
+            food_engine.DIET_JAIN:            "dal, paneer, curd, milk, soya chunks, moong, nuts",
+            food_engine.DIET_EGGETARIAN:      "eggs, dal, paneer, curd, milk, soya chunks, sprouts, chana",
+            food_engine.DIET_NON_VEGETARIAN:  "eggs, chicken, fish, dal, paneer, curd, milk, soya chunks, sprouts, chana",
+        }
         supplement_rule = (
             "\nSUPPLEMENT RULE — HARD CONSTRAINT: The user does NOT use supplements. "
             "NEVER recommend whey protein, protein powder, creatine, mass gainer, BCAA, "
             "pre-workout, or any supplement product. Meet protein targets with whole foods "
-            "only: eggs, dal, paneer, curd, milk, soya chunks, sprouts, chana, chicken/fish (if non-veg)."
+            f"only: {_WHOLE_FOOD_SOURCES[diet_key]}."
         )
     elif uses_supp == "yes":
         supp_list = ", ".join(getattr(data, "supplement_types", []) or []) or "general supplements"
@@ -920,6 +958,53 @@ Output valid JSON only — no extra text."""
         day_order = {d: i for i, d in enumerate(all_days)}
         parsed["days"] = sorted(days, key=lambda d: day_order.get(d.get("day", ""), 99))
         print(f"[DIET AI] Final day count: {len(parsed['days'])}")
+    # ── POST-GENERATION VALIDATION GATE ──────────────────────────────────────
+    # The LLM authors free-form meal text, so no tag-level filter can police it
+    # — a prompt-only vegetarian rule is precisely how eggs reached pure
+    # vegetarians. Every plan is audited against the canonical diet key and the
+    # athlete's allergies BEFORE it is returned. A plan with a hard violation is
+    # NOT shown and NOT "patched" with an apology: it is replaced wholesale by
+    # the engine-grounded plan, which is built by intersecting the verified food
+    # database and therefore cannot contain a forbidden food by construction.
+    #
+    # Repetition is reported but NOT treated as a hard failure here: the engine
+    # already caps repeats per dish family, and discarding an otherwise-valid,
+    # nutritionally-targeted LLM plan over a repeated snack would trade a real
+    # benefit for a cosmetic one. Hard safety violations are absolute; variety
+    # is enforced where it can be enforced without that trade.
+    if parsed is not None:
+        audit = food_engine.audit_delivered_plan(
+            parsed, diet_key, allergens=set(getattr(data, "allergies", []) or [])
+        )
+        hard = audit["diet_violations"] + audit["allergen_violations"]
+        if hard:
+            sample = "; ".join(
+                f"{v['day']}/{v['meal']}: {v['food']!r} (matched {v['matched']!r})"
+                for v in hard[:5]
+            )
+            print(f"[DIET VALIDATOR] REJECTED LLM plan — {len(hard)} violation(s) for "
+                  f"diet={diet_key}: {sample}")
+            parsed = _engine_grounded_diet_plan(data, calc, fitness_goal)
+            recheck = food_engine.audit_delivered_plan(
+                parsed, diet_key, allergens=set(getattr(data, "allergies", []) or [])
+            )
+            still_bad = recheck["diet_violations"] + recheck["allergen_violations"]
+            if still_bad:
+                # Should be unreachable: the engine plan is filtered at the
+                # database level. Logged loudly rather than silently served,
+                # because it would mean the dataset itself is mislabelled in a
+                # way the name-level backstop missed.
+                print(f"[DIET VALIDATOR] CRITICAL: engine-grounded plan ALSO violates "
+                      f"diet={diet_key}: {still_bad[:3]}")
+            else:
+                print(f"[DIET VALIDATOR] Served engine-grounded plan instead "
+                      f"(diet={diet_key}, 0 violations)")
+        else:
+            reps = audit["repetition"]
+            print(f"[DIET VALIDATOR] PASSED diet={diet_key} — 0 dietary/allergen "
+                  f"violations, {len(reps)} repetition note(s)"
+                  + (f": {[r['dish'] for r in reps[:4]]}" if reps else ""))
+
     if parsed is not None and region_boost:
         parsed["location_note"] = region_boost["explanation"]
     return parsed, result

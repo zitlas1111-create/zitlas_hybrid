@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../core/location/diet_region_repository.dart';
 import '../../core/network/api_exception.dart';
+import '../../core/util/json_coerce.dart';
 import 'data/assessment_repository.dart';
 import 'models/assessment_question.dart';
 
@@ -214,7 +215,10 @@ class AssessmentController extends ChangeNotifier {
 
   /// Multiselect Continue button — `if (selected.length === 0) show error`.
   Future<String?> submitMultiselectAnswer(String field) async {
-    final sel = (answers[field] as List?)?.cast<String>() ?? const [];
+    // Type-checked (same reason as QuestionView.initState): a stored answer
+    // that isn't a list must surface the normal validation message, never a
+    // failed cast that takes the whole wizard down.
+    final sel = asStringList(answers[field]);
     if (sel.isEmpty) return 'Please select at least one option';
     await _advance();
     return null;
@@ -336,9 +340,16 @@ class AssessmentController extends ChangeNotifier {
                 ? 'transformation'
                 : 'weight_loss';
 
-    final goalWeight = (isGeneralFitness || isTransformation)
+    // General fitness has no target-weight question (maintenance). TRANSFORMATION
+    // now asks for one and must forward it — it previously overwrote the answer
+    // with the current weight, leaving the transformation plan with no
+    // current -> target trajectory. Falls back to current weight so an older
+    // payload without the answer behaves exactly as before.
+    final goalWeight = isGeneralFitness
         ? (a['weight_kg'] as num? ?? 70)
-        : (a['goal_weight_kg'] as num? ?? 65);
+        : isTransformation
+            ? (a['goal_weight_kg'] as num? ?? a['weight_kg'] as num? ?? 70)
+            : (a['goal_weight_kg'] as num? ?? 65);
 
     final supplements = _supplementsUsed(a);
 

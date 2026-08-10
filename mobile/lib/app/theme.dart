@@ -19,12 +19,12 @@ abstract final class ZitlasColors {
   static const bgCardLight = Color(0xFF171717);
 
   /// Primary ZITLAS green.
-  static const primary = Color(0xFF16A34A);
+  static const primary = Color(0xFF234B35);
   static const primaryHover = Color(0xFF22C55E);
-  static const primaryDark = Color(0xFF14532D);
+  static const primaryDark = Color(0xFF1A3A2A);
 
-  static const success = Color(0xFF16A34A);
-  static const successDark = Color(0xFF14532D);
+  static const success = Color(0xFF234B35);
+  static const successDark = Color(0xFF1A3A2A);
 
   static const aiAccent = Color(0xFF00C2FF);
 
@@ -133,7 +133,7 @@ class ZitlasTheme {
       // nav bar fine until their own migration.
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
         backgroundColor: Color(0xFFFFFFFF),
-        selectedItemColor: Color(0xFF16A34A),
+        selectedItemColor: Color(0xFF234B35),
         unselectedItemColor: Color(0xFF94A3B8),
         type: BottomNavigationBarType.fixed,
       ),

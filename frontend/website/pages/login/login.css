@@ -5,12 +5,12 @@
   --z-card: rgba(255,255,255,0.72);
   --z-card-solid: #FFFFFF;
   --z-border: rgba(17,24,39,0.10);
-  --z-orange: var(--primary, #16A34A);
-  --z-orange-2: var(--primary-hover, #15803D);
+  --z-orange: var(--primary, #234B35);
+  --z-orange-2: var(--primary-hover, #2E5F47);
   --z-green: var(--success, #22C55E);
   --z-cyan: var(--ai-accent, #00C2FF);
   --z-shadow: 0 24px 80px rgba(16,24,40,0.12);
-  --z-glow: 0 0 46px rgba(22,163,74,0.24);
+  --z-glow: 0 0 46px rgba(35,75,53,0.24);
   --radius-xl: 34px;
   --radius-lg: 26px;
   --radius-md: 18px;
@@ -54,14 +54,14 @@ svg { display: block; }
 .hero-fx, .login-fx { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
 
 .glow-orb { position: absolute; border-radius: 50%; pointer-events: none; }
-.orb-a { width: 440px; height: 440px; top: -140px; left: -140px; background: radial-gradient(circle, rgba(22,163,74,.20), rgba(22,163,74,0) 68%); animation: orbDrift 24s ease-in-out infinite alternate; }
+.orb-a { width: 440px; height: 440px; top: -140px; left: -140px; background: radial-gradient(circle, rgba(35,75,53,.20), rgba(35,75,53,0) 68%); animation: orbDrift 24s ease-in-out infinite alternate; }
 .orb-b { width: 380px; height: 380px; bottom: 4%; right: -120px; background: radial-gradient(circle, rgba(0,194,255,.16), rgba(0,194,255,0) 68%); animation: orbDrift 28s ease-in-out infinite alternate-reverse; }
-.orb-c { width: 400px; height: 400px; top: -120px; right: -130px; background: radial-gradient(circle, rgba(22,163,74,.16), rgba(22,163,74,0) 70%); animation: orbDrift 26s ease-in-out infinite alternate; }
+.orb-c { width: 400px; height: 400px; top: -120px; right: -130px; background: radial-gradient(circle, rgba(35,75,53,.16), rgba(35,75,53,0) 70%); animation: orbDrift 26s ease-in-out infinite alternate; }
 .orb-d { width: 360px; height: 360px; bottom: -100px; left: -120px; background: radial-gradient(circle, rgba(0,194,255,.14), rgba(0,194,255,0) 70%); animation: orbDrift 30s ease-in-out infinite alternate-reverse; }
 @keyframes orbDrift { from { transform: translate(0, 0) scale(1); } to { transform: translate(46px, 34px) scale(1.14); } }
 
 .light-trail { position: absolute; left: -25%; width: 150%; height: 170px; border-radius: 999px; pointer-events: none; }
-.trail-orange { --rot: -9deg; top: 12%; background: radial-gradient(ellipse 50% 50% at center, rgba(22,163,74,.10), rgba(22,163,74,0) 72%); animation: trailDrift 17s ease-in-out infinite alternate; } /* class name kept for HTML/JS compat; color is now brand green */
+.trail-orange { --rot: -9deg; top: 12%; background: radial-gradient(ellipse 50% 50% at center, rgba(35,75,53,.10), rgba(35,75,53,0) 72%); animation: trailDrift 17s ease-in-out infinite alternate; } /* class name kept for HTML/JS compat; color is now brand green */
 .trail-blue { --rot: 7deg; top: 64%; background: radial-gradient(ellipse 50% 50% at center, rgba(0,194,255,.09), rgba(0,194,255,0) 72%); animation: trailDrift 23s ease-in-out infinite alternate-reverse; }
 @keyframes trailDrift { from { transform: rotate(var(--rot)) translateX(-4%); } to { transform: rotate(var(--rot)) translateX(4%); } }
 
@@ -108,7 +108,7 @@ svg { display: block; }
 /* Mobile scroll cue — bouncing chevron with a soft pulsing ring */
 .scroll-cue { position: absolute; z-index: 3; left: 50%; bottom: 26px; transform: translateX(-50%); width: 42px; height: 42px; border-radius: 50%; display: grid; place-items: center; color: var(--z-ink); background: rgba(255,255,255,.6); border: 1px solid rgba(255,255,255,.75); backdrop-filter: blur(10px); animation: bounceCue 2.2s ease-in-out infinite; }
 .scroll-cue svg { width: 18px; height: 18px; }
-.scroll-cue::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 1.5px solid rgba(22,163,74,.5); animation: cueRing 2.6s ease-out infinite; }
+.scroll-cue::after { content: ""; position: absolute; inset: -3px; border-radius: 50%; border: 1.5px solid rgba(35,75,53,.5); animation: cueRing 2.6s ease-out infinite; }
 @keyframes bounceCue { 0%,100% { transform: translate(-50%, 0); } 50% { transform: translate(-50%, 8px); } }
 @keyframes cueRing { 0% { transform: scale(1); opacity: .7; } 70%,100% { transform: scale(1.55); opacity: 0; } }
 
@@ -121,7 +121,7 @@ svg { display: block; }
 /* ══════════════════════════════════════════
    LOGIN CARD — glassmorphism with an animated orange↔blue gradient rim
 ══════════════════════════════════════════ */
-.login-card { position: relative; z-index: 1; width: min(430px, 100%); border-radius: var(--radius-xl); padding: 32px 28px 26px; overflow: hidden; background: var(--z-card); box-shadow: var(--z-shadow), 0 0 60px rgba(22,163,74,.09), 0 0 90px rgba(0,194,255,.06); backdrop-filter: blur(14px); scroll-margin-top: 24px; }
+.login-card { position: relative; z-index: 1; width: min(430px, 100%); border-radius: var(--radius-xl); padding: 32px 28px 26px; overflow: hidden; background: var(--z-card); box-shadow: var(--z-shadow), 0 0 60px rgba(35,75,53,.09), 0 0 90px rgba(0,194,255,.06); backdrop-filter: blur(14px); scroll-margin-top: 24px; }
 /* Animated gradient border: gradient layer masked down to a 1.6px rim so
    the glass interior stays untouched. */
 .login-card::before {
@@ -130,7 +130,7 @@ svg { display: block; }
   inset: 0;
   border-radius: var(--radius-xl);
   padding: 1.6px;
-  background: linear-gradient(115deg, rgba(22,163,74,.9), rgba(34,197,94,.3) 28%, rgba(0,194,255,.85) 52%, rgba(34,197,94,.3) 76%, rgba(22,163,74,.9));
+  background: linear-gradient(115deg, rgba(35,75,53,.9), rgba(34,197,94,.3) 28%, rgba(0,194,255,.85) 52%, rgba(34,197,94,.3) 76%, rgba(35,75,53,.9));
   background-size: 220% 220%;
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
@@ -157,7 +157,7 @@ svg { display: block; }
 
 .login-form { display: flex; flex-direction: column; gap: 12px; }
 .lf-input-group { position: relative; display: flex; align-items: center; border-radius: 14px; border: 1px solid var(--z-border); background: rgba(255,255,255,.65); transition: border-color .25s ease, box-shadow .25s ease, background .25s ease; }
-.lf-input-group:focus-within { border-color: rgba(22,163,74,.5); background: rgba(255,255,255,.9); box-shadow: 0 0 0 4px rgba(22,163,74,.13), 0 6px 22px rgba(22,163,74,.12); }
+.lf-input-group:focus-within { border-color: rgba(35,75,53,.5); background: rgba(255,255,255,.9); box-shadow: 0 0 0 4px rgba(35,75,53,.13), 0 6px 22px rgba(35,75,53,.12); }
 .lf-input-icon { flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center; width: 40px; height: 46px; color: var(--z-muted); transition: color .25s ease; }
 .lf-input-group:focus-within .lf-input-icon { color: var(--z-orange); }
 .lf-input-icon svg { width: 17px; height: 17px; }
@@ -241,9 +241,9 @@ svg { display: block; }
 .grm-sub { text-align: center; color: var(--z-muted); font-size: 13.5px; margin-top: 4px; margin-bottom: 20px; }
 .grm-options { display: flex; flex-direction: column; gap: 10px; }
 .grm-option { width: 100%; display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: 16px; border: 2px solid var(--z-border); background: rgba(255,255,255,.6); text-align: left; transition: border-color .2s ease, background .2s ease; }
-.grm-option:hover { border-color: rgba(22,163,74,.35); }
-.grm-option.active { border-color: var(--z-orange); background: rgba(22,163,74,.08); }
-.grm-option-icon { flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(22,163,74,.16), rgba(0,194,255,.14)); color: var(--z-orange); }
+.grm-option:hover { border-color: rgba(35,75,53,.35); }
+.grm-option.active { border-color: var(--z-orange); background: rgba(35,75,53,.08); }
+.grm-option-icon { flex-shrink: 0; width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: linear-gradient(135deg, rgba(35,75,53,.16), rgba(0,194,255,.14)); color: var(--z-orange); }
 .grm-option-icon svg { width: 20px; height: 20px; }
 .grm-option-text { flex: 1; display: flex; flex-direction: column; gap: 2px; }
 .grm-option-name { font-size: 14.5px; color: var(--z-ink); }
@@ -256,7 +256,7 @@ svg { display: block; }
    class — this is just the default (hidden) state. */
 .grm-confirm-spinner { display: none; align-items: center; }
 .grm-under-review { text-align: center; padding: 10px 4px 0; }
-.grm-review-icon { width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; background: rgba(22,163,74,.12); color: var(--z-orange); }
+.grm-review-icon { width: 46px; height: 46px; margin: 0 auto 14px; border-radius: 50%; display: grid; place-items: center; background: rgba(35,75,53,.12); color: var(--z-orange); }
 .grm-review-icon svg { width: 22px; height: 22px; }
 .grm-review-title { font-size: 18px; font-weight: 900; margin-bottom: 8px; }
 .grm-review-sub { font-size: 13.5px; color: var(--z-ink); margin-bottom: 6px; }
@@ -277,7 +277,7 @@ svg { display: block; }
   .login-section { flex: 0.95; min-height: 100vh; padding: 40px; }
   @media (hover: hover) {
     .login-card { transition: box-shadow .45s ease; }
-    .login-card:hover { box-shadow: 0 30px 90px rgba(16,24,40,.16), 0 0 70px rgba(22,163,74,.14), 0 0 100px rgba(0,194,255,.09); }
+    .login-card:hover { box-shadow: 0 30px 90px rgba(16,24,40,.16), 0 0 70px rgba(35,75,53,.14), 0 0 100px rgba(0,194,255,.09); }
   }
 }
 @media (max-width: 640px) {

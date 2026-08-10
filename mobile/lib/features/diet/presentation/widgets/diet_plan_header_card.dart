@@ -45,16 +45,16 @@ class DietPlanHeaderCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                   decoration: BoxDecoration(
-                    color: const Color(0x1F6BA539),
+                    color: const Color(0x1F3A8F8B),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: const Color(0x406BA539)),
+                    border: Border.all(color: const Color(0x403A8F8B)),
                   ),
                   child: Text(
                     expertName != null ? 'Reviewed by $expertName' : 'Expert Reviewed',
                     style: const TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: ZitlasTokens.successDark,
+                      color: ZitlasTokens.hydrationTeal,
                     ),
                   ),
                 ),

@@ -340,10 +340,10 @@ class _MiniStat extends StatelessWidget {
         children: [
           Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 15,
               fontWeight: FontWeight.w900,
-              color: DashboardColors.textPrimary,
+              color: label == 'Streak' ? DashboardColors.achievementYellow : DashboardColors.hydrationTeal,
             ),
           ),
           const SizedBox(height: 2),
@@ -575,7 +575,7 @@ class _StepRingPainter extends CustomPainter {
     final center = size.center(Offset.zero);
     const strokeWidth = 14.0;
     final radius = (size.width - strokeWidth) / 2;
-    final color = done ? DashboardColors.success : DashboardColors.primary;
+    final color = done ? DashboardColors.hydrationTeal : DashboardColors.hydrationTeal;
 
     final track = Paint()
       ..color = DashboardColors.border
@@ -584,7 +584,7 @@ class _StepRingPainter extends CustomPainter {
     canvas.drawCircle(center, radius, track);
 
     final glow = Paint()
-      ..color = DashboardColors.primaryHover.withValues(alpha: 0.5)
+      ..color = DashboardColors.hydrationTeal.withValues(alpha: 0.5)
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round

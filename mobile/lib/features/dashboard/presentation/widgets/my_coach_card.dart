@@ -96,11 +96,15 @@ class MyCoachCard extends StatelessWidget {
                       children: [
                         const _Pill(
                           label: 'ACTIVE',
-                          color: DashboardColors.success,
+                          color: DashboardColors.hydrationTeal,
                           filled: true,
                         ),
                         if (coach.planLabel != null)
-                          _Pill(label: coach.planLabel!, color: DashboardColors.primary),
+                          _Pill(
+                            label: coach.planLabel!,
+                            color: DashboardColors.sageGreen,
+                            textColor: DashboardColors.primaryDark,
+                          ),
                         if (days != null)
                           _Pill(
                             label: days > 0 ? '$days days left' : 'Ends today',
@@ -209,20 +213,25 @@ class _CoachAvatar extends StatelessWidget {
 }
 
 class _Pill extends StatelessWidget {
-  const _Pill({required this.label, required this.color, this.filled = false});
+  const _Pill({required this.label, required this.color, this.filled = false, this.textColor});
 
   final String label;
   final Color color;
   final bool filled;
+
+  /// Overrides the text color when [color] itself is too light to read at
+  /// 10px (e.g. sage) — the tint/border still use [color] so the accent
+  /// stays visible, only the text swaps to something with real contrast.
+  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 3),
       decoration: BoxDecoration(
-        color: filled ? color : color.withValues(alpha: 0.10),
+        color: filled ? color : color.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: filled ? color : color.withValues(alpha: 0.28)),
+        border: Border.all(color: filled ? color : color.withValues(alpha: 0.35)),
       ),
       child: Text(
         label,
@@ -230,7 +239,7 @@ class _Pill extends StatelessWidget {
           fontSize: 10,
           fontWeight: FontWeight.w900,
           letterSpacing: 0.3,
-          color: filled ? Colors.white : color,
+          color: filled ? Colors.white : (textColor ?? color),
         ),
       ),
     );

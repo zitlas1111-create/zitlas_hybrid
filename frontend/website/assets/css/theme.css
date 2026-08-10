@@ -1,74 +1,85 @@
 /*
- * ZITLAS Official Brand Theme — Premium Fitness (single theme)
- * Global design tokens and utility classes for the fitness + AI coaching app.
+ * ZITLAS Design System — Premium Fitness + Nutrition + AI
+ * LOCKED PALETTE — Do not invent alternative shades as brand colors.
+ * All platforms (Flutter + website) use identical token values.
  *
- * One theme only. Dark mode is removed: both data-theme values resolve to
- * the same tokens below, so any legacy data-theme attribute is inert.
+ * COLOR HIERARCHY:
+ * 50% Warm White / White / Cream — foundation
+ * 20% Deep Green #234B35 — health, brand, identity
+ * 15% Tangerine #234B35 — fitness, energy, action
+ * 5% Sage — subtle accents
+ * 5% Warm Yellow — achievements
+ * 2% Teal — hydration
+ * 2% Plum — AI/premium
+ * 1% Coral — mood/attention
  *
- * Palette: soft white/pale-green ground, white floating cards, ZITLAS green
- * brand accent, matching the green ZITLAS logo. Psychology: fresh, clean,
- * premium, trustworthy, technological.
+ * VISUAL TARGET: Premium + Energetic + Fitness-Focused
+ * NOT: Clinical, Green-Heavy, Hospital-Like
  *
- * REBRAND (orange -> green): the brand accent was orange (#FF9800 family).
- * It is now ZITLAS green (#16A34A family) to match the logo. Non-brand
- * semantics — the amber warning (--yellow), the AI/cyan accent, and any
- * error red used elsewhere — are UNCHANGED; this is a brand-color swap, not
- * a "replace everything with green" pass.
+ * CRITICAL RULE: Tangerine (#234B35) is the PRIMARY ACTION COLOR for fitness CTAs.
+ * Do NOT replace Tangerine with green for CTAs.
  *
- * NOTE on --white-rgb / --black-rgb: hundreds of legacy rules build glass
- * surfaces as rgba(var(--white-rgb), 0.05-0.15) and text as
- * rgba(var(--white-rgb), 0.3-0.6) — that only reads on a dark ground.
- * On the light theme these tokens are deliberately remapped to ink shades
- * so the same rules yield soft gray surfaces and readable secondary text.
- * Use literal #fff when you truly mean white (e.g. text on green).
+ * NOTE on --white-rgb / --black-rgb: legacy rules build glass surfaces as
+ * rgba(var(--white-rgb), 0.05-0.15) and text as rgba(var(--white-rgb), 0.3-0.6).
+ * On this light theme, tokens are remapped to ink shades so the same rules
+ * yield soft gray surfaces and readable secondary text. Use literal #fff when
+ * you truly mean white (e.g. text on green).
  */
 
 :root,
 html,
 html[data-theme="dark"],
 html[data-theme="light"] {
-  --bg-primary: #F7FAF5;
+  /* BACKGROUNDS — light foundation with subtle variety */
+  --bg-primary: #FAFAF7;
   --bg-card: #FFFFFF;
-  --bg-card-light: #F0FDF4;
+  --bg-card-light: #F3F0E6; /* cream */
 
-  /* PRIMARY ZITLAS GREEN — the main brand/action color, matches the logo. */
-  --primary: #16A34A;
-  --primary-hover: #15803D;
-  --primary-dark: #14532D;
-  --primary-rgb: 22,163,74;
+  /* GREEN PALETTE — LOCKED PALETTE: Deep Green #234B35 */
+  /** Subtle wellness accent (cards, selections, backgrounds). */
+  --sage-green: #A8B79A;
 
-  /* BRAND ENERGY GREEN — sparingly: logo glow, highlights, active accents,
-     progress highlights, subtle glow effects. Never large text/backgrounds
-     (contrast is too low on white — see the accessibility note below). */
-  --brand-energy: #39FF14;
-  --brand-energy-rgb: 57,255,20;
+  /** Primary ZITLAS Deep Green — LOCKED: #234B35 — brand identity, health, selected states. */
+  --primary: #234B35;
+  --primary-hover: #2E5F47;
+  --primary-dark: #1A3A2A;
+  --primary-rgb: 35,75,53;
 
-  /* SUCCESS now converges with the ZITLAS green family per the brand system
-     (previously a separate olive-green) — one coherent green, not two. */
-  --success: #16A34A;
-  --success-dark: #14532D;
-  --success-rgb: 22,163,74;
+  /** Success uses primary green. */
+  --success: #234B35;
+  --success-dark: #1A3A2A;
+  --success-rgb: 35,75,53;
 
-  --green-soft: #F0FDF4;
-  --green-soft-rgb: 240,253,244;
+  /* SEMANTIC FUNCTIONAL COLORS — each with clear meaning */
+  /** Fitness, training, energy, active workout, calories burned. */
+  --fitness-orange: #234B35;
 
-  /* AI / Zino accent — UNCHANGED. Distinct semantic (intelligence), not the
-     brand color; keep it off buttons exactly as before. */
-  --ai-accent: #0E9BB5;
-  --ai-rgb: 14,155,181;
+  /** Achievement, milestone, badge, reward, streak celebration. */
+  --achievement-yellow: #F4C95D;
 
+  /** Hydration, recovery, water intake, health metrics. */
+  --hydration-teal: #3A8F8B;
+
+  /** AI, Zino, intelligent recommendations, premium AI functionality. */
+  --ai-purple: #6B5878;
+
+  /** Mood, wellbeing, stress, emotional state. */
+  --wellness-coral: #E76F51;
+
+  /* Compatibility alias — was cyan, now purple per semantic system. */
+  --ai-accent: #6B5878;
+  --ai-rgb: 107,88,120;
+
+  /* TYPOGRAPHY */
   --text-primary: #17221A;
-  --text-secondary: #647267;
-  /* Muted tier: the brand spec gives primary+secondary text only. Derived
-     from --text-secondary, but capped to keep >=4.5:1 contrast on white —
-     a straight proportional lighten (as the old palette's secondary->muted
-     step used) lands at ~2.7:1, which fails WCAG AA for text. */
-  --text-muted: #657168;
+  --text-secondary: #66716A;
+  --text-muted: #8A968E;
   /* Remapped for the light theme — see note above. */
   --white-rgb: 23,34,26;
-  --black-rgb: 100,114,103;
+  --black-rgb: 102,113,106;
 
-  --border: #E3EAE4;
+  /* BORDERS & UTILITIES */
+  --border: #E5EBE7;
   --shadow: rgba(23,34,26,0.08);
 
   /* Compatibility aliases used by existing page styles. */
@@ -88,15 +99,19 @@ html[data-theme="light"] {
   --accent-light: var(--primary-hover);
   --accent-hover: var(--primary-hover);
   --accent-dark: var(--primary-dark);
-  --accent-glow: rgba(22,163,74,0.18);
-  --accent-glow-s: rgba(22,163,74,0.10);
+  --accent-glow: rgba(35,75,53,0.18);
+  --accent-glow-s: rgba(35,75,53,0.10);
 
   --green: var(--success);
   --green-dark: var(--success-dark);
   --blue: var(--ai-accent);
   --cyan: var(--ai-accent);
-  /* Semantic WARNING (amber) — UNCHANGED. Not the brand color; preserved. */
-  --yellow: #F0A82E;
+  /* Semantic accent colors — each with meaning. */
+  --orange: var(--fitness-orange);
+  --yellow: var(--achievement-yellow);
+  --teal: var(--hydration-teal);
+  --purple: var(--ai-purple);
+  --coral: var(--wellness-coral);
 
   --text: var(--text-primary);
   --text-sec: var(--text-secondary);
@@ -111,12 +126,12 @@ html[data-theme="light"] {
   --radius-xs: 12px;
   --radius-lg: 28px;
   --card-shadow: 0 10px 30px rgba(23,34,26,0.08);
-  --glow-focus: 0 0 0 3px rgba(22,163,74,0.20);
-  --button-shadow: 0 10px 26px rgba(22,163,74,0.28);
+  --glow-focus: 0 0 0 3px rgba(35,75,53,0.20);
+  --button-shadow: 0 10px 26px rgba(35,75,53,0.28);
 }
 
 body {
-  background: linear-gradient(180deg, #F7FAF5 0%, #F0FDF4 100%) fixed;
+  background: linear-gradient(180deg, #FAFAF7 0%, #F3F0E6 100%) fixed;
   color: var(--text-primary);
 }
 
@@ -143,7 +158,7 @@ textarea:focus-visible {
    cascade regardless of load order without needing !important. */
 .zitlas-premium-bg {
   background-image:
-    linear-gradient(rgba(247,250,245,0.45), rgba(247,250,245,0.55)),
+    linear-gradient(rgba(250,250,247,0.45), rgba(250,250,247,0.55)),
     url('../homebg.png');
   background-size: cover;
   background-position: center;
@@ -160,35 +175,35 @@ textarea:focus-visible {
 }
 
 .btn-primary {
-  background: linear-gradient(135deg, #16A34A, #22C55E) !important;
+  background: linear-gradient(135deg, #234B35, #2E5F47) !important;
   color: #FFFFFF !important;
   border: 1px solid transparent !important;
-  box-shadow: 0 10px 25px rgba(22,163,74,0.35) !important;
+  box-shadow: 0 10px 25px rgba(35,75,53,0.35) !important;
   transition: transform 0.3s ease, box-shadow 0.3s ease !important;
 }
 
 .btn-primary:hover {
   transform: translateY(-2px);
-  box-shadow: 0 14px 30px rgba(22,163,74,0.40) !important;
+  box-shadow: 0 14px 30px rgba(35,75,53,0.40) !important;
 }
 
 .badge-success {
-  background: rgba(22,163,74,0.12) !important;
+  background: rgba(35,75,53,0.12) !important;
   color: var(--success-dark) !important;
-  border: 1px solid rgba(22,163,74,0.30) !important;
+  border: 1px solid rgba(35,75,53,0.30) !important;
 }
 
 .badge-ai {
-  background: rgba(14,155,181,0.10) !important;
+  background: rgba(107,88,120,0.10) !important;
   color: var(--ai-accent) !important;
-  border: 1px solid rgba(14,155,181,0.26) !important;
+  border: 1px solid rgba(107,88,120,0.26) !important;
 }
 
 /* Common semantic hooks used across existing pages. */
 [class*="ai-badge"],
 [class*="badge--ai"],
 [class*="--ai"] {
-  --badge-bg: rgba(14,155,181,0.10);
+  --badge-bg: rgba(107,88,120,0.10);
   --badge-color: var(--ai-accent);
 }
 
@@ -204,9 +219,9 @@ textarea:focus-visible {
    (body.zitlas-premium-bg). Descendant selectors (0,2,0) beat the
    page stylesheets' single-class rules (0,1,0) regardless of load
    order, so no !important is needed. One recipe, every main card:
-   floating, frosted, layered green glow (was dual green/orange; both
-   halves are green now, so depth comes from primary + dark-green layers
-   instead — see the theme header note on the orange -> green rebrand).
+   floating, frosted, layered green glow using the semantic ZITLAS
+   primary + dark-green for depth, never dominant color — maintains
+   the 60–70% white/cream foundation visual principle.
    ══════════════════════════════════════════════════════════ */
 .zitlas-premium-bg .goal-card,
 .zitlas-premium-bg .qs-card,
@@ -230,22 +245,21 @@ textarea:focus-visible {
   -webkit-backdrop-filter: blur(18px);
   border-radius: 28px;
   border: 1px solid rgba(255,255,255,0.6);
-  box-shadow: 0 15px 40px rgba(22,163,74,0.10), 0 8px 20px rgba(20,83,45,0.08);
+  box-shadow: 0 15px 40px rgba(35,75,53,0.10), 0 8px 20px rgba(26,58,42,0.08);
   transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Hero/section cards get a restrained energy-green glow on top — the ONE
-   place --brand-energy is used at scale, and even here only as a soft,
-   low-alpha halo (10%), matching the brand spec's "use sparingly" rule. */
+/* Hero/section cards get a restrained green glow on top — subtle layering
+   only for premium visual depth, never dominant. Maintains the light,
+   clean aesthetic emphasized in the design system. */
 .zitlas-premium-bg .goal-card,
 .zitlas-premium-bg .swot-widget-section,
 .zitlas-premium-bg .focus-card,
 .zitlas-premium-bg .wp-hero,
 .zitlas-premium-bg .plan-section {
   box-shadow:
-    0 15px 40px rgba(22,163,74,0.10),
-    0 8px 20px rgba(20,83,45,0.08),
-    0 0 30px rgba(57,255,20,0.10);
+    0 15px 40px rgba(35,75,53,0.10),
+    0 8px 20px rgba(26,58,42,0.08);
 }
 
 /* Floating hover lift — pointer devices only, honors reduced motion */
@@ -259,7 +273,7 @@ textarea:focus-visible {
   .zitlas-premium-bg .wp-day-card:hover,
   .zitlas-premium-bg .nutri-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 20px 50px rgba(22,163,74,0.14), 0 10px 26px rgba(20,83,45,0.12);
+    box-shadow: 0 20px 50px rgba(35,75,53,0.14), 0 10px 26px rgba(26,58,42,0.12);
   }
 }
 
@@ -267,7 +281,7 @@ textarea:focus-visible {
 .zitlas-premium-bg .qs-card:active,
 .zitlas-premium-bg .nutri-card:active {
   transform: scale(0.97);
-  box-shadow: 0 0 24px rgba(22,163,74,0.25);
+  box-shadow: 0 0 24px rgba(35,75,53,0.25);
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -315,7 +315,7 @@ class _MealSwapSheetState extends State<_MealSwapSheet> {
               child: ElevatedButton(
                 onPressed: _accept,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: ZitlasTokens.success,
+                  backgroundColor: ZitlasTokens.primary,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

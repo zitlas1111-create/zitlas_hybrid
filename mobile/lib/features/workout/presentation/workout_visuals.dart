@@ -3,14 +3,18 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/zitlas_tokens.dart';
 
 /// `DAY_COLORS` (weekly-plan.js) — one accent per day, Mon→Sun.
+///
+/// Alternates Deep Green / Teal only — deliberately NOT `aiAccent` (Plum is
+/// reserved for Zino/AI elsewhere in the app; reusing it here as a generic
+/// weekday color would make an unrelated day look "AI-flagged").
 const List<Color> kWorkoutDayColors = [
-  ZitlasTokens.success, // Day 1
-  ZitlasTokens.aiAccent, // Day 2
-  ZitlasTokens.primary, // Day 3
-  ZitlasTokens.primary, // Day 4
-  ZitlasTokens.primaryDark, // Day 5
-  ZitlasTokens.aiAccent, // Day 6
-  ZitlasTokens.aiAccent, // Day 7
+  ZitlasTokens.primary, // Day 1
+  ZitlasTokens.hydrationTeal, // Day 2
+  ZitlasTokens.primaryDark, // Day 3
+  ZitlasTokens.hydrationTeal, // Day 4
+  ZitlasTokens.primary, // Day 5
+  ZitlasTokens.hydrationTeal, // Day 6
+  ZitlasTokens.primaryDark, // Day 7
 ];
 
 /// `DAY_SHORT` (weekly-plan.js) — exact 3-letter abbreviations.

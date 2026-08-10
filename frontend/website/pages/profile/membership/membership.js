@@ -258,7 +258,7 @@
           description: billing === 'yearly' ? 'Premium — ₹999/year' : 'Premium — ₹149/month',
           handler: function (response) { _verifyMembershipPayment(response, _resetBtn); },
           modal: { ondismiss: function () { showToast('Payment cancelled.'); _resetBtn(); } },
-          theme: { color: '#16A34A' },
+          theme: { color: '#234B35' },
         });
         rzp.on('payment.failed', function (resp) {
           console.error('[MEMBERSHIP] razorpay payment.failed', resp && resp.error);

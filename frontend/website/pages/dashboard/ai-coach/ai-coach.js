@@ -390,6 +390,18 @@
       validate: function (v) { var n = parseFloat(v); return !isNaN(n) && n >= 25 && n <= 250; },
       parse: function (v) { return parseFloat(v); }, errMsg: 'Please enter a valid weight (25–250 kg)',
     },
+    /* REQUIRED for a transformation: the plan is a current -> target
+       trajectory, and this question was missing from TF_QUESTIONS entirely,
+       so the calorie maths had no destination. Mirrors the Flutter
+       transformation set field-for-field (same `goal_weight_kg` name, same
+       25-250 kg validation) so both clients send an identical payload. */
+    {
+      field: 'goal_weight_kg', prompt: 'What is your target weight?',
+      hint: 'The weight you want to reach through this transformation (in kg)',
+      type: 'text', placeholder: 'e.g. 70',
+      validate: function (v) { var n = parseFloat(v); return !isNaN(n) && n >= 25 && n <= 250; },
+      parse: function (v) { return parseFloat(v); }, errMsg: 'Please enter a valid target weight (25–250 kg)',
+    },
     // Transformation-specific questions
     {
       field: 'transformation_goal',
@@ -1280,10 +1292,17 @@
       'weight_loss'
     );
 
-    // Transformation and General fitness: no goal_weight_kg — use current weight (recomposition)
-    var goalWeight = (isGF || isTransformation)
+    /* General fitness genuinely has no target-weight question, so it stays at
+       current weight (maintenance). TRANSFORMATION now ASKS for a target and
+       must forward it — it previously overwrote the answer with the current
+       weight, which is why a transformation plan had no trajectory to build a
+       calorie target around. Falls back to current weight so a payload from an
+       older client that never asked the question behaves exactly as before. */
+    var goalWeight = isGF
       ? (a.weight_kg || 70)
-      : (a.goal_weight_kg || 65);
+      : isTransformation
+        ? (a.goal_weight_kg || a.weight_kg || 70)
+        : (a.goal_weight_kg || 65);
 
     return {
       age:               a.age               || 22,

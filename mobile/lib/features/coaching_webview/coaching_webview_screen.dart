@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:ui' show ImageFilter;
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
@@ -642,7 +643,14 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
         _leaveScreen(router);
       },
       child: Scaffold(
-        backgroundColor: Colors.black,
+        // TRANSPARENT, not black. The route is non-opaque (see _webViewPage in
+        // app/router.dart), so the Flutter screen this was opened from is still
+        // painted underneath — a black Scaffold here is exactly what turned the
+        // hand-off into a black screen. The WebView itself already sets a
+        // transparent background (setBackgroundColor below), so during load the
+        // previous screen shows through the blur; once the page paints, the
+        // website covers it normally.
+        backgroundColor: Colors.transparent,
         body: SafeArea(
           child: _failed ? _errorView() : _webView(),
         ),
@@ -689,10 +697,13 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
                         setState(() => _loadingCoverMounted = false);
                       }
                     },
-                    child: const ColoredBox(
-                      color: Colors.black,
-                      child: Center(child: ZitlasLoadingRing()),
-                    ),
+                    // The previous Flutter screen stays visible through this
+                    // layer: blurred and dimmed, never replaced. The blur and
+                    // the scrim are one BackdropFilter subtree so they fade in
+                    // and out together with the logo — no frame shows a bare
+                    // colour, which is what removes the black flash instead of
+                    // just recolouring it.
+                    child: _TransitionScrim(child: const ZitlasLoadingRing()),
                   ),
                 ),
               ),
@@ -703,7 +714,12 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
   }
 
   Widget _errorView() {
-    return Center(
+    // Reuses the SAME blur+dim layer as the loading cover. The Scaffold is
+    // transparent now, so without this the white error text would sit directly
+    // on the un-dimmed previous screen and be unreadable. A failed load
+    // therefore lands on the recognisable (faint) screen the athlete came from
+    // plus a legible message — never a black dead end.
+    return _TransitionScrim(
       child: Padding(
         padding: const EdgeInsets.all(28),
         child: Column(
@@ -745,6 +761,59 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// The Flutter → Website hand-off layer: the previous screen, blurred and
+/// dimmed, with [child] (the ZITLAS badge + neon ring) bright and sharp on top.
+///
+/// WHY A BACKDROP FILTER RATHER THAN A SCREENSHOT. `BackdropFilter` blurs
+/// whatever is already painted behind it in the same frame, so the "previous
+/// screen" is the live one — nothing is captured, nothing is sized to a
+/// particular device, and there is no image buffer to hold or leak. It works
+/// identically on every Android screen size because it never has a resolution
+/// of its own. This is only possible because the route is non-opaque
+/// (`_webViewPage`); an opaque route would leave nothing behind to blur.
+///
+/// The scrim is layered INSIDE the filter subtree so the blur and the dim
+/// animate as one unit with the logo, which is what prevents a bare-colour
+/// frame (the old black flash) at either end of the fade.
+class _TransitionScrim extends StatelessWidget {
+  const _TransitionScrim({required this.child});
+
+  final Widget child;
+
+  /// Enough blur that the screen below reads as texture and depth rather than
+  /// as content competing with the logo, while still being recognisably the
+  /// screen the athlete just came from.
+  static const double _blurSigma = 18;
+
+  @override
+  Widget build(BuildContext context) {
+    return BackdropFilter(
+      filter: ImageFilter.blur(sigmaX: _blurSigma, sigmaY: _blurSigma),
+      child: DecoratedBox(
+        // ~54% -> ~72% dim, centre-weighted: a flat scrim at this strength
+        // flattens the whole frame, whereas easing it darker toward the edges
+        // keeps the middle clearer and lets the badge sit in its own pool of
+        // light. Inside the 50-70% band, with the logo the brightest element.
+        //
+        // The tone is ZITLAS deep-green charcoal, NOT neutral black, and that is
+        // deliberate for the one path where there is nothing to blur: most
+        // entries `push` this route (so the previous screen is underneath), but
+        // a notification tap can `go('/expert-dashboard')`, which REPLACES the
+        // stack and leaves no underlay. With a near-black scrim that case would
+        // fall back to exactly the black screen this change exists to remove;
+        // tinted, it reads as an intentional brand surface either way.
+        decoration: const BoxDecoration(
+          gradient: RadialGradient(
+            radius: 0.95,
+            colors: [Color(0x8A16281C), Color(0xB80D1611)],
+          ),
+        ),
+        child: Center(child: child),
       ),
     );
   }

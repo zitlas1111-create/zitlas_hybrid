@@ -74,14 +74,14 @@ class HealthStatusCard extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: const Color(0x146BA539),
-                border: Border.all(color: const Color(0x336BA539)),
+                color: const Color(0x143A8F8B),
+                border: Border.all(color: const Color(0x333A8F8B)),
                 borderRadius: BorderRadius.circular(kDashboardRadiusSm),
               ),
               child: const Text(
                 '😊 Logged: feeling great — full plan active.',
                 style: TextStyle(
-                  color: DashboardColors.successDark,
+                  color: DashboardColors.hydrationTeal,
                   fontSize: 12.5,
                   fontWeight: FontWeight.w700,
                 ),

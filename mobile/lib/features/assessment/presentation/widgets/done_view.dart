@@ -22,18 +22,18 @@ class DoneView extends StatelessWidget {
               padding: const EdgeInsets.all(4),
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(color: ZitlasTokens.success, width: 3),
+                border: Border.all(color: ZitlasTokens.achievementYellow, width: 3),
               ),
               child: ClipOval(child: Image.asset('assets/images/zino.png', fit: BoxFit.cover)),
             ),
             const SizedBox(height: 14),
-            const Text('✓', style: TextStyle(fontSize: 36, color: ZitlasTokens.success, fontWeight: FontWeight.w900)),
+            const Text('✓', style: TextStyle(fontSize: 36, color: ZitlasTokens.achievementYellow, fontWeight: FontWeight.w900)),
             const SizedBox(height: 10),
             Text.rich(
               TextSpan(
                 children: [
                   const TextSpan(text: 'Your plan is '),
-                  TextSpan(text: 'saved!', style: TextStyle(color: ZitlasTokens.success)),
+                  TextSpan(text: 'saved!', style: TextStyle(color: ZitlasTokens.achievementYellow)),
                 ],
               ),
               style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: ZitlasTokens.textPrimary),

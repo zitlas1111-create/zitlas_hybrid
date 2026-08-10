@@ -1,18 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// Visual tokens ported 1:1 from `frontend/website/pages/login/login.css`'s
-/// `:root` block. The website's auth pages deliberately use a light
-/// "glassmorphism landing page" theme (`--z-bg: #F7F3EA`) that is entirely
-/// separate from the dark in-app theme (`ZitlasColors`/`theme.css`) used
-/// for splash/loading — this is real, intentional design, not a mismatch to
-/// fix. Do not reuse `ZitlasColors` on these screens.
-///
-/// REBRAND (orange -> green, matches the green ZITLAS logo): `orange`/
-/// `orange2` were the brand accent (`#FF8C00` family); now ZITLAS green
-/// (`#16A34A` family) — field names kept as-is (many call sites reference
-/// `AuthColors.orange`) since renaming them is a mechanical, riskier churn
-/// unrelated to the actual visual fix. `green` (success) and `cyan` (AI
-/// accent) are semantic, not brand, and UNCHANGED.
+/// Visual tokens for the login/auth pages — mirrors the semantic design system
+/// from `ZitlasTokens.dart` and `theme.css`. The login pages use a light
+/// "glassmorphism landing page" aesthetic that is intentionally distinct from
+/// the in-app theme and dark splash/loading. Field names (`orange`, `orange2`)
+/// are kept for backward compatibility despite now holding green values.
 abstract final class AuthColors {
   static const bg = Color(0xFFF7F3EA); // --z-bg
   static const ink = Color(0xFF101828); // --z-ink
@@ -20,11 +12,18 @@ abstract final class AuthColors {
   static const cardGlass = Color(0xB8FFFFFF); // --z-card: rgba(255,255,255,.72)
   static const cardSolid = Color(0xFFFFFFFF); // --z-card-solid
   static const border = Color(0x1A111827); // --z-border: rgba(17,24,39,.10)
-  static const orange = Color(0xFF16A34A); // --z-orange (== --primary, now green)
-  static const orange2 = Color(0xFF15803D); // --z-orange-2 (== --primary-hover, now green)
-  static const green = Color(0xFF22C55E); // --z-green (== --success)
-  static const cyan = Color(0xFF00C2FF); // --z-cyan (== --ai-accent)
-  static const errorBorder = Color(0x99EF4444); // .input-error border: rgba(239,68,68,.6)
+
+  // Primary ZITLAS green — brand actions, buttons
+  static const orange = Color(0xFF234B35); // semantic: primary green (field name kept for compat)
+  static const orange2 = Color(0xFF2E5F47); // semantic: primary green hover
+
+  // Semantic accents
+  static const green = Color(0xFF22C55E); // success
+  static const purple = Color(0xFF6B5878); // AI/intelligence
+  static const cyan = Color(0xFF6B5878); // backward compat alias (now purple)
+
+  // Error and input states
+  static const errorBorder = Color(0x99EF4444); // .input-error border
   static const btnLoginText = Color(0xFF101010); // .btn-login color
   static const inputFill = Color(0xA6FFFFFF); // rgba(255,255,255,.65)
   static const inputFillFocus = Color(0xE6FFFFFF); // rgba(255,255,255,.9)
@@ -37,15 +36,13 @@ const double kAuthRadiusXl = 34;
 const double kAuthRadiusLg = 26;
 const double kAuthRadiusMd = 18;
 
-/// Matches `.login-card`'s combined box-shadow (drop shadow + green/cyan
-/// ambient glow) closely enough to read the same without an animated blur.
+/// Login card shadow — semantic green glow using primary ZITLAS green.
 const List<BoxShadow> kAuthCardShadow = [
   BoxShadow(color: Color(0x1F101828), blurRadius: 80, offset: Offset(0, 24)),
-  BoxShadow(color: Color(0x1716A34A), blurRadius: 60),
-  BoxShadow(color: Color(0x0F00C2FF), blurRadius: 90),
+  BoxShadow(color: Color(0x17234B35), blurRadius: 60), // primary green
 ];
 
-/// `--z-glow` — the ambient green glow under primary buttons.
+/// Login button glow — semantic primary green ambient effect.
 const List<BoxShadow> kAuthButtonGlow = [
-  BoxShadow(color: Color(0x3D16A34A), blurRadius: 46),
+  BoxShadow(color: Color(0x3D234B35), blurRadius: 46),
 ];

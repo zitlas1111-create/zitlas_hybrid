@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
+import '../../../rest_timer/presentation/widgets/rest_timer_card.dart';
 import '../../models/workout_day.dart';
 import '../../workout_controller.dart';
 
@@ -171,10 +172,10 @@ class _DayContent extends StatelessWidget {
         if (day.modified) ...[
           const SizedBox(height: 14),
           ZitlasCard(
-            color: const Color(0x1F6BA539),
+            color: const Color(0x1F3A8F8B),
             child: Text(
               '✏️ Modified by ${day.modifiedBy ?? 'Expert'}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: ZitlasTokens.successDark),
+              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: ZitlasTokens.hydrationTeal),
             ),
           ),
         ],
@@ -192,6 +193,13 @@ class _DayContent extends StatelessWidget {
               Expanded(child: _TimeStat(value: '${exercises.length}', label: 'Exercises')),
           ],
         ),
+
+        // Rest Timer — directly below the stats row per spec. Available on
+        // every day (including rest days: an athlete stretching/mobility-
+        // working on a rest day can still want a rest-between-sets timer),
+        // not gated on `isRest`/`exercises.isNotEmpty` like the chips above.
+        const SizedBox(height: 14),
+        const RestTimerCard(),
 
         const SizedBox(height: 14),
 
@@ -398,18 +406,18 @@ class _WorkoutActionsState extends State<_WorkoutActions> {
                   padding: const EdgeInsets.symmetric(vertical: 13),
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: const Color(0x1F6BA539),
+                    color: const Color(0x1F3A8F8B),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Text(
                     '✅ Workout Complete',
-                    style: TextStyle(fontWeight: FontWeight.w700, color: ZitlasTokens.successDark),
+                    style: TextStyle(fontWeight: FontWeight.w700, color: ZitlasTokens.hydrationTeal),
                   ),
                 )
               : ElevatedButton(
                   onPressed: _completing ? null : _complete,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: ZitlasTokens.success,
+                    backgroundColor: ZitlasTokens.primary,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 13),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

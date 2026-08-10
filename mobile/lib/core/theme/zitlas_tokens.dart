@@ -2,56 +2,85 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 
-/// Shared ZITLAS design tokens ported from the CURRENT
-/// `frontend/website/assets/css/theme.css` — the single stylesheet every
-/// authenticated page loads (athlete dashboard, expert dashboard, diet,
-/// training, experts, profile). It is a LIGHT theme (`--bg-primary:
-/// #F7FAF5`), which is why both dashboards render light even though the
-/// app's global Flutter `ZitlasTheme` (built earlier from the now-stale
-/// `COLOR_GUIDELINES.md`) is dark.
+/// ZITLAS semantic design token system — paired with `frontend/website/assets/css/theme.css`.
+/// Both platforms use identical token values to prevent visual drift across native and WebView.
 ///
-/// REBRAND (orange -> green, matches the green ZITLAS logo): the brand
-/// accent was orange (`#FF9800` family). It is now ZITLAS green (`#16A34A`
-/// family). Non-brand semantics — `danger` (red) and `aiAccent` (cyan) —
-/// are UNCHANGED; this is a brand-color swap, not a "make everything green"
-/// pass. Kept numerically identical to `theme.css` so the two dashboards
-/// (and the web pages the WebView loads) can't visually drift apart.
+/// COLOR SYSTEM PHILOSOPHY:
+/// 60–70% white/cream foundation (content, cards, surfaces)
+/// 15–20% green (health, nutrition, ZITLAS brand, progress)
+/// 5–10% orange (fitness, training, energy, action)
+/// 3–5% other functional accents (achievement yellow, hydration teal, AI purple, wellness coral)
+///
+/// Each color carries SEMANTIC meaning:
+/// • Green = health, nutrition, brand, progress
+/// • Orange = fitness, training, energy, action
+/// • Yellow = achievement, milestone, reward
+/// • Teal = hydration, recovery, water
+/// • Purple = AI, Zino, intelligence
+/// • Coral = mood, wellness, stress
+/// • White/Cream = cleanliness, content, main UI
+///
+/// The result: a cohesive premium fitness + nutrition + AI platform that FEELS like one system.
 abstract final class ZitlasTokens {
-  static const bgStart = Color(0xFFF7FAF5);
-  static const bgEnd = Color(0xFFF0FDF4);
+  // BACKGROUNDS — light foundation with subtle variety
+  static const bgPrimary = Color(0xFFFAFAF7);
   static const bgCard = Color(0xFFFFFFFF);
-  static const bgCardLight = Color(0xFFF0FDF4);
+  static const bgCardLight = Color(0xFFF3F0E6); // cream
+  static const bgStart = Color(0xFFFAFAF7);
+  static const bgEnd = Color(0xFFF3F0E6);
 
-  /// Primary ZITLAS green — the main brand/action color.
-  static const primary = Color(0xFF16A34A);
-  static const primaryHover = Color(0xFF15803D);
-  static const primaryDark = Color(0xFF14532D);
+  // GREEN PALETTE — health, nutrition, ZITLAS brand
+  /// Subtle wellness accent (cards, selections, backgrounds).
+  static const sageGreen = Color(0xFFA8B79A);
 
-  /// Brand energy green — sparingly: glow/highlight accents only, never
-  /// large text or fills (contrast is too low on white for body content).
-  static const brandEnergy = Color(0xFF39FF14);
+  /// Primary ZITLAS Deep Green — brand identity, health, selected states.
+  /// LOCKED PALETTE: #234B35
+  static const primary = Color(0xFF234B35);
+  static const primaryHover = Color(0xFF2E5F47);
+  static const primaryDark = Color(0xFF1A3A2A);
 
-  /// Converged with the ZITLAS green family per the brand system (was a
-  /// separate olive-green) — one coherent green, not two.
-  static const success = Color(0xFF16A34A);
-  static const successDark = Color(0xFF14532D);
-  static const aiAccent = Color(0xFF0E9BB5);
+  /// Fresh Green — LOCKED PALETTE: #4F9D69. Sits between Deep Green and Sage
+  /// in the brand's own progression (e.g. the Rest Timer's percentage-based
+  /// color band), distinct from `primaryHover` which is a UI-state tint of
+  /// Deep Green, not an independent brand color.
+  static const freshGreen = Color(0xFF4F9D69);
 
+  /// One coherent green system — success states use primary.
+  static const success = Color(0xFF234B35);
+  static const successDark = Color(0xFF1A3A2A);
+
+  // SEMANTIC FUNCTIONAL COLORS
+  /// Fitness, training, energy, active workout, calories burned.
+  static const fitnessOrange = Color(0xFFF28C28);
+
+  /// Achievement, milestone, badge, reward, streak celebration.
+  static const achievementYellow = Color(0xFFF4C95D);
+
+  /// Hydration, recovery, water intake, health metrics.
+  static const hydrationTeal = Color(0xFF3A8F8B);
+
+  /// AI, Zino, intelligent recommendations, premium AI functionality.
+  static const aiPurple = Color(0xFF6B5878);
+
+  /// Mood, wellbeing, stress, emotional state.
+  static const wellnessCoral = Color(0xFFE76F51);
+
+  // Alias for compatibility (was cyan, now purple per new semantic system).
+  static const aiAccent = Color(0xFF6B5878);
+
+  // TYPOGRAPHY
   static const textPrimary = Color(0xFF17221A);
-  static const textSecondary = Color(0xFF647267);
-  /// Derived from [textSecondary], capped to keep >=4.5:1 contrast on white
-  /// — a straight proportional lighten (as the old palette's secondary->muted
-  /// step used) lands at ~2.7:1, which fails WCAG AA for text.
-  static const textMuted = Color(0xFF657168);
+  static const textSecondary = Color(0xFF66716A);
+  static const textMuted = Color(0xFF8A968E);
 
-  static const border = Color(0xFFE3EAE4);
-  static const borderSub = Color(0x14172A1A); // rgba(23,34,26,0.08)
+  // BORDERS & UTILITIES
+  static const border = Color(0xFFE5EBE7);
+  static const borderSub = Color(0x1417221A); // rgba(23,34,26,0.08)
 
-  /// `#E5484D` — the exact red the expert dashboard uses for its
-  /// notification dot and destructive actions. UNCHANGED — semantic, not brand.
+  /// Error / destructive — semantic, not brand.
   static const danger = Color(0xFFE5484D);
 
-  /// `rgba(255,255,255,0.78)` frosted premium-card fill.
+  /// Frosted premium-card fill.
   static const cardGlass = Color(0xC7FFFFFF);
 }
 
@@ -59,12 +88,10 @@ const double kZitlasRadiusLg = 28;
 const double kZitlasRadiusMd = 18;
 const double kZitlasRadiusSm = 14;
 
-/// theme.css premium-card shadow recipe — both layers are green now (was
-/// green + orange); depth comes from primary-green + dark-green instead.
+/// Premium-card shadow recipe using LOCKED Deep Green (#234B35).
 const List<BoxShadow> kZitlasCardShadow = [
-  BoxShadow(color: Color(0x1A16A34A), blurRadius: 40, offset: Offset(0, 15)),
-  BoxShadow(color: Color(0x1414532D), blurRadius: 20, offset: Offset(0, 8)),
-  BoxShadow(color: Color(0x1A39FF14), blurRadius: 30),
+  BoxShadow(color: Color(0x15234B35), blurRadius: 40, offset: Offset(0, 15)), // Deep Green primary
+  BoxShadow(color: Color(0x121A3A2A), blurRadius: 20, offset: Offset(0, 8)),  // Deep Green dark
 ];
 
 /// Frosted-glass card — the shared visual identity of every dashboard

@@ -90,7 +90,7 @@ body {
   -webkit-backdrop-filter: blur(18px);
   border-radius: 28px;
   border: 1px solid rgba(255,255,255,0.6);
-  box-shadow: 0 15px 40px rgba(22,163,74,0.10), 0 8px 20px rgba(22,163,74,0.08);
+  box-shadow: 0 15px 40px rgba(35,75,53,0.10), 0 8px 20px rgba(35,75,53,0.08);
 }
 
 /* Frosted sticky header so the photo scrolls beneath it */
@@ -2225,12 +2225,12 @@ a   { text-decoration: none; }
   gap: 6px;
   margin-top: 16px;
   padding: 7px 16px;
-  background: rgba(var(--primary-rgb),0.12);
-  border: 1px solid rgba(var(--primary-rgb),0.3);
+  background: rgba(244,201,93,0.12);
+  border: 1px solid rgba(244,201,93,0.3);
   border-radius: 100px;
   font-size: 13px;
   font-weight: 700;
-  color: var(--primary);
+  color: #F4C95D;
   align-self: center;
 }
 

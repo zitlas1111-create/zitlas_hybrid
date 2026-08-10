@@ -10,6 +10,7 @@ import 'core/config/firebase_bootstrap.dart';
 import 'core/notifications/zino_notification_scheduler.dart';
 import 'core/steps/step_background_worker.dart';
 import 'core/storage/local_storage_service.dart';
+import 'features/rest_timer/rest_timer_controller.dart';
 
 /// FCM background/terminated message handler.
 ///
@@ -62,6 +63,12 @@ Future<void> main() async {
   SplashGate.instance.start();
 
   await LocalStorageService.init();
+  // Loads/reconciles the persisted Rest Timer snapshot (an in-flight timer
+  // that expired while the app was closed resolves to "completed" here,
+  // silently — see RestTimerController.init() for why) and attaches its
+  // lifecycle observer. Must come after LocalStorageService per the same
+  // dependency order every other storage-backed init in this file follows.
+  await RestTimerController.instance.init();
 
   // Firebase isn't registered for com.zitlas.app yet — no
   // android/app/google-services.json exists (see

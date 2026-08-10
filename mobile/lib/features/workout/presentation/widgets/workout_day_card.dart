@@ -73,12 +73,12 @@ class WorkoutDayCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                           decoration: BoxDecoration(
-                            color: const Color(0x1F6BA539),
+                            color: const Color(0x1F3A8F8B),
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
                             '✏️ Modified by ${day.modifiedBy ?? 'Expert'}',
-                            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: ZitlasTokens.successDark),
+                            style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: ZitlasTokens.hydrationTeal),
                           ),
                         ),
                       ],

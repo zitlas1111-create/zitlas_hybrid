@@ -250,7 +250,7 @@ class _CertCard extends StatelessWidget {
                 child: ElevatedButton(
                   onPressed: busy ? null : () => _approve(context),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: ZitlasColors.success,
+                    backgroundColor: ZitlasColors.primary,
                     foregroundColor: Colors.white,
                   ),
                   child: busy

@@ -5,8 +5,8 @@
  * Injected/driven by assets/js/zino.js on every page that includes it.
  *
  * REBRAND (orange -> green): Zino's accent was the same brand orange
- * (#16A34A family) as the rest of the app, not a distinct sub-identity —
- * migrated to ZITLAS green (#16A34A family) to match.
+ * (#234B35 family) as the rest of the app, not a distinct sub-identity —
+ * migrated to ZITLAS green (#234B35 family) to match.
  */
 
 /* ══════════════════════════════════════════════
@@ -26,8 +26,8 @@
   position: fixed;
   z-index: 20001;
   border-radius: 16px;
-  border: 3px solid #16A34A;
-  box-shadow: 0 0 0 5px rgba(22,163,74,0.25), 0 0 34px rgba(22,163,74,0.45);
+  border: 3px solid #234B35;
+  box-shadow: 0 0 0 5px rgba(35,75,53,0.25), 0 0 34px rgba(35,75,53,0.45);
   pointer-events: none;
   transition: top 0.35s cubic-bezier(.4,0,.2,1), left 0.35s cubic-bezier(.4,0,.2,1),
               width 0.35s cubic-bezier(.4,0,.2,1), height 0.35s cubic-bezier(.4,0,.2,1),
@@ -58,7 +58,7 @@
 .zn-guide-card--top    { top: 24px; }
 
 .zn-guide-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.zn-guide-avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #16A34A; object-fit: cover; flex-shrink: 0; }
+.zn-guide-avatar { width: 36px; height: 36px; border-radius: 50%; border: 2px solid #234B35; object-fit: cover; flex-shrink: 0; }
 .zn-guide-name { font-size: 13px; font-weight: 800; color: #1E293B; }
 .zn-guide-step-dot { margin-left: auto; font-size: 11px; font-weight: 700; color: #94A3B8; }
 .zn-guide-title { font-size: 15.5px; font-weight: 800; color: #1E293B; margin: 0 0 6px; line-height: 1.35; }
@@ -77,9 +77,9 @@
 }
 .zn-guide-next {
   padding: 11px 20px; border-radius: 13px; cursor: pointer; border: none;
-  background: linear-gradient(135deg, #22C55E, #15803D);
+  background: linear-gradient(135deg, #22C55E, #2E5F47);
   color: #fff; font-size: 13.5px; font-weight: 800;
-  box-shadow: 0 8px 22px rgba(21,128,61,0.4);
+  box-shadow: 0 8px 22px rgba(46,95,71,0.4);
 }
 
 /* ── Full-slide intro / finish cards (no spotlight, hero image) ── */
@@ -112,8 +112,8 @@
 }
 .zn-slide.open .zn-slide-card { transform: translateY(0); opacity: 1; }
 .zn-slide-bubble {
-  background: rgba(22,163,74,0.08);
-  border: 1.5px solid rgba(22,163,74,0.3);
+  background: rgba(35,75,53,0.08);
+  border: 1.5px solid rgba(35,75,53,0.3);
   border-radius: 18px; padding: 16px 16px;
   font-size: 14px; color: #1E293B; line-height: 1.6;
   margin-bottom: 18px; white-space: pre-line;
@@ -121,9 +121,9 @@
 .zn-slide-actions { display: flex; align-items: center; gap: 10px; }
 .zn-slide-primary {
   flex: 1; padding: 14px; border-radius: 16px; cursor: pointer; border: none;
-  background: linear-gradient(135deg, #22C55E, #15803D);
+  background: linear-gradient(135deg, #22C55E, #2E5F47);
   color: #fff; font-size: 15px; font-weight: 800;
-  box-shadow: 0 10px 26px rgba(21,128,61,0.4);
+  box-shadow: 0 10px 26px rgba(46,95,71,0.4);
 }
 .zn-slide-skip {
   background: transparent; border: none; cursor: pointer;
@@ -144,9 +144,9 @@
   z-index: 9400;
   width: 52px; height: 52px;
   border-radius: 50%;
-  border: 2.5px solid #16A34A;
+  border: 2.5px solid #234B35;
   background: #fff;
-  box-shadow: 0 8px 22px rgba(21,128,61,0.32);
+  box-shadow: 0 8px 22px rgba(46,95,71,0.32);
   cursor: pointer;
   padding: 0;
   display: flex; align-items: center; justify-content: center;
@@ -157,7 +157,7 @@
   content: '';
   position: absolute; inset: -6px;
   border-radius: 50%;
-  border: 2px solid rgba(22,163,74,0.55);
+  border: 2px solid rgba(35,75,53,0.55);
   animation: znPulse 2.6s ease-out infinite;
 }
 @keyframes znPulse {
@@ -204,7 +204,7 @@
   padding: 16px 16px 12px;
   border-bottom: 1px solid rgba(30,41,59,0.07);
 }
-.zn-chat-avatar { width: 38px; height: 38px; border-radius: 50%; border: 2px solid #16A34A; object-fit: cover; }
+.zn-chat-avatar { width: 38px; height: 38px; border-radius: 50%; border: 2px solid #234B35; object-fit: cover; }
 .zn-chat-title { font-size: 14.5px; font-weight: 800; color: #1E293B; }
 .zn-chat-sub { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: #64748B; }
 .zn-chat-dot { width: 6px; height: 6px; border-radius: 50%; background: #4CAF50; }
@@ -226,7 +226,7 @@
 }
 .zn-bubble--user {
   align-self: flex-end;
-  background: linear-gradient(135deg, #22C55E, #15803D);
+  background: linear-gradient(135deg, #22C55E, #2E5F47);
   color: #fff; border-bottom-right-radius: 5px;
 }
 .zn-typing { align-self: flex-start; display: flex; gap: 4px; padding: 12px 15px; }
@@ -243,7 +243,7 @@
 .zn-chips-row::-webkit-scrollbar { display: none; }
 .zn-chip {
   flex-shrink: 0; padding: 8px 13px; border-radius: 999px;
-  background: rgba(22,163,74,0.09); border: 1px solid rgba(22,163,74,0.28);
+  background: rgba(35,75,53,0.09); border: 1px solid rgba(35,75,53,0.28);
   font-size: 12px; font-weight: 700; color: #B35900; white-space: nowrap; cursor: pointer;
 }
 
@@ -260,7 +260,7 @@
 }
 .zn-chat-send {
   width: 40px; height: 40px; flex-shrink: 0; border-radius: 50%; border: none; cursor: pointer;
-  background: linear-gradient(135deg, #22C55E, #15803D);
+  background: linear-gradient(135deg, #22C55E, #2E5F47);
   color: #fff; display: flex; align-items: center; justify-content: center;
 }
 
@@ -268,10 +268,10 @@
 .zn-celebrate {
   position: fixed; left: 50%; top: 90px; z-index: 12800;
   transform: translateX(-50%) translateY(-12px);
-  background: linear-gradient(135deg, #22C55E, #15803D);
+  background: linear-gradient(135deg, #22C55E, #2E5F47);
   color: #fff; font-size: 13.5px; font-weight: 700;
   padding: 13px 20px; border-radius: 16px;
-  box-shadow: 0 14px 34px rgba(21,128,61,0.4);
+  box-shadow: 0 14px 34px rgba(46,95,71,0.4);
   max-width: 88vw; text-align: center; line-height: 1.5;
   opacity: 0; pointer-events: none;
   transition: opacity 0.3s ease, transform 0.3s ease;

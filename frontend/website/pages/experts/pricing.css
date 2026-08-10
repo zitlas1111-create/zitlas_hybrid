@@ -109,8 +109,8 @@ button:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
   font-size: 15px;
   font-weight: 800;
   color: #000;
-  background: linear-gradient(90deg, #16A34A 0%, #15803D 100%);
-  box-shadow: 0 4px 20px rgba(22,163,74,0.35);
+  background: linear-gradient(90deg, #234B35 0%, #2E5F47 100%);
+  box-shadow: 0 4px 20px rgba(35,75,53,0.35);
   transition: opacity 0.18s, transform 0.18s;
   margin-bottom: 12px;
 }

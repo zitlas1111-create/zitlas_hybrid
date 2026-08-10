@@ -248,7 +248,7 @@
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
 }
-.zc-msg--out .zc-bbl--img { background: linear-gradient(135deg, rgba(22,163,74,0.9), rgba(21,128,61,0.9)) !important; }
+.zc-msg--out .zc-bbl--img { background: linear-gradient(135deg, rgba(35,75,53,0.9), rgba(46,95,71,0.9)) !important; }
 
 .chat-image {
   display: block;
@@ -272,13 +272,13 @@
   text-align: center; padding: 10px;
 }
 .zc-img-placeholder--retry { cursor: pointer; }
-.zc-img-placeholder--retry:hover { background: rgba(22,163,74,0.08); border-color: rgba(22,163,74,0.4); }
+.zc-img-placeholder--retry:hover { background: rgba(35,75,53,0.08); border-color: rgba(35,75,53,0.4); }
 .zca-retry-label { color: var(--primary); font-weight: 800; }
 
 .zca-spinner {
   width: 22px; height: 22px;
   border-radius: 50%;
-  border: 2.5px solid rgba(22,163,74,0.25);
+  border: 2.5px solid rgba(35,75,53,0.25);
   border-top-color: var(--primary);
   animation: zcaSpin 0.8s linear infinite;
 }
@@ -314,8 +314,8 @@
 }
 .zca-btn--cancel { background: rgba(30,41,59,0.07); color: var(--text-sec); }
 .zca-btn--send {
-  background: linear-gradient(135deg, #16A34A, #15803D); color: #fff;
-  box-shadow: 0 8px 20px rgba(22,163,74,0.35);
+  background: linear-gradient(135deg, #234B35, #2E5F47); color: #fff;
+  box-shadow: 0 8px 20px rgba(35,75,53,0.35);
 }
 .zca-btn:active { transform: scale(0.97); }
 

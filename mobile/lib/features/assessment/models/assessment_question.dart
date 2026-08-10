@@ -490,6 +490,22 @@ final List<AssessmentQuestion> transformationQuestions = [
     parse: (v) => double.parse(v),
     errMsg: 'Please enter a valid weight (25–250 kg)',
   ),
+  // A transformation is defined by a current -> target trajectory, so the
+  // target is REQUIRED here, not optional. This question was missing entirely:
+  // the set asked current weight and then jumped to the transformation style,
+  // leaving the calorie/deficit maths with no destination to aim at. Same
+  // field name and validator as the weight-loss set so every downstream
+  // consumer (calculations, prompt payload, coach view) already understands it.
+  AssessmentQuestion(
+    field: 'goal_weight_kg',
+    prompt: 'What is your target weight?',
+    hint: 'The weight you want to reach through this transformation (in kg)',
+    type: AssessmentQuestionType.text,
+    placeholder: 'e.g. 70',
+    validate: _weightValid,
+    parse: (v) => double.parse(v),
+    errMsg: 'Please enter a valid target weight (25–250 kg)',
+  ),
   const AssessmentQuestion(
     field: 'transformation_goal',
     prompt: 'What is your primary transformation target?',

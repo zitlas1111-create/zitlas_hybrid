@@ -99,25 +99,25 @@ class _Header extends StatelessWidget {
           const SizedBox(height: 2),
           const Text(
             'Verified experts · 1:1 consultations · Real results',
-            style: TextStyle(fontSize: 12.5, color: ZitlasTokens.textSecondary),
+            style: TextStyle(fontSize: 12.5, color: ZitlasTokens.hydrationTeal, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 14),
           TextField(
             onChanged: controller.setSearch,
             decoration: InputDecoration(
               hintText: 'Search by name or specialty...',
-              hintStyle: const TextStyle(color: ZitlasTokens.textMuted, fontSize: 13.5),
-              prefixIcon: const Icon(Icons.search, color: ZitlasTokens.textMuted, size: 20),
+              hintStyle: TextStyle(color: ZitlasTokens.textPrimary.withValues(alpha: 0.45), fontSize: 13.5),
+              prefixIcon: const Icon(Icons.search, color: ZitlasTokens.hydrationTeal, size: 20),
               filled: true,
               fillColor: ZitlasTokens.bgCard,
               contentPadding: const EdgeInsets.symmetric(vertical: 12),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: ZitlasTokens.borderSub),
+                borderSide: const BorderSide(color: ZitlasTokens.bgCardLight),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(14),
-                borderSide: const BorderSide(color: ZitlasTokens.borderSub),
+                borderSide: const BorderSide(color: ZitlasTokens.bgCardLight),
               ),
             ),
           ),
@@ -137,8 +137,11 @@ class _Header extends StatelessWidget {
                   onSelected: (_) => controller.setSpecialty(s),
                   selectedColor: ZitlasTokens.primary,
                   backgroundColor: ZitlasTokens.bgCard,
-                  labelStyle: TextStyle(color: selected ? Colors.white : ZitlasTokens.textSecondary),
-                  side: BorderSide(color: selected ? ZitlasTokens.primary : ZitlasTokens.borderSub),
+                  labelStyle: TextStyle(
+                    color: selected ? Colors.white : ZitlasTokens.textPrimary,
+                    fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                  side: BorderSide(color: selected ? ZitlasTokens.primary : ZitlasTokens.bgCardLight),
                 );
               },
             ),
@@ -162,9 +165,9 @@ class _Header extends StatelessWidget {
                 child: const Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.tune_rounded, size: 16, color: ZitlasTokens.primaryDark),
+                    Icon(Icons.tune_rounded, size: 16, color: ZitlasTokens.hydrationTeal),
                     SizedBox(width: 4),
-                    Text('Sort & Filter', style: TextStyle(fontSize: 12, color: ZitlasTokens.primaryDark, fontWeight: FontWeight.w700)),
+                    Text('Sort & Filter', style: TextStyle(fontSize: 12, color: ZitlasTokens.primary, fontWeight: FontWeight.w700)),
                   ],
                 ),
               ),
@@ -252,20 +255,24 @@ class _ExpertCard extends StatelessWidget {
                             ),
                             if (expert.verified) ...[
                               const SizedBox(width: 4),
-                              const Icon(Icons.verified_rounded, size: 15, color: ZitlasTokens.aiAccent),
+                              const Icon(Icons.verified_rounded, size: 15, color: ZitlasTokens.primary),
                             ],
                           ],
                         ),
                         Text(
                           expert.role,
-                          style: const TextStyle(fontSize: 12, color: ZitlasTokens.textSecondary),
+                          style: const TextStyle(fontSize: 12, color: ZitlasTokens.hydrationTeal, fontWeight: FontWeight.w600),
                         ),
                         const SizedBox(height: 4),
                         Wrap(
                           spacing: 10,
                           runSpacing: 2,
                           children: [
-                            _MetaChip(icon: Icons.star_rounded, text: '${expert.rating} (${expert.reviewCount})'),
+                            _MetaChip(
+                              icon: Icons.star_rounded,
+                              text: '${expert.rating} (${expert.reviewCount})',
+                              iconColor: ZitlasTokens.achievementYellow,
+                            ),
                             if (expert.experience != null) _MetaChip(icon: Icons.workspace_premium_rounded, text: expert.experience!),
                             if (expert.languages.isNotEmpty) _MetaChip(icon: Icons.translate_rounded, text: expert.languages.join(', ')),
                           ],
@@ -278,26 +285,40 @@ class _ExpertCard extends StatelessWidget {
               const SizedBox(height: 10),
               Row(
                 children: [
-                  Icon(Icons.circle, size: 8, color: expert.availableToday ? ZitlasTokens.success : ZitlasTokens.textMuted),
+                  Icon(Icons.circle, size: 8, color: expert.availableToday ? ZitlasTokens.hydrationTeal : ZitlasTokens.sageGreen),
                   const SizedBox(width: 6),
                   Text(
                     expert.availableToday ? 'Available Today' : 'Available Tomorrow',
-                    style: TextStyle(fontSize: 11.5, color: expert.availableToday ? ZitlasTokens.success : ZitlasTokens.textMuted, fontWeight: FontWeight.w600),
+                    style: const TextStyle(fontSize: 11.5, color: ZitlasTokens.textPrimary, fontWeight: FontWeight.w600),
                   ),
                   const Spacer(),
-                  _PriceChip(label: 'Review', price: expert.pricing.lowestReviewPrice, bg: ZitlasTokens.bgCardLight, fg: ZitlasTokens.primaryDark),
+                  _PriceChip(
+                    label: 'Review',
+                    price: expert.pricing.lowestReviewPrice,
+                    bg: ZitlasTokens.achievementYellow.withValues(alpha: 0.16),
+                    fg: ZitlasTokens.textPrimary,
+                    border: ZitlasTokens.achievementYellow.withValues(alpha: 0.5),
+                  ),
                   const SizedBox(width: 6),
-                  _PriceChip(label: 'Coaching', price: expert.pricing.coachingCompletePrice, bg: ZitlasTokens.aiAccent.withValues(alpha: 0.1), fg: ZitlasTokens.aiAccent),
+                  _PriceChip(
+                    label: 'Coaching',
+                    price: expert.pricing.coachingCompletePrice,
+                    bg: ZitlasTokens.aiAccent.withValues(alpha: 0.12),
+                    fg: ZitlasTokens.aiAccent,
+                    border: ZitlasTokens.aiAccent.withValues(alpha: 0.3),
+                  ),
                 ],
               ),
               const SizedBox(height: 10),
               SizedBox(
                 width: double.infinity,
-                child: FilledButton(
-                  style: FilledButton.styleFrom(
-                    backgroundColor: ZitlasTokens.primary,
+                child: OutlinedButton(
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: ZitlasTokens.bgStart,
+                    foregroundColor: ZitlasTokens.primary,
                     padding: const EdgeInsets.symmetric(vertical: 10),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    side: const BorderSide(color: ZitlasTokens.primary, width: 1.4),
                   ),
                   onPressed: () => context.push('/coach-profile/${expert.id}?action=verify'),
                   child: const Text('Request Review', style: TextStyle(fontWeight: FontWeight.w700)),
@@ -309,24 +330,25 @@ class _ExpertCard extends StatelessWidget {
                   Expanded(
                     child: OutlinedButton(
                       style: OutlinedButton.styleFrom(
+                        backgroundColor: ZitlasTokens.bgCardLight,
                         padding: const EdgeInsets.symmetric(vertical: 9),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        side: const BorderSide(color: ZitlasTokens.borderSub),
+                        side: BorderSide(color: ZitlasTokens.sageGreen.withValues(alpha: 0.4)),
                       ),
                       onPressed: () => context.push('/coach-profile/${expert.id}?action=coach'),
-                      child: const Text('Personal Coach', style: TextStyle(fontSize: 12.5, color: ZitlasTokens.textPrimary)),
+                      child: const Text('Personal Coach', style: TextStyle(fontSize: 12.5, color: ZitlasTokens.primary, fontWeight: FontWeight.w700)),
                     ),
                   ),
                   const SizedBox(width: 8),
                   Material(
-                    color: ZitlasTokens.bgCardLight,
+                    color: ZitlasTokens.hydrationTeal.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(12),
                     child: InkWell(
                       borderRadius: BorderRadius.circular(12),
                       onTap: () => context.push('/coach-profile/${expert.id}?action=ask'),
                       child: const Padding(
                         padding: EdgeInsets.all(10),
-                        child: Icon(Icons.chat_bubble_outline_rounded, size: 18, color: ZitlasTokens.primaryDark),
+                        child: Icon(Icons.chat_bubble_outline_rounded, size: 18, color: ZitlasTokens.hydrationTeal),
                       ),
                     ),
                   ),
@@ -350,7 +372,7 @@ class _Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: radius,
-      backgroundColor: ZitlasTokens.primary.withValues(alpha: 0.15),
+      backgroundColor: ZitlasTokens.sageGreen,
       backgroundImage: safeImageProvider(expert.image),
       onBackgroundImageError: expert.image != null ? (_, _) {} : null,
       child: expert.image == null || expert.image!.isEmpty
@@ -361,17 +383,21 @@ class _Avatar extends StatelessWidget {
 }
 
 class _MetaChip extends StatelessWidget {
-  const _MetaChip({required this.icon, required this.text});
+  const _MetaChip({required this.icon, required this.text, this.iconColor});
 
   final IconData icon;
   final String text;
+
+  /// Overrides the icon color — used for the star rating (Warm Yellow),
+  /// left as the neutral default for experience/language chips.
+  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Icon(icon, size: 12, color: ZitlasTokens.textMuted),
+        Icon(icon, size: 12, color: iconColor ?? ZitlasTokens.textMuted),
         const SizedBox(width: 3),
         Text(text, style: const TextStyle(fontSize: 11, color: ZitlasTokens.textMuted)),
       ],
@@ -380,18 +406,23 @@ class _MetaChip extends StatelessWidget {
 }
 
 class _PriceChip extends StatelessWidget {
-  const _PriceChip({required this.label, required this.price, required this.bg, required this.fg});
+  const _PriceChip({required this.label, required this.price, required this.bg, required this.fg, this.border});
 
   final String label;
   final num price;
   final Color bg;
   final Color fg;
+  final Color? border;
 
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+        border: border != null ? Border.all(color: border!) : null,
+      ),
       child: Text('$label ₹$price', style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: fg)),
     );
   }

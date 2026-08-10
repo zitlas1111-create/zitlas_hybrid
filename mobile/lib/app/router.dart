@@ -1,4 +1,7 @@
 import 'package:flutter/foundation.dart' show Listenable, debugPrint, kDebugMode;
+// widgets.dart (not material.dart): this file only needs Widget and the fade
+// primitives for the transparent WebView page below, no Material components.
+import 'package:flutter/widgets.dart' show Curves, CurvedAnimation, FadeTransition, Widget;
 import 'package:go_router/go_router.dart';
 
 import '../core/notifications/notification_router.dart' show rootNavigatorKey;
@@ -142,7 +145,10 @@ GoRouter buildRouter(AuthState authState) {
       // flipped back with a one-line change.
       GoRoute(
         path: '/expert-dashboard',
-        builder: (context, state) => CoachingWebViewScreen.expertDashboard(),
+        // pageBuilder (not builder) so the screen this was opened from stays
+        // painted underneath the loading overlay — see _webViewPage.
+        pageBuilder: (context, state) =>
+            _webViewPage(CoachingWebViewScreen.expertDashboard()),
       ),
       // The COMPLETE coach journey — profile, Request Review, Personal Coach,
       // payment, and (once active) the full coaching workspace: diet,
@@ -156,9 +162,11 @@ GoRouter buildRouter(AuthState authState) {
       // cprofile.js's existing `?action=` handling.
       GoRoute(
         path: '/coach-profile/:id',
-        builder: (context, state) => CoachingWebViewScreen.coachProfile(
-          expertId: state.pathParameters['id']!,
-          action: state.uri.queryParameters['action'],
+        pageBuilder: (context, state) => _webViewPage(
+          CoachingWebViewScreen.coachProfile(
+            expertId: state.pathParameters['id']!,
+            action: state.uri.queryParameters['action'],
+          ),
         ),
       ),
       GoRoute(path: '/reviews/:id', builder: (context, state) => const ReviewsScreen()),
@@ -235,5 +243,41 @@ GoRouter buildRouter(AuthState authState) {
         ],
       ),
     ],
+  );
+}
+
+/// A WebView route that keeps the Flutter screen it was opened FROM painted
+/// underneath it.
+///
+/// `opaque: false` is the whole trick. A normal (opaque) route lets Flutter
+/// stop painting everything below it, so the WebView screen had nothing behind
+/// it and fell through to its own black Scaffold — that black is what the
+/// hand-off to the website looked like. Keeping the route non-opaque leaves the
+/// previous screen mounted and painted, so the loading cover can blur and dim
+/// the REAL screen the athlete was just looking at instead of covering it.
+///
+/// Deliberately NOT a screenshot/RepaintBoundary capture: no image buffer to
+/// size against a particular device, nothing to leak, and it cannot go stale.
+/// The trade-off of `opaque: false` is that the screen below keeps its widgets
+/// alive for the lifetime of the WebView route; these two routes are pushed one
+/// at a time from a dashboard/list screen, which is cheap to keep around.
+///
+/// The fade is short and applies to the WHOLE overlay (blur, scrim and logo
+/// together), so there is no frame where a bare colour is on screen — that is
+/// what removes the black flash rather than merely recolouring it.
+CustomTransitionPage<void> _webViewPage(Widget child) {
+  return CustomTransitionPage<void>(
+    child: child,
+    opaque: false,
+    barrierColor: null,
+    barrierDismissible: false,
+    transitionDuration: const Duration(milliseconds: 260),
+    reverseTransitionDuration: const Duration(milliseconds: 200),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      );
+    },
   );
 }

@@ -12,9 +12,16 @@ import 'package:flutter/material.dart';
 /// `lodo.png` is a landscape image whose meaningful content is a centred
 /// circular badge, with decorative light streaks running off to the left and
 /// right. It is therefore clipped to a circle ([ClipOval] + [BoxFit.cover]),
-/// which keeps the runner and its own glow and crops the streaks — on the black
-/// background the crop is invisible, and the result is a clean disc for the
-/// animated arc to orbit.
+/// which keeps the runner and its own glow and crops the streaks, leaving a
+/// clean disc for the animated arc to orbit.
+///
+/// The disc's edge used to be invisible because it sat on a solid black
+/// background. The WebView hand-off now shows the previous Flutter screen
+/// blurred and dimmed behind it instead (see `_TransitionScrim`), so the disc
+/// reads as a deliberate badge on that backdrop rather than as an invisible
+/// crop. Nothing here changed for that — the asset is still drawn exactly as
+/// shipped, opaque and with no blend mode, which is why it stays the brightest,
+/// sharpest element on any background.
 ///
 /// PERFORMANCE: one [AnimationController] drives every layer (rotation, sweep
 /// length and the pulse), so there is a single ticker. The [AnimatedBuilder]

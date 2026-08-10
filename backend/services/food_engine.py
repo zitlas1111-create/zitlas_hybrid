@@ -470,6 +470,13 @@ class FoodRecommendationEngine:
         }
         self.all_ids: set[int] = set(self.by_id.keys())
 
+        # tag-tuple -> ids whose NAME violates that diet (see
+        # _diet_name_violation_ids). Lazily filled, never invalidated: the
+        # dataset is immutable for the life of the process.
+        self._diet_violation_cache: dict[tuple[str, ...], set[int]] = {}
+        # dish family -> ids. Lazily built by _family_sibling_ids.
+        self._family_index: dict[str, set[int]] | None = None
+
         self._idx_meal: dict[str, set[int]] = defaultdict(set)
         self._idx_goal: dict[str, set[int]] = defaultdict(set)
         self._idx_diet: dict[str, set[int]] = defaultdict(set)
@@ -681,6 +688,79 @@ class FoodRecommendationEngine:
             out |= index.get(t, set())
         return out
 
+    def _family_of(self, food_id: int) -> str:
+        return dish_family(strip_serving_suffix(self.by_id[food_id].get("name", "")))
+
+    def _with_slot_family_penalty(
+        self, usage_counts: dict[int, float], slot_families: dict[str, float]
+    ) -> dict[int, float]:
+        """`usage_counts` plus this slot's dish-family history.
+
+        Returned as a NEW dict so the week-level per-id counts stay clean —
+        the family charge is slot-local and must not leak into other slots.
+        Only ids belonging to already-used families are touched, so the cost is
+        proportional to what has actually been served, not to the dataset.
+        """
+        if not slot_families:
+            return usage_counts
+        effective = dict(usage_counts)
+        for family, penalty in slot_families.items():
+            for fid in self._family_ids_for(family):
+                effective[fid] = effective.get(fid, 0.0) + penalty
+        return effective
+
+    def _family_ids_for(self, family: str) -> set[int]:
+        self._family_sibling_ids(next(iter(self.by_id)))  # ensure index built
+        return (self._family_index or {}).get(family, set())
+
+    def _family_sibling_ids(self, food_id: int) -> set[int]:
+        """Every id sharing this food's dish family, including itself.
+
+        Built once on first use. `dish_family` already exists and is what
+        `_spread_families` ranks with; this exposes the same grouping to the
+        week-plan repetition cap.
+        """
+        if self._family_index is None:
+            index: dict[str, set[int]] = defaultdict(set)
+            for fid, food in self.by_id.items():
+                index[dish_family(strip_serving_suffix(food.get("name", "")))].add(fid)
+            self._family_index = dict(index)
+            print(f"[FOOD ENGINE] dish-family index: {len(self._family_index)} families "
+                  f"across {len(self.by_id)} foods (variety cap is charged per family)")
+        fam = dish_family(strip_serving_suffix(self.by_id[food_id].get("name", "")))
+        return self._family_index.get(fam, {food_id})
+
+    def _diet_name_violation_ids(self, diet_tags) -> set[int]:
+        """Ids whose NAME breaks the diet these tags represent.
+
+        Computed once per distinct tag set and cached: the regex sweep is over
+        the whole 4.5k-row database and must not run per request. Keyed by the
+        tag tuple rather than the canonical key because every existing caller
+        (`recommend`, `build_week_plan`, `find_swap_*`) already threads
+        `diet_tags`, so this needs no signature changes.
+        """
+        cache_key = tuple(sorted(diet_tags))
+        cached = self._diet_violation_cache.get(cache_key)
+        if cached is not None:
+            return cached
+        # Reverse-map tags -> canonical key to know WHICH families to forbid.
+        diet_key = next(
+            (k for k, tags in _DIET_KEY_TO_TAGS.items() if tuple(sorted(tags)) == cache_key),
+            None,
+        )
+        if diet_key is None:
+            bad: set[int] = set()
+        else:
+            bad = {
+                fid for fid, food in self.by_id.items()
+                if diet_violation(food.get("name", ""), diet_key)
+            }
+        self._diet_violation_cache[cache_key] = bad
+        if bad:
+            print(f"[FOOD ENGINE] diet={diet_key}: excluded {len(bad)} mislabelled "
+                  f"row(s) by name-level check (e.g. omelettes tagged Vegetarian)")
+        return bad
+
     def _budget_ids(self, budget_tier: str) -> set[int]:
         max_rank = _BUDGET_RANK.get(budget_tier, 2)
         allowed = [b for b, r in _BUDGET_RANK.items() if r <= max_rank]
@@ -753,10 +833,21 @@ class FoodRecommendationEngine:
 
         # Stage 3: Diet Preference — never relaxed (never serve meat to a
         # vegetarian just because the candidate pool got thin).
+        #
+        # This used to read `if base & diet_ids: base &= diet_ids`, which meant
+        # that when the intersection came out EMPTY the filter was skipped and
+        # `base` kept its non-vegetarian rows — the exact opposite of the
+        # promise in the comment above. An empty pool must stay empty so the
+        # caller widens some OTHER axis (budget, region, season) or falls back;
+        # it must never be resolved by serving meat to a vegetarian.
         if diet_tags:
-            diet_ids = self._union(self._idx_diet, diet_tags)
-            if base & diet_ids:
-                base &= diet_ids
+            base &= self._union(self._idx_diet, diet_tags)
+            # Name-level backstop for MISLABELLED rows. The database really
+            # does tag "Bread Omelette", "Anda Curry" and five other omelettes
+            # as dietSuitable=Vegetarian, and whey/casein products as Vegan, so
+            # the tag filter above is not sufficient on its own — a pure
+            # vegetarian would be served eggs straight out of the index.
+            base -= self._diet_name_violation_ids(diet_tags)
 
         # Lifestyle's avoidCategories is a hard exclude too (a weight-loss
         # profile that says "avoid Desserts & Sweets" means it, not "prefer
@@ -777,7 +868,16 @@ class FoodRecommendationEngine:
             ("lifestyle_preferred", self._union(self._idx_category, preferred_categories) if preferred_categories else None),
             ("budget", self._budget_ids(budget_tier) if budget_tier else None),
             ("living", self._idx_living.get(living_tag) if living_tag else None),
-            ("season", self._idx_season.get(season_tag) if season_tag else None),
+            # "All Season" foods are eligible in EVERY season — that is what
+            # the tag means. Filtering on the current season alone excluded
+            # them, and since the overwhelming majority of the dataset is
+            # tagged "All Season", a vegetarian breakfast pool collapsed from
+            # 1,420 candidates to 66 (2 dish families), which is the real
+            # reason a "personalised" week served khichdi every morning: there
+            # was nothing else left to pick. Seasonality still influences the
+            # RANKING via _score's seasonal bonus, which is where a
+            # preference-shaped signal belongs.
+            ("season", self._union(self._idx_season, [season_tag, "All Season"]) if season_tag else None),
             # STEP 14 (time intelligence): a relaxable preference, not a hard
             # cut — someone with 10 minutes shouldn't get zero food options
             # just because everything left in a thin pool takes 15.
@@ -1288,7 +1388,9 @@ class FoodRecommendationEngine:
             "lunch": profile.get("maxCaloriesLunch"),
             "dinner": profile.get("maxCaloriesDinner"),
         }
-        usage_counts: dict[int, int] = defaultdict(int)
+        usage_counts: dict[int, float] = defaultdict(float)
+        # slot -> dish family -> times that family filled THIS slot this week.
+        slot_family_usage: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
         days = []
         for day_name in _DAY_NAMES:
             day_meals = {}
@@ -1298,7 +1400,8 @@ class FoodRecommendationEngine:
                     living_situation=living_situation, budget_tier=budget_tier,
                     disease_tags=disease_tags, allergens=allergens,
                     favorite_foods=favorite_foods, disliked_foods=disliked_foods,
-                    usage_counts=usage_counts, top_n=12,
+                    usage_counts=self._with_slot_family_penalty(usage_counts, slot_family_usage[slot]),
+                    top_n=12,
                     profile=profile, subgoal_tag=subgoal_tag, season_tag=season_tag,
                     max_prep_minutes=max_prep_minutes,
                     user_state=user_state, compatible_regions=compatible_regions,
@@ -1332,7 +1435,22 @@ class FoodRecommendationEngine:
                 # A food used 3x already this week drops out of future primary
                 # picks entirely (still eligible as a lower-priority alternative).
                 for food in combo:
-                    usage_counts[food["id"]] += 1
+                    usage_counts[food["id"]] += 1.0
+                    # Dish-family repetition is charged PER SLOT, not globally.
+                    #
+                    # Both simpler options were wrong. Charging the id alone let
+                    # the dataset's style variants ("Sabudana Khichdi",
+                    # "… (Home Style)", "… (Restaurant Style)") pose as
+                    # different meals, so khichdi took 25 of 58 plates and six
+                    # of seven breakfasts. Charging every sibling GLOBALLY
+                    # instead burned through the high-protein families by day
+                    # six and left Saturday/Sunday dinners with no protein
+                    # anchor (caught by test_meal_quality.py). Scoping the
+                    # charge to the slot suppresses repetition exactly where an
+                    # athlete experiences it — "the same breakfast every
+                    # morning" — while leaving each slot's own protein anchors
+                    # available for the rest of the week.
+                    slot_family_usage[slot][self._family_of(food["id"])] += 1.0
                 day_meals[slot] = {
                     "primary": combo,
                     "alternatives": [f for f in pool if f["id"] not in combo_ids][:3],
@@ -1920,26 +2038,251 @@ def load_profile_for_user(player_profile: dict, lifestyle_data: dict | None) -> 
 #   Eggitarian  -> the dataset already tags every Vegetarian food Eggitarian
 #                  (Vegetarian ⊆ Eggitarian, verified), so this already means
 #                  "veg + egg" and correctly excludes meat/fish.
-_DIET_STRING_TO_TAGS: dict[str, list[str]] = {
-    "vegan": ["Vegan"],
-    "eggitarian": ["Eggitarian"],
-    "jain": ["Jain"],
-    "halal": ["Halal"],
-    "satvik": ["Satvik"],
-    "non-vegetarian": ["Vegetarian", "Non Vegetarian"],
-    "non vegetarian": ["Vegetarian", "Non Vegetarian"],
-    "nonveg": ["Vegetarian", "Non Vegetarian"],
-    "vegetarian": ["Vegetarian"],
-    "mixed": ["Vegetarian", "Non Vegetarian"],
+# ── Canonical dietary preference ──────────────────────────────────────────
+# ONE source of truth for "what may this athlete eat", shared by the food
+# engine, the assessment prompt builder and the post-generation validator, so
+# Flutter and the website can never diverge on what "Pure Vegetarian" means.
+#
+# EGGS ARE NOT VEGETARIAN in ZITLAS. `pure_vegetarian` excludes them; only
+# `eggetarian` and `non_vegetarian` allow them. This is a product rule, not an
+# LLM suggestion — it is enforced by filtering candidates out of the database
+# BEFORE generation and by rejecting violations AFTER generation.
+DIET_PURE_VEGETARIAN = "pure_vegetarian"
+DIET_VEGAN = "vegan"
+DIET_EGGETARIAN = "eggetarian"
+DIET_NON_VEGETARIAN = "non_vegetarian"
+DIET_JAIN = "jain"
+
+# Ordered longest/most-specific FIRST — these are substring probes against the
+# normalized client value, and "non-vegetarian" contains "vegetarian", so a
+# naive pass would classify every non-vegetarian as vegetarian (and vice
+# versa). Order here is load-bearing; do not sort this table alphabetically.
+_DIET_CANONICAL_PROBES: list[tuple[tuple[str, ...], str]] = [
+    (("non-vegetarian", "non vegetarian", "nonvegetarian", "nonveg", "non veg",
+      "mixed", "no preference", "omnivore"), DIET_NON_VEGETARIAN),
+    (("vegan", "plant based", "plant-based"), DIET_VEGAN),
+    # Both spellings: the clients send "eggetarian", the food database's own
+    # `dietSuitable` tag is "Eggitarian". Accepting only one silently
+    # fell through to the permissive default and served eggetarians meat.
+    (("eggetarian", "eggitarian", "eggeterian", "egg-etarian", "eggs only"), DIET_EGGETARIAN),
+    (("jain",), DIET_JAIN),
+    (("pure vegetarian", "pure veg", "shakahari", "sattvic", "satvik",
+      "vegetarian", "veg"), DIET_PURE_VEGETARIAN),
+]
+
+# dietSuitable tag sets per canonical key. `pure_vegetarian` deliberately does
+# NOT include "Eggitarian": in this database egg dishes carry
+# dietSuitable=["Non Vegetarian","Halal"], and admitting the Eggitarian tag
+# would widen the pool to foods a pure vegetarian must never see.
+_DIET_KEY_TO_TAGS: dict[str, list[str]] = {
+    DIET_PURE_VEGETARIAN: ["Vegetarian"],
+    DIET_VEGAN:           ["Vegan"],
+    DIET_EGGETARIAN:      ["Vegetarian", "Eggitarian"],
+    DIET_NON_VEGETARIAN:  ["Vegetarian", "Eggitarian", "Non Vegetarian"],
+    DIET_JAIN:            ["Jain"],
 }
+
+# Name-level defense in depth. The dietSuitable tags are the primary filter;
+# these catch a mislabelled database row and, critically, are what the
+# post-generation validator uses to police LLM-authored meal text (which is
+# free-form and never had a dietSuitable tag to begin with).
+_MEAT_KEYWORDS = (
+    "chicken", "mutton", "beef", "pork", "lamb", "bacon", "ham", "sausage",
+    "salami", "pepperoni", "keema", "kheema", "meat", "steak", "liver",
+    "turkey", "duck", "veal", "venison", "goat",
+)
+_SEAFOOD_KEYWORDS = (
+    "fish", "prawn", "shrimp", "crab", "lobster", "squid", "calamari",
+    "oyster", "mussel", "clam", "tuna", "salmon", "sardine", "mackerel",
+    "pomfret", "surmai", "rohu", "hilsa", "anchovy", "seafood", "octopus",
+)
+_EGG_KEYWORDS = (
+    # "bhurji" is deliberately absent: it names a SCRAMBLE STYLE, not an
+    # ingredient — Paneer Bhurji is vegetarian. Egg versions are already
+    # caught by "egg"/"anda" ("Egg Bhurji", "Anda Bhurji").
+    "egg", "eggs", "omelette", "omelet", "anda", "frittata",
+    "shakshuka", "mayonnaise", "mayo", "meringue", "custard",
+)
+_DAIRY_KEYWORDS = (
+    "milk", "curd", "yogurt", "yoghurt", "paneer", "cheese", "butter",
+    "ghee", "cream", "lassi", "buttermilk", "chaas", "khoya", "malai",
+    "condensed", "whey", "casein", "kheer", "shrikhand", "raita",
+)
+
+# Which keyword families each canonical key FORBIDS.
+_DIET_KEY_FORBIDDEN: dict[str, tuple[tuple[str, ...], ...]] = {
+    DIET_PURE_VEGETARIAN: (_MEAT_KEYWORDS, _SEAFOOD_KEYWORDS, _EGG_KEYWORDS),
+    DIET_VEGAN:           (_MEAT_KEYWORDS, _SEAFOOD_KEYWORDS, _EGG_KEYWORDS, _DAIRY_KEYWORDS),
+    DIET_EGGETARIAN:      (_MEAT_KEYWORDS, _SEAFOOD_KEYWORDS),
+    DIET_JAIN:            (_MEAT_KEYWORDS, _SEAFOOD_KEYWORDS, _EGG_KEYWORDS),
+    DIET_NON_VEGETARIAN:  (),
+}
+
+# Words that contain a forbidden keyword as a substring but are themselves
+# perfectly allowed — checked before flagging so "eggplant" is not read as
+# "egg" and "vegetable" is not read as "veg...".
+_KEYWORD_FALSE_POSITIVES = (
+    "eggplant", "egg plant", "eggless", "egg-free", "eggfree",
+    # A fruit, not a dairy/egg custard.
+    "custard apple",
+    "soy milk", "soya milk", "almond milk", "coconut milk", "oat milk",
+    "rice milk", "cashew milk", "peanut butter", "almond butter",
+    "milk thistle", "butter bean", "buttermilk squash", "butternut",
+    "coconut cream", "vegan butter", "vegan cheese", "vegan mayo",
+    "meat substitute", "meat-free", "mock meat", "soya chunks",
+)
+
+
+def canonical_diet_key(diet_type: str) -> str:
+    """Client diet string -> canonical key.
+
+    FAILS CLOSED. An unrecognized/blank value returns `pure_vegetarian`, the
+    most restrictive everyday option, because the previous behaviour returned
+    "no restriction" and any label the table did not literally contain (a
+    reworded client option, a typo, a missing answer) silently authorised
+    meat and eggs for someone who never asked for them. A too-restrictive
+    plan is a support ticket; serving eggs to a pure vegetarian is a broken
+    promise.
+    """
+    norm = _norm(diet_type)
+    if not norm:
+        return DIET_PURE_VEGETARIAN
+    for probes, key in _DIET_CANONICAL_PROBES:
+        if any(p in norm for p in probes):
+            return key
+    return DIET_PURE_VEGETARIAN
 
 
 def diet_tags_from_lifestyle(diet_type: str) -> list[str]:
-    norm = _norm(diet_type)
-    for key, tags in _DIET_STRING_TO_TAGS.items():
-        if key in norm:
-            return tags
-    return ["Vegetarian", "Non Vegetarian"]  # unspecified -> no diet-type restriction
+    """dietSuitable tags to filter the candidate pool with."""
+    return list(_DIET_KEY_TO_TAGS[canonical_diet_key(diet_type)])
+
+
+def diet_violation(text: str, diet_key: str) -> str | None:
+    """The forbidden keyword `text` contains for `diet_key`, else None.
+
+    Used on both database rows and LLM-authored meal strings, which is why it
+    takes text rather than a food dict.
+    """
+    norm = _norm(text)
+    if not norm:
+        return None
+    forbidden = _DIET_KEY_FORBIDDEN.get(diet_key, ())
+    if not forbidden:
+        return None
+    # Neutralise known-safe compounds first so their substrings can't trip.
+    scrubbed = norm
+    for safe in _KEYWORD_FALSE_POSITIVES:
+        if safe in scrubbed:
+            scrubbed = scrubbed.replace(safe, " ")
+    for family in forbidden:
+        for word in family:
+            if re.search(rf"(?<![a-z]){re.escape(word)}(?![a-z])", scrubbed):
+                return word
+    return None
+
+
+def food_violates_diet(food: dict, diet_key: str) -> str | None:
+    """Tag-level AND name-level check for one database row."""
+    allowed = set(_DIET_KEY_TO_TAGS.get(diet_key, []))
+    tags = set(food.get("dietSuitable") or [])
+    if allowed and tags and not (tags & allowed):
+        return f"dietSuitable={sorted(tags)}"
+    return diet_violation(food.get("name", ""), diet_key)
+
+
+# Max times one dish may appear across a 7-day plan before it reads as "the
+# same thing every day" rather than a recurring favourite.
+_MAX_DISH_REPEATS_PER_WEEK = 3
+
+
+def audit_delivered_plan(
+    plan: dict | None,
+    diet_key: str,
+    allergens: set[str] | None = None,
+) -> dict[str, Any]:
+    """Validate the plan shape that actually reaches the athlete.
+
+    `validate_week_plan` above checks the ENGINE's internal structure
+    (`days[].meals{slot}.primary[]` of database rows). This checks the
+    DELIVERED structure (`days[].meals[].foods[]` of free-form strings), which
+    is what the LLM authors and what gets stored and rendered. Those strings
+    never carried a `dietSuitable` tag, so tag filtering alone could not police
+    them — a prompt-only vegetarian rule is exactly how "2 boiled eggs" reached
+    a pure vegetarian.
+
+    Returns {"ok", "diet_violations", "allergen_violations", "repetition",
+    "empty_meals"} and never raises: callers decide whether to repair the
+    offending meals or discard the plan.
+    """
+    diet_violations: list[dict[str, Any]] = []
+    allergen_violations: list[dict[str, Any]] = []
+    empty_meals: list[str] = []
+    # dish -> [(day_index, meal_name)] so callers can repair precisely.
+    occurrences: dict[str, list[tuple[int, str]]] = defaultdict(list)
+    allergens = {_norm(a) for a in (allergens or set()) if a and _norm(a) != "none"}
+
+    days = (plan or {}).get("days")
+    if not isinstance(days, list) or not days:
+        return {
+            "ok": False, "diet_violations": [], "allergen_violations": [],
+            "repetition": [], "empty_meals": ["plan has no days"],
+        }
+
+    for di, day in enumerate(days):
+        if not isinstance(day, dict):
+            continue
+        day_label = str(day.get("day") or f"Day {di + 1}")
+        meals = day.get("meals")
+        if not isinstance(meals, list):
+            continue
+        for meal in meals:
+            if not isinstance(meal, dict):
+                continue
+            meal_name = str(meal.get("meal_name") or "Meal")
+            foods = [str(f) for f in (meal.get("foods") or []) if f]
+            if not foods:
+                empty_meals.append(f"{day_label}/{meal_name}")
+                continue
+            for food_line in foods:
+                bad = diet_violation(food_line, diet_key)
+                if bad:
+                    diet_violations.append({
+                        "day": day_label, "day_index": di, "meal": meal_name,
+                        "food": food_line, "matched": bad, "diet": diet_key,
+                    })
+                for allergen in allergens:
+                    if re.search(rf"(?<![a-z]){re.escape(allergen)}(?![a-z])", _norm(food_line)):
+                        allergen_violations.append({
+                            "day": day_label, "day_index": di, "meal": meal_name,
+                            "food": food_line, "matched": allergen,
+                        })
+            # Repetition is judged on the DISH, not the whole line: "Poha
+            # (1 plate)" and "Poha (150 g)" are the same breakfast.
+            anchor = dish_family(strip_serving_suffix(foods[0]))
+            if anchor:
+                occurrences[anchor].append((di, meal_name))
+
+    repetition: list[dict[str, Any]] = []
+    for dish, spots in occurrences.items():
+        day_indexes = sorted({d for d, _ in spots})
+        consecutive = any((b - a) == 1 for a, b in zip(day_indexes, day_indexes[1:]))
+        if len(spots) > _MAX_DISH_REPEATS_PER_WEEK or consecutive:
+            repetition.append({
+                "dish": dish,
+                "count": len(spots),
+                "days": day_indexes,
+                "consecutive": consecutive,
+                "meals": sorted({m for _, m in spots}),
+            })
+
+    return {
+        "ok": not (diet_violations or allergen_violations or repetition or empty_meals),
+        "diet_violations": diet_violations,
+        "allergen_violations": allergen_violations,
+        "repetition": repetition,
+        "empty_meals": empty_meals,
+    }
 
 
 _LIVING_STRING_TO_TAG: dict[str, str] = {

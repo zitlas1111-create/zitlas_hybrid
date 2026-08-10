@@ -260,7 +260,7 @@
           avatarImg.onerror = null;
           avatarImg.src = 'data:image/svg+xml,' + encodeURIComponent(
             '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">' +
-            '<rect width="120" height="120" rx="60" fill="#16A34A"/>' +
+            '<rect width="120" height="120" rx="60" fill="#234B35"/>' +
             '<text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="48" font-weight="bold" fill="white" font-family="system-ui">' + _ini + '</text></svg>'
           );
         };
@@ -268,7 +268,7 @@
         var initials = name.split(/\s+/).slice(0, 2).map(function (w) { return w[0] || ''; }).join('').toUpperCase() || name[0].toUpperCase();
         avatarImg.src = 'data:image/svg+xml,' + encodeURIComponent(
           '<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">' +
-          '<rect width="120" height="120" rx="60" fill="#16A34A"/>' +
+          '<rect width="120" height="120" rx="60" fill="#234B35"/>' +
           '<text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-size="48" font-weight="bold" fill="white" font-family="system-ui">' + initials + '</text></svg>'
         );
       }

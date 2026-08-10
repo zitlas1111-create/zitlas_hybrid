@@ -35,7 +35,7 @@ body {
 .adm-title { font-size: 13px; font-weight: 700; color: var(--text-sec); }
 .adm-badge {
   margin-left: auto; padding: 5px 12px; border-radius: 999px;
-  background: rgba(22,163,74,0.12); color: #B35900; font-size: 11.5px; font-weight: 800;
+  background: rgba(35,75,53,0.12); color: #B35900; font-size: 11.5px; font-weight: 800;
 }
 
 .adm-main { max-width: 760px; margin: 0 auto; padding: 18px 16px 60px; }
@@ -60,7 +60,7 @@ body {
 .adm-cert-body { display: grid; grid-template-columns: 120px 1fr; gap: 14px; }
 .adm-cert-thumb { width: 120px; height: 120px; border-radius: 14px; object-fit: cover; background: rgba(30,41,59,0.05); cursor: pointer; }
 .adm-cert-thumb-pdf {
-  width: 120px; height: 120px; border-radius: 14px; background: rgba(22,163,74,0.08);
+  width: 120px; height: 120px; border-radius: 14px; background: rgba(35,75,53,0.08);
   display: flex; align-items: center; justify-content: center; font-size: 34px; cursor: pointer;
 }
 .adm-field-row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; padding: 4px 0; }
@@ -79,7 +79,7 @@ body {
 .adm-notes { font-size: 12px; color: var(--text-sec); font-style: italic; margin: 0 0 12px; line-height: 1.5; }
 .adm-actions { display: flex; gap: 8px; }
 .adm-btn { flex: 1; padding: 11px; border-radius: 13px; font-size: 13px; font-weight: 800; cursor: pointer; border: none; }
-.adm-btn--approve { background: linear-gradient(135deg, #6BA539, #578A2C); color: #fff; box-shadow: 0 8px 20px rgba(22,163,74,0.35); }
+.adm-btn--approve { background: linear-gradient(135deg, #6BA539, #578A2C); color: #fff; box-shadow: 0 8px 20px rgba(35,75,53,0.35); }
 .adm-btn--reject { background: transparent; border: 1.5px solid rgba(229,72,77,0.45); color: #D93036; }
 .adm-btn:disabled { opacity: 0.55; }
 

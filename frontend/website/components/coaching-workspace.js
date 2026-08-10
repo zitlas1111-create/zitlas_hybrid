@@ -379,8 +379,12 @@
         else if (S.tab === 'overview') renderTab();
       }, function (e) { console.warn('[CW] plan listener error', e); }));
 
+    /* coachId pinned as a query filter — coaching_meal_requests' read rule is
+       also (athleteId == uid || coachId == uid), so the coach's athleteId-only
+       query was denied wholesale. See the meal_checkins note below. */
     S.unsubs.push(d.collection('coaching_meal_requests')
       .where('athleteId', '==', S.opts.athleteId)
+      .where('coachId', '==', S.opts.coachId)
       .onSnapshot(function (snap) {
         S.mealReqs = snap.docs.map(function (x) { return x.data(); })
           .filter(function (r) { return r.coachId === S.opts.coachId; });
@@ -398,8 +402,23 @@
         ' expertId=' + S.opts.coachId + ' role=coach' +
         ' | opening workspace for athleteId=' + S.opts.athleteId);
     }
+    /* BOTH athleteId AND coachId are QUERY filters, not client-side filters.
+       Security Rules are not filters: firestore.rules grants a non-athlete
+       reader `resource.data.coachId == request.auth.uid && isActiveCoachOf(
+       resource.data.athleteId)`, and Firestore validates a query against its
+       POTENTIAL result set, statically, from the query's own constraints. A
+       query filtered only by athleteId can therefore never be proven safe for
+       the coach (their uid != athleteId, and coachId is unconstrained), so the
+       WHOLE listener failed with permission-denied and the coach's Meal
+       Reviews tab stayed permanently empty even though the athlete's snap was
+       written correctly. Pinning coachId satisfies the rule's coach clause;
+       pinning athleteId also resolves the isActiveCoachOf() lookup path. The
+       athlete role still satisfies the athlete clause via the athleteId
+       filter, so one query shape serves both roles.
+       Two equality filters need no composite index (zigzag merge join). */
     S.unsubs.push(d.collection('meal_checkins')
       .where('athleteId', '==', S.opts.athleteId)
+      .where('coachId', '==', S.opts.coachId)
       .onSnapshot(function (snap) {
         var rawDocs = snap.docs.map(function (x) { return x.data(); });
         S.checkins = rawDocs
@@ -451,8 +470,11 @@
         }
       }));
 
+    /* coachId pinned as a query filter for the same rules reason as
+       meal_checkins above — workout_checkins carries the identical read rule. */
     S.unsubs.push(d.collection('workout_checkins')
       .where('athleteId', '==', S.opts.athleteId)
+      .where('coachId', '==', S.opts.coachId)
       .onSnapshot(function (snap) {
         S.workoutCheckins = snap.docs.map(function (x) { return x.data(); })
           .filter(function (c) { return c.coachId === S.opts.coachId; })
@@ -833,7 +855,7 @@
         var done = r.goalCompleted;
         return '<div title="' + esc(r.date + ': ' + (r.steps || 0).toLocaleString() + ' steps') + '"' +
           ' style="width:16px;height:' + h + 'px;border-radius:5px 5px 2px 2px;' +
-          'background:' + (done ? 'linear-gradient(180deg,#22C55E,#15803D)' : 'rgba(148,163,184,0.4)') + '"></div>';
+          'background:' + (done ? 'linear-gradient(180deg,#234B35,#E07A15)' : 'rgba(148,163,184,0.4)') + '"></div>';
       }).join('');
 
       el.innerHTML =
@@ -1485,8 +1507,14 @@
     var docId = S.opts.athleteId + '_' + weekStartKey;
 
     Promise.all([
-      d.collection('meal_checkins').where('athleteId', '==', S.opts.athleteId).get(),
-      d.collection('workout_checkins').where('athleteId', '==', S.opts.athleteId).get(),
+      /* coachId pinned for the same Security-Rules reason as the listeners —
+         without it this whole Promise.all rejected for the coach. */
+      d.collection('meal_checkins')
+        .where('athleteId', '==', S.opts.athleteId)
+        .where('coachId', '==', S.opts.coachId).get(),
+      d.collection('workout_checkins')
+        .where('athleteId', '==', S.opts.athleteId)
+        .where('coachId', '==', S.opts.coachId).get(),
       d.collection('users').doc(S.opts.athleteId).collection('activity')
         .where('date', '>=', weekStartKey).where('date', '<', _dateKey(weekEnd)).get(),
       d.collection('users').doc(S.opts.athleteId).collection('weight_log')

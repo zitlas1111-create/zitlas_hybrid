@@ -812,7 +812,7 @@ body::before {
   border: none;
   -webkit-tap-highlight-color: transparent;
 }
-.tp-workout-btn--complete { background: var(--fitness, #10B981); color: #fff; }
+.tp-workout-btn--complete { background: var(--fitness, #234B35); color: #fff; }
 .tp-workout-btn--send {
   background: transparent;
   border: 1.5px solid var(--accent);
@@ -825,9 +825,9 @@ body::before {
   border-radius: var(--radius);
   font-size: 13px;
   font-weight: 700;
-  background: var(--card);
-  border: 1px solid var(--border);
-  color: var(--text-sec);
+  background: rgba(244,201,93,0.12);
+  border: 1px solid rgba(244,201,93,0.3);
+  color: #F4C95D;
 }
 .tp-workout-comment {
   margin: 6px 0 0;
@@ -882,12 +882,13 @@ body::before {
 .tp-cta-btn:hover { background: var(--card-hover); border-color: var(--accent); color: var(--text); }
 
 /* ══════════════════════════════════════════
-   FITNESS SESSION SECTION
+   FITNESS SESSION SECTION — LOCKED: Tangerine #234B35
+   This section uses TANGERINE for energy and fitness motivation.
 ══════════════════════════════════════════ */
-:root { --fitness: #10B981; }
+:root { --fitness: #234B35; }
 
-.tp-section--fitness { border-color: rgba(16, 185, 129, 0.25); }
-.tp-section-hd--fitness .tp-step-num  { background: rgba(16, 185, 129, 0.18); color: var(--fitness); }
+.tp-section--fitness { border-color: rgba(242, 140, 40, 0.25); }
+.tp-section-hd--fitness .tp-step-num  { background: rgba(242, 140, 40, 0.18); color: var(--fitness); }
 .tp-section-hd--fitness .tp-section-name { color: var(--fitness); }
 
 .tp-skill-card--fitness {
@@ -895,17 +896,17 @@ body::before {
 }
 
 .tp-skill-chip--fitness {
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(242, 140, 40, 0.12);
   color: var(--fitness);
 }
 
 .tp-skill-cue--fitness {
-  background: rgba(16, 185, 129, 0.10);
+  background: rgba(242, 140, 40, 0.10);
   border-left: 3px solid var(--fitness);
 }
 
 .tp-skill-target--fitness {
-  background: rgba(16, 185, 129, 0.10);
+  background: rgba(242, 140, 40, 0.10);
   border-left: 3px solid var(--fitness);
 }
 

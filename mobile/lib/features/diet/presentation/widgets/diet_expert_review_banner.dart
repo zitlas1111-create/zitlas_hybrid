@@ -131,7 +131,7 @@ class _DietExpertReviewBannerState extends State<DietExpertReviewBanner> {
             child: ElevatedButton(
               onPressed: _accepting ? null : _accept,
               style: ElevatedButton.styleFrom(
-                backgroundColor: ZitlasTokens.success,
+                backgroundColor: ZitlasTokens.primary,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),

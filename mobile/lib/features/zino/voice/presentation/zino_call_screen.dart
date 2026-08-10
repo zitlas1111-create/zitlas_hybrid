@@ -105,7 +105,7 @@ class _ZinoCallScreenState extends State<ZinoCallScreen> {
     final controller = _controller;
     if (_starting || controller == null) {
       return const _CallScaffold(
-        child: Center(child: CircularProgressIndicator(color: Color(0xFF16A34A))),
+        child: Center(child: CircularProgressIndicator(color: Color(0xFF234B35))),
       );
     }
     return ChangeNotifierProvider.value(
@@ -270,11 +270,11 @@ class _AvatarState extends State<_Avatar> with SingleTickerProviderStateMixin {
       builder: (context, _) {
         final t = _c.value;
         final (double amplitude, Color glow) = switch (widget.state) {
-          ZinoCallState.listening => (0.22, const Color(0xFF34D399)),
-          ZinoCallState.thinking => (0.10, const Color(0xFF60A5FA)),
-          ZinoCallState.speaking => (0.30, const Color(0xFF16A34A)),
+          ZinoCallState.listening => (0.22, const Color(0xFF3A8F8B)), // teal for engagement
+          ZinoCallState.thinking => (0.10, const Color(0xFF6B5878)), // plum for AI
+          ZinoCallState.speaking => (0.30, const Color(0xFF234B35)),
           ZinoCallState.error => (0.05, const Color(0xFFE5484D)),
-          _ => (0.08, const Color(0xFF16A34A)),
+          _ => (0.08, const Color(0xFF234B35)),
         };
         final wave = math.sin(t * 2 * math.pi);
 
@@ -427,8 +427,8 @@ class _WaveformState extends State<_Waveform> with SingleTickerProviderStateMixi
     final active = widget.state == ZinoCallState.listening ||
         widget.state == ZinoCallState.speaking;
     final color = widget.state == ZinoCallState.listening
-        ? const Color(0xFF34D399)
-        : const Color(0xFF16A34A);
+        ? const Color(0xFF3A8F8B)
+        : const Color(0xFF234B35);
 
     return SizedBox(
       height: 34,
@@ -545,12 +545,12 @@ class _Controls extends StatelessWidget {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: listening
-                        ? const [Color(0xFF34D399), Color(0xFF059669)]
-                        : const [Color(0xFFFFA940), Color(0xFFFF7A00)],
+                        ? const [Color(0xFF3A8F8B), Color(0xFF2C6F6C)]
+                        : const [Color(0xFF234B35), Color(0xFF2E5F47)],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: (listening ? const Color(0xFF34D399) : const Color(0xFFFF7A00))
+                      color: (listening ? const Color(0xFF3A8F8B) : const Color(0xFF234B35))
                           .withValues(alpha: 0.45),
                       blurRadius: 26,
                       spreadRadius: 2,

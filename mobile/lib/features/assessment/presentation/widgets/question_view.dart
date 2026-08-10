@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/zitlas_tokens.dart';
+import '../../../../core/util/json_coerce.dart';
 import '../../models/assessment_question.dart';
 import '../../models/unit_conversions.dart';
 import 'wheel_picker_field.dart';
@@ -39,7 +40,8 @@ class _QuestionViewState extends State<QuestionView> {
   String? _chosenOption;
   final List<String> _multiSelected = [];
   String? _multiError;
-  late double _sliderValue = (widget.existingAnswer as num?)?.toDouble() ?? widget.question.defaultVal?.toDouble() ?? 5;
+  late double _sliderValue =
+      asNum(widget.existingAnswer)?.toDouble() ?? widget.question.defaultVal?.toDouble() ?? 5;
   late final TextEditingController _textController =
       TextEditingController(text: widget.existingAnswer?.toString() ?? '');
   String? _textError;
@@ -54,12 +56,24 @@ class _QuestionViewState extends State<QuestionView> {
   @override
   void initState() {
     super.initState();
-    final existingList = (widget.existingAnswer as List?)?.cast<String>();
-    if (existingList != null) _multiSelected.addAll(existingList);
-    if (widget.question.field == 'height_cm' || widget.question.field == 'weight_kg' || widget.question.field == 'goal_weight_kg') {
-      _wheelValue = (widget.existingAnswer as num?) ?? kWheelConfig[widget.question.field]!.defaultVal;
-    } else if (_isWheelField) {
-      _wheelValue = (widget.existingAnswer as num?) ?? kWheelConfig[widget.question.field]!.defaultVal;
+    // TYPE-CHECKED, never cast. `existingAnswer` is whatever the athlete
+    // previously stored for THIS field, and initState runs for every question
+    // type — including the numeric ones. Going BACK re-mounts an already
+    // answered question (the ValueKey in assessment_screen.dart carries
+    // currentQuestionIndex, so a new State is built), which meant a stored
+    // slider/wheel answer hit `as List?` here and crashed the wizard with
+    //   type 'int' is not a subtype of type 'List<dynamic>?' in type cast
+    // Every wheel field (age, height_cm, weight_kg, goal_weight_kg,
+    // sleep_hours, available_time) stores a number, so back-navigation onto
+    // any of them was a guaranteed crash. `is List` narrows instead of
+    // asserting, and `asNum` tolerates the numeric-as-string values that
+    // arrive when an answer round-trips through the website's Firestore doc.
+    final existing = widget.existingAnswer;
+    if (existing is List) {
+      _multiSelected.addAll(existing.where((e) => e != null).map((e) => e.toString()));
+    }
+    if (_isWheelField) {
+      _wheelValue = asNum(existing) ?? kWheelConfig[widget.question.field]!.defaultVal;
     }
   }
 
