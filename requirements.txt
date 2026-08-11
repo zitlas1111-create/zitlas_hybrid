@@ -1,0 +1,16 @@
+# Repo-root Python marker for deploy platforms whose build context is the
+# repository ROOT (Railway/Railpack with no Root Directory set).
+#
+# Why this file exists: this is a monorepo. The real dependency list lives at
+# backend/requirements.txt, and platforms that build with backend/ AS the
+# context root (Render — see render.yaml's `rootDir: backend`) find it there
+# on their own. But a builder that auto-detects the language from the context
+# ROOT sees only package.json here (leftover Capacitor CLI deps for the old
+# Android wrapper) and can classify this as a Node project, producing an image
+# with no Python at all.
+#
+# `-r` is resolved by pip relative to THIS file's directory, not the process
+# working directory, so there is exactly one dependency list in the repo and
+# no risk of the two drifting apart. Do not paste package names here — add
+# them to backend/requirements.txt.
+-r backend/requirements.txt
