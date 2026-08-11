@@ -4764,6 +4764,44 @@ function _prAcceptReview(reviewId, review, expert) {
       : 'modify-diet.html?reviewId='    + encodeURIComponent(reviewId);
   }
 
+  /* CLIENT_TRIAL_MODE / PLATFORM_CHARGES_FREE (backend/trial_config.py,
+     mirrored here via ZitlasPayment.isTrialMode() — see payment-service.js's
+     own doc comment: it's the effectiveFree flag, already ORs both).
+     While either is on, every expert service is free platform-wide, so this
+     acceptance can NEVER require a real charge — going through
+     attemptCharge() -> POST /api/payment/charge anyway means the request
+     only advances if the backend's Firestore Admin client is configured
+     (FIREBASE_SERVICE_ACCOUNT_JSON/FILE), which has nothing to do with
+     whether money moves. Write the SAME advance fields attemptCharge's
+     onSuccessUpdate would have, directly from the client instead —
+     firestore.rules already lets the assigned expert update review_requests
+     (just never paymentStatus/walletTransactionId — see firestore.rules:
+     170-173), so this is a real, rules-checked write, not a bypass of one.
+     Nothing here ever sets paymentStatus/walletTransactionId (the rule
+     forbids it, and this genuinely isn't a payment) — no faked charge, no
+     fake wallet_transactions record. Paid mode (trial off) is completely
+     unaffected below: it still calls attemptCharge() exactly as before. */
+  if (typeof ZitlasPayment !== 'undefined' && ZitlasPayment.isTrialMode()) {
+    if (typeof ZitlasDB !== 'undefined') {
+      ZitlasDB.collection('review_requests').doc(reviewId)
+        .update({ status: 'in_progress', acceptedAt: _now, expertId: expert.id, chatId: convId, chatUnlocked: chatIncluded })
+        .catch(function(e) { console.warn('[REVIEW] trial-mode in_progress Firestore write failed:', e); });
+
+      /* "Both" bundle: mirror the linked sibling doc to the same accepted
+         outcome — same no-extra-check pattern _prRejectReview already uses
+         for this exact sibling link a few lines below (both halves target
+         the same expert by construction; nothing paid on either side). */
+      if (review.siblingId) {
+        ZitlasDB.collection('review_requests').doc(review.siblingId)
+          .update({ status: 'in_progress', acceptedAt: _now, expertId: expert.id, chatId: convId, chatUnlocked: chatIncluded })
+          .catch(function(e) { console.warn('[REVIEW] trial-mode sibling mirror failed:', e); });
+      }
+    }
+    console.log('[REVIEW] accepted free (trial/platform-free mode) — no payment call', reviewId);
+    _finishAccept();
+    return;
+  }
+
   if (typeof ZitlasPayment === 'undefined' || typeof ZitlasDB === 'undefined') {
     /* Payment engine unavailable (e.g. dev environment without the script) —
        fall back to the original no-payment behavior rather than blocking
