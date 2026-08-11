@@ -53,6 +53,13 @@
                               calculations, medical data. Live-mirrored from
                               the athlete's device by cloud-sync.js. */
     athleteLoaded: false,  /* first users/{athleteId} snapshot has arrived */
+    loadError: null,       /* set the moment ANY subscribeAll() listener denies/
+                              errors, or the initial load never resolves within
+                              LOAD_TIMEOUT_MS — renderTab() shows this instead of
+                              dispatching to a tab, so the workspace can never be
+                              stuck on "Loading…" forever (see subscribeAll,
+                              _reportLoadError, retryLoad). */
+    loadTimeoutId: null,
     tab: 'overview',
     dayIdx: 0,             /* viewer/editor selected day */
     unsubs: [],
@@ -284,6 +291,7 @@
     S.trainDraft = null; S.trainDirty = false; S.trainDraftSeeded = false;
     S.plan = null; S.planLoaded = false; S.mealReqs = []; S.chatMsgs = [];
     S.athlete = null; S.athleteLoaded = false;
+    S.loadError = null;
     S.open = true;
 
     console.log('[CW] open', opts.role, 'athlete:', opts.athleteId, 'coach:', opts.coachId, 'plan:', opts.planType);
@@ -300,11 +308,62 @@
 
     switchTab(S.tab, true);
     subscribeAll();
+    armLoadTimeout();
     attachNotifications(myUid());
+  }
+
+  /* Safety net for the failure mode this workspace used to have no
+     recovery from: a Firestore onSnapshot listener that neither succeeds
+     NOR calls its error callback within a reasonable window (offline
+     persistence queuing a read indefinitely, ZitlasDB not yet defined at
+     open() time, etc.). Without this, S.athleteLoaded simply never becomes
+     true and the workspace is stuck on "Loading athlete data…" forever
+     with no visible error at all. 12s is generous for a live Firestore
+     read; a genuine permission-denied error (the common real-world case)
+     fires in well under a second and is handled immediately by
+     _reportLoadError below — this timeout only ever fires for the
+     "nothing happened at all" case. */
+  var LOAD_TIMEOUT_MS = 12000;
+  function armLoadTimeout() {
+    clearTimeout(S.loadTimeoutId);
+    S.loadTimeoutId = setTimeout(function () {
+      if (S.open && !S.athleteLoaded) {
+        console.warn('[CW] athlete data did not load within', LOAD_TIMEOUT_MS, 'ms — showing error state');
+        _reportLoadError('timeout', new Error('load timed out'));
+      }
+    }, LOAD_TIMEOUT_MS);
+  }
+
+  /* The ONE place that turns any subscribeAll() failure into a visible,
+     resolvable UI state (renderTab() checks S.loadError first — see
+     below) instead of leaving the caller's own "Loading…" branch stuck
+     forever. First error wins: once shown, later listener errors are still
+     logged (for diagnosis) but don't overwrite the message the user is
+     already looking at. */
+  function _reportLoadError(context, err) {
+    clearTimeout(S.loadTimeoutId);
+    if (S.loadError) return;
+    S.loadError = 'Unable to load athlete data. Please try again.';
+    console.error('[CW] load error (' + context + '):', err);
+    renderTab();
+  }
+
+  /* "Retry" button action — clears the error, drops the stale listeners,
+     and re-subscribes exactly as open() originally did. */
+  function retryLoad() {
+    S.unsubs.forEach(function (u) { try { u(); } catch (_) {} });
+    S.unsubs = [];
+    S.plan = null; S.planLoaded = false;
+    S.athlete = null; S.athleteLoaded = false;
+    S.loadError = null;
+    renderTab();
+    subscribeAll();
+    armLoadTimeout();
   }
 
   function close() {
     S.open = false;
+    clearTimeout(S.loadTimeoutId);
     S.unsubs.forEach(function (u) { try { u(); } catch (_) {} });
     S.unsubs = [];
     var overlay = $('cwOverlay');
@@ -343,7 +402,11 @@
   ══════════════════════════════════════════════ */
   function subscribeAll() {
     var d = db();
-    if (!d) { toast('Connection unavailable'); return; }
+    if (!d) {
+      toast('Connection unavailable');
+      _reportLoadError('firestore-unavailable', new Error('ZitlasDB is undefined'));
+      return;
+    }
 
     /* SINGLE SOURCE OF TRUTH — the athlete's users/{uid} doc, which
        cloud-sync.js live-mirrors from the athlete's device on every plan
@@ -362,7 +425,10 @@
         if (S.tab === 'diet' && !S.dietDirty) renderTab();
         else if (S.tab === 'training' && !S.trainDirty) renderTab();
         else if (S.tab === 'overview' || S.tab === 'chat') renderTab();
-      }, function (e) { console.warn('[CW] athlete listener error', e); }));
+      }, function (e) {
+        console.warn('[CW] athlete listener error', e);
+        _reportLoadError('users/' + S.opts.athleteId, e);
+      }));
 
     S.unsubs.push(d.collection('coaching_plans').doc(S.opts.athleteId)
       .onSnapshot(function (snap) {
@@ -377,7 +443,10 @@
         if (S.tab === 'diet' && !S.dietDirty) renderTab();
         else if (S.tab === 'training' && !S.trainDirty) renderTab();
         else if (S.tab === 'overview') renderTab();
-      }, function (e) { console.warn('[CW] plan listener error', e); }));
+      }, function (e) {
+        console.warn('[CW] plan listener error', e);
+        _reportLoadError('coaching_plans/' + S.opts.athleteId, e);
+      }));
 
     /* coachId pinned as a query filter — coaching_meal_requests' read rule is
        also (athleteId == uid || coachId == uid), so the coach's athleteId-only
@@ -654,12 +723,31 @@
   ══════════════════════════════════════════════ */
   function renderTab() {
     if (!S.open) return;
+    if (S.loadError) { renderLoadError(); return; }
     if (S.tab === 'overview')      renderOverview();
     else if (S.tab === 'diet')     renderDiet();
     else if (S.tab === 'training') renderTraining();
     else if (S.tab === 'checkins') renderCheckins();
     else if (S.tab === 'weekly')   renderWeeklyReview();
     else if (S.tab === 'chat')     renderChatShell();
+  }
+
+  /* The one error UI every load-failure path (see _reportLoadError) routes
+     through — replaces whichever tab was active with a single, honest,
+     actionable state instead of leaving any tab silently stuck. */
+  function renderLoadError() {
+    var body = $('cwBody');
+    if (!body) return;
+    body.innerHTML =
+      '<div class="cw-card"><div class="cw-empty">' +
+        '<span class="cw-empty-icon">⚠️</span>' +
+        esc(S.loadError) +
+        '<div class="cw-save-bar" style="position:static;background:none">' +
+          '<button class="cw-save-btn" id="cwRetryLoad">Retry</button>' +
+        '</div>' +
+      '</div></div>';
+    var btn = $('cwRetryLoad');
+    if (btn) btn.addEventListener('click', retryLoad);
   }
 
   /* ══════════════════════════════════════════════
