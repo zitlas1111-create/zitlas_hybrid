@@ -2426,6 +2426,21 @@
     });
   }
 
+  /* Returns the single newest review whose status is renderable (active OR
+     terminal) — used for DISPLAY. THE BUG THIS FIXES: this used to do two
+     separate .find() passes — "any active review, any vintage" first, THEN
+     fall back to terminal — so an OLDER review still sitting in an active
+     status (most commonly a "Both" bundle's ₹0 workout sibling, which mirrors
+     to an active status on accept but is only marked review_completed
+     separately from its diet sibling) could shadow a NEWER review that had
+     already reached review_completed. The athlete would see "Expert
+     Reviewing…" forever even though their most recent request was actually
+     done — this is the exact same class of non-determinism bug the sort
+     below already fixed once (an old doc winning over a newer one), just
+     reintroduced by prioritizing "any active" over "newest" instead of
+     prioritizing document order over recency. One pass, by recency, across
+     the full renderable set, matches this function's own name: the LATEST
+     review, whatever its status. */
   function _getMyLatestPlanReview(coach) {
     var all = _getAllMyPlanReviews(coach);
     if (!all.length) return null;
@@ -2437,16 +2452,11 @@
       return new Date(b.createdAt || b.submittedAt || 0) -
              new Date(a.createdAt || a.submittedAt || 0);
     });
-    /* An active (pending/in-progress/accepted) review blocks new submissions */
-    var active = sorted.find(function(r) {
-      return _VP_ACTIVE_STATUSES.indexOf(r.status) !== -1;
-    });
-    if (active) return active;
-    /* Only terminal statuses the renderer has a real, non-blocking UI for
-       (each includes a re-request path). Everything else is dead history
-       and must read as "no request". */
+    var _renderable = _VP_ACTIVE_STATUSES.concat(_VP_TERMINAL_RENDERED);
+    /* Everything else (withdrawn, superseded, dismissed, declined, expired,
+       cancelled, ended, unknown/missing) is dead history — "no request". */
     return sorted.find(function(r) {
-      return _VP_TERMINAL_RENDERED.indexOf(r.status) !== -1;
+      return _renderable.indexOf(r.status) !== -1;
     }) || null;
   }
 
@@ -2531,6 +2541,17 @@
 
     var st = review.status;
     btn.dataset.vpStatus = st;
+
+    /* Temporary diagnostic — remove once the athlete-side stale-status
+       investigation is closed. review_requests/{id}.status is the ONLY
+       field driving this render; requestId/expertId/athleteId identify
+       exactly which doc and pairing produced it. */
+    console.log('[REVIEW STATUS]',
+      'requestId=' + review.id,
+      'firestoreStatus=' + review.status,
+      'expertId=' + review.expertId,
+      'athleteId=' + review.userId,
+      'resolvedUiStatus=' + st);
 
     if (st === 'pending') {
       btn.disabled  = true;
@@ -2970,13 +2991,19 @@
            Rules: pending → block; in_progress/expert_reviewing/accepted →
            block; completed/rejected → allowed. Without this, the sheet
            (reachable via "Request Another Review") could create a second
-           request while one is still open. */
-        var _latestForCoach = _getMyLatestPlanReview(coach);
+           request while one is still open. Deliberately NOT
+           _getMyLatestPlanReview here — this needs "does ANY active review
+           exist, of any vintage" (e.g. a "Both" bundle's ₹0 workout sibling
+           that's still active even though its diet sibling just completed),
+           not "what's my single newest review's status". */
         var _activeStatuses = ['pending', 'accepted', 'in_progress', 'expert_reviewing'];
-        if (_latestForCoach && _activeStatuses.indexOf(_latestForCoach.status) !== -1) {
+        var _activeReview = _getAllMyPlanReviews(coach).find(function(r) {
+          return _activeStatuses.indexOf(r.status) !== -1;
+        });
+        if (_activeReview) {
           console.error('[VERIFY] blocked — active review already exists:',
-            _latestForCoach.id, 'status:', _latestForCoach.status);
-          showToast(_latestForCoach.status === 'pending'
+            _activeReview.id, 'status:', _activeReview.status);
+          showToast(_activeReview.status === 'pending'
             ? 'Your previous request is still pending.'
             : 'The expert is already handling an active request from you.');
           closeSheet();

@@ -4161,6 +4161,7 @@ async function savePlanEdits(reviewId, card, expert) {
   console.log('review', _rev);
   console.log('status before update', _rev.status);
 
+  var _prevStatus = _rev.status;
   _rev.status      = 'review_completed';
   _rev.reviewedAt  = new Date().toISOString();
   _rev.completedAt = new Date().toISOString();
@@ -4186,6 +4187,12 @@ async function savePlanEdits(reviewId, card, expert) {
       _fsUpdate.mealChangeHistory = _rev.mealChangeHistory || [];
     }
     console.log('writing to firestore...');
+    /* Temporary diagnostic — remove once the athlete-side stale-status
+       investigation is closed. */
+    console.log('[REVIEW COMPLETE]',
+      'requestId=' + reviewId,
+      'previousStatus=' + _prevStatus,
+      'newStatus=' + _fsUpdate.status);
     try {
       await ZitlasDB.collection('review_requests').doc(reviewId).update(_fsUpdate);
       console.log('firestore update success');
@@ -4413,6 +4420,7 @@ function initPlanReviewCardInteractions(card, review, expert) {
           savePlanEdits(prId, card, expert);
         }
 
+        var _cPrevStatus = _cRev.status;
         _cRev.status      = 'review_completed';
         _cRev.reviewedAt  = new Date().toISOString();
         _cRev.completedAt = new Date().toISOString();
@@ -4436,6 +4444,12 @@ function initPlanReviewCardInteractions(card, review, expert) {
             reviewedWorkoutPlan:  _cRev.reviewedWorkoutPlan  || null,
             workoutChangeHistory: _cRev.workoutChangeHistory || [],
           };
+          /* Temporary diagnostic — remove once the athlete-side stale-status
+             investigation is closed. */
+          console.log('[REVIEW COMPLETE]',
+            'requestId=' + prId,
+            'previousStatus=' + _cPrevStatus,
+            'newStatus=' + _wFsUpdate.status);
           ZitlasDB.collection('review_requests').doc(prId).update(_wFsUpdate)
             .then(function() { console.log('[REVIEW] Firestore workout review_completed OK', prId); })
             .catch(function(e) { console.warn('[REVIEW] Firestore workout update failed:', e); });
