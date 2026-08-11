@@ -100,11 +100,21 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
   /// — [stopAlarm] (the STOP ALARM button) and the defensive call at the top
   /// of [reset] both funnel through here, so audio-stopping logic exists in
   /// exactly one place (spec §13).
-  Future<void> _stopAlarmEffects() async {
+  ///
+  /// Deliberately synchronous, and deliberately does NOT await
+  /// [_stopAlarmAudio] (mirroring [_startAlarmEffects]' `unawaited` start):
+  /// dismissing an alarm must never be gated on the audio platform
+  /// answering. The guard flag and the vibration timer are both torn down
+  /// before this returns, so callers can flip state and rebuild the UI
+  /// immediately; only the platform-side audio teardown continues in the
+  /// background. Awaiting it here would mean a slow or unresponsive player
+  /// leaves the athlete stuck watching a "STOP ALARM" button that has
+  /// already been pressed.
+  void _stopAlarmEffects() {
     if (!_alarmActive) return;
     _alarmActive = false;
     _stopAlarmVibration();
-    await _stopAlarmAudio();
+    unawaited(_stopAlarmAudio());
   }
 
   /// Loops the SAME ringtone asset the app already ships
@@ -385,7 +395,7 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
   /// NEVER survive a reset from any state (spec §3: "must never continue
   /// after Stop Alarm" — the same guarantee applies here).
   Future<void> reset() async {
-    await _stopAlarmEffects();
+    _stopAlarmEffects();
     _stopTicker();
     _snapshot = RestTimerSnapshot.idle(_snapshot.durationSeconds);
     await _persist();
@@ -396,12 +406,17 @@ class RestTimerController extends ChangeNotifier with WidgetsBindingObserver {
   /// The STOP ALARM button's action — the ONE method that ends ringing.
   /// A no-op unless actually alarming, so a stray extra tap (e.g. a double
   /// tap before the UI has rebuilt) never does anything surprising.
+  ///
+  /// Silences and flips to [RestTimerStatus.completed] synchronously, and
+  /// notifies BEFORE the `await` on persistence: the button must feel
+  /// instant, and neither disk nor the audio platform may sit between the
+  /// tap and the alarm stopping (see [_stopAlarmEffects]).
   Future<void> stopAlarm() async {
     if (_snapshot.status != RestTimerStatus.alarming) return;
-    await _stopAlarmEffects();
+    _stopAlarmEffects();
     _snapshot = _snapshot.copyWith(status: RestTimerStatus.completed);
-    await _persist();
     notifyListeners();
+    await _persist();
   }
 
   void _startTicker() {
