@@ -51,10 +51,29 @@ from routes import swap
 from services import rag_service
 
 # ── Directory paths ──────────────────────────────────────────────────────────
-BASE_DIR     = Path(__file__).parent                        # backend/
+BASE_DIR     = Path(__file__).resolve().parent               # backend/
 # The website lives at frontend/website/ so that frontend/ can hold any future
 # web target alongside it; mobile/ is the Flutter client and is not served here.
 FRONTEND_DIR = BASE_DIR.parent / "frontend" / "website"     # frontend/website/
+
+# Fails fast with the exact resolved path rather than letting StaticFiles'
+# own (much less specific) RuntimeError surface during app import. A missing
+# directory here is a deployment/build-context problem, not a path-math bug:
+# if the deploy host's build only ships BASE_DIR's own subtree (e.g. a
+# platform "Root Directory" setting scoped to backend/ instead of the repo
+# root), frontend/website is never copied in at all, and no path computed
+# from __file__ can conjure a directory that doesn't exist on disk.
+if not FRONTEND_DIR.is_dir():
+    raise RuntimeError(
+        f"Frontend directory not found: {FRONTEND_DIR}\n"
+        f"(resolved from backend/main.py at {BASE_DIR})\n"
+        "Expected layout: <repo root>/backend/main.py alongside "
+        "<repo root>/frontend/website/. If this is a hosting platform "
+        "deployment, this almost always means the service's build context "
+        "is scoped to backend/ only (e.g. a 'Root Directory' setting), so "
+        "frontend/ was never included in the build — that must be fixed in "
+        "the platform's deployment configuration, not in this file."
+    )
 
 
 # ── Lifespan: startup tasks ───────────────────────────────────────────────────
