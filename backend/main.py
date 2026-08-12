@@ -182,9 +182,24 @@ app = FastAPI(
 )
 
 # ── CORS (needed once frontend calls APIs) ───────────────────────────────────
+# Same-origin calls (the website's own JS fetching '/api/...' from the same
+# host FastAPI serves it from, including inside the Flutter coaching WebView)
+# never hit this middleware at all — CORS is a browser cross-origin check,
+# so neither of these production entries was the cause of the coaching-load
+# failure investigated alongside this change. They were simply missing:
+# this list still only had the two local-dev origins, so any genuinely
+# cross-origin caller (a future separate frontend, a browser extension, a
+# different subdomain) hitting this API from either production domain would
+# have been rejected. www.zitlas.com is the canonical production origin;
+# bare zitlas.com is kept allowed per "both domains may remain supported".
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://127.0.0.1:8000", "http://localhost:8000"],
+    allow_origins=[
+        "http://127.0.0.1:8000",
+        "http://localhost:8000",
+        "https://www.zitlas.com",
+        "https://zitlas.com",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

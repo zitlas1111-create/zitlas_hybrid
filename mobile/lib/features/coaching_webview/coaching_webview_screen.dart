@@ -207,6 +207,20 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
   void initState() {
     super.initState();
     _log('STEP init — url=$_url');
+    // Temporary diagnostic — remove once the www.zitlas.com domain-migration
+    // investigation is closed. expertId is read back out of the constructed
+    // URL rather than threaded through separately, since this screen is
+    // shared by every coaching page (coachProfile/expertDashboard/etc) and
+    // not all of them carry one; athleteId has no separate identifier in
+    // this flow — the signed-in Firebase uid IS the athlete when opened from
+    // the athlete side, so that's what's logged under that name.
+    final dbgUri = Uri.tryParse(_url);
+    _log('[COACHING DEBUG] '
+        'origin=${dbgUri?.origin} '
+        'apiUrl=${Env.apiBaseUrl} '
+        'endpoint=${dbgUri?.path} '
+        'athleteId=${FirebaseAuth.instance.currentUser?.uid} '
+        'expertId=${dbgUri?.queryParameters['expertId']}');
     _controller = WebViewController.fromPlatformCreationParams(
       const PlatformWebViewControllerCreationParams(),
       onPermissionRequest: _onWebPermissionRequest,
@@ -243,6 +257,18 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
             // image, a beacon) must not blank the whole screen.
             if (err.isForMainFrame ?? true) {
               _log('STEP FAILURE web-resource — ${err.errorCode} ${err.description}');
+              // Temporary diagnostic — remove once the www.zitlas.com
+              // domain-migration investigation is closed. A main-frame
+              // resource error has no HTTP response at all (this fires for
+              // DNS/connection failures too, before any request reaches a
+              // server) — err.errorCode/description are the closest
+              // equivalents to "status"/"response" available here.
+              _log('[COACHING DEBUG] '
+                  'origin=${Uri.tryParse(_url)?.origin} '
+                  'apiUrl=${Env.apiBaseUrl} '
+                  'endpoint=${Uri.tryParse(_url)?.path} '
+                  'status=${err.errorCode} '
+                  'response=${err.description}');
               _showError('Could not load coaching. Check your connection and retry.');
             }
           },
