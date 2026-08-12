@@ -1847,6 +1847,40 @@ img { display: block; max-width: 100%; }
   border-radius: 12px;
 }
 
+/* ── Free Trial ended (shown in place of the generic renew relabel) ── */
+.cp-trial-ended-wrap {
+  display: none;
+  padding: 16px;
+  margin-top: 10px;
+  text-align: center;
+  background: rgba(var(--ai-rgb),.08);
+  border: 1px solid rgba(var(--ai-rgb),.25);
+  border-radius: var(--radius-sm);
+}
+.cp-trial-ended-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--blue);
+  margin: 0 0 4px;
+}
+.cp-trial-ended-sub {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-secondary, rgba(255,255,255,0.6));
+  margin: 0 0 12px;
+}
+.cp-trial-ended-wrap .cp-cta {
+  width: 100%;
+  margin-bottom: 8px;
+}
+.cp-trial-ended-explore {
+  display: inline-block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--blue);
+  text-decoration: underline;
+}
+
 .cp-end-coaching-wrap {
   display: none;
   padding: 0 16px;
@@ -1956,6 +1990,21 @@ img { display: block; max-width: 100%; }
   box-shadow: 0 10px 26px rgba(35,75,53,0.35);
 }
 .cp-cta--coach:active, .cp-sb-btn--coach:active { transform: scale(0.97); }
+
+/* ── Free Trial (a distinct identity from paid coaching's green and
+     review's orange — reuses the same --ai-accent/--blue already used for
+     the "completed" review state elsewhere in this file, not a new color) ── */
+.cp-cta--trial {
+  background: linear-gradient(135deg, var(--ai-accent) 0%, #2563EB 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(var(--ai-rgb),.30);
+}
+.cp-cta--trial:active { transform: scale(0.97); filter: brightness(.92); }
+.cp-cta--trial[disabled] {
+  opacity: 0.72;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 /* Active relationship state */
 .cp-cta--coach.cp-coach-active,
 .cp-sb-btn--coach.cp-coach-active {

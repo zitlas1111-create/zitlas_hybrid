@@ -158,18 +158,22 @@ def _athlete_profile_summary(user_data: dict | None) -> dict:
 
 class RequestBody(BaseModel):
     expertId: str
-    planType: str
+    planType: str | None = None
+    requestType: str = "PAID"
 
 
 class ActionBody(BaseModel):
     requestId: str
+    durationDays: int | None = None
 
 
 @router.post("/request")
 async def create_request(body: RequestBody, caller: dict = Depends(verify_firebase_token)):
-    print(f"[COACHING REQUEST] [1] request received — expertId={body.expertId} planType={body.planType}")
+    print(f"[COACHING REQUEST] [1] request received — expertId={body.expertId} "
+          f"planType={body.planType} requestType={body.requestType}")
 
-    if body.planType not in PLAN_TO_FIELD:
+    is_trial = body.requestType == "FREE_TRIAL"
+    if not is_trial and body.planType not in PLAN_TO_FIELD:
         print(f"[COACHING REQUEST] rejected — invalid planType={body.planType!r}")
         raise HTTPException(status_code=400, detail="invalid_plan_type")
 
@@ -197,22 +201,39 @@ async def create_request(body: RequestBody, caller: dict = Depends(verify_fireba
             raise HTTPException(status_code=404, detail="expert_not_found")
         expert_data = expert_snap.to_dict() or {}
         expert_name = expert_data.get("name") or "Expert"
-        pricing = expert_data.get("pricing") or {}
-        amount = int(pricing.get(PLAN_TO_FIELD[body.planType]) or PRICING_DEFAULTS[body.planType])
-        print(f"[COACHING REQUEST] [4] expert loaded — expertId={body.expertId} "
-              f"name={expert_name!r} planType={body.planType} amount={amount}")
 
-        # PLATFORM_CHARGES_FREE (permanent monetization policy) or
-        # CLIENT_TRIAL_MODE (temporary trial) — both from backend/
-        # trial_config.py: coaching is free; the only paid feature in
-        # ZITLAS is the Premium subscription. Zeroing the amount HERE lets
-        # the entire existing escrow run unchanged — ₹0 is reserved, the
-        # wallet check (available < 0) can never fail, and /accept later
-        # debits the stored reservationAmount of ₹0. Flip both flags off
-        # and real pricing is live again with no other change.
-        if CLIENT_TRIAL_MODE or PLATFORM_CHARGES_FREE:
-            print(f"[COACHING REQUEST] free-platform policy active — amount {amount} -> 0")
+        # FREE_TRIAL requests are always ₹0, and that must hold independent
+        # of PLAN_TO_FIELD pricing AND independent of the
+        # CLIENT_TRIAL_MODE/PLATFORM_CHARGES_FREE flags below (those are a
+        # separate, temporary/global "everything on the platform is free
+        # right now" switch — a trial must stay free even if that flag is
+        # later turned off, so this branch deliberately never falls through
+        # to it).
+        if is_trial:
+            plan_type_val = None
+            plan_label_val = "Personal Coaching Free Trial"
             amount = 0
+            print(f"[COACHING REQUEST] [4] expert loaded — expertId={body.expertId} "
+                  f"name={expert_name!r} requestType=FREE_TRIAL amount=0")
+        else:
+            pricing = expert_data.get("pricing") or {}
+            amount = int(pricing.get(PLAN_TO_FIELD[body.planType]) or PRICING_DEFAULTS[body.planType])
+            plan_type_val = body.planType
+            plan_label_val = PLAN_LABELS[body.planType]
+            print(f"[COACHING REQUEST] [4] expert loaded — expertId={body.expertId} "
+                  f"name={expert_name!r} planType={body.planType} amount={amount}")
+
+            # PLATFORM_CHARGES_FREE (permanent monetization policy) or
+            # CLIENT_TRIAL_MODE (temporary trial) — both from backend/
+            # trial_config.py: coaching is free; the only paid feature in
+            # ZITLAS is the Premium subscription. Zeroing the amount HERE lets
+            # the entire existing escrow run unchanged — ₹0 is reserved, the
+            # wallet check (available < 0) can never fail, and /accept later
+            # debits the stored reservationAmount of ₹0. Flip both flags off
+            # and real pricing is live again with no other change.
+            if CLIENT_TRIAL_MODE or PLATFORM_CHARGES_FREE:
+                print(f"[COACHING REQUEST] free-platform policy active — amount {amount} -> 0")
+                amount = 0
 
         # Duplicate-request / double-spend guard: at most one open
         # (pending) reservation per athlete, platform-wide, at a time.
@@ -240,6 +261,26 @@ async def create_request(body: RequestBody, caller: dict = Depends(verify_fireba
                       f"coaching relationship with coachId={rel_data.get('coachId')}")
                 raise HTTPException(status_code=409, detail="active_coaching_exists")
 
+        # FREE_TRIAL history guard: at most one trial ever ACCEPTED per
+        # athlete+expert pair. A request that only ever reached
+        # declined/withdrawn/expired (never accepted) must NOT block a real
+        # future attempt — the athlete never actually received a trial from
+        # this expert. personal_coaching (the single active-relationship doc,
+        # keyed by athleteId only, overwritten on every new acceptance)
+        # cannot answer "was a trial ever used with THIS expert" once it's
+        # been overwritten by a later relationship — personal_coach_requests
+        # is the durable, per-pair historical ledger that can.
+        if is_trial:
+            trial_history = coach_requests \
+                .where(filter=FieldFilter("athleteId", "==", athlete_uid)) \
+                .where(filter=FieldFilter("expertId", "==", body.expertId)) \
+                .where(filter=FieldFilter("requestType", "==", "FREE_TRIAL"))
+            for doc in tx.get(trial_history):
+                if (doc.to_dict() or {}).get("status") in ("active", "expired", "ended"):
+                    print(f"[COACHING REQUEST] blocked — trial already used with "
+                          f"expertId={body.expertId} (doc={doc.id})")
+                    raise HTTPException(status_code=409, detail="trial_already_used")
+
         user_snap = user_ref.get(transaction=tx)
         user_data = user_snap.to_dict() if user_snap.exists else {}
         wallet = dict((user_data or {}).get("wallet") or {})
@@ -250,17 +291,22 @@ async def create_request(body: RequestBody, caller: dict = Depends(verify_fireba
               f"userDocExists={user_snap.exists} balance={balance} reserved={reserved} "
               f"available={available} required={amount}")
 
-        if available < amount:
-            print(f"[COACHING REQUEST] insufficient balance — available={available} required={amount}")
-            raise HTTPException(status_code=402, detail={
-                "error": "insufficient_balance", "available": available, "required": amount,
-            })
-
         _now = now()
         expires = _now + timedelta(hours=RESERVATION_HOURS)
 
-        wallet["reserved"] = reserved + amount
-        tx.set(user_ref, {"wallet": wallet}, merge=True)
+        if is_trial:
+            # Nothing to reserve — skip the balance check and wallet write
+            # entirely, so a brand-new athlete with no wallet doc yet can
+            # still request a trial.
+            print("[COACHING REQUEST] FREE_TRIAL — skipping wallet reservation")
+        else:
+            if available < amount:
+                print(f"[COACHING REQUEST] insufficient balance — available={available} required={amount}")
+                raise HTTPException(status_code=402, detail={
+                    "error": "insufficient_balance", "available": available, "required": amount,
+                })
+            wallet["reserved"] = reserved + amount
+            tx.set(user_ref, {"wallet": wallet}, merge=True)
 
         athlete_name = (user_data or {}).get("name") or caller.get("name") or "Athlete"
         # PREMIUM: priority flag for the expert's queue (premium requests
@@ -284,7 +330,8 @@ async def create_request(body: RequestBody, caller: dict = Depends(verify_fireba
             "requestId": request_id,
             "athleteId": athlete_uid, "athleteName": athlete_name,
             "expertId": body.expertId, "expertName": expert_name,
-            "planType": body.planType, "planLabel": PLAN_LABELS[body.planType],
+            "requestType": body.requestType,
+            "planType": plan_type_val, "planLabel": plan_label_val,
             "price": amount,
             "status": "pending",
             "isPremium": is_premium,
@@ -308,7 +355,7 @@ async def create_request(body: RequestBody, caller: dict = Depends(verify_fireba
             "athleteProfile": _athlete_profile_summary(user_data),
         })
         print(f"[COACHING REQUEST] [6] reservation created — requestId={request_id} "
-              f"amount={amount} newReserved={wallet['reserved']} expiresAt={expires.isoformat()}")
+              f"amount={amount} newReserved={wallet.get('reserved', 0)} expiresAt={expires.isoformat()}")
         return {"requestId": request_id, "amount": amount, "expiresAt": expires.isoformat(),
                 "athleteName": athlete_name}
 
@@ -373,58 +420,74 @@ async def accept_request(body: ActionBody, caller: dict = Depends(verify_firebas
                 return {"already": True, "athleteId": req.get("athleteId"), "amount": req.get("reservationAmount")}
             raise HTTPException(status_code=409, detail="not_pending")
 
+        request_type = req.get("requestType", "PAID")
+        is_trial = request_type == "FREE_TRIAL"
+        if is_trial and body.durationDays not in (5, 10, 15):
+            print(f"[COACHING ACCEPT] rejected — invalid trial durationDays={body.durationDays!r}")
+            raise HTTPException(status_code=400, detail="invalid_trial_duration")
+
         athlete_uid = req["athleteId"]
         amount = float(req.get("reservationAmount") or req.get("price") or 0)
         user_ref = db.collection("users").document(athlete_uid)
         rel_ref = db.collection("personal_coaching").document(athlete_uid)
-
-        user_snap = user_ref.get(transaction=tx)
-        user_data = user_snap.to_dict() if user_snap.exists else {}
-        wallet = dict((user_data or {}).get("wallet") or {})
-        balance = float(wallet.get("balance", 0) or 0)
-        reserved = float(wallet.get("reserved", 0) or 0)
 
         rel_snap = rel_ref.get(transaction=tx)
         existing_rel = rel_snap.to_dict() if rel_snap.exists else None
         if existing_rel and existing_rel.get("status") == "active" and existing_rel.get("coachId") != expert_uid:
             raise HTTPException(status_code=409, detail="athlete_has_other_active_coach")
 
-        fee = round(amount * PLATFORM_FEE_PERCENT)
-        expert_amount = amount - fee
         _now = now()
 
-        wallet["balance"] = balance - amount
-        wallet["reserved"] = max(0.0, reserved - amount)
-        wallet["total_spent"] = float(wallet.get("total_spent", 0) or 0) + amount
-        transactions = list(wallet.get("transactions", []))
-        transactions.append({
-            "id": wallet_txn_id, "type": "debit", "amount": amount,
-            "description": req.get("planLabel") or "Personal Coaching",
-            "date": _now.isoformat(),
-        })
-        wallet["transactions"] = transactions
-        tx.set(user_ref, {"wallet": wallet}, merge=True)
+        if is_trial:
+            # Nothing was ever reserved for a trial — no wallet read/write,
+            # no debit, no wallet_transactions doc (avoids a spurious ₹0
+            # ledger entry for a payment that never happened).
+            print(f"[COACHING ACCEPT] FREE_TRIAL — skipping wallet debit, "
+                  f"durationDays={body.durationDays}")
+        else:
+            user_snap = user_ref.get(transaction=tx)
+            user_data = user_snap.to_dict() if user_snap.exists else {}
+            wallet = dict((user_data or {}).get("wallet") or {})
+            balance = float(wallet.get("balance", 0) or 0)
+            reserved = float(wallet.get("reserved", 0) or 0)
 
-        tx.set(db.collection("wallet_transactions").document(wallet_txn_id), {
-            "transactionId": wallet_txn_id, "serviceType": "coaching",
-            "expertId": expert_uid, "userId": athlete_uid, "amount": amount,
-            "walletBefore": balance, "walletAfter": wallet["balance"],
-            "grossAmount": amount, "platformFee": fee, "expertAmount": expert_amount,
-            "status": "success", "createdAt": _now.isoformat(),
-        })
+            fee = round(amount * PLATFORM_FEE_PERCENT)
+            expert_amount = amount - fee
+
+            wallet["balance"] = balance - amount
+            wallet["reserved"] = max(0.0, reserved - amount)
+            wallet["total_spent"] = float(wallet.get("total_spent", 0) or 0) + amount
+            transactions = list(wallet.get("transactions", []))
+            transactions.append({
+                "id": wallet_txn_id, "type": "debit", "amount": amount,
+                "description": req.get("planLabel") or "Personal Coaching",
+                "date": _now.isoformat(),
+            })
+            wallet["transactions"] = transactions
+            tx.set(user_ref, {"wallet": wallet}, merge=True)
+
+            tx.set(db.collection("wallet_transactions").document(wallet_txn_id), {
+                "transactionId": wallet_txn_id, "serviceType": "coaching",
+                "expertId": expert_uid, "userId": athlete_uid, "amount": amount,
+                "walletBefore": balance, "walletAfter": wallet["balance"],
+                "grossAmount": amount, "platformFee": fee, "expertAmount": expert_amount,
+                "status": "success", "createdAt": _now.isoformat(),
+            })
 
         tx.update(request_ref, {
             "status": "active", "paymentStatus": "debited",
             "acceptedAt": _now.isoformat(), "activatedAt": _now.isoformat(),
             "updatedAt": _now.isoformat(),
-            "walletTransactionId": wallet_txn_id,
+            "walletTransactionId": None if is_trial else wallet_txn_id,
         })
 
-        end_date = _now + timedelta(days=30)
+        end_date = _now + timedelta(days=body.durationDays if is_trial else 30)
         tx.set(rel_ref, {
             "coachId": expert_uid, "coachName": req.get("expertName"),
             "athleteId": athlete_uid, "athleteName": req.get("athleteName"),
             "planType": req.get("planType"), "planLabel": req.get("planLabel"),
+            "coachingType": request_type,
+            "trialDurationDays": body.durationDays if is_trial else None,
             "startDate": _now.isoformat(), "endDate": end_date.isoformat(),
             # endDateTs is a NATIVE Firestore Timestamp (the raw datetime
             # object, not .isoformat()) — Firestore Security Rules'
@@ -434,10 +497,10 @@ async def accept_request(body: ActionBody, caller: dict = Depends(verify_firebas
             # purely for rules and this sweep's own query to compare against.
             "endDateTs": end_date,
             "status": "active", "subscriptionId": "sub_" + str(int(_now.timestamp() * 1000)),
-            "paymentId": wallet_txn_id, "fee": amount, "requestId": body.requestId,
+            "paymentId": None if is_trial else wallet_txn_id, "fee": amount, "requestId": body.requestId,
         })
 
-        return {"already": False, "athleteId": athlete_uid, "amount": amount}
+        return {"already": False, "athleteId": athlete_uid, "amount": amount, "requestType": request_type}
 
     try:
         result = _txn(db.transaction())
@@ -454,9 +517,13 @@ async def accept_request(body: ActionBody, caller: dict = Depends(verify_firebas
         try:
             req = (request_ref.get().to_dict() or {})
             amount = result["amount"]
+            is_trial_result = result.get("requestType") == "FREE_TRIAL"
             _paid_msg = (f"Your coaching request has been accepted. ₹{int(amount)} has been "
                          "automatically deducted. Your coaching starts now.")
             _free_msg = "Your coaching request has been accepted. Your coaching starts now."
+            if is_trial_result and body.durationDays:
+                _free_msg = (f"Your {body.durationDays}-day free coaching trial has been "
+                             "accepted. Your trial starts now.")
             # Coaching is now ACTIVE, so tapping this lands the athlete straight
             # in their coaching workspace (the Website module the Flutter app
             # embeds as a WebView), not the generic coach profile.
@@ -464,8 +531,12 @@ async def accept_request(body: ActionBody, caller: dict = Depends(verify_firebas
                    _paid_msg if amount and int(amount) > 0 else _free_msg,
                    category="expert", type="coaching_accepted", action="coaching_workspace",
                    action_id=expert_uid, priority="high")
-            notify(db, expert_uid, "Payment received",
-                   (req.get("athleteName") or "An athlete") + " just started coaching with you.",
+            _expert_notif_title = "Free trial started" if is_trial_result else "Payment received"
+            _expert_notif_msg = (
+                (req.get("athleteName") or "An athlete") +
+                (" started a free trial with you." if is_trial_result else " just started coaching with you.")
+            )
+            notify(db, expert_uid, _expert_notif_title, _expert_notif_msg,
                    category="expert", type="coaching_started", action="expert_dashboard")
         except Exception:
             print(f"[COACHING ACCEPT] notification write failed (non-fatal) — requestId={body.requestId}")
@@ -552,7 +623,7 @@ async def reject_request(body: ActionBody, caller: dict = Depends(verify_firebas
 
         athlete_uid = release_reservation_txn(tx, db, request_ref, req,
                                                "declined", "released", "declinedAt")
-        return {"already": False, "athleteId": athlete_uid}
+        return {"already": False, "athleteId": athlete_uid, "requestType": req.get("requestType", "PAID")}
 
     try:
         result = _txn(db.transaction())
@@ -567,8 +638,10 @@ async def reject_request(body: ActionBody, caller: dict = Depends(verify_firebas
 
     if not result.get("already"):
         try:
-            notify(db, result["athleteId"], "Request declined",
-                   "Unfortunately your request was declined. Your reserved amount has been released.",
+            _reject_msg = ("Unfortunately your free trial request was declined."
+                            if result.get("requestType") == "FREE_TRIAL" else
+                            "Unfortunately your request was declined. Your reserved amount has been released.")
+            notify(db, result["athleteId"], "Request declined", _reject_msg,
                    category="expert", type="coaching_declined", action="coaches")
         except Exception:
             print(f"[COACHING REJECT] notification write failed (non-fatal) — requestId={body.requestId}")

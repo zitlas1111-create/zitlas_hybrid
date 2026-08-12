@@ -706,3 +706,250 @@ def test_end_coaching_requires_auth(app, client):
     # No dependency override -> real verify_firebase_token -> 401 (no token).
     r = client.post("/api/coaching/end")
     assert r.status_code == 401
+
+
+# ══════════════════════════════════════════════════════════════════════
+# FREE TRIAL — 5/10/15-day no-payment Personal Coaching
+# ══════════════════════════════════════════════════════════════════════
+
+
+def test_trial_request_created_with_zero_amount_and_no_plan_type(fake_db, app, client):
+    """A trial request needs no wallet at all — balance=0 must still work,
+    and planType/reservationAmount must reflect "nothing was reserved"."""
+    _set_wallet(fake_db, ATHLETE_UID, balance=0)
+    _as(app, ATHLETE_UID)
+
+    r = client.post("/api/coaching/request",
+                     json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"})
+    assert r.status_code == 200, r.text
+    assert r.json()["amount"] == 0
+
+    req_doc = fake_db.store[f"personal_coach_requests/{r.json()['requestId']}"]
+    assert req_doc["requestType"] == "FREE_TRIAL"
+    assert req_doc["planType"] is None
+    assert req_doc["planLabel"] == "Personal Coaching Free Trial"
+    assert req_doc["price"] == 0
+    assert req_doc["reservationAmount"] == 0
+    assert req_doc["status"] == "pending"
+
+    wallet = fake_db.store[f"users/{ATHLETE_UID}"]["wallet"]
+    assert wallet["reserved"] == 0, "a trial must never touch the wallet"
+
+
+def test_trial_amount_is_zero_even_with_pricing_flags_off(fake_db, app, client):
+    """The key differentiator: fake_db already pins CLIENT_TRIAL_MODE=False,
+    PLATFORM_CHARGES_FREE=False for this whole suite — a FREE_TRIAL request
+    must still be ₹0, proving trial pricing is independent of that global,
+    temporary "everything is free" switch."""
+    _set_wallet(fake_db, ATHLETE_UID, balance=0)
+    _as(app, ATHLETE_UID)
+
+    r = client.post("/api/coaching/request",
+                     json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"})
+    assert r.status_code == 200, r.text
+    assert r.json()["amount"] == 0
+
+
+def test_trial_accept_requires_valid_duration(fake_db, app, client):
+    _set_wallet(fake_db, ATHLETE_UID, balance=0)
+    _as(app, ATHLETE_UID)
+    request_id = client.post(
+        "/api/coaching/request", json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"}
+    ).json()["requestId"]
+
+    _as(app, EXPERT_UID)
+    r = client.post("/api/coaching/accept", json={"requestId": request_id, "durationDays": 7})
+    assert r.status_code == 400
+    assert r.json()["detail"] == "invalid_trial_duration"
+
+    r2 = client.post("/api/coaching/accept", json={"requestId": request_id})
+    assert r2.status_code == 400
+    assert r2.json()["detail"] == "invalid_trial_duration"
+
+    assert fake_db.store[f"personal_coach_requests/{request_id}"]["status"] == "pending", \
+        "a rejected accept attempt must not activate anything"
+
+
+@pytest.mark.parametrize("days", [5, 10, 15])
+def test_trial_accept_with_5_10_15_sets_correct_end_date(fake_db, app, client, days):
+    from datetime import datetime, timedelta, timezone
+
+    _set_wallet(fake_db, ATHLETE_UID, balance=0)
+    _as(app, ATHLETE_UID)
+    request_id = client.post(
+        "/api/coaching/request", json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"}
+    ).json()["requestId"]
+
+    _as(app, EXPERT_UID)
+    r = client.post("/api/coaching/accept", json={"requestId": request_id, "durationDays": days})
+    assert r.status_code == 200, r.text
+
+    rel = fake_db.store[f"personal_coaching/{ATHLETE_UID}"]
+    assert rel["coachingType"] == "FREE_TRIAL"
+    assert rel["trialDurationDays"] == days
+    assert rel["status"] == "active"
+
+    expected_end = datetime.now(timezone.utc) + timedelta(days=days)
+    actual_end = rel["endDateTs"]
+    if actual_end.tzinfo is None:
+        actual_end = actual_end.replace(tzinfo=timezone.utc)
+    assert abs((actual_end - expected_end).total_seconds()) < 5
+
+
+def test_trial_accept_does_not_create_wallet_transaction(fake_db, app, client):
+    _set_wallet(fake_db, ATHLETE_UID, balance=0)
+    _as(app, ATHLETE_UID)
+    request_id = client.post(
+        "/api/coaching/request", json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"}
+    ).json()["requestId"]
+
+    _as(app, EXPERT_UID)
+    r = client.post("/api/coaching/accept", json={"requestId": request_id, "durationDays": 5})
+    assert r.status_code == 200, r.text
+
+    wallet = fake_db.store[f"users/{ATHLETE_UID}"]["wallet"]
+    assert wallet["balance"] == 0
+    assert wallet["reserved"] == 0
+    assert not any(k.startswith("wallet_transactions/") for k in fake_db.store), \
+        "a trial accept must never create a wallet_transactions doc"
+
+    req_doc = fake_db.store[f"personal_coach_requests/{request_id}"]
+    assert req_doc["walletTransactionId"] is None
+    rel = fake_db.store[f"personal_coaching/{ATHLETE_UID}"]
+    assert rel["paymentId"] is None
+
+
+def test_second_trial_request_after_accepted_is_blocked(fake_db, app, client):
+    _set_wallet(fake_db, ATHLETE_UID, balance=0)
+    _as(app, ATHLETE_UID)
+    request_id = client.post(
+        "/api/coaching/request", json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"}
+    ).json()["requestId"]
+    _as(app, EXPERT_UID)
+    assert client.post(
+        "/api/coaching/accept", json={"requestId": request_id, "durationDays": 5}
+    ).status_code == 200
+
+    # End the trial so a NEW request isn't also blocked by the (unrelated)
+    # active-relationship guard — isolates the trial-history guard itself.
+    _as(app, ATHLETE_UID)
+    assert client.post("/api/coaching/end").status_code == 200
+
+    r = client.post("/api/coaching/request",
+                     json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"})
+    assert r.status_code == 409
+    assert r.json()["detail"] == "trial_already_used"
+
+
+def test_second_trial_request_after_decline_or_withdraw_is_allowed(fake_db, app, client):
+    """A request that never reached 'active' didn't consume the athlete's
+    one free trial with this expert."""
+    _set_wallet(fake_db, ATHLETE_UID, balance=0)
+    _as(app, ATHLETE_UID)
+    request_id = client.post(
+        "/api/coaching/request", json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"}
+    ).json()["requestId"]
+
+    _as(app, EXPERT_UID)
+    assert client.post("/api/coaching/reject", json={"requestId": request_id}).status_code == 200
+
+    _as(app, ATHLETE_UID)
+    r = client.post("/api/coaching/request",
+                     json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"})
+    assert r.status_code == 200, r.text
+
+
+def test_athlete_with_active_paid_coach_cannot_start_trial_elsewhere(fake_db, app, client):
+    """Reuses the existing active_coaching_exists guard unmodified — must
+    fire identically for a FREE_TRIAL request."""
+    _set_wallet(fake_db, ATHLETE_UID, balance=1000)
+    _as(app, ATHLETE_UID)
+    request_id = client.post(
+        "/api/coaching/request", json={"expertId": EXPERT_UID, "planType": "diet"}
+    ).json()["requestId"]
+    _as(app, EXPERT_UID)
+    client.post("/api/coaching/accept", json={"requestId": request_id})
+
+    fake_db.store["experts/expert_2"] = {"name": "Coach Two", "pricing": {}}
+    _as(app, ATHLETE_UID)
+    r = client.post("/api/coaching/request",
+                     json={"expertId": "expert_2", "requestType": "FREE_TRIAL"})
+    assert r.status_code == 409
+    assert r.json()["detail"] == "active_coaching_exists"
+
+
+def test_trial_relationship_sweep_uses_trial_copy_not_30_day_text(fake_db, app, client):
+    _set_wallet(fake_db, ATHLETE_UID, balance=0)
+    _as(app, ATHLETE_UID)
+    request_id = client.post(
+        "/api/coaching/request", json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"}
+    ).json()["requestId"]
+    _as(app, EXPERT_UID)
+    client.post("/api/coaching/accept", json={"requestId": request_id, "durationDays": 5})
+
+    from datetime import datetime, timedelta, timezone
+    fake_db.store[f"personal_coaching/{ATHLETE_UID}"]["endDateTs"] = datetime.now(timezone.utc) - timedelta(days=1)
+
+    expired = coaching_sweep.sweep_expired_relationships()
+    assert expired == 1
+    assert fake_db.store[f"personal_coaching/{ATHLETE_UID}"]["status"] == "expired"
+
+    athlete_notes = _notifications_for(fake_db, ATHLETE_UID)
+    trial_note = next(n for n in athlete_notes if n["type"] == "coaching_subscription_expired")
+    assert "5-day" in trial_note["message"]
+    assert "30-day" not in trial_note["message"], "must never show the wrong (paid) duration"
+
+    coach_notes = _notifications_for(fake_db, EXPERT_UID)
+    coach_note = next(n for n in coach_notes if n["type"] == "coaching_subscription_expired")
+    assert "30-day" not in coach_note["message"]
+
+
+def test_trial_reject_and_expired_request_sweep_do_not_mention_reservation(fake_db, app, client):
+    # Reject path.
+    _set_wallet(fake_db, ATHLETE_UID, balance=0)
+    _as(app, ATHLETE_UID)
+    request_id = client.post(
+        "/api/coaching/request", json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"}
+    ).json()["requestId"]
+    _as(app, EXPERT_UID)
+    assert client.post("/api/coaching/reject", json={"requestId": request_id}).status_code == 200
+
+    reject_note = next(n for n in _notifications_for(fake_db, ATHLETE_UID)
+                        if n["type"] == "coaching_declined")
+    assert "reserved" not in reject_note["message"].lower()
+
+    # 48h pending-request expiry sweep path.
+    _as(app, ATHLETE_UID)
+    request_id_2 = client.post(
+        "/api/coaching/request", json={"expertId": EXPERT_UID, "requestType": "FREE_TRIAL"}
+    ).json()["requestId"]
+    fake_db.store[f"personal_coach_requests/{request_id_2}"]["expiresAt"] = "2000-01-01T00:00:00+00:00"
+    assert coaching_sweep.sweep_expired_requests() == 1
+
+    expire_note = next(n for n in _notifications_for(fake_db, ATHLETE_UID)
+                        if n["type"] == "coaching_expired")
+    assert "reserved" not in expire_note["message"].lower()
+
+
+def test_paid_coaching_still_debits_wallet_unchanged(fake_db, app, client):
+    """Regression guard: the PAID path must remain byte-identical after the
+    trial branches were added — same happy-path assertions as
+    test_happy_path_reserve_accept_activates, re-asserted here as an
+    explicit "trial didn't break paid" checkpoint."""
+    _set_wallet(fake_db, ATHLETE_UID, balance=1000)
+    _as(app, ATHLETE_UID)
+    r = client.post("/api/coaching/request", json={"expertId": EXPERT_UID, "planType": "diet"})
+    assert r.status_code == 200, r.text
+    assert r.json()["amount"] == 499
+    request_id = r.json()["requestId"]
+
+    _as(app, EXPERT_UID)
+    accept = client.post("/api/coaching/accept", json={"requestId": request_id})
+    assert accept.status_code == 200, accept.text
+
+    wallet = fake_db.store[f"users/{ATHLETE_UID}"]["wallet"]
+    assert wallet["balance"] == 501
+    rel = fake_db.store[f"personal_coaching/{ATHLETE_UID}"]
+    assert rel["coachingType"] == "PAID"
+    assert rel["trialDurationDays"] is None
+    assert any(k.startswith("wallet_transactions/") for k in fake_db.store)

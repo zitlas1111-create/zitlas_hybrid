@@ -49,9 +49,14 @@ def _release_one(db, request_ref):
     if result is None:
         return
     athlete_uid, req = result
-    notify(db, athlete_uid, "Request expired",
-           (req.get("expertName") or "The expert") + " didn't respond in time. "
-           "Your reserved amount has been released.",
+    is_trial = req.get("requestType") == "FREE_TRIAL"
+    _msg = (
+        (req.get("expertName") or "The expert") + " didn't respond to your free trial request in time."
+        if is_trial else
+        (req.get("expertName") or "The expert") + " didn't respond in time. "
+        "Your reserved amount has been released."
+    )
+    notify(db, athlete_uid, "Request expired", _msg,
            category="expert", type="coaching_expired", action="coaches")
 
 
@@ -101,13 +106,25 @@ def _expire_one_relationship(db, rel_ref):
         return
     athlete_uid = rel.get("athleteId")
     coach_id = rel.get("coachId")
-    notify(db, athlete_uid, "Coaching Ended",
-           "Your 30-day Personal Coaching with " + (rel.get("coachName") or "your coach") +
-           " has ended. You're back on the AI-only plan — renew anytime to continue.",
-           category="expert", type="coaching_subscription_expired", action="coaches")
-    notify(db, coach_id, "Coaching Ended",
-           (rel.get("athleteName") or "An athlete") + "'s 30-day coaching subscription has ended.",
-           category="expert", type="coaching_subscription_expired", action="expert_dashboard")
+    coach_name = rel.get("coachName") or "your coach"
+    athlete_name = rel.get("athleteName") or "An athlete"
+    if rel.get("coachingType") == "FREE_TRIAL":
+        duration = rel.get("trialDurationDays") or "your"
+        notify(db, athlete_uid, "Free Trial Ended",
+               f"Your {duration}-day Free Trial with {coach_name} has ended. "
+               "Continue with full Personal Coaching to keep working with them.",
+               category="expert", type="coaching_subscription_expired", action="coaches")
+        notify(db, coach_id, "Free Trial Ended",
+               f"{athlete_name}'s free trial has ended.",
+               category="expert", type="coaching_subscription_expired", action="expert_dashboard")
+    else:
+        notify(db, athlete_uid, "Coaching Ended",
+               "Your 30-day Personal Coaching with " + coach_name +
+               " has ended. You're back on the AI-only plan — renew anytime to continue.",
+               category="expert", type="coaching_subscription_expired", action="coaches")
+        notify(db, coach_id, "Coaching Ended",
+               athlete_name + "'s 30-day coaching subscription has ended.",
+               category="expert", type="coaching_subscription_expired", action="expert_dashboard")
 
 
 def sweep_expired_relationships() -> int:

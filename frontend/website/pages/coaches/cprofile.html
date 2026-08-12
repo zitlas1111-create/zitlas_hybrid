@@ -156,6 +156,14 @@
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
     Personal Coach
   </button>
+  <!-- Free trial — a separate, simpler CTA than the paid Personal Coach
+       flow: a trial grants full access regardless of plan tier, so it
+       skips the 2-step plan-picker sheet entirely (see #freeTrialBackdrop
+       below). Hidden/shown by updateCoachButtons() in cprofile.js. -->
+  <button class="cp-cta cp-cta--trial" id="startFreeTrialBtn" style="display:none">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    Start Free Trial
+  </button>
   <button class="cp-cta cp-cta--verify" id="verifyPlanBtn">
     <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
     Verify Plan
@@ -164,6 +172,16 @@
 
 <!-- Subscription days-remaining (shown only while this expert is your active Personal Coach) -->
 <div class="cp-expiry-wrap" id="coachingExpiryWrap" style="display:none"></div>
+
+<!-- Free Trial ended — shown instead of the generic "Renew" relabel when
+     the expired relationship with THIS expert was a FREE_TRIAL one.
+     Content is filled in by updateCoachButtons() in cprofile.js. -->
+<div class="cp-trial-ended-wrap" id="trialEndedWrap" style="display:none">
+  <p class="cp-trial-ended-title" id="trialEndedTitle">Your Personal Coaching Free Trial has ended.</p>
+  <p class="cp-trial-ended-sub" id="trialEndedSub"></p>
+  <button class="cp-cta cp-cta--coach" id="trialContinuePaidBtn">Continue with Personal Coaching</button>
+  <a class="cp-trial-ended-explore" href="coaches.html">Explore Experts</a>
+</div>
 
 <!-- End Coaching (shown only while this expert is your active Personal Coach) -->
 <div class="cp-end-coaching-wrap" id="endCoachingWrap" style="display:none">
@@ -264,6 +282,23 @@
     <div class="cp-end-coaching-actions">
       <button class="cp-end-coaching-cancel" id="endCoachingCancelBtn">Cancel</button>
       <button class="cp-end-coaching-confirm" id="endCoachingConfirmBtn">End Coaching</button>
+    </div>
+  </div>
+</div>
+
+<!-- Free Trial request confirmation dialog — same defense-in-depth pattern
+     (inline display:none, JS-driven visibility + .open animation) and the
+     SAME cp-end-coaching-* classes as the End Coaching dialog above (a
+     confirm/cancel dialog is a confirm/cancel dialog — reusing the class
+     names means zero new CSS is needed), just a distinct id so the two
+     dialogs never interfere. -->
+<div class="cp-end-coaching-backdrop" id="freeTrialBackdrop" style="display:none" role="dialog" aria-modal="true" aria-labelledby="freeTrialTitle">
+  <div class="cp-end-coaching-modal">
+    <p class="cp-end-coaching-title" id="freeTrialTitle">Request a Free Personal Coaching Trial?</p>
+    <p class="cp-end-coaching-sub" id="freeTrialSub">The expert will choose your trial length (5, 10, or 15 days) and you'll get full Personal Coaching access for free — no payment, ever, for a trial.</p>
+    <div class="cp-end-coaching-actions">
+      <button class="cp-end-coaching-cancel" id="freeTrialCancelBtn">Cancel</button>
+      <button class="cp-end-coaching-confirm" id="freeTrialConfirmBtn">Request Free Trial</button>
     </div>
   </div>
 </div>

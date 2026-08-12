@@ -691,9 +691,10 @@
       .slice(0, 2).join('').toUpperCase() || 'A';
     $('cwPlanChip').textContent = S.opts.planLabel || S.opts.planType || 'Coaching';
     var dl = daysLeft();
+    var isTrial = S.opts.coachingType === 'FREE_TRIAL';
     $('cwSubline').textContent = S.opts.status === 'active'
-      ? ('Active coaching' + (dl !== null ? ' · ' + dl + ' days left' : ''))
-      : 'Coaching ended';
+      ? ((isTrial ? 'FREE TRIAL' : 'Active coaching') + (dl !== null ? ' · ' + dl + ' days left' : ''))
+      : (isTrial ? 'Free trial ended' : 'Coaching ended');
 
     var ctx = athleteCtx();
     var c = ctx.calculations || {};

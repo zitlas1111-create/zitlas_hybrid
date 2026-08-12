@@ -104,6 +104,8 @@ function openCoachWorkspace(rel, initialTab) {
     coachName:   rel.coachName || (_currentExpert ? _currentExpert.name : 'Coach'),
     planType:    rel.planType || 'complete',
     planLabel:   rel.planLabel || 'Personal Coaching',
+    coachingType: rel.coachingType,
+    trialDurationDays: rel.trialDurationDays,
     startDate:   rel.startDate,
     endDate:     rel.endDate,
     status:      rel.status,
@@ -1355,12 +1357,15 @@ function renderMyAthletes(rels, expert) {
     var name     = rel.athleteName || 'Athlete';
     var initials = name.split(/\s+/).map(function(w) { return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
 
+    var _trialTag = rel.coachingType === 'FREE_TRIAL'
+      ? ' <span style="background:linear-gradient(135deg,var(--ai-accent,#3B82F6),#2563EB);color:#fff;font-weight:800;border-radius:999px;padding:1px 8px;font-size:9px;letter-spacing:.04em;vertical-align:middle;">FREE TRIAL</span>'
+      : '';
     var card = document.createElement('div');
     card.className = 'ed-athlete-card';
     card.innerHTML =
       '<div class="ed-athlete-av">' + esc(initials) + '</div>' +
       '<div class="ed-athlete-info">' +
-        '<span class="ed-athlete-name">' + esc(name) + '</span>' +
+        '<span class="ed-athlete-name">' + esc(name) + _trialTag + '</span>' +
         '<span class="ed-athlete-sub' + (lowDays ? ' ed-athlete-sub--warn' : '') + '">' +
           (lowDays ? '⚠ ' : '') + 'Coaching since ' +
           esc(new Date(rel.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })) +
@@ -1460,11 +1465,12 @@ function renderCoachingRequests() {
     var icon = PC_PLAN_ICONS[req.planType] || '👨‍🏫';
     var name = req.athleteName || 'Athlete';
     var initials = name.split(/\s+/).map(function(w) { return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
+    var isTrialReq = req.requestType === 'FREE_TRIAL';
     var statusLine =
-      req.status === 'pending'  ? '🟢 Payment Reserved — awaiting your response' :
-      req.status === 'active'   ? '✅ Active coaching client' :
+      req.status === 'pending'  ? (isTrialReq ? '🟢 Free trial request — awaiting your response' : '🟢 Payment Reserved — awaiting your response') :
+      req.status === 'active'   ? (isTrialReq ? '✅ Active free trial client' : '✅ Active coaching client') :
       req.status === 'declined' ? '❌ Declined' :
-      req.status === 'expired'  ? '⌛ Expired — reservation released' :
+      req.status === 'expired'  ? (isTrialReq ? '⌛ Free trial ended' : '⌛ Expired — reservation released') :
       req.status === 'ended'    ? 'Coaching ended by athlete' :
       req.status === 'withdrawn'? 'Withdrawn by athlete' : 'Completed';
 
@@ -1472,20 +1478,29 @@ function renderCoachingRequests() {
       ? ' <span style="background:linear-gradient(135deg,#234B35,#2E5F47);color:#101010;font-weight:800;border-radius:999px;padding:1px 8px;font-size:9px;letter-spacing:.04em;vertical-align:middle;">⭐ PRIORITY</span>'
       : '';
     var card = document.createElement('div');
-    card.className = 'ed-athlete-card pc-req-card';
+    card.className = 'ed-athlete-card pc-req-card' +
+      (isTrialReq && req.status === 'pending' ? ' pc-req-card--trial' : '');
     card.innerHTML =
       '<div class="ed-athlete-av">' + esc(initials) + '</div>' +
       '<div class="ed-athlete-info">' +
         '<span class="ed-athlete-name">' + esc(name) + _pcPremBadge + '</span>' +
-        '<span class="ed-athlete-sub">' + icon + ' ' + esc(req.planLabel || req.planType) +
-          ' · ₹' + esc(String(req.price)) + '/mo</span>' +
+        '<span class="ed-athlete-sub">' + icon + ' ' +
+          esc(isTrialReq ? 'Personal Coaching Free Trial' : (req.planLabel || req.planType)) +
+          (isTrialReq ? '' : (' · ₹' + esc(String(req.price)) + '/mo')) + '</span>' +
         '<span class="ed-athlete-sub">' + esc(statusLine) + '</span>' +
       '</div>' +
       (req.status === 'pending'
-        ? '<div class="pc-req-actions">' +
-            '<button class="erc-btn erc-btn--secondary pc-decline">Decline</button>' +
-            '<button class="erc-btn erc-btn--primary pc-accept">Accept</button>' +
-          '</div>'
+        ? (isTrialReq
+            ? '<div class="pc-req-actions pc-req-actions--trial">' +
+                '<button class="erc-btn erc-btn--secondary pc-decline">Reject</button>' +
+                '<button class="erc-btn erc-btn--primary pc-trial-dur" data-days="5">5 Days</button>' +
+                '<button class="erc-btn erc-btn--primary pc-trial-dur" data-days="10">10 Days</button>' +
+                '<button class="erc-btn erc-btn--primary pc-trial-dur" data-days="15">15 Days</button>' +
+              '</div>'
+            : '<div class="pc-req-actions">' +
+                '<button class="erc-btn erc-btn--secondary pc-decline">Decline</button>' +
+                '<button class="erc-btn erc-btn--primary pc-accept">Accept</button>' +
+              '</div>')
         : ((req.status === 'active' || req.status === 'ended')
             ? '<button class="erc-btn erc-btn--primary pc-chat">' + (req.status === 'ended' ? 'View Chat' : 'Chat') + '</button>'
             : ''));
@@ -1493,12 +1508,21 @@ function renderCoachingRequests() {
     var acceptBtn  = card.querySelector('.pc-accept');
     var declineBtn = card.querySelector('.pc-decline');
     var chatBtn    = card.querySelector('.pc-chat');
+    var trialDurBtns = card.querySelectorAll('.pc-trial-dur');
 
     if (acceptBtn) acceptBtn.addEventListener('click', function() {
       _pcUpdateRequestStatus(req, 'accepted');
     });
     if (declineBtn) declineBtn.addEventListener('click', function() {
       _pcUpdateRequestStatus(req, 'declined');
+    });
+    /* One click both picks the duration AND accepts — matches the spec's
+       mockup exactly ([5 DAYS] [10 DAYS] [15 DAYS] [REJECT] as 4 parallel
+       buttons, not a picker + separate confirm step). */
+    trialDurBtns.forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        _pcUpdateRequestStatus(req, 'accepted', Number(btn.dataset.days));
+      });
     });
     if (chatBtn) chatBtn.addEventListener('click', function() {
       if (req.status === 'active') {
@@ -1508,6 +1532,7 @@ function renderCoachingRequests() {
           athleteId: req.athleteId, athleteName: req.athleteName,
           coachId: req.expertId, coachName: req.expertName,
           planType: req.planType, planLabel: req.planLabel, status: 'active',
+          coachingType: req.requestType === 'FREE_TRIAL' ? 'FREE_TRIAL' : 'PAID',
         };
         openCoachWorkspace(rel, 'overview');
       } else {
@@ -1526,16 +1551,21 @@ function renderCoachingRequests() {
    declining releases the reservation. Neither is safe to enforce
    client-side (a spoofed .update() could activate coaching without ever
    actually charging anyone). */
-function _pcUpdateRequestStatus(req, newStatus) {
+function _pcUpdateRequestStatus(req, newStatus, durationDays) {
   if (typeof getIdToken !== 'function') { edShowToast('Connection unavailable — please try again.'); return; }
   var endpoint = newStatus === 'accepted' ? '/api/coaching/accept' : '/api/coaching/reject';
-  console.log('[COACHING]', newStatus, '→', endpoint, req.requestId);
+  var isTrialReq = req.requestType === 'FREE_TRIAL';
+  console.log('[COACHING]', newStatus, '→', endpoint, req.requestId,
+    durationDays ? ('durationDays=' + durationDays) : '');
+
+  var body = { requestId: req.requestId };
+  if (durationDays) body.durationDays = durationDays;
 
   getIdToken().then(function(token) {
     return fetch(endpoint, {
       method: 'POST',
       headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ requestId: req.requestId }),
+      body: JSON.stringify(body),
     });
   }).then(function(res) {
     return res.json().catch(function() { return {}; }).then(function(data) {
@@ -1544,10 +1574,12 @@ function _pcUpdateRequestStatus(req, newStatus) {
   }).then(function(result) {
     if (result.status === 200 && result.data.success) {
       edShowToast(newStatus === 'accepted'
-        ? '✅ Accepted — payment auto-debited, coaching is now active.'
-        : 'Request declined — reservation released.');
+        ? (isTrialReq ? '✅ Free trial started — no charge.' : '✅ Accepted — payment auto-debited, coaching is now active.')
+        : (isTrialReq ? 'Free trial request declined.' : 'Request declined — reservation released.'));
     } else if (result.status === 409) {
       edShowToast('This request was already handled.');
+    } else if (result.status === 400 && result.data.detail === 'invalid_trial_duration') {
+      edShowToast('Please choose a valid trial duration.');
     } else {
       console.error('[COACHING] status update failed', result);
       edShowToast('Could not update the request — please try again.');

@@ -1091,6 +1091,8 @@
       coachVerification: (typeof ZitlasBadge !== 'undefined') ? ZitlasBadge.normalize(coach) : null,
       planType:    rel.planType || 'complete',
       planLabel:   rel.planLabel || 'Personal Coaching',
+      coachingType: rel.coachingType,
+      trialDurationDays: rel.trialDurationDays,
       startDate:   rel.startDate,
       endDate:     rel.endDate,
       status:      rel.status,
@@ -3936,6 +3938,12 @@
     var pcWithdrawBackdrop    = document.getElementById('pcWithdrawBackdrop');
     var pcWithdrawCancelBtn   = document.getElementById('pcWithdrawCancelBtn');
     var pcWithdrawConfirmBtn  = document.getElementById('pcWithdrawConfirmBtn');
+    var trialBtn          = document.getElementById('startFreeTrialBtn');
+    var trialBackdrop     = document.getElementById('freeTrialBackdrop');
+    var trialCancelBtn    = document.getElementById('freeTrialCancelBtn');
+    var trialConfirmBtn   = document.getElementById('freeTrialConfirmBtn');
+    var trialEndedWrap    = document.getElementById('trialEndedWrap');
+    var trialContinuePaidBtn = document.getElementById('trialContinuePaidBtn');
 
     /* Prices come from the expert's own Pricing & Services page (unlimited
        — spec's "No pricing limit, expert decides"); experts who haven't set
@@ -4045,6 +4053,18 @@
       }
       return null;
     }
+    /* UX HINT ONLY — the backend (routes/coaching.py POST /request) is the
+       actual authority on "has this athlete already used a free trial with
+       this expert"; this just lets the button avoid offering a trial that
+       would be rejected 409 trial_already_used anyway. A request that never
+       reached active/expired/ended (declined/withdrawn) did NOT consume the
+       trial, matching the backend's own rule exactly. */
+    function _trialAlreadyUsedFor(expertId) {
+      return _myRequests.some(function(r) {
+        return r.expertId === expertId && r.requestType === 'FREE_TRIAL' &&
+          (r.status === 'active' || r.status === 'expired' || r.status === 'ended');
+      });
+    }
 
     var COACH_SVG = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>';
 
@@ -4054,12 +4074,28 @@
       var relMine    = gate.active && _myCoaching.coachId === coach.id;
       var expiredMine = gate.expired && _myCoaching && _myCoaching.coachId === coach.id;
       var req        = _openRequestFor(coach.id);
+      /* Missing coachingType (any relationship/request created before this
+         field existed) must read as PAID, never crash or mis-render. */
+      var relIsTrial = relMine && _myCoaching.coachingType === 'FREE_TRIAL';
+      var reqIsTrial = !!req && req.requestType === 'FREE_TRIAL';
       buttons.forEach(function(btn) {
         btn.classList.toggle('cp-coach-active', relMine || !!req);
-        if (relMine)          btn.innerHTML = COACH_SVG + ' Your Coach ✓';
-        else if (expiredMine) btn.innerHTML = COACH_SVG + ' 🔄 Renew Personal Coach';
-        else if (req)         btn.innerHTML = COACH_SVG + ' ⏳ Under Review';
-        else                  btn.innerHTML = COACH_SVG + ' Personal Coach';
+        if (relMine && relIsTrial) {
+          btn.innerHTML = COACH_SVG + ' FREE TRIAL' +
+            (gate.daysRemaining !== null ? ' • ' + gate.daysRemaining + ' DAYS LEFT' : '');
+        } else if (relMine) {
+          btn.innerHTML = COACH_SVG + ' Your Coach ✓';
+        } else if (expiredMine && relIsTrial) {
+          btn.innerHTML = COACH_SVG + ' Free Trial Ended';
+        } else if (expiredMine) {
+          btn.innerHTML = COACH_SVG + ' 🔄 Renew Personal Coach';
+        } else if (req && reqIsTrial) {
+          btn.innerHTML = COACH_SVG + ' ⏳ Free Trial Requested';
+        } else if (req) {
+          btn.innerHTML = COACH_SVG + ' ⏳ Under Review';
+        } else {
+          btn.innerHTML = COACH_SVG + ' Personal Coach';
+        }
       });
       if (endWrap) endWrap.style.display = relMine ? 'block' : 'none';
       /* Withdraw Request — visible ONLY while a request to THIS expert is
@@ -4076,12 +4112,39 @@
          render. */
       if (pcWithdrawWrap) pcWithdrawWrap.style.display = (req && !relMine) ? 'block' : 'none';
 
+      /* Start Free Trial CTA — only offered when there's no existing
+         relationship/request with THIS expert at all, and this athlete
+         hasn't already used their one trial with them (client-side hint;
+         the backend is the real authority — see _trialAlreadyUsedFor). */
+      if (trialBtn) {
+        var noRelationshipHere = !relMine && !expiredMine && !req;
+        trialBtn.style.display = (noRelationshipHere && !_trialAlreadyUsedFor(coach.id)) ? '' : 'none';
+      }
+
+      /* Trial Ended block — replaces the generic "Renew" relabel entirely
+         for an expired FREE_TRIAL relationship with this expert. */
+      if (trialEndedWrap) {
+        if (expiredMine && relIsTrial) {
+          trialEndedWrap.style.display = '';
+          var sub = document.getElementById('trialEndedSub');
+          if (sub) {
+            var dur = _myCoaching.trialDurationDays || '';
+            sub.textContent = 'Your ' + dur + '-day Personal Coaching trial with ' +
+              (_myCoaching.coachName || coach.name || 'this expert') + ' has ended.';
+          }
+        } else {
+          trialEndedWrap.style.display = 'none';
+        }
+      }
+
       /* <7 days warning + days-remaining, computed once per relationship
          from the canonical gate — reused for both the athlete-facing
-         banner here and the coach-side roster in expert-dashboard.js. */
+         banner here and the coach-side roster in expert-dashboard.js.
+         Suppressed for a trial: its own "FREE TRIAL • N DAYS LEFT" button
+         label already carries this, so showing both would duplicate it. */
       var expiryWrap = document.getElementById('coachingExpiryWrap');
       if (expiryWrap) {
-        if (relMine && gate.daysRemaining !== null) {
+        if (relMine && !relIsTrial && gate.daysRemaining !== null) {
           expiryWrap.style.display = '';
           expiryWrap.innerHTML = gate.daysRemaining <= 7
             ? '⚠️ Your Personal Coaching expires in ' + gate.daysRemaining + (gate.daysRemaining === 1 ? ' day' : ' days') + '.'
@@ -4119,6 +4182,80 @@
       backdrop.classList.remove('open');
       setTimeout(function() { backdrop.style.display = 'none'; }, 200);
     }
+
+    /* Free Trial confirm modal — deliberately its own, much simpler sheet
+       (no plan-tier step at all): a trial grants full access regardless of
+       tier, so there's nothing to choose beyond confirming. */
+    function openFreeTrialModal() {
+      if (!trialBackdrop) return;
+      trialBackdrop.style.display = 'flex';
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() { trialBackdrop.classList.add('open'); });
+      });
+    }
+    function closeFreeTrialModal() {
+      if (!trialBackdrop) return;
+      trialBackdrop.classList.remove('open');
+      setTimeout(function() { trialBackdrop.style.display = 'none'; }, 200);
+    }
+    if (trialBtn) {
+      trialBtn.addEventListener('click', function() {
+        if (_openRequestFor(coach.id)) { showToast('Your coaching request is awaiting ' + (coach.name || 'the expert') + "'s response."); return; }
+        var other = _anyOpenRequest();
+        if (other) { showToast('You already have a coaching request with ' + (other.expertName || 'another expert') + '.'); return; }
+        openFreeTrialModal();
+      });
+    }
+    if (trialCancelBtn) trialCancelBtn.addEventListener('click', closeFreeTrialModal);
+    if (trialBackdrop)  trialBackdrop.addEventListener('click', function(e) {
+      if (e.target === trialBackdrop) closeFreeTrialModal();
+    });
+    if (trialConfirmBtn) {
+      trialConfirmBtn.addEventListener('click', function() {
+        var uid = _getMyUserId();
+        if (!uid) { showToast('Please sign in first.'); return; }
+        if (typeof getIdToken !== 'function') { showToast('Connection unavailable — please try again.'); return; }
+
+        trialConfirmBtn.disabled = true;
+        trialConfirmBtn.textContent = 'Sending…';
+
+        getIdToken().then(function(token) {
+          return fetch('/api/coaching/request', {
+            method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ expertId: coach.id, requestType: 'FREE_TRIAL' }),
+          });
+        }).then(function(res) {
+          return res.json().catch(function() { return {}; }).then(function(data) {
+            return { status: res.status, data: data };
+          });
+        }).then(function(result) {
+          if (result.status === 200 && result.data.success) {
+            console.log('[COACHING] free trial requested — personal_coach_requests/' + result.data.requestId);
+            closeFreeTrialModal();
+            showToast('📨 Free trial requested — no charge. ' + (coach.name || 'The expert') + ' will confirm shortly.');
+            return;
+          }
+          if (result.status === 409 && result.data.detail === 'trial_already_used') {
+            showToast('You’ve already used your free trial with this expert.');
+          } else if (result.status === 409) {
+            showToast('You already have an open coaching request.');
+          } else {
+            console.error('[COACHING] free trial request failed', result);
+            showToast('Could not send request — please try again.');
+          }
+        }).catch(function(err) {
+          console.error('[COACHING] free trial request failed', err);
+          showToast(err && err.message === 'not_signed_in' ? 'Please sign in first.' : 'Could not send request — please try again.');
+        }).then(function() {
+          trialConfirmBtn.disabled = false;
+          trialConfirmBtn.textContent = 'Request Free Trial';
+        });
+      });
+    }
+    /* "Continue with Personal Coaching" on the Trial Ended screen reuses
+       the existing paid plan-picker sheet — no new flow needed. */
+    if (trialContinuePaidBtn) trialContinuePaidBtn.addEventListener('click', openCoachingSheet);
 
     /* Plan card selection → summary */
     if (backdrop) {
