@@ -150,28 +150,33 @@ flutter:
   # see https://flutter.dev/to/font-from-package
 
 # Android launcher icon, generated from the real ZITLAS logo
-# (assets/images/logo.png) via `dart run flutter_launcher_icons`. The two
-# source files under assets/icon/ are the same unaltered logo artwork,
-# uniformly scaled (no stretch) and centered on a square canvas so it isn't
-# distorted and sits inside Android's adaptive-icon safe zone:
-#   - logo_icon.png        transparent bg -> adaptive icon foreground
-#   - logo_icon_legacy.png flattened bg   -> legacy (pre-API-26) icon
-# #234B35 is ZitlasColors.primary — the app's own documented "Primary
-# ZITLAS green" (lib/app/theme.dart), the same green already used for the
-# logo's own swoosh accents and for buttons/shadows across the app. A
-# SOLID black adaptive-icon background (#000000, the old value here) reads
-# as a stark black square/blob on the home screen next to every other
-# app's colored icon card — this brand green gives the white "Z"
-# foreground the same dark contrast black provided, without the "broken
-# icon" look. logo_icon_legacy.png is a flattened composite of the SAME
-# transparent foreground onto this same green (not a separate design), so
-# pre-API-26 devices get an identical look to the adaptive icon.
+# (assets/images/logo.png) via `dart run flutter_launcher_icons`.
+# assets/icon/logo_icon.png is the unaltered logo artwork, uniformly scaled
+# (no stretch) and centered on a square canvas with real per-pixel alpha
+# transparency around it — used as both the adaptive-icon foreground AND
+# the legacy (pre-API-26) source, so neither has any baked-in background.
+#
+# adaptive_icon_background is "#00000000" — an 8-digit ARGB Android color
+# resource with alpha=00 (fully transparent), NOT a color choice — the
+# RGB channels are irrelevant when alpha is 0. This is a real, standard
+# Android <color> resource value (flutter_launcher_icons writes it into
+# colors.xml verbatim, unvalidated — confirmed by reading its source),
+# not a hack. Previous values here were #000000 (looked like a broken-icon
+# black square) then #234B35/ZitlasColors.primary (a green square) — both
+# rejected as still showing a visible colored card behind the logo. This
+# lets the launcher's wallpaper show through around the Z, matching
+# premium competitor apps that ship transparent icons.
+#
+# Real Android limitation, not glossed over: the logo's own "Z" letterform
+# is white, so on a very light/white patch of wallpaper its contrast is
+# lower than on a dark patch — that's a property of the existing logo art
+# (unchanged here, not redesigned), not of how transparency is configured.
 # Android only — iOS is untouched (out of scope for this migration).
 flutter_launcher_icons:
   android: true
   ios: false
-  image_path: "assets/icon/logo_icon_legacy.png"
+  image_path: "assets/icon/logo_icon.png"
   min_sdk_android: 24
-  adaptive_icon_background: "#234B35"
+  adaptive_icon_background: "#00000000"
   adaptive_icon_foreground: "assets/icon/logo_icon.png"
   adaptive_icon_foreground_inset: 0
