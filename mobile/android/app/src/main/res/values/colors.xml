@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#000000</color>
+    <color name="ic_launcher_background">#234B35</color>
     <!-- Must equal ZitlasColors.bgPrimary in lib/app/theme.dart so the native
          pre-Flutter launch frame and the Dart splash are the same colour. -->
     <color name="zitlas_splash_bg">#000000</color>

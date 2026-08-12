@@ -155,14 +155,23 @@ flutter:
 # uniformly scaled (no stretch) and centered on a square canvas so it isn't
 # distorted and sits inside Android's adaptive-icon safe zone:
 #   - logo_icon.png        transparent bg -> adaptive icon foreground
-#   - logo_icon_legacy.png black bg       -> legacy/flattened icon
-# #000000 is the app's own existing brand color (ZitlasColors.bgPrimary).
+#   - logo_icon_legacy.png flattened bg   -> legacy (pre-API-26) icon
+# #234B35 is ZitlasColors.primary — the app's own documented "Primary
+# ZITLAS green" (lib/app/theme.dart), the same green already used for the
+# logo's own swoosh accents and for buttons/shadows across the app. A
+# SOLID black adaptive-icon background (#000000, the old value here) reads
+# as a stark black square/blob on the home screen next to every other
+# app's colored icon card — this brand green gives the white "Z"
+# foreground the same dark contrast black provided, without the "broken
+# icon" look. logo_icon_legacy.png is a flattened composite of the SAME
+# transparent foreground onto this same green (not a separate design), so
+# pre-API-26 devices get an identical look to the adaptive icon.
 # Android only — iOS is untouched (out of scope for this migration).
 flutter_launcher_icons:
   android: true
   ios: false
   image_path: "assets/icon/logo_icon_legacy.png"
   min_sdk_android: 24
-  adaptive_icon_background: "#000000"
+  adaptive_icon_background: "#234B35"
   adaptive_icon_foreground: "assets/icon/logo_icon.png"
   adaptive_icon_foreground_inset: 0
