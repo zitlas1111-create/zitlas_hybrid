@@ -1064,6 +1064,9 @@
      tell whether the coach it's currently talking to is a PAST coach whose
      relationship has ended, and lock the conversation read-only. */
   var _pcRelationship = null;
+  /* Guards _restorePendingWorkspace-equivalent logic in initPersonalCoaching
+     so it only ever acts on the first personal_coaching snapshot. */
+  var _cwRestoreChecked = false;
   function _chatIsReadOnlyFor(coach) {
     return !!(coach && _pcRelationship &&
       _pcRelationship.coachId === coach.id && _pcRelationship.status === 'ended');
@@ -1080,8 +1083,35 @@
       _pcRelationship.coachId === coach.id &&
       typeof ZitlasCoachingGate !== 'undefined' && ZitlasCoachingGate.evaluate(_pcRelationship).active);
   }
+  /* Refresh-safe tab restore, mirroring expert-dashboard.js's cwAthlete/cwTab
+     pair — but the athlete side only ever needs the tab: this page is
+     already pinned to one coach via its own ?id=/?expertId= param, so
+     there's no separate athlete identity to round-trip through the URL.
+     history.replaceState (never pushState) so tab clicks don't pollute the
+     back-stack. Frontend-only convenience — see the onSnapshot restore hook
+     below for the actual Firestore-authoritative re-validation. */
+  function _cwTabUrlParam() {
+    try { return new URL(window.location.href).searchParams.get('cwTab'); } catch (_) { return null; }
+  }
+  function _cwSetTabUrlParam(tab) {
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.set('cwTab', tab || 'overview');
+      window.history.replaceState(window.history.state, '', url.toString());
+    } catch (_) {}
+  }
+  function _cwClearTabUrlParam() {
+    try {
+      var url = new URL(window.location.href);
+      url.searchParams.delete('cwTab');
+      window.history.replaceState(window.history.state, '', url.toString());
+    } catch (_) {}
+  }
+
   function _openCoachingWorkspace(coach, tab) {
     var rel = _pcRelationship;
+    var effTab = tab || 'overview';
+    _cwSetTabUrlParam(effTab);
     ZitlasCoachingWorkspace.open({
       role:        'athlete',
       athleteId:   rel.athleteId || _getMyUserId(),
@@ -1096,7 +1126,9 @@
       startDate:   rel.startDate,
       endDate:     rel.endDate,
       status:      rel.status,
-      initialTab:  tab || 'overview',
+      initialTab:  effTab,
+      onTabChange: function (t) { _cwSetTabUrlParam(t); },
+      onClose:     function () { _cwClearTabUrlParam(); },
     });
   }
   function _applyChatReadOnlyState() {
@@ -4578,6 +4610,23 @@
             ? _myCoaching.status + ' with ' + _myCoaching.coachName : 'none');
           updateCoachButtons();
           _applyChatReadOnlyState();
+
+          /* Refresh-safe workspace restore — one-shot guard so this only
+             fires on the FIRST snapshot after page load, never on a later
+             live update (which would otherwise reopen the workspace out of
+             nowhere mid-session, e.g. right after the athlete closes it).
+             _coachingWorkspaceFor(coach) re-validates against the snapshot
+             that just arrived, so a stale/tampered ?cwTab= on an
+             ended/expired/foreign relationship simply fails to restore. */
+          if (!_cwRestoreChecked) {
+            _cwRestoreChecked = true;
+            var pendingTab = _cwTabUrlParam();
+            if (pendingTab && window.ZitlasCoachingWorkspace && _coachingWorkspaceFor(coach)) {
+              _openCoachingWorkspace(coach, pendingTab);
+            } else if (pendingTab) {
+              _cwClearTabUrlParam();
+            }
+          }
         }, function(err) { console.warn('[COACHING] relationship listener error', err); });
 
         ZitlasDB.collection('personal_coach_requests')

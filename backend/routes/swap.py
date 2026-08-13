@@ -125,15 +125,33 @@ async def deterministic_swap(body: SwapRequest) -> dict[str, Any]:
         meal_preparer=ctx.get("meal_preparer"),
         disliked_foods=ctx.get("disliked_foods"),
         nutrition_target=target,
+        goal_key=ctx.get("goal_key"),
     )
 
     tolerance = getattr(engine, "last_swap_tolerance", 1.0)
     relaxed = tolerance > 1.0
 
+    goal_key = ctx.get("goal_key")
     options = []
     for combo in combos:
         macros = food_engine._combo_macros(combo)
         anchor = combo[0]
+        # Subtle, DATA-BACKED labels only — never a health claim the numbers
+        # don't support. "High fiber" is deliberately NOT repeated here —
+        # it's already the dedicated `high_fiber` boolean below, same
+        # contract as the pre-existing `high_protein`. "Better protein
+        # match" reuses describe_swap's own >=2g threshold for "worth
+        # naming"; "Similar calories" reuses its <5% threshold — both the
+        # same real macros already shown, framed as a reason rather than
+        # restated.
+        quality_labels: list[str] = []
+        if target and target.get("protein") and macros["protein"] - target["protein"] >= 2:
+            quality_labels.append("Better protein match")
+        if target and target.get("calories") and abs(macros["calories"] - target["calories"]) <= target["calories"] * 0.05:
+            quality_labels.append("Similar calories")
+        if goal_key == "transformation" and food_engine.nutrition_quality_score(anchor, goal_key="transformation") >= 0.60:
+            quality_labels.append("Transformation friendly")
+
         options.append(
             {
                 "name": " + ".join(f["name"] for f in combo),
@@ -144,10 +162,14 @@ async def deterministic_swap(body: SwapRequest) -> dict[str, Any]:
                 "carbs_g": round(macros["carbs"], 1),
                 "fat_g": round(macros["fat"], 1),
                 # Written from the numbers, not by a model.
-                "reason": food_engine.describe_swap(combo, target, ctx["goal_tags"]),
+                "reason": food_engine.describe_swap(
+                    combo, target, ctx["goal_tags"], goal_label=food_engine.goal_key_label(goal_key),
+                ),
                 "availability": _availability_label(anchor, ctx.get("user_state")),
                 "budget_level": _budget_label(anchor),
                 "high_protein": bool(anchor.get("high_protein")),
+                "high_fiber": bool(anchor.get("high_fiber")),
+                "quality_labels": quality_labels,
             }
         )
 
@@ -160,11 +182,17 @@ async def deterministic_swap(body: SwapRequest) -> dict[str, Any]:
         "options": options,
         "current": target,
         # HONESTY FLAG — surfaced so the app can label a widened result
-        # "Closest available nutritional match" instead of implying the
-        # standard band was met.
+        # instead of implying the standard band was met.
         "relaxed_match": relaxed,
         "match_note": (
-            "Closest available nutritional match"
+            # "Best available match" rather than "Closest available
+            # NUTRITIONAL match" — the old wording implied macro-closeness
+            # was the reason it was offered even when the pool's top-ranked
+            # candidate cleared the health-quality gate easily and was
+            # offered mainly because nothing else passed the calorie band.
+            # This still only fires when the band genuinely had to widen
+            # (`relaxed`) — never a claim the ranking itself doesn't back.
+            "Best available match"
             if relaxed
             else "Within your usual nutrition range"
         ),

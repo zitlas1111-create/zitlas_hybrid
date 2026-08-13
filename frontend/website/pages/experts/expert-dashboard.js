@@ -84,7 +84,31 @@ let _prInboxActiveTab     = 'pending'; /* which inbox tab is visible */
 var _pcRelByAthlete = {};
 function _pcChatIsReadOnlyFor(athleteId) {
   var rel = athleteId && _pcRelByAthlete[athleteId];
-  return !!(rel && rel.status === 'ended');
+  return !!(rel && (rel.status === 'ended' || rel.status === 'expired'));
+}
+
+/* URL-based workspace identity — restore-on-refresh support (see
+   _restorePendingWorkspace). Deliberately NOT localStorage: the task's own
+   constraint is that frontend persistence is UX-only, and the URL is
+   re-validated against Firestore at restore time rather than trusted, so a
+   stale/tampered query string just fails to restore instead of granting
+   anything. history.replaceState (never pushState) so tab clicks don't
+   pollute the back-stack. */
+function _cwSetUrlParams(athleteId, tab) {
+  try {
+    var url = new URL(window.location.href);
+    url.searchParams.set('cwAthlete', athleteId);
+    url.searchParams.set('cwTab', tab || 'overview');
+    window.history.replaceState(window.history.state, '', url.toString());
+  } catch (_) {}
+}
+function _cwClearUrlParams() {
+  try {
+    var url = new URL(window.location.href);
+    url.searchParams.delete('cwAthlete');
+    url.searchParams.delete('cwTab');
+    window.history.replaceState(window.history.state, '', url.toString());
+  } catch (_) {}
 }
 
 /* Open the shared Coaching Workspace (components/coaching-workspace.js) for
@@ -96,6 +120,8 @@ function openCoachWorkspace(rel, initialTab) {
     openExpertChat('chat_' + rel.athleteId + '_' + rel.coachId, rel.athleteName || 'Athlete');
     return;
   }
+  var tab = initialTab || 'overview';
+  _cwSetUrlParams(rel.athleteId, tab);
   ZitlasCoachingWorkspace.open({
     role:        'coach',
     athleteId:   rel.athleteId,
@@ -109,7 +135,9 @@ function openCoachWorkspace(rel, initialTab) {
     startDate:   rel.startDate,
     endDate:     rel.endDate,
     status:      rel.status,
-    initialTab:  initialTab || 'overview',
+    initialTab:  tab,
+    onTabChange: function (t) { _cwSetUrlParams(rel.athleteId, t); },
+    onClose:     function () { _cwClearUrlParams(); },
   });
 }
 function _applyExpertChatReadOnlyState() {
@@ -1466,11 +1494,21 @@ function renderCoachingRequests() {
     var name = req.athleteName || 'Athlete';
     var initials = name.split(/\s+/).map(function(w) { return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
     var isTrialReq = req.requestType === 'FREE_TRIAL';
+    /* 'expired' is overloaded: release_reservation_txn writes it for a
+       request nobody ever accepted (48h no-response reservation release),
+       while coaching_sweep's relationship-expiry sync (see
+       backend/services/coaching_sweep.py _expire_one_relationship) now ALSO
+       writes it for a request whose engagement ran its full course and
+       ended. acceptedAt/activatedAt only ever get set by /accept, so their
+       presence disambiguates "was ever active" without any schema change. */
+    var wasEverActive = !!(req.acceptedAt || req.activatedAt);
     var statusLine =
       req.status === 'pending'  ? (isTrialReq ? '🟢 Free trial request — awaiting your response' : '🟢 Payment Reserved — awaiting your response') :
       req.status === 'active'   ? (isTrialReq ? '✅ Active free trial client' : '✅ Active coaching client') :
       req.status === 'declined' ? '❌ Declined' :
-      req.status === 'expired'  ? (isTrialReq ? '⌛ Free trial ended' : '⌛ Expired — reservation released') :
+      req.status === 'expired'  ? (wasEverActive
+                                     ? (isTrialReq ? '⌛ Free trial ended' : '⌛ Coaching term ended')
+                                     : '⌛ Expired — reservation released') :
       req.status === 'ended'    ? 'Coaching ended by athlete' :
       req.status === 'withdrawn'? 'Withdrawn by athlete' : 'Completed';
 
@@ -5171,6 +5209,9 @@ function renderAll(baseExpert) {
   }
   /* Auto-open chat when returning from a modify page after completing review */
   _prCheckPendingChatOpen(expert);
+  /* Refresh-safe workspace restore — reopens the same athlete + tab a
+     browser reload would otherwise have thrown the expert out of. */
+  _restorePendingWorkspace(expert);
 
   /* Listen for cross-tab profile updates (another page called ZitlasExpertProfile.save) */
   if (!renderAll._profileListenerAdded) {
@@ -5184,6 +5225,52 @@ function renderAll(baseExpert) {
       renderProfile(refreshed);
     });
   }
+}
+
+/* Reopens the Coaching Workspace on reload, restoring the same athlete +
+   tab the expert was looking at. The URL (?cwAthlete=&cwTab=) is only an
+   identity HINT written by openCoachWorkspace's onTabChange/onClose — it is
+   never trusted for authorization. A fresh one-shot Firestore read
+   re-validates ownership and current status at the moment of restore
+   (Firestore stays the source of truth; the URL is UX-only), so a
+   stale/tampered URL (doc gone, or coachId mismatch) just fails closed and
+   is cleared silently instead of granting access to anything. Runs at most
+   once per page load — later renderAll() calls (auth-state churn, fallback
+   paths) must not reopen a workspace the expert already closed. */
+function _restorePendingWorkspace(expert) {
+  if (_restorePendingWorkspace._done) return;
+  var url;
+  try { url = new URL(window.location.href); } catch (_) { return; }
+  var athleteId = url.searchParams.get('cwAthlete');
+  if (!athleteId) return;
+  _restorePendingWorkspace._done = true;
+
+  var tab = url.searchParams.get('cwTab') || 'overview';
+  var uid = (typeof ZitlasAuth !== 'undefined' && ZitlasAuth.currentUser)
+    ? ZitlasAuth.currentUser.uid : (expert && expert.id);
+  if (!uid || typeof ZitlasDB === 'undefined' || typeof ZitlasCoachingWorkspace === 'undefined') {
+    _cwClearUrlParams();
+    return;
+  }
+
+  ZitlasDB.collection('personal_coaching').doc(athleteId).get().then(function (snap) {
+    if (!snap.exists) { _cwClearUrlParams(); return; }
+    var rel = snap.data();
+    var isActive = typeof ZitlasCoachingGate !== 'undefined'
+      ? ZitlasCoachingGate.evaluate(rel).active
+      : rel.status === 'active';
+    /* Fail closed on ownership OR lifecycle mismatch — mirrors
+       cprofile.js's _coachingWorkspaceFor() gate on the athlete side, so a
+       relationship that expired between the original open() and this
+       reload does not get a restore pathway the live "My Athletes" list
+       (which is itself lifecycle-filtered) never offered in the first
+       place. */
+    if (rel.coachId !== uid || !isActive) { _cwClearUrlParams(); return; }
+    openCoachWorkspace(rel, tab);
+  }).catch(function (e) {
+    console.warn('[CW] restore-on-refresh lookup failed', e);
+    _cwClearUrlParams();
+  });
 }
 
 function _prCheckPendingChatOpen(expert) {

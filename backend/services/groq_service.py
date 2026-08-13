@@ -1581,6 +1581,11 @@ def _engine_query_context(player_profile: dict, lifestyle_data: dict | None) -> 
     print(f"[FOOD ENGINE] Occupation profile: {profile_rules.get('profileName')}")
     return {
         "goal_tags":     food_engine.goal_tags_from_profile(player_profile),
+        # One of 'weight_loss'/'muscle_gain'/'general_fitness'/'transformation'
+        # — see goal_key_from_profile()'s docstring for why this is distinct
+        # from goal_tags above. Used by nutrition_quality_score's
+        # protein/fibre emphasis and describe_swap's label.
+        "goal_key":      food_engine.goal_key_from_profile(player_profile),
         "diet_tags":     food_engine.diet_tags_from_lifestyle(ld.get("diet_type", "")),
         "living_tag":    food_engine.living_tag_from_lifestyle(ld.get("living_situation", "")),
         "budget_tier":   food_engine.budget_tier_from_lifestyle(ld.get("daily_budget", "")),
@@ -2070,6 +2075,7 @@ def _apply_engine_swap(
     combos: list[list[dict]],
     nutrition_target: dict[str, float] | None = None,
     goal_tags: list[str] | None = None,
+    goal_label: str | None = None,
 ) -> dict[str, Any]:
     """Same hallucination firewall as _apply_engine_foods(), for swap-meal:
     `swap`/`alternative` foods always come from the engine's combos, never
@@ -2107,7 +2113,7 @@ def _apply_engine_swap(
             # than reading values — which is how a deep-fried onion bhajiya
             # got described to an athlete as "good protein and healthy
             # carbs". The engine knows the real figures; it writes the line.
-            "reason": food_engine.describe_swap(combo, nutrition_target, goal_tags),
+            "reason": food_engine.describe_swap(combo, nutrition_target, goal_tags, goal_label=goal_label),
             "food_id": anchor["id"],
             "food_ids": [f["id"] for f in combo],
         }
@@ -2274,6 +2280,7 @@ You MUST generate a COMPLETELY DIFFERENT meal with different ingredients.
         meal_preparer=swap_ctx.get("meal_preparer"),
         disliked_foods=swap_ctx.get("disliked_foods"),
         nutrition_target=_swap_nutrition_target(current_foods, engine),
+        goal_key=swap_ctx.get("goal_key"),
     )
     print(f"[SWAP_REGION] backend received = {swap_ctx.get('user_state') or 'None'}")
     print(f"[SWAP ENGINE] {len(swap_combos)} combo(s): "
@@ -2368,6 +2375,7 @@ above. Do not restate calories/protein yourself — those are filled in automati
         swap_combos,
         nutrition_target=_swap_nutrition_target(current_foods, engine),
         goal_tags=swap_ctx.get("goal_tags"),
+        goal_label=food_engine.goal_key_label(swap_ctx.get("goal_key")),
     )
     return result
 

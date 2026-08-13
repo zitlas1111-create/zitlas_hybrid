@@ -63,8 +63,8 @@
     tab: 'overview',
     dayIdx: 0,             /* viewer/editor selected day */
     unsubs: [],
-    dietDraft: null, dietDirty: false, dietDraftSeeded: false,
-    trainDraft: null, trainDirty: false, trainDraftSeeded: false,
+    dietDraft: null, dietDirty: false, dietDraftSeeded: false, dietEditGen: 0,
+    trainDraft: null, trainDirty: false, trainDraftSeeded: false, trainEditGen: 0,
     mealReqs: [],
     checkins: [],
     reviewDraft: null,   /* { reaction, score, comment } while the review sheet is open */
@@ -73,6 +73,12 @@
     chatMsgs: [],
     saving: false,
   };
+
+  /* Debounced auto-save timers, keyed by 'diet'/'training' — separate from
+     S so a retryLoad()/open() reset never leaves a stale timer pointing at
+     a torn-down workspace. See scheduleAutoSave/_flushPendingSave below. */
+  var AUTO_SAVE_DEBOUNCE_MS = 800;
+  var _autoSaveTimers = { diet: null, training: null };
 
   var REACTION_LABEL = {
     perfect: '🟢 Perfect', great: '🟢 Great', good: '🟡 Good',
@@ -110,6 +116,44 @@
   function canEditTraining() {
     return S.opts && S.opts.role === 'coach' && S.opts.status === 'active' &&
       (S.opts.planType === 'training' || S.opts.planType === 'complete');
+  }
+
+  /* ── auto-save (debounced) ──
+     markDirty() calls scheduleAutoSave(type) on every keystroke; the timer
+     is reset each time so a save only actually fires ~800ms after the coach
+     stops typing. _flushPendingSave() is used by navigation (switchTab,
+     close) to save immediately instead of waiting out the debounce — it
+     never blocks the caller, the write just continues in the background. */
+  function scheduleAutoSave(type) {
+    clearTimeout(_autoSaveTimers[type]);
+    _autoSaveTimers[type] = setTimeout(function () {
+      _autoSaveTimers[type] = null;
+      if (type === 'diet') saveDiet(true); else saveTraining(true);
+    }, AUTO_SAVE_DEBOUNCE_MS);
+  }
+  function _cancelAutoSave(type) {
+    clearTimeout(_autoSaveTimers[type]);
+    _autoSaveTimers[type] = null;
+  }
+  function _flushPendingSave(type) {
+    _cancelAutoSave(type);
+    var dirty = type === 'diet' ? S.dietDirty : S.trainDirty;
+    if (!dirty) return;
+    if (type === 'diet') saveDiet(true); else saveTraining(true);
+  }
+  /* States: saving | saved | error | locked. The span sits in the save-bar
+     next to the Save button (see renderDietEditor/renderTrainingEditor); a
+     manual save leaves it blank since the button text itself already says
+     "Saving…"/"Saved ✓" in that path. */
+  function _setSaveStatus(type, state) {
+    var el = $(type === 'diet' ? 'cwDietSaveStatus' : 'cwTrainSaveStatus');
+    if (!el) return;
+    var label = {
+      saving: 'Saving…', saved: '✓ Saved',
+      error: '⚠ Save failed — retrying…', locked: '🔒 Coaching ended',
+    }[state] || '';
+    el.textContent = label;
+    el.className = 'cw-save-status cw-save-status--' + state;
   }
   function fmtDate(iso) {
     try { return new Date(iso).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }); }
@@ -287,8 +331,8 @@
     S.opts = opts;
     S.tab = opts.initialTab || 'overview';
     S.dayIdx = todayIdx();
-    S.dietDraft = null; S.dietDirty = false; S.dietDraftSeeded = false;
-    S.trainDraft = null; S.trainDirty = false; S.trainDraftSeeded = false;
+    S.dietDraft = null; S.dietDirty = false; S.dietDraftSeeded = false; S.dietEditGen = 0;
+    S.trainDraft = null; S.trainDirty = false; S.trainDraftSeeded = false; S.trainEditGen = 0;
     S.plan = null; S.planLoaded = false; S.mealReqs = []; S.chatMsgs = [];
     S.athlete = null; S.athleteLoaded = false;
     S.loadError = null;
@@ -362,6 +406,12 @@
   }
 
   function close() {
+    /* Flush rather than ask — an edit in flight is saved in the background,
+       not discarded behind a confirm() dialog (see plan: "do not ask are
+       you sure if data can be auto-saved"). */
+    _flushPendingSave('diet');
+    _flushPendingSave('training');
+    var onClose = S.opts && S.opts.onClose;
     S.open = false;
     clearTimeout(S.loadTimeoutId);
     S.unsubs.forEach(function (u) { try { u(); } catch (_) {} });
@@ -375,18 +425,13 @@
     document.body.style.overflow = '';
     var navbar = document.getElementById('zitlas-navbar');
     if (navbar) navbar.style.display = '';
+    if (typeof onClose === 'function') onClose();
   }
 
   function switchTab(tab, force) {
     if (S.tab === tab && !force) return;
-    if (S.tab === 'diet' && tab !== 'diet' && S.dietDirty) {
-      if (!win.confirm('You have unsaved diet changes. Leave without saving?')) return;
-      S.dietDirty = false; S.dietDraft = null;
-    }
-    if (S.tab === 'training' && tab !== 'training' && S.trainDirty) {
-      if (!win.confirm('You have unsaved training changes. Leave without saving?')) return;
-      S.trainDirty = false; S.trainDraft = null;
-    }
+    if (S.tab === 'diet' && tab !== 'diet') _flushPendingSave('diet');
+    if (S.tab === 'training' && tab !== 'training') _flushPendingSave('training');
     S.tab = tab;
     var tabsEl = $('cwTabs');
     if (tabsEl) tabsEl.querySelectorAll('[data-cw-tab]').forEach(function (t) {
@@ -395,6 +440,7 @@
     var body = $('cwBody');
     body.classList.toggle('cw-body--chat', tab === 'chat');
     renderTab();
+    if (S.opts && typeof S.opts.onTabChange === 'function') S.opts.onTabChange(tab);
   }
 
   /* ══════════════════════════════════════════════
@@ -558,6 +604,37 @@
           .filter(function (m) { return m && m.type !== 'review_packet'; });
         if (S.tab === 'chat') renderChatMsgs();
       }, function (e) { console.warn('[CW] chat listener error', e); }));
+
+    /* Live relationship status — the ONLY thing that ever changes S.opts
+       after open(). canEditDiet()/canEditTraining()/renderHeader()/
+       renderChatShell() already branch correctly on S.opts.status; without
+       this listener those branches are frozen at whatever status the
+       workspace was opened with, so a mid-session expiry (the 15-min sweep,
+       or the athlete/coach ending it from elsewhere) never takes effect
+       until the page is reloaded. firestore.rules grants read on this doc
+       to the athlete OR the matching coachId regardless of status, so the
+       listener survives the active->expired/ended transition itself. */
+    S.unsubs.push(d.collection('personal_coaching').doc(S.opts.athleteId)
+      .onSnapshot(function (snap) {
+        if (!snap.exists || !S.opts) return;
+        var rel = snap.data();
+        var wasActive = S.opts.status === 'active';
+        S.opts.status = rel.status;
+        S.opts.endDate = rel.endDate || S.opts.endDate;
+        S.opts.coachingType = rel.coachingType || S.opts.coachingType;
+        S.opts.trialDurationDays = rel.trialDurationDays || S.opts.trialDurationDays;
+        if (wasActive && rel.status !== 'active') {
+          var hadUnsaved = S.dietDirty || S.trainDirty;
+          _cancelAutoSave('diet');
+          _cancelAutoSave('training');
+          console.log('[CW] relationship left active mid-session — status now', rel.status);
+          toast(hadUnsaved
+            ? '⚠ This coaching relationship has ended. Unsaved changes could not be saved.'
+            : 'This coaching relationship has ended.');
+          renderHeader();
+          renderTab();
+        }
+      }, function (e) { console.warn('[CW] relationship listener error', e); }));
   }
 
   /* Normalizes the raw users/{uid} doc (cloud-sync.js field names) into
@@ -1310,6 +1387,7 @@
       '<button class="cw-add-btn" id="cwAddMeal">+ Add custom meal to ' + esc(day.day) + '</button>' +
       '<div class="cw-save-bar">' +
         '<button class="cw-ghost-btn" id="cwDietHistory">🕘 History</button>' +
+        '<span class="cw-save-status" id="cwDietSaveStatus"></span>' +
         '<button class="cw-save-btn" id="cwDietSave"' + ((S.dietDirty || S.dietDraftSeeded) ? '' : ' disabled') + '>' +
           ((S.dietDirty || S.dietDraftSeeded) ? 'Save Diet Plan' : 'Saved ✓') + '</button>' +
       '</div>';
@@ -1322,6 +1400,12 @@
         var sb = $('cwDietSave');
         if (sb) { sb.disabled = false; sb.textContent = 'Save Diet Plan'; }
       }
+      /* Bumped on EVERY keystroke, not just the dirty transition — saveDiet
+         compares this against the generation it started with, so a save
+         that was already in flight when the coach typed again never
+         blanks out the dirty flag for an edit it didn't actually capture. */
+      S.dietEditGen++;
+      scheduleAutoSave('diet');
     }
     body.querySelectorAll('[data-cw-meal]').forEach(function (inp) {
       inp.addEventListener('input', function () {
@@ -1365,33 +1449,61 @@
     $('cwDietHistory').addEventListener('click', function () { openHistory('diet'); });
   }
 
-  function saveDiet() {
-    if (!S.dietDraft || S.saving) return;
+  function saveDiet(isAuto) {
+    if (!S.dietDraft) return;
+    if (!canEditDiet()) { _setSaveStatus('diet', 'locked'); return; }
+    if (S.saving) {
+      /* Another save (diet or training — S.saving is a single shared
+         single-flight guard) is already in flight. Don't drop this change:
+         re-arm the debounce so it's retried once the current save clears. */
+      if (isAuto) scheduleAutoSave('diet');
+      return;
+    }
     var d = db();
     if (!d) { toast('Connection unavailable'); return; }
     S.saving = true;
     var btn = $('cwDietSave');
-    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    if (!isAuto && btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    _setSaveStatus('diet', 'saving');
 
     var now = new Date().toISOString();
-    var version = ((S.plan && S.plan.dietVersion) || 0) + 1;
     var docRef = d.collection('coaching_plans').doc(S.opts.athleteId);
     var pendingReqs = S.mealReqs.filter(function (r) { return r.status === 'pending'; });
+    var draft = S.dietDraft;
+    /* Snapshot the edit generation at save-start. dietDraft is mutated
+       IN PLACE by every keystroke, so object identity can't tell us
+       whether new edits landed while this save's transaction was still
+       round-tripping — the generation counter can. Only clear dietDirty if
+       nothing changed since we started; otherwise the coach's newest
+       keystrokes would be reported as "Saved" when they haven't actually
+       reached Firestore yet. */
+    var startGen = S.dietEditGen;
 
     /* Goal-identity stamp: this plan belongs to the athlete's CURRENT
        plan generation. Consumers (diet.js, this workspace) fail-closed
        on mismatch, so it silently retires if the athlete resets. */
-    S.dietDraft.planId = athleteCtx().planId || null;
+    draft.planId = athleteCtx().planId || null;
 
-    docRef.set({
-      athleteId: S.opts.athleteId, athleteName: S.opts.athleteName || 'Athlete',
-      coachId: S.opts.coachId, coachName: S.opts.coachName || 'Coach',
-      planType: S.opts.planType || 'complete',
-      diet: S.dietDraft, dietUpdatedAt: now, dietVersion: version,
-    }, { merge: true }).then(function () {
+    var savedVersion;
+    /* Version bump moved inside the transaction — reads the LIVE server
+       document instead of the locally cached S.plan, which could be stale
+       by the time this fires (debounced auto-save makes overlapping saves
+       a normal occurrence, not just a rare double-click). */
+    d.runTransaction(function (tx) {
+      return tx.get(docRef).then(function (snap) {
+        var cur = snap.exists ? snap.data() : {};
+        savedVersion = (cur.dietVersion || 0) + 1;
+        tx.set(docRef, {
+          athleteId: S.opts.athleteId, athleteName: S.opts.athleteName || 'Athlete',
+          coachId: S.opts.coachId, coachName: S.opts.coachName || 'Coach',
+          planType: S.opts.planType || 'complete',
+          diet: draft, dietUpdatedAt: now, dietVersion: savedVersion,
+        }, { merge: true });
+      });
+    }).then(function () {
       /* Version snapshot for history / restore */
       return docRef.collection('versions').doc('diet_' + Date.now()).set({
-        type: 'diet', data: S.dietDraft, version: version,
+        type: 'diet', data: draft, version: savedVersion,
         savedAt: now, savedBy: S.opts.coachName || 'Coach',
       });
     }).then(function () {
@@ -1405,17 +1517,36 @@
           ? '✅ Your coach replied with new meal options.'
           : '🥗 ' + (S.opts.coachName || 'Your coach') + ' updated your diet plan.',
         'diet_update');
-      S.dietDirty = false;
-      S.dietDraftSeeded = false;
+      var stillCurrent = S.dietEditGen === startGen;
+      if (stillCurrent) { S.dietDirty = false; S.dietDraftSeeded = false; }
       S.saving = false;
-      console.log('[CW] diet saved v' + version);
-      toast('✅ Diet plan published to ' + (S.opts.athleteName || 'the athlete'));
-      renderDietEditor();
+      console.log('[CW] diet saved v' + savedVersion + (isAuto ? ' (auto)' : '') +
+        (stillCurrent ? '' : ' (newer edits pending)'));
+      if (stillCurrent) _setSaveStatus('diet', 'saved');
+      if (isAuto) {
+        /* No renderDietEditor() here — a full re-render replaces
+           #cwBody.innerHTML and would steal focus/cursor out from under the
+           coach if they've resumed typing elsewhere by the time this
+           debounced round-trip resolves. Only the manual-click path
+           re-renders. If a newer edit landed mid-save (stillCurrent is
+           false), the button/status are left exactly as that newer
+           markDirty() call already set them — its own scheduleAutoSave
+           timer is independent and still pending, so nothing is dropped. */
+        if (stillCurrent && btn) { btn.disabled = true; btn.textContent = 'Saved ✓'; }
+      } else {
+        toast('✅ Diet plan published to ' + (S.opts.athleteName || 'the athlete'));
+        renderDietEditor();
+      }
     }).catch(function (e) {
       S.saving = false;
       console.error('[CW] diet save failed', e);
-      toast('Save failed — please try again.');
-      if (btn) { btn.disabled = false; btn.textContent = 'Save Diet Plan'; }
+      _setSaveStatus('diet', 'error');
+      if (isAuto) {
+        if (canEditDiet()) scheduleAutoSave('diet');
+      } else {
+        toast('Save failed — please try again.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Save Diet Plan'; }
+      }
     });
   }
 
@@ -1857,6 +1988,7 @@
       '<button class="cw-add-btn" id="cwAddEx">+ Add exercise</button>' +
       '<div class="cw-save-bar">' +
         '<button class="cw-ghost-btn" id="cwTrainHistory">🕘 History</button>' +
+        '<span class="cw-save-status" id="cwTrainSaveStatus"></span>' +
         '<button class="cw-save-btn" id="cwTrainSave"' + ((S.trainDirty || S.trainDraftSeeded) ? '' : ' disabled') + '>' +
           ((S.trainDirty || S.trainDraftSeeded) ? 'Save Training Plan' : 'Saved ✓') + '</button>' +
       '</div>';
@@ -1869,6 +2001,8 @@
         var sb = $('cwTrainSave');
         if (sb) { sb.disabled = false; sb.textContent = 'Save Training Plan'; }
       }
+      S.trainEditGen++;
+      scheduleAutoSave('training');
     }
     $('cwDayFocus').addEventListener('input', function (e) { day.focus = e.target.value; markDirty(); });
     $('cwDayDuration').addEventListener('input', function (e) { day.duration = e.target.value; markDirty(); });
@@ -1914,44 +2048,70 @@
     $('cwTrainHistory').addEventListener('click', function () { openHistory('training'); });
   }
 
-  function saveTraining() {
-    if (!S.trainDraft || S.saving) return;
+  function saveTraining(isAuto) {
+    if (!S.trainDraft) return;
+    if (!canEditTraining()) { _setSaveStatus('training', 'locked'); return; }
+    if (S.saving) {
+      if (isAuto) scheduleAutoSave('training');
+      return;
+    }
     var d = db();
     if (!d) { toast('Connection unavailable'); return; }
     S.saving = true;
     var btn = $('cwTrainSave');
-    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    if (!isAuto && btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    _setSaveStatus('training', 'saving');
 
     var now = new Date().toISOString();
-    var version = ((S.plan && S.plan.trainingVersion) || 0) + 1;
     var docRef = d.collection('coaching_plans').doc(S.opts.athleteId);
+    var draft = S.trainDraft;
+    /* Same edit-generation guard as saveDiet() — see its comment. */
+    var startGen = S.trainEditGen;
 
     /* Goal-identity stamp — same contract as saveDiet() */
-    S.trainDraft.planId = athleteCtx().planId || null;
+    draft.planId = athleteCtx().planId || null;
 
-    docRef.set({
-      athleteId: S.opts.athleteId, athleteName: S.opts.athleteName || 'Athlete',
-      coachId: S.opts.coachId, coachName: S.opts.coachName || 'Coach',
-      planType: S.opts.planType || 'complete',
-      training: S.trainDraft, trainingUpdatedAt: now, trainingVersion: version,
-    }, { merge: true }).then(function () {
+    var savedVersion;
+    d.runTransaction(function (tx) {
+      return tx.get(docRef).then(function (snap) {
+        var cur = snap.exists ? snap.data() : {};
+        savedVersion = (cur.trainingVersion || 0) + 1;
+        tx.set(docRef, {
+          athleteId: S.opts.athleteId, athleteName: S.opts.athleteName || 'Athlete',
+          coachId: S.opts.coachId, coachName: S.opts.coachName || 'Coach',
+          planType: S.opts.planType || 'complete',
+          training: draft, trainingUpdatedAt: now, trainingVersion: savedVersion,
+        }, { merge: true });
+      });
+    }).then(function () {
       return docRef.collection('versions').doc('training_' + Date.now()).set({
-        type: 'training', data: S.trainDraft, version: version,
+        type: 'training', data: draft, version: savedVersion,
         savedAt: now, savedBy: S.opts.coachName || 'Coach',
       });
     }).then(function () {
       notify(S.opts.athleteId, '💪 ' + (S.opts.coachName || 'Your coach') + ' updated your workout plan.', 'training_update');
-      S.trainDirty = false;
-      S.trainDraftSeeded = false;
+      var stillCurrent = S.trainEditGen === startGen;
+      if (stillCurrent) { S.trainDirty = false; S.trainDraftSeeded = false; }
       S.saving = false;
-      console.log('[CW] training saved v' + version);
-      toast('✅ Training plan published to ' + (S.opts.athleteName || 'the athlete'));
-      renderTrainingEditor();
+      console.log('[CW] training saved v' + savedVersion + (isAuto ? ' (auto)' : '') +
+        (stillCurrent ? '' : ' (newer edits pending)'));
+      if (stillCurrent) _setSaveStatus('training', 'saved');
+      if (isAuto) {
+        if (stillCurrent && btn) { btn.disabled = true; btn.textContent = 'Saved ✓'; }
+      } else {
+        toast('✅ Training plan published to ' + (S.opts.athleteName || 'the athlete'));
+        renderTrainingEditor();
+      }
     }).catch(function (e) {
       S.saving = false;
       console.error('[CW] training save failed', e);
-      toast('Save failed — please try again.');
-      if (btn) { btn.disabled = false; btn.textContent = 'Save Training Plan'; }
+      _setSaveStatus('training', 'error');
+      if (isAuto) {
+        if (canEditTraining()) scheduleAutoSave('training');
+      } else {
+        toast('Save failed — please try again.');
+        if (btn) { btn.disabled = false; btn.textContent = 'Save Training Plan'; }
+      }
     });
   }
 

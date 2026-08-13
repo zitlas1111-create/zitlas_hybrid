@@ -342,6 +342,19 @@
   color: var(--text, #1E293B); font-size: 13px; font-weight: 700;
 }
 
+/* Auto-save status — sits between History and Save in .cw-save-bar
+   (already display:flex; gap:8px, so no layout changes needed here). */
+.cw-save-status {
+  align-self: center;
+  font-size: 12px; font-weight: 700;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.cw-save-status:empty { display: none; }
+.cw-save-status--saving { color: var(--text-sec, #64748B); }
+.cw-save-status--saved { color: #578A2C; }
+.cw-save-status--error { color: #B45309; }
+.cw-save-status--locked { color: #94A3B8; }
+
 /* ── Training viewer ── */
 .cw-ex-row {
   display: flex; align-items: baseline; gap: 10px;

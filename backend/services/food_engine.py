@@ -105,8 +105,19 @@ _DAY_NAMES = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"
 # BELOW a fresh one, which a 0.05-weighted, zero-flooring term cannot do.
 # Capped so it can never outweigh goal fit + region + availability combined.
 _RECENCY_STEP = 0.10
-# Food quality as a ranking bonus, on top of the hard gate above.
-_W_QUALITY = 0.30
+# Food quality as a ranking bonus, on top of the hard gate above. Swap-time
+# ONLY (used solely inside _swap_score, never build_week_plan/_score) —
+# raised from 0.30: the swap-engine spec's own priority order puts goal
+# suitability and nutrition quality ABOVE preferences/region ("Goal
+# suitability -> nutrition quality -> meal suitability -> preferences ->
+# regional availability", explicitly NOT "region -> calorie proximity ->
+# everything else"), but at 0.30 a strong preference+region combination
+# (up to 0.26+0.20=0.46 of _score's own weighted average) could still
+# outweigh a real quality gap between two otherwise-similar candidates.
+# 0.30 -> 0.48 makes quality the single largest term in _swap_score's
+# final sum without zeroing out region/preference (item 9 explicitly asks
+# to KEEP those, just not let them dominate).
+_W_QUALITY = 0.48
 # Nutrition-match penalty: a swap must stay a comparable MEAL. Weighted above
 # recency so variety can never turn a lunch into a garnish.
 _NUTRITION_STEP = 0.55
@@ -239,9 +250,20 @@ def dish_family(name: str) -> str:
 # Bands are asymmetric by intent: calories are the tightest because they drive
 # the day's target, while the macros have a little more room since real foods
 # rarely match on all three at once.
+#
+# CARBS widened 0.20 -> 0.25: at a fixed calorie count, a meaningfully
+# higher-protein swap mechanically carries somewhat lower carbs (protein
+# and carbs are both drawing from the same calorie budget) — a Besan Chilla
+# with 10.9g protein legitimately has less carbs than Poha's 38.9g at a
+# near-identical calorie count, and a 20% band rejected it by a fraction of
+# a gram while nutritionally near-identical Paratha with less than half its
+# protein sailed through untouched. Still tight enough to exclude a
+# genuinely different meal shape (a 179 kcal, 13.9g-carb protein bowl stays
+# rejected either way) — this only admits the "still clearly a comparable
+# meal" range that used to fail on a rounding-error margin.
 _BAND_CALORIES = 0.15
 _BAND_PROTEIN = 0.20
-_BAND_CARBS = 0.20
+_BAND_CARBS = 0.25
 _BAND_FAT = 0.20
 
 
@@ -261,6 +283,25 @@ def _within_band(actual: float, target: float, band: float) -> bool:
     return abs(actual - target) <= target * band
 
 
+def _at_least(actual: float, target: float, band: float) -> bool:
+    """Like `_within_band`, but only the LOWER side is a rejection reason.
+
+    For protein specifically, "more than the original" is a strictly
+    better outcome, never a mismatch — a symmetric band around Poha's 4.5g
+    was rejecting an 18g-protein swap at an almost-identical calorie count
+    for the same reason it would reject a 0g one: both are equally "far"
+    from 4.5g in band terms. That directly fought the swap-engine spec's
+    core ask (prefer meaningfully better protein at a similar calorie
+    level) at the gate the ranking's own protein-quality bonus never got a
+    chance to act on, since the candidate was rejected before ranking
+    mattered. Only ever WIDENS what's accepted — never rejects something
+    the old symmetric check would have passed.
+    """
+    if not target:
+        return True
+    return actual >= target * (1 - band)
+
+
 def combo_meets_nutrition(
     combo: list[dict],
     target: dict[str, float] | None,
@@ -278,13 +319,16 @@ def combo_meets_nutrition(
     m = _combo_macros(combo)
     return (
         _within_band(m["calories"], target.get("calories", 0), _BAND_CALORIES * tolerance)
-        and _within_band(m["protein"], target.get("protein", 0), _BAND_PROTEIN * tolerance)
+        and _at_least(m["protein"], target.get("protein", 0), _BAND_PROTEIN * tolerance)
         and _within_band(m["carbs"], target.get("carbs", 0), _BAND_CARBS * tolerance)
         and _within_band(m["fat"], target.get("fat", 0), _BAND_FAT * tolerance)
     )
 
 
-def describe_swap(combo: list[dict], target: dict[str, float] | None, goal_tags: list[str] | None = None) -> str:
+def describe_swap(
+    combo: list[dict], target: dict[str, float] | None,
+    goal_tags: list[str] | None = None, goal_label: str | None = None,
+) -> str:
     """The explanation shown to the athlete, generated FROM THE ACTUAL NUMBERS.
 
     Never a template and never model prose: an LLM asked to justify a swap
@@ -332,7 +376,14 @@ def describe_swap(combo: list[dict], target: dict[str, float] | None, goal_tags:
     if combo[0].get("high_fiber"):
         extras.append("high in fibre")
     if goal_tags and any(g in (combo[0].get("goalSuitable") or []) for g in goal_tags):
-        extras.append(f"suited to your {goal_tags[0].lower()} goal")
+        # `goal_label` (from goal_key_from_profile()) is the athlete's ACTUAL
+        # goal name — e.g. "body transformation" — never just the first of
+        # possibly several dataset tags used to find it (goal_tags[0] would
+        # say "general fitness" for a transformation swap purely because
+        # that's the first of the three dataset tags _GOAL_STRING_TO_TAGS
+        # maps transformation onto; goal_tags[0] stays as the fallback for
+        # callers that don't have a canonical goal_key at all).
+        extras.append(f"suited to your {goal_label or goal_tags[0].lower()} goal")
     if combo[0].get("hostel_friendly"):
         extras.append("easy to get in a hostel mess")
     if extras:
@@ -356,7 +407,13 @@ _DEEP_FRIED_KEYWORDS = (
     "pakoda", "pakora", "bhajiya", "bhajji", "samosa", "kachori",
     # "pav bhaji" by name, NOT a bare "bhaji" — Patal Bhaji and Aluchi Patal
     # Bhaji are healthy Maharashtrian leafy-vegetable dishes and must stay.
-    "pav bhaji", "mirchi bhaji", "misal pav" if False else "pav bhaji",
+    # Misal Pav/Dabeli/Thalipeeth etc. are deliberately NOT name-matched
+    # here — restaurant-vs-home preparation is a real, dataset-native signal
+    # (`restaurant_food`/`home_cooked`, see the penalty below) and using it
+    # covers every dish's Restaurant Style variant at once, without a
+    # per-dish keyword list that both misses styles it doesn't guess at and
+    # can never fire for a dish that hasn't been added to it by name.
+    "pav bhaji", "mirchi bhaji",
     "vada", "puri", "bhatura", "jalebi", "gulab jamun", "chips", "fries",
     "fried", "deep fry", "medu", "murukku", "chakli", "sev ", "namkeen",
     "papad", "wafer", "nugget", "cutlet", "spring roll", "manchurian",
@@ -384,12 +441,25 @@ def _name_matches(name: str, keywords) -> bool:
     return any(k in n for k in keywords)
 
 
-def nutrition_quality_score(food: dict) -> float:
+# Goals where protein/fibre ADEQUACY (not just the flat baseline weighting)
+# is the actual differentiator the athlete cares about, per the swap-engine
+# spec's item 3/4/8: "a ~180 kcal food with 3g protein should generally rank
+# below a ~180 kcal food with 8-12g protein" for Body Transformation. Scoped
+# to `transformation` alone (not weight_loss/muscle_gain too) so those two
+# goals' existing, already-tested ranking behaviour is left unchanged.
+_PROTEIN_FIBER_EMPHASIS_GOAL_KEYS = frozenset({"transformation"})
+
+
+def nutrition_quality_score(food: dict, goal_key: str | None = None) -> float:
     """0..1 — how defensible this food is inside a health plan.
 
     Deliberately NOT a nutrition-density score: a food can be macro-perfect
     and still be a deep-fried street snack. This measures whether a coach
     would put it in a plan.
+
+    `goal_key` (one of goal_key_from_profile()'s 4 canonical values) only
+    ever WIDENS the protein/fibre density reward for transformation — every
+    other signal below is goal-agnostic food quality, unaffected by it.
     """
     score = 0.55  # neutral home-cooked baseline
 
@@ -401,11 +471,16 @@ def nutrition_quality_score(food: dict) -> float:
     fat = float(food.get("fat") or 0)
 
     # ── Rewards, all from real values ──
+    protein_weight, protein_cap = 0.020, 0.20
+    fiber_weight, fiber_cap = 0.030, 0.12
+    if goal_key in _PROTEIN_FIBER_EMPHASIS_GOAL_KEYS:
+        protein_weight, protein_cap = 0.028, 0.26
+        fiber_weight, fiber_cap = 0.040, 0.16
     if cal > 0:
         # Protein and fibre DENSITY per 100 kcal — the two things that make a
         # meal satisfying and useful, independent of portion size.
-        score += min(0.20, (protein / cal) * 100 * 0.020)
-        score += min(0.12, (fiber / cal) * 100 * 0.030)
+        score += min(protein_cap, (protein / cal) * 100 * protein_weight)
+        score += min(fiber_cap, (fiber / cal) * 100 * fiber_weight)
     if food.get("high_protein"):
         score += 0.08
     if food.get("high_fiber"):
@@ -432,6 +507,21 @@ def nutrition_quality_score(food: dict) -> float:
     if food.get("festival_food"):
         score -= 0.10
 
+    # Processing / preparation method — a REAL dataset field
+    # (enrich_food_dataset.py's restaurant_food/home_cooked booleans), not a
+    # name guess. A restaurant/hotel-prepared dish routinely carries more
+    # oil/butter/salt than the same dish's home-cooked or hostel-mess
+    # counterpart even when the two happen to land in a similar calorie
+    # band — exactly the gap raw macros alone don't reliably capture (a
+    # "Misal Pav (Restaurant Style)" and "Misal Pav (Home Style)" can have
+    # near-identical fat grams in this dataset despite the real-world prep
+    # difference). Moderate, not severe — this augments the keyword/category
+    # penalties above, it doesn't replace them.
+    if food.get("restaurant_food"):
+        score -= 0.12
+    elif food.get("home_cooked"):
+        score += 0.04
+
     # Added sugar and sodium, scaled to portion.
     if cal > 0:
         if (sugar / cal) * 100 > 8:
@@ -448,13 +538,15 @@ def nutrition_quality_score(food: dict) -> float:
 _MIN_QUALITY_FOR_HEALTH_GOALS = 0.40
 
 
-def is_health_plan_appropriate(food: dict, goal_tags: list[str] | None) -> bool:
+def is_health_plan_appropriate(
+    food: dict, goal_tags: list[str] | None, goal_key: str | None = None,
+) -> bool:
     """Hard gate. Applied only for health-oriented goals — a Weight Gain plan
     legitimately has more room, and an expert can still place anything by hand
     through the plan editor."""
     if not goal_tags or not any(g in _HEALTH_GOALS for g in goal_tags):
         return True
-    return nutrition_quality_score(food) >= _MIN_QUALITY_FOR_HEALTH_GOALS
+    return nutrition_quality_score(food, goal_key=goal_key) >= _MIN_QUALITY_FOR_HEALTH_GOALS
 
 
 class FoodRecommendationEngine:
@@ -1518,6 +1610,7 @@ class FoodRecommendationEngine:
         target_calories: float | None = None,
         meal_preparer: str | None = None,
         disliked_foods: list[str] | None = None,
+        goal_key: str | None = None,
     ) -> list[dict]:
         exclude_strings = [_norm(n) for n in exclude_names if n]
         exclude_bases = {_base_dish_name(n) for n in exclude_names if n}
@@ -1534,7 +1627,7 @@ class FoodRecommendationEngine:
         # removed outright for fitness goals. They are not "a bit worse"; they
         # are the opposite of what the athlete is training for, and no macro
         # match justifies offering one.
-        healthy = {i for i in ids if is_health_plan_appropriate(self.by_id[i], goal_tags)}
+        healthy = {i for i in ids if is_health_plan_appropriate(self.by_id[i], goal_tags, goal_key=goal_key)}
         if healthy:
             ids = healthy
 
@@ -1576,7 +1669,7 @@ class FoodRecommendationEngine:
         # driven by how recently the candidate's dish FAMILY was seen (in
         # today's plan or in earlier suggestions), which is what turns the
         # variety weight back on.
-        def _swap_score(fid: int) -> float:
+        def _swap_score(fid: int) -> tuple[float, dict[str, float]]:
             food = self.by_id[fid]
             base = self._score(
                 food, goal_tags, living_situation, budget_tier,
@@ -1594,10 +1687,10 @@ class FoodRecommendationEngine:
             # while the cap stops variety from ever outranking safety, diet
             # type, or goal fit.
             seen = (recent_families or {}).get(dish_family(food["name"]), 0)
-            score = base - min(_MAX_RECENCY_PENALTY, seen * _RECENCY_STEP)
+            recency_penalty = min(_MAX_RECENCY_PENALTY, seen * _RECENCY_STEP)
             # Quality is a ranking term as well as a gate: among foods that
             # all clear the bar, the better one should still come first.
-            score += _W_QUALITY * nutrition_quality_score(food)
+            quality = nutrition_quality_score(food, goal_key=goal_key)
 
             # NUTRITION MATCH — a replacement has to be a comparable meal, not
             # merely a different one. Without this, pushing hard for variety
@@ -1605,20 +1698,49 @@ class FoodRecommendationEngine:
             # substantial option has been penalised for being seen before,
             # and nothing was checking size. Scaled by relative distance so it
             # is meaningful for a 200 kcal snack and a 700 kcal dinner alike.
+            nutrition_penalty = 0.0
             if target_calories and target_calories > 0:
                 cal = food.get("calories") or 0
                 drift = abs(cal - target_calories) / target_calories
-                score -= min(_MAX_NUTRITION_PENALTY, drift * _NUTRITION_STEP)
-            return score
+                nutrition_penalty = min(_MAX_NUTRITION_PENALTY, drift * _NUTRITION_STEP)
 
-        scored = [(_swap_score(i), i) for i in ids]
+            final = base - recency_penalty + _W_QUALITY * quality - nutrition_penalty
+            return final, {
+                "base": base, "quality": quality, "recency_penalty": recency_penalty,
+                "nutrition_penalty": nutrition_penalty,
+            }
+
+        raw_scores: dict[int, tuple[float, dict[str, float]]] = {i: _swap_score(i) for i in ids}
+        scored = [(raw_scores[i][0], i) for i in ids]
         scored.sort(key=lambda t: (-t[0], t[1]))
-        scored = self._spread_families([i for _, i in scored], pool_size)
-        scored = [(0.0, i) for i in scored]
+        spread_ids = self._spread_families([i for _, i in scored], pool_size)
+
+        # [SWAP SCORE] — structured, per the swap-engine spec's logging
+        # requirement: every component that decided the top of the pool,
+        # not just the final number. Capped at the top 5 post-spread
+        # candidates (same cap the pre-existing [REGION_RANK] block below
+        # uses) so a single request logs a handful of lines, not the whole
+        # pool. `scored`'s real values used to be thrown away here (replaced
+        # with a flat 0.0 before [REGION_RANK] printed it) — fixed, since a
+        # debug log that always prints finalScore=0.0000 is worse than none.
+        print(f"[SWAP SCORE] goal_key={goal_key} goal_tags={goal_tags} meal_slot={meal_slot}")
+        for rank, i in enumerate(spread_ids[:5], start=1):
+            f = self.by_id[i]
+            final, parts = raw_scores[i]
+            print(
+                f"[SWAP SCORE] {rank}. food={f['name']!r} "
+                f"calories={f.get('calories')} protein={f.get('protein')} fiber={f.get('fiber')} "
+                f"restaurant_food={f.get('restaurant_food')} "
+                f"baseScore={parts['base']:.4f} qualityScore={parts['quality']:.4f} "
+                f"recencyPenalty={parts['recency_penalty']:.4f} "
+                f"nutritionPenalty={parts['nutrition_penalty']:.4f} finalScore={final:.4f}"
+            )
+
         if user_state or compatible_regions:
             print(f"[REGION_RANK] user_state={user_state} compatible_regions={compatible_regions}")
-            for rank, (score, i) in enumerate(scored[:5], start=1):
+            for rank, i in enumerate(spread_ids[:5], start=1):
                 f = self.by_id[i]
+                final, _ = raw_scores[i]
                 states = self._effective_states.get(i, frozenset())
                 region_class = (
                     "preferred" if user_state and user_state in states else
@@ -1631,8 +1753,8 @@ class FoodRecommendationEngine:
                     "out_of_zone"
                 )
                 print(f"[REGION_RANK] {rank}. food={f['name']!r} foodRegion={f.get('region')} "
-                      f"states={sorted(states)} regionClass={region_class} finalScore={score:.4f}")
-        return [self.by_id[i] for _, i in scored[:pool_size]]
+                      f"states={sorted(states)} regionClass={region_class} finalScore={final:.4f}")
+        return [self.by_id[i] for i in spread_ids[:pool_size]]
 
 
     def _spread_families(self, ranked_ids: list[int], limit: int) -> list[int]:
@@ -1740,12 +1862,19 @@ class FoodRecommendationEngine:
         meal_preparer: str | None = None,
         disliked_foods: list[str] | None = None,
         nutrition_target: dict[str, float] | None = None,
+        goal_key: str | None = None,
     ) -> list[list[dict]]:
         """Full-meal swap: each result is a COMPLETE composed meal (e.g.
         'Paneer Bhurji with Roti + Curd + Salad'), never a lone ingredient.
         A swap replaces the entire plate — the same way build_week_plan
         composes one — and every combo passes validate_meal_combo before
-        it's offered. Snack/pre/post slots return single-item combos."""
+        it's offered. Snack/pre/post slots return single-item combos.
+
+        `goal_key` (one of goal_key_from_profile()'s 4 canonical values) is
+        optional and purely additive — omitting it reproduces the exact
+        pre-goal_key ranking for weight_loss/muscle_gain/general_fitness,
+        since nutrition_quality_score only changes behaviour for
+        goal_key == 'transformation'."""
         # Pool must SCALE with how many options are wanted. It was pinned at
         # 30 regardless, and each option consumes far more than one candidate:
         # family dedup collapses every khichdi variant to a single slot, the
@@ -1761,6 +1890,7 @@ class FoodRecommendationEngine:
             target_calories=target_calories,
             meal_preparer=meal_preparer,
             disliked_foods=disliked_foods,
+            goal_key=goal_key,
         )
         # WIDEN THE POOL when it cannot possibly yield the requested number of
         # distinct dishes. A narrow athlete profile (hostel + vegetarian +
@@ -1794,6 +1924,7 @@ class FoodRecommendationEngine:
                 favorite_foods=favorite_foods, recent_families=recent_families,
                 target_calories=target_calories, meal_preparer=meal_preparer,
                 disliked_foods=disliked_foods,
+                goal_key=goal_key,
             )
             print(f"[SWAP FUNNEL] pool widened (relaxed {relax}) -> "
                   f"{len(pool)} candidates in {_families(pool)} families")
@@ -1894,6 +2025,21 @@ _GOAL_STRING_TO_TAGS: dict[str, list[str]] = {
     "endurance": ["Endurance"],
     "athletic_performance": ["Athletic Performance"],
     "general_fitness": ["General Fitness"],
+    # BODY TRANSFORMATION ("transformation" — the exact value every client
+    # sends, see goal_selection_view.dart / ai-coach.js / assessment.py) used
+    # to fall all the way through this table to the `return ["General
+    # Fitness"]` default below, which made a transformation swap request
+    # indistinguishable from a plain general-fitness one: no protein/fat-loss
+    # emphasis, and the goal_component term in _score() maxed out at 1.0 for
+    # ANY food merely tagged "General Fitness" (almost the whole dataset),
+    # so it could never prefer a food that ALSO suited fat loss/muscle gain.
+    # Recomposition needs BOTH fat-loss and muscle-preserving signals at
+    # once, never either alone — mapping to all three real dataset tags
+    # means a food hitting more of them now scores meaningfully higher via
+    # goal_hits / len(goal_tags) than one that only coasts on "General
+    # Fitness" (see nutrition_quality_score's goal_key-aware weighting for
+    # the matching protein/fibre emphasis).
+    "transformation": ["General Fitness", "Fat Loss", "Muscle Gain"],
 }
 
 
@@ -1936,6 +2082,43 @@ def resolve_goal_key(player_profile: dict) -> str:
         if key in raw_key:
             return folder
     return "general_fitness"
+
+
+_GOAL_KEY_LABELS: dict[str, str] = {
+    "weight_loss": "weight loss", "muscle_gain": "muscle gain",
+    "general_fitness": "general fitness", "transformation": "body transformation",
+}
+
+
+def goal_key_from_profile(player_profile: dict) -> str:
+    """-> one of the 4 canonical ZITLAS goal values ('weight_loss',
+    'muscle_gain', 'general_fitness', 'transformation'). Used ONLY at
+    swap-ranking time to pick a goal-appropriate quality emphasis
+    (nutrition_quality_score's protein/fibre weighting) and a correct
+    human-readable label for describe_swap()'s sentence.
+
+    Distinct from BOTH goal_tags_from_profile() (maps to dataset goalSuitable
+    tags — 'transformation' now resolves there too, see _GOAL_STRING_TO_TAGS)
+    and resolve_goal_key() just above (maps to one of the 4 food_profiles/
+    folder names on disk — 'transformation' still correctly folds into
+    'general_fitness' there, since no dedicated folder exists yet and that
+    folder only supplies occupation-rule bonuses, not ranking weight)."""
+    raw = _norm(
+        player_profile.get("primary_goal") or player_profile.get("goal_type")
+        or player_profile.get("fitness_goal") or player_profile.get("goal") or ""
+    )
+    raw_key = raw.replace(" ", "_").replace("-", "_")
+    if "transformation" in raw_key:
+        return "transformation"
+    if any(k in raw_key for k in ("muscle_gain", "muscle_building", "weight_gain", "lean_bulk", "bodybuilding", "strength")):
+        return "muscle_gain"
+    if any(k in raw_key for k in ("weight_loss", "fat_loss", "six_pack", "obesity")):
+        return "weight_loss"
+    return "general_fitness"
+
+
+def goal_key_label(goal_key: str | None) -> str | None:
+    return _GOAL_KEY_LABELS.get(goal_key or "")
 
 
 # food_profiles/<goal>/ only ships 5 base lifestyle files (student, hostel,

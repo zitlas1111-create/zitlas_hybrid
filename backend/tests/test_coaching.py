@@ -327,6 +327,65 @@ def test_relationship_sweep_leaves_unexpired_relationships_alone(fake_db, app, c
     assert fake_db.store[f"personal_coaching/{ATHLETE_UID}"]["status"] == "active"
 
 
+def test_relationship_sweep_syncs_request_status_paid(fake_db, app, client):
+    """A PAID relationship that runs its full 30-day term must also close out
+    its originating personal_coach_requests doc — otherwise the Expert
+    Dashboard Inbox keeps showing an auto-expired client as still active,
+    even though the live roster (personal_coaching) has already moved on."""
+    _set_wallet(fake_db, ATHLETE_UID, balance=2000)
+    _as(app, ATHLETE_UID)
+    request_id = client.post("/api/coaching/request", json={"expertId": EXPERT_UID, "planType": "diet"}).json()["requestId"]
+    _as(app, EXPERT_UID)
+    client.post("/api/coaching/accept", json={"requestId": request_id})
+
+    from datetime import datetime, timedelta, timezone
+    fake_db.store[f"personal_coaching/{ATHLETE_UID}"]["endDateTs"] = datetime.now(timezone.utc) - timedelta(days=1)
+
+    expired = coaching_sweep.sweep_expired_relationships()
+    assert expired == 1
+    assert fake_db.store[f"personal_coach_requests/{request_id}"]["status"] == "expired"
+
+
+def test_relationship_sweep_syncs_request_status_free_trial(fake_db, app, client):
+    """Same sync must hold for FREE_TRIAL relationships too — the fix needs
+    no coachingType branch, mirroring /end's own type-agnostic pattern."""
+    _as(app, ATHLETE_UID)
+    request_id = client.post(
+        "/api/coaching/request",
+        json={"expertId": EXPERT_UID, "planType": "diet", "requestType": "FREE_TRIAL"},
+    ).json()["requestId"]
+    _as(app, EXPERT_UID)
+    client.post("/api/coaching/accept", json={"requestId": request_id, "durationDays": 5})
+
+    from datetime import datetime, timedelta, timezone
+    fake_db.store[f"personal_coaching/{ATHLETE_UID}"]["endDateTs"] = datetime.now(timezone.utc) - timedelta(days=1)
+
+    expired = coaching_sweep.sweep_expired_relationships()
+    assert expired == 1
+    assert fake_db.store[f"personal_coach_requests/{request_id}"]["status"] == "expired"
+
+
+def test_relationship_sweep_does_not_touch_a_foreign_request(fake_db, app, client):
+    """If requestId on the relationship no longer belongs to this athlete
+    (a stale/reused id), the sweep must not touch that foreign request."""
+    _set_wallet(fake_db, ATHLETE_UID, balance=2000)
+    _as(app, ATHLETE_UID)
+    request_id = client.post("/api/coaching/request", json={"expertId": EXPERT_UID, "planType": "diet"}).json()["requestId"]
+    _as(app, EXPERT_UID)
+    client.post("/api/coaching/accept", json={"requestId": request_id})
+
+    # Simulate the request doc having been re-pointed at a different athlete.
+    fake_db.store[f"personal_coach_requests/{request_id}"]["athleteId"] = "someone_else"
+
+    from datetime import datetime, timedelta, timezone
+    fake_db.store[f"personal_coaching/{ATHLETE_UID}"]["endDateTs"] = datetime.now(timezone.utc) - timedelta(days=1)
+
+    expired = coaching_sweep.sweep_expired_relationships()
+    assert expired == 1
+    assert fake_db.store[f"personal_coaching/{ATHLETE_UID}"]["status"] == "expired"
+    assert fake_db.store[f"personal_coach_requests/{request_id}"]["status"] != "expired"
+
+
 # ══════════════════════════════════════════════════════════════════════
 # Personal Coach assignment — the expert's side of the handshake
 # ══════════════════════════════════════════════════════════════════════

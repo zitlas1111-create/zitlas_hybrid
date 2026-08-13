@@ -400,6 +400,8 @@ class _OptionCard extends StatelessWidget {
                     _Tag(text: '📍 ${option.availability}'),
                     _Tag(text: '💰 ${option.budgetLevel}'),
                     if (option.highProtein) const _Tag(text: '💪 High protein'),
+                    if (option.highFiber) const _Tag(text: '🌾 High fiber'),
+                    for (final label in option.qualityLabels) _Tag(text: '✨ $label'),
                   ],
                 ),
               ],

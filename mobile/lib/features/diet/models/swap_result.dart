@@ -19,6 +19,8 @@ class SwapOption {
     required this.availability,
     required this.budgetLevel,
     this.highProtein = false,
+    this.highFiber = false,
+    this.qualityLabels = const [],
   });
 
   final String name;
@@ -40,6 +42,17 @@ class SwapOption {
   /// Only true when the DATASET says so, so the UI can never overclaim.
   final bool highProtein;
 
+  /// Same contract as [highProtein] — dataset-derived, never guessed.
+  final bool highFiber;
+
+  /// Subtle, data-backed labels beyond the two flat booleans above (e.g.
+  /// "Better protein match", "Similar calories", "Transformation
+  /// friendly") — see routes/swap.py's quality_labels for exactly which
+  /// real numbers justify each one. Absent/empty is normal; nothing here
+  /// is a health claim the backend didn't already verify against the
+  /// dataset.
+  final List<String> qualityLabels;
+
   static SwapOption? fromMap(Map<String, dynamic> m) {
     final name = m['name'];
     if (name is! String) return null;
@@ -55,6 +68,10 @@ class SwapOption {
       availability: m['availability'] as String? ?? '',
       budgetLevel: m['budget_level'] as String? ?? '',
       highProtein: m['high_protein'] == true,
+      highFiber: m['high_fiber'] == true,
+      qualityLabels: [
+        for (final l in (m['quality_labels'] as List? ?? const [])) l.toString(),
+      ],
     );
   }
 }

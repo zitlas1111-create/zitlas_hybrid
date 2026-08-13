@@ -89,6 +89,9 @@ def sweep_expired_requests() -> int:
 def _expire_one_relationship(db, rel_ref):
     @firestore.transactional
     def _txn(tx):
+        # ── ALL READS FIRST (both docs), THEN ALL WRITES — mirrors /end's
+        # dual-document transaction shape in routes/coaching.py so the
+        # relationship and its originating request never drift out of sync.
         rel_snap = rel_ref.get(transaction=tx)
         if not rel_snap.exists:
             return None
@@ -98,7 +101,22 @@ def _expire_one_relationship(db, rel_ref):
         rel_end = rel.get("endDateTs")
         if rel_end is None or rel_end > now():
             return None  # query race (endDateTs moved) — skip, not actually due
-        tx.update(rel_ref, {"status": "expired", "expiredAt": now().isoformat()})
+
+        request_id = rel.get("requestId")
+        req_ref = None
+        close_request = False
+        if request_id:
+            req_ref = db.collection("personal_coach_requests").document(request_id)
+            req_snap = req_ref.get(transaction=tx)
+            close_request = (
+                req_snap.exists
+                and (req_snap.to_dict() or {}).get("athleteId") == rel.get("athleteId")
+            )
+
+        _now = now()
+        tx.update(rel_ref, {"status": "expired", "expiredAt": _now.isoformat()})
+        if close_request and req_ref is not None:
+            tx.update(req_ref, {"status": "expired", "updatedAt": _now.isoformat()})
         return rel
 
     rel = _txn(db.transaction())
