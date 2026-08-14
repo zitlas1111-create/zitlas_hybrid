@@ -8,7 +8,11 @@
       "Bash(git commit -m ' *)",
       "Bash(git push *)",
       "Read(//c/Users/Atharva/Desktop/**)",
-      "Bash(flutter test *)"
+      "Bash(flutter test *)",
+      "Bash(sh -c 'cd backend && echo would-have-started')",
+      "Bash(flutter analyze *)",
+      "Bash(PKGDIR=\"/c/Users/Atharva/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_launcher_icons-0.14.4\" *)",
+      "Read(//c/Users/Atharva/AppData/Local/Pub/Cache/hosted/pub.dev/flutter_launcher_icons-0.14.4/lib/**)"
     ]
   }
 }

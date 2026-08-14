@@ -49,6 +49,45 @@ def _model_extra_kwargs(model: str) -> dict:
         return {"reasoning_effort": "none"}
     return {}
 
+
+# ── Token-budget safety ──────────────────────────────────────────────────────
+#
+# Production evidence: a diet-generation request was rejected by Groq with a
+# 413 — "Request too large for model qwen/qwen3.6-27b ... tokens per minute
+# (TPM) Limit 8000, Requested 8096" — while max_tokens was already set to a
+# seemingly-conservative 6000. Requested (8096) = actual prompt tokens
+# (~2096, the diet prompt's real size: RAG context + full profile block +
+# diet/budget/medical rules) + max_tokens (6000). Groq's TPM accounting
+# covers the WHOLE request, not max_tokens alone — a static max_tokens
+# number can never be safe on its own because the prompt's real size varies
+# per user (RAG chunks retrieved, profile fields present, rejected-foods
+# list length, etc).
+#
+# No tokenizer dependency is added for this — ~4 chars/token is the standard
+# rough ratio for English text and only needs to be conservative enough to
+# stay under the observed cap, not exact.
+GROQ_FALLBACK_TPM_LIMIT = 8000
+GROQ_TPM_SAFETY_MARGIN  = 1200
+
+
+def estimate_tokens(text: str) -> int:
+    """Rough token estimate — see GROQ_FALLBACK_TPM_LIMIT's comment for why
+    an exact tokenizer isn't required here."""
+    return max(1, len(text or "") // 4)
+
+
+def safe_max_tokens(prompt_text: str, system_text: str = "", desired: int = DEFAULT_MAX_TOKENS,
+                     floor: int = 1500) -> int:
+    """Caps `desired` so (estimated prompt) + (completion budget) stays
+    comfortably under Groq's observed 8000 TPM ceiling for the fallback
+    model, whatever the actual prompt turns out to be for this specific
+    request. `floor` is the minimum worth even attempting — below it the
+    caller should rely on Gemini/OpenRouter or the deterministic fallback
+    instead of sending a request that can't produce a useful completion."""
+    estimated_prompt = estimate_tokens(prompt_text) + estimate_tokens(system_text)
+    budget = GROQ_FALLBACK_TPM_LIMIT - GROQ_TPM_SAFETY_MARGIN - estimated_prompt
+    return max(floor, min(desired, budget))
+
 # ── System prompt ─────────────────────────────────────────────────────────────
 ZITLAS_SYSTEM_PROMPT = """You are ZINO — a friendly weight-loss and nutrition assistant on ZITLAS.
 

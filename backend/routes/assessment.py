@@ -894,19 +894,45 @@ Output valid JSON only — no extra text."""
     )
 
     all_days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"]
+    _empty_diet_llm: dict = {"tokens_used": 0, "model": None, "reply": ""}
 
     async def _call_diet_ai(extra_hint: str = "") -> tuple[dict | None, dict]:
         _prompt = prompt + extra_hint
-        print(f"[DIET AI] {fitness_goal} prompt | Using GROQ_API_KEY_DIET")
-        _result = await groq_service.chat(
-            user_message=_prompt,
-            system_override=diet_system,
-            temperature=0.5,
-            max_tokens=6000,
-            json_mode=True,
-            groq_key_env="GROQ_API_KEY_DIET",
-            provider="groq_first",
-        )
+        # DYNAMIC, not a static number — see groq_service.safe_max_tokens's
+        # docstring for the production incident this replaced: a fixed 6000
+        # still exceeded Groq's 8000 TPM cap once the actual ~2100-token
+        # prompt was counted against it. 6000 stays the ceiling when the
+        # prompt is small; it shrinks automatically when the prompt is big.
+        _max_tokens = groq_service.safe_max_tokens(_prompt, diet_system, desired=6000)
+        print(f"[DIET AI] provider=groq_first goal={fitness_goal} "
+              f"promptTokensEst={groq_service.estimate_tokens(_prompt) + groq_service.estimate_tokens(diet_system)} "
+              f"maxCompletionTokens={_max_tokens}")
+        try:
+            _result = await groq_service.chat(
+                user_message=_prompt,
+                system_override=diet_system,
+                temperature=0.5,
+                max_tokens=_max_tokens,
+                json_mode=True,
+                groq_key_env="GROQ_API_KEY_DIET",
+                provider="groq_first",
+            )
+        except Exception as e:
+            # THE actual production bug: this call used to be unguarded, so
+            # a total provider failure (Groq TPM-limited + Gemini/OpenRouter
+            # unconfigured) raised straight out of _call_diet_ai — past the
+            # "days < 7" retry AND past the _engine_grounded_diet_plan
+            # fallback below (both only ever ran on a MALFORMED response,
+            # never on "no response at all") — all the way to generate_plan's
+            # outer except, which just logs and leaves diet_plan: null. That
+            # is the exact defect this fixes: treating "provider chain threw"
+            # exactly like "provider returned nothing usable" so the SAME
+            # existing fallback fires either way.
+            print(f"[DIET AI] provider=groq_first goal={fitness_goal} status=failed "
+                  f"reason={type(e).__name__}: {str(e)[:200]}")
+            return None, _empty_diet_llm
+        print(f"[DIET AI] provider=groq_first goal={fitness_goal} status=success "
+              f"model={_result.get('model')} tokensUsed={_result.get('tokens_used')}")
         return _extract_json(_result["reply"]), _result
 
     parsed, result = await _call_diet_ai()
