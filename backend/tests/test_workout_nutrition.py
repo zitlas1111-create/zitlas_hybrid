@@ -49,6 +49,67 @@ def service():
     return workout_nutrition_service.get_service()
 
 
+# ── Regression guard for the exact reported bug: Post-Workout showing a
+#    Breakfast recipe. Category is asserted explicitly (not just ID prefix)
+#    since "category" is the field the bug report's underlying dataset
+#    confusion was actually about. ────────────────────────────────────────
+
+def test_post_workout_category_is_workout_recovery_never_breakfast_lunch_or_dinner(client):
+    r = client.get("/api/recipes/recommended?meal_type=post_workout&limit=8")
+    body = r.json()
+    assert body["count"] > 0
+    for recipe in body["recipes"]:
+        assert recipe["category"] == "Workout Recovery"
+        assert recipe["category"] not in ("Breakfast", "Lunch", "Dinner")
+        assert not ({"Breakfast", "Lunch", "Dinner"} & set(recipe["meal_type"]))
+
+
+def test_pre_workout_category_is_workout_fuel_never_breakfast_lunch_or_dinner(client):
+    r = client.get("/api/recipes/recommended?meal_type=pre_workout&limit=8")
+    body = r.json()
+    assert body["count"] > 0
+    for recipe in body["recipes"]:
+        assert recipe["category"] == "Workout Fuel"
+        assert recipe["category"] not in ("Breakfast", "Lunch", "Dinner")
+        assert not ({"Breakfast", "Lunch", "Dinner"} & set(recipe["meal_type"]))
+
+
+def test_get_another_post_workout_never_degrades_into_breakfast_lunch_or_dinner(client):
+    """Cycle through every post-workout item via repeated "Get Another" and
+    confirm the category NEVER changes, even after the pool exhausts and
+    cycles back (the one place a careless implementation could accidentally
+    fall through to a different service)."""
+    seen_ids: list[str] = []
+    exclude = ""
+    for _ in range(12):
+        url = f"/api/recipes/recommended?meal_type=post_workout&limit=1"
+        if exclude:
+            url += f"&exclude_ids={exclude}"
+        body = client.get(url).json()
+        recipe = body["recipes"][0]
+        assert recipe["category"] == "Workout Recovery"
+        seen_ids.append(recipe["id"])
+        exclude = ",".join(seen_ids)
+    # With only 8 post-workout items, 12 draws guarantees at least one cycle
+    # back — proving the exhaustion path also never crosses into normal meals.
+    assert len(set(seen_ids)) <= 8
+
+
+def test_get_another_pre_workout_never_degrades_into_breakfast_lunch_or_dinner(client):
+    seen_ids: list[str] = []
+    exclude = ""
+    for _ in range(12):
+        url = f"/api/recipes/recommended?meal_type=pre_workout&limit=1"
+        if exclude:
+            url += f"&exclude_ids={exclude}"
+        body = client.get(url).json()
+        recipe = body["recipes"][0]
+        assert recipe["category"] == "Workout Fuel"
+        seen_ids.append(recipe["id"])
+        exclude = ",".join(seen_ids)
+    assert len(set(seen_ids)) <= 8
+
+
 # ── 1-3. Normal meals are unaffected (breakfast/lunch/dinner -> 637 dataset) ─
 
 @pytest.mark.parametrize("meal_type", ["breakfast", "lunch", "dinner"])
@@ -58,6 +119,17 @@ def test_normal_meals_still_come_from_the_637_recipe_dataset(client, meal_type):
     body = r.json()
     assert body["count"] > 0
     assert body["recipes"][0]["id"].startswith("ZITLAS-REC-")
+
+
+@pytest.mark.parametrize("meal_type", ["breakfast", "lunch", "dinner"])
+def test_normal_meals_never_return_a_workout_nutrition_item(client, meal_type):
+    """The reverse direction of the same guarantee — a normal meal request
+    must never accidentally surface a Workout Fuel/Recovery item either."""
+    r = client.get(f"/api/recipes/recommended?meal_type={meal_type}&limit=20")
+    body = r.json()
+    for recipe in body["recipes"]:
+        assert recipe["category"] not in ("Workout Fuel", "Workout Recovery")
+        assert not recipe["id"].startswith(("ZITLAS-FUEL-", "ZITLAS-RECOVERY-"))
 
 
 # ── 4. Pre-workout returns workout fuel ──────────────────────────────────

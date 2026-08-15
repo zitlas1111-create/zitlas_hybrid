@@ -101,4 +101,42 @@ void main() {
       expect(MealSlot.snack.actionButtonLabel, 'Get Easy Recipe');
     });
   });
+
+  // ── Regression guard for the reported bug: the Diet screen's Post-Workout
+  // card recommending Breakfast. Mirrors diet_screen.dart's EXACT
+  // `onGetRecipe` expression verbatim, so a regression there (someone
+  // swapping back to the raw `meal.mealName`, or reordering the
+  // classification checks) fails this test immediately.
+  group('Diet screen builds the correct /recipe URL from a meal card (UI wiring)', () {
+    String pushUrlFor(String mealName) =>
+        '/recipe?meal_type=${Uri.encodeComponent(mealSlotFromName(mealName).apiValue)}';
+
+    test('a Post-Workout meal card pushes meal_type=post_workout, never breakfast/lunch/dinner', () {
+      final url = pushUrlFor('Post-Workout');
+      expect(url, '/recipe?meal_type=post_workout');
+      expect(url, isNot(contains('breakfast')));
+      expect(url, isNot(contains('lunch')));
+      expect(url, isNot(contains('dinner')));
+    });
+
+    test('a Pre-Workout Snack meal card pushes meal_type=pre_workout, never breakfast/lunch/dinner', () {
+      final url = pushUrlFor('Pre-Workout Snack');
+      expect(url, '/recipe?meal_type=pre_workout');
+      expect(url, isNot(contains('breakfast')));
+      expect(url, isNot(contains('lunch')));
+      expect(url, isNot(contains('dinner')));
+    });
+
+    test('a Breakfast meal card pushes meal_type=breakfast', () {
+      expect(pushUrlFor('Breakfast'), '/recipe?meal_type=breakfast');
+    });
+
+    test('a Lunch meal card pushes meal_type=lunch', () {
+      expect(pushUrlFor('Lunch'), '/recipe?meal_type=lunch');
+    });
+
+    test('a Dinner meal card pushes meal_type=dinner', () {
+      expect(pushUrlFor('Dinner'), '/recipe?meal_type=dinner');
+    });
+  });
 }

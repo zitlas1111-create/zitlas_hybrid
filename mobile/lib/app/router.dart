@@ -176,8 +176,14 @@ GoRouter buildRouter(AuthState authState) {
       // button, the same way /chat/:roomId and /experts/:id do.
       GoRoute(
         path: '/recipe',
+        // The only real caller (DietMealCard's onGetRecipe in diet_screen.dart)
+        // always supplies `meal_type` from `mealSlotFromName(...).apiValue`, so
+        // this only matters for a malformed/manual deep link. Falls back to
+        // 'snack' — the SAME "unrecognized meal" fallback mealSlotFromName()
+        // itself uses — never 'breakfast'. An unrecognized workout slot must
+        // never silently become a normal meal recommendation.
         builder: (context, state) => RecipeScreen(
-          mealType: state.uri.queryParameters['meal_type'] ?? 'breakfast',
+          mealType: state.uri.queryParameters['meal_type'] ?? 'snack',
         ),
       ),
       GoRoute(
