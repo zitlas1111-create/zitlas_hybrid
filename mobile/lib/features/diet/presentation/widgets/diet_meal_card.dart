@@ -120,7 +120,7 @@ class DietMealCard extends StatelessWidget {
               ],
             ),
           ],
-          if ((onGetRecipe != null || onSwap != null) && !meal.recovery) ...[
+          if (onGetRecipe != null || onSwap != null) ...[
             const SizedBox(height: 10),
             // Each action gets HALF the row via Expanded so the two buttons
             // can never overlap or spill past the card, on any screen size
@@ -128,6 +128,13 @@ class DietMealCard extends StatelessWidget {
             // let "Easy Recipe" + "Swap" overflow and clip on narrow
             // devices. FittedBox inside each button shrinks the label/icon
             // rather than truncating or overflowing if space is still tight.
+            //
+            // A recovery-day meal (`meal.recovery` — the Health Status
+            // override's fixed template) mirrors diet.js exactly: the
+            // recipe button stays available (you can still look up how to
+            // make "Moong dal khichdi"), only Swap locks — never a full
+            // blackout of both actions, which was hiding the recipe lookup
+            // for no reason a recovery meal doesn't already need.
             Row(
               children: [
                 // "Get Easy ZITLAS Recipe" BEFORE "Swap" — build order here
@@ -146,12 +153,26 @@ class DietMealCard extends StatelessWidget {
                 if (onGetRecipe != null && onSwap != null) const SizedBox(width: 8),
                 if (onSwap != null)
                   Expanded(
-                    child: _MealActionButton(
-                      icon: Icons.swap_horiz,
-                      label: 'Swap',
-                      color: ZitlasTokens.primaryDark,
-                      onPressed: onSwap,
-                    ),
+                    child: meal.recovery
+                        ? _MealActionButton(
+                            icon: Icons.lock_outline,
+                            label: 'Recovery meal',
+                            color: ZitlasTokens.textMuted,
+                            onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  "This is today's fixed recovery meal — swap is locked. "
+                                  'Your normal plan resumes tomorrow.',
+                                ),
+                              ),
+                            ),
+                          )
+                        : _MealActionButton(
+                            icon: Icons.swap_horiz,
+                            label: 'Swap',
+                            color: ZitlasTokens.primaryDark,
+                            onPressed: onSwap,
+                          ),
                   ),
               ],
             ),

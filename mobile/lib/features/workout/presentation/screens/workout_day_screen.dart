@@ -133,8 +133,17 @@ class _DayContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isRest = day.isRest;
-    final exercises = day.exercises;
+    // Health Status recovery override (`controller.healthOverrideAppliesTo`)
+    // — swaps ONLY today's exercises for the deterministic recovery
+    // template chosen on the Dashboard's "How are you feeling today?" card,
+    // mirroring DietController's identical mechanism. The underlying stored
+    // plan is never modified.
+    final overrideApplies = controller.healthOverrideAppliesTo(day);
+    final overrideWorkout = overrideApplies ? controller.healthToday!.workout : null;
+    final exercises = controller.effectiveExercisesFor(day);
+    final isRest = overrideWorkout != null
+        ? (overrideWorkout.mode == 'rest' || overrideWorkout.mode == 'none')
+        : day.isRest;
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
@@ -176,6 +185,26 @@ class _DayContent extends StatelessWidget {
             child: Text(
               '✏️ Modified by ${day.modifiedBy ?? 'Expert'}',
               style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800, color: ZitlasTokens.hydrationTeal),
+            ),
+          ),
+        ],
+
+        // ── Health Status recovery banner — `#hsDietBanner`'s Training
+        // equivalent. Tells the athlete why today's session looks different
+        // and that it's temporary.
+        if (overrideWorkout != null) ...[
+          const SizedBox(height: 14),
+          ZitlasCard(
+            color: ZitlasTokens.primary.withValues(alpha: 0.08),
+            child: Text.rich(
+              TextSpan(
+                children: [
+                  const TextSpan(text: '🛟 ', style: TextStyle(fontSize: 13)),
+                  TextSpan(text: overrideWorkout.title, style: const TextStyle(fontWeight: FontWeight.w800)),
+                  const TextSpan(text: ' — adjusted for how you\'re feeling. Your normal plan resumes tomorrow.'),
+                ],
+                style: const TextStyle(fontSize: 12.5, color: ZitlasTokens.textPrimary, height: 1.4),
+              ),
             ),
           ),
         ],

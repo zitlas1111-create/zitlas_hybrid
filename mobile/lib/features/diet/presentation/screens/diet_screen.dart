@@ -124,6 +124,15 @@ class _DietContent extends StatelessWidget {
     final day = plan.days[dayIndex];
     final pendingReview = controller.pendingAcceptableReview;
     final storage = controller.dietStorage;
+    // Health Status recovery override (`controller.healthOverrideAppliesTo`) —
+    // swaps ONLY today's meals for the deterministic recovery template the
+    // athlete's "How are you feeling today?" check-in selected. Everything
+    // else on this screen (header, day selector, coach card) is untouched;
+    // the underlying stored plan is never modified, so tomorrow's render of
+    // this same day reverts automatically once the override no longer
+    // applies (a new day, or `_hsToday` expires).
+    final showsRecoveryDay = controller.healthOverrideAppliesTo(day);
+    final meals = controller.effectiveMealsFor(day);
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
@@ -171,8 +180,14 @@ class _DietContent extends StatelessWidget {
           ),
         DietDayFocusCard(day: day),
         if (day.theme != null || day.nutritionTip != null) const SizedBox(height: 16),
-        ...List.generate(day.meals.length, (mealIndex) {
-          final meal = day.meals[mealIndex];
+        if (showsRecoveryDay) ...[
+          const SizedBox(height: 4),
+          _RecoveryDietBanner(focus: controller.healthToday?.diet?.title),
+          const SizedBox(height: 12),
+        ],
+        ...List.generate(meals.length, (mealIndex) {
+          final meal = meals[mealIndex];
+          final slot = mealSlotFromName(meal.mealName);
           return DietMealCard(
             meal: meal,
             // When a coach diet is active the snap moved UP to the coach plan
@@ -197,14 +212,49 @@ class _DietContent extends StatelessWidget {
             // The slot (breakfast/lunch/dinner/snack/pre_workout/
             // post_workout) — NEVER the raw, unclassified `meal.mealName`
             // ("Pre-Workout Snack" doesn't match any backend meal_type
-            // value on its own, and previously silently returned no
-            // recipe / the wrong one for a workout slot).
-            onGetRecipe: () => context.push(
-              '/recipe?meal_type=${Uri.encodeComponent(mealSlotFromName(meal.mealName).apiValue)}',
-            ),
+            // value on its own). `MealSlot.unknown` (a meal name that
+            // matches none of the known slots — e.g. a custom coach-added
+            // meal) hides the button entirely rather than guessing which
+            // recipe pool to query: no cross-slot fallback, in either
+            // direction, is ever acceptable.
+            onGetRecipe: slot == MealSlot.unknown
+                ? null
+                : () => context.push('/recipe?meal_type=${Uri.encodeComponent(slot.apiValue)}'),
           );
         }),
       ],
+    );
+  }
+}
+
+/// `#hsDietBanner` — tells the athlete WHY today's meals look different
+/// from their normal plan, and that it's temporary. Rendered directly above
+/// the meal list, exactly where the website inserts it (`diet.js`'s
+/// `mealList.parentNode.insertBefore(_hsBanner, mealList)`).
+class _RecoveryDietBanner extends StatelessWidget {
+  const _RecoveryDietBanner({required this.focus});
+  final String? focus;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ZitlasTokens.primary.withValues(alpha: 0.08),
+        border: Border.all(color: ZitlasTokens.primary.withValues(alpha: 0.3)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Text.rich(
+        TextSpan(
+          children: [
+            const TextSpan(text: '🛟 Recovery meals for today — ', style: TextStyle(fontWeight: FontWeight.w800)),
+            TextSpan(text: focus ?? "adjusted for how you're feeling"),
+            const TextSpan(text: '. Your normal plan resumes tomorrow.'),
+          ],
+          style: const TextStyle(fontSize: 12.5, color: ZitlasTokens.textPrimary, height: 1.4),
+        ),
+      ),
     );
   }
 }

@@ -2,13 +2,20 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import '../dashboard/data/health_status_store.dart';
+import '../dashboard/models/health_status.dart';
 import 'data/workout_repository.dart';
 import 'models/coach_training_plan.dart';
 import 'models/expert_workout_modification.dart';
 import 'models/workout_day.dart';
+import 'models/workout_exercise.dart';
 import 'models/workout_plan_content.dart';
 import 'models/workout_review_request.dart';
 import 'models/workout_storage.dart';
+
+const _weekdayNames = [
+  'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday',
+];
 
 /// Aggregates the Training feature's Firestore state. Mirrors
 /// `weekly-plan.js`'s `loadPlan()` / `training/day.js`'s
@@ -27,13 +34,23 @@ import 'models/workout_storage.dart';
 ///   button here would be inventing a control the real Training page
 ///   doesn't have.
 class WorkoutController extends ChangeNotifier {
-  WorkoutController({required this.uid, required WorkoutRepository repository})
-    : _repository = repository { // ignore: prefer_initializing_formals
+  WorkoutController({
+    required this.uid,
+    required WorkoutRepository repository,
+    HealthStatusStore? healthStore,
+  }) : _repository = repository, // ignore: prefer_initializing_formals
+       _healthStore = healthStore ?? HealthStatusStore() {
     _init();
   }
 
   final String uid;
   final WorkoutRepository _repository;
+  final HealthStatusStore _healthStore;
+
+  /// Today's Health Status override, if any — see DietController's
+  /// identical field for why this is read independently rather than shared
+  /// via Provider (Training and Dashboard are separate top-level tabs).
+  HealthAdjustment? healthToday;
 
   StreamSubscription<Map<String, dynamic>?>? _userDocSub;
   StreamSubscription<List<WorkoutReviewRequest>>? _reviewsSub;
@@ -138,6 +155,43 @@ class WorkoutController extends ChangeNotifier {
       },
       onError: (_) {},
     );
+
+    unawaited(_loadHealthToday());
+  }
+
+  Future<void> _loadHealthToday() async {
+    try {
+      healthToday = await _healthStore.loadToday();
+      _safeNotify();
+    } catch (_) {
+      // Training screen simply renders the normal plan.
+    }
+  }
+
+  /// Re-reads today's Health Status override — called by the screen on
+  /// resume, since a check-in made on the Dashboard tab wouldn't otherwise
+  /// be picked up by this controller's one-shot local read.
+  Future<void> refreshHealthToday() => _loadHealthToday();
+
+  /// Health Status recovery override for Training — mirrors
+  /// `DietController.healthOverrideAppliesTo` exactly (today's weekday,
+  /// never over an active coach-managed plan, only when the check-in
+  /// actually produced a replacement exercise list). The coach plan check
+  /// uses [_coachOverrideActive] rather than [isExpertPlan] since Training's
+  /// override precedence is coach-plan-first, matching [effectivePlan]'s
+  /// own precedence rule.
+  bool healthOverrideAppliesTo(WorkoutDay day) {
+    final adj = healthToday;
+    if (adj?.workout == null || adj!.workout!.meals.isEmpty) return false;
+    if (day.day.toLowerCase() != _weekdayNames[(DateTime.now().weekday - 1) % 7]) return false;
+    if (_coachOverrideActive) return false;
+    return true;
+  }
+
+  /// What the screen should actually render for this day's exercises.
+  List<WorkoutExercise> effectiveExercisesFor(WorkoutDay day) {
+    if (!healthOverrideAppliesTo(day)) return day.exercises;
+    return healthToday!.workout!.meals.map(WorkoutExercise.fromMap).toList();
   }
 
   void _onUserDoc(Map<String, dynamic>? data) {

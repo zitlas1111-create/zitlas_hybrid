@@ -5,23 +5,35 @@ import 'package:flutter/material.dart';
 /// Snack", "Post-Workout", ... — see routes/assessment.py's prompt schema),
 /// which is never contractually fixed wording. This is the ONE place that
 /// classifies a meal name into a slot; nothing else should re-derive it with
-/// its own ad hoc string checks (diet_meal_card.dart and recipe_screen.dart
+/// its own ad hoc string checks (diet_meal_card.dart and diet_screen.dart
 /// both reuse [mealSlotFromName]/[mealSlotFromApiValue]).
+///
+/// There is NO separate structured slot field anywhere in the diet-plan
+/// data model to read instead — checked directly against every diet
+/// generation path in backend/routes/assessment.py (all four JSON schemas:
+/// the three "Breakfast | Mid-Morning | Lunch | Evening Snack | Dinner"
+/// variants and the one transformation-goal "Breakfast | Pre-Workout |
+/// Lunch | Post-Workout | Dinner" variant, plus the deterministic
+/// no-LLM fallback generator) — `meal_name` free text is the ONLY field
+/// that ever carries this information, for every plan type. Classifying
+/// from it is therefore not a workaround; it is the only available source
+/// of truth.
 ///
 /// PRE_WORKOUT/POST_WORKOUT are NOT "a normal recipe with a fitness tag" —
 /// the backend serves them from a completely separate, dedicated
 /// workout-nutrition dataset (see backend/services/workout_nutrition_service.py),
-/// never the 637-recipe database breakfast/lunch/dinner/snack use. Every
-/// getter below exists to keep that distinction visible in the UI too —
-/// "Workout Fuel"/"Workout Recovery" must never read like just another
-/// "ZITLAS Recipe".
-enum MealSlot { breakfast, lunch, dinner, snack, preWorkout, postWorkout }
+/// never the 637-recipe database breakfast/lunch/dinner/snack use.
+enum MealSlot { breakfast, lunch, dinner, snack, preWorkout, postWorkout, unknown }
 
 extension MealSlotX on MealSlot {
   /// The exact `meal_type` query value `GET /api/recipes/recommended`
   /// understands (see backend/services/recipe_service.py's
   /// `resolve_meal_slot()` for the workout slots and `_MEAL_TYPE_ALIASES`
-  /// for the rest) — never the raw meal name.
+  /// for the rest) — never the raw meal name. [MealSlot.unknown] is never
+  /// actually sent (see diet_screen.dart, which hides the recipe button
+  /// entirely for an unrecognized meal name); this value exists only so a
+  /// direct/defensive call degrades to a controlled empty result instead of
+  /// guessing a real slot.
   String get apiValue => switch (this) {
         MealSlot.breakfast => 'breakfast',
         MealSlot.lunch => 'lunch',
@@ -29,6 +41,7 @@ extension MealSlotX on MealSlot {
         MealSlot.snack => 'snack',
         MealSlot.preWorkout => 'pre_workout',
         MealSlot.postWorkout => 'post_workout',
+        MealSlot.unknown => 'unknown',
       };
 
   bool get isWorkoutSlot => this == MealSlot.preWorkout || this == MealSlot.postWorkout;
@@ -72,21 +85,42 @@ extension MealSlotX on MealSlot {
       };
 }
 
-/// Classifies a plan's free-text `meal_name` into a [MealSlot]. Keyword-based
-/// rather than an exact-string switch since the generator's exact wording
-/// isn't fixed (e.g. "Pre-Workout" vs "Pre-Workout Snack"). An unrecognized
-/// name (a custom meal added via the coach editor, e.g. "Mid-Morning") is
-/// treated as a generic snack rather than defaulting to breakfast — item 10's
-/// "never fall back to the closest generic meal type" applies just as much to
-/// classification as it does to the backend's own recommendation pool.
+/// Classifies a plan's free-text `meal_name` into a [MealSlot].
+///
+/// STRICT by design: matches only when the slot's keyword is the FIRST
+/// thing the (letter-only, lowercased) name says, not merely present
+/// somewhere inside it. A loose "does this string CONTAIN preworkout
+/// anywhere" check is exactly what let a corrupted/verbose meal name
+/// misclassify — e.g. an LLM echoing the prompt's own placeholder text
+/// verbatim ("Breakfast | Pre-Workout | Lunch | Post-Workout | Dinner")
+/// instead of picking one label would, under a `contains` check, match
+/// "preworkout" (embedded after "breakfast") and silently turn a Breakfast
+/// meal into Pre-Workout, since pre/post-workout were checked first. Under
+/// `startsWith`, that same corrupted string starts with "breakfast" and
+/// classifies as Breakfast — the first-mentioned label, and the only
+/// defensible reading of malformed data. This also means check ORDER no
+/// longer matters: a string can start with at most one candidate.
+///
+/// "Snack" is checked as a `contains`, not `startsWith`, because it
+/// legitimately appears as the SECOND word in real generated names
+/// ("Evening Snack") — the ambiguity risk that motivates `startsWith` for
+/// the other five is specific to them being alternately a normal-meal
+/// keyword AND a workout-purpose keyword; snack has no such conflict.
+///
+/// A name matching NONE of the six known slots (e.g. "Mid-Morning", a
+/// custom meal added via the coach editor) returns [MealSlot.unknown] —
+/// never a guess at breakfast, and never a guess at pre-workout. Callers
+/// (diet_screen.dart) must treat [MealSlot.unknown] as "no recipe
+/// recommendation available for this meal", not silently substitute one.
 MealSlot mealSlotFromName(String mealName) {
   final compact = mealName.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
-  if (compact.contains('preworkout')) return MealSlot.preWorkout;
-  if (compact.contains('postworkout')) return MealSlot.postWorkout;
-  if (compact.contains('breakfast')) return MealSlot.breakfast;
-  if (compact.contains('lunch')) return MealSlot.lunch;
-  if (compact.contains('dinner')) return MealSlot.dinner;
-  return MealSlot.snack;
+  if (compact.startsWith('preworkout')) return MealSlot.preWorkout;
+  if (compact.startsWith('postworkout')) return MealSlot.postWorkout;
+  if (compact.startsWith('breakfast')) return MealSlot.breakfast;
+  if (compact.startsWith('lunch')) return MealSlot.lunch;
+  if (compact.startsWith('dinner')) return MealSlot.dinner;
+  if (compact.contains('snack')) return MealSlot.snack;
+  return MealSlot.unknown;
 }
 
 /// The reverse of [MealSlot.apiValue] — used by the recipe screen to render

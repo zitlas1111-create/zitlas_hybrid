@@ -138,7 +138,12 @@ void main() {
       expect(swapTaps, 1);
     });
 
-    testWidgets('a recovery-locked meal shows neither action button', (tester) async {
+    testWidgets('a recovery-day meal keeps the recipe button but shows Swap as locked (matches diet.js)', (tester) async {
+      // The website's diet.js only locks Swap for a `_recovery` meal
+      // (`swap-btn--locked`, still visible) — `buildRecipeButton(meal)` is
+      // unconditional. Flutter used to hide BOTH buttons for a recovery
+      // meal, which was a real behavior mismatch once recovery meals
+      // actually became reachable (the Health Status diet override).
       final recoveryMeal = const DietMeal(mealName: 'Breakfast', foods: ['Rest'], recovery: true);
       await tester.pumpWidget(
         MaterialApp(
@@ -147,8 +152,25 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Get Easy Recipe'), findsNothing);
+      expect(find.text('Get Easy Recipe'), findsOneWidget);
       expect(find.text('Swap'), findsNothing);
+      expect(find.text('Recovery meal'), findsOneWidget);
+    });
+
+    testWidgets('tapping the locked Swap button never calls onSwap, only shows an explanation', (tester) async {
+      var swapTaps = 0;
+      final recoveryMeal = const DietMeal(mealName: 'Breakfast', foods: ['Rest'], recovery: true);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DietMealCard(meal: recoveryMeal, onSwap: () => swapTaps++, onGetRecipe: () {}),
+          ),
+        ),
+      );
+      await tester.tap(find.text('Recovery meal'));
+      await tester.pump();
+      expect(swapTaps, 0);
+      expect(find.textContaining('swap is locked'), findsOneWidget);
     });
   });
 }

@@ -4,12 +4,17 @@ import 'package:zitlas_mobile/features/diet/models/meal_slot.dart';
 /// [mealSlotFromName] is the ONE place that classifies a diet plan's
 /// free-text `meal_name` into a semantic slot — everything downstream
 /// (the meal-card action row, the meal_type sent to the recipe API) reuses
-/// it rather than re-deriving the slot with its own string checks. These
-/// tests exist because the diet generator's exact wording isn't
-/// contractually fixed (see routes/assessment.py's prompt schema:
-/// "Breakfast | Pre-Workout | Lunch | Post-Workout | Dinner"), and a wrong
-/// classification here is exactly the bug this feature-fix task reported:
-/// "Pre-Workout Snack" silently being treated as a normal meal.
+/// it rather than re-deriving the slot with its own string checks.
+///
+/// Classification is STRICT (`startsWith`, not `contains`): a Breakfast
+/// meal must never become Pre-Workout just because a corrupted/verbose
+/// meal name happens to mention "pre-workout" somewhere inside it — see
+/// meal_slot.dart's doc comment on [mealSlotFromName] for the exact
+/// mechanism (an LLM echoing the prompt's own placeholder text verbatim,
+/// e.g. "Breakfast | Pre-Workout | Lunch | Post-Workout | Dinner", used to
+/// match "preworkout" under a loose `contains` check since pre/post-workout
+/// were checked first — this is the real defect class both directions of
+/// this bug report trace back to).
 void main() {
   group('mealSlotFromName classifies the diet plan\'s real meal names', () {
     test('"Pre-Workout Snack" (the exact wording from the bug report) is a pre-workout slot', () {
@@ -25,8 +30,8 @@ void main() {
     });
 
     test('"Pre-Workout Snack" is NEVER classified as the generic "snack" slot', () {
-      // The literal string contains "snack" too — this is the exact
-      // ordering bug this test guards against (pre-workout must win).
+      // The literal string contains "snack" too — startsWith('preworkout')
+      // is what guarantees pre-workout wins regardless of check order.
       expect(mealSlotFromName('Pre-Workout Snack'), isNot(MealSlot.snack));
     });
 
@@ -42,13 +47,72 @@ void main() {
       expect(mealSlotFromName('Dinner'), MealSlot.dinner);
     });
 
+    test('"Evening Snack" resolves to snack (the keyword is the SECOND word, not the first)', () {
+      expect(mealSlotFromName('Evening Snack'), MealSlot.snack);
+    });
+
     test('case and hyphenation don\'t matter — "post workout" (no hyphen) still resolves', () {
       expect(mealSlotFromName('post workout'), MealSlot.postWorkout);
       expect(mealSlotFromName('PRE WORKOUT'), MealSlot.preWorkout);
     });
 
-    test('an unrecognized custom meal name (added via the coach editor) falls back to snack, never breakfast', () {
-      expect(mealSlotFromName('Mid-Morning'), MealSlot.snack);
+    test('an unrecognized custom meal name (added via the coach editor) is unknown — never breakfast, never pre-workout', () {
+      final slot = mealSlotFromName('Mid-Morning');
+      expect(slot, MealSlot.unknown);
+      expect(slot, isNot(MealSlot.breakfast));
+      expect(slot, isNot(MealSlot.preWorkout));
+    });
+
+    // ── The exact regression this round exists to fix ──────────────────
+    test('a Breakfast meal NEVER becomes Pre-Workout, even with a malformed/verbose name', () {
+      // Simulates an LLM echoing the prompt's own placeholder text verbatim
+      // instead of picking one label — a real LLM failure mode, and the
+      // concrete mechanism that produced "Breakfast shown as Pre-Workout"
+      // under the OLD `contains`-based classifier (which matched
+      // "preworkout" embedded after "breakfast", since pre/post-workout
+      // were checked before breakfast/lunch/dinner).
+      final corrupted = 'Breakfast | Pre-Workout | Lunch | Post-Workout | Dinner';
+      expect(mealSlotFromName(corrupted), MealSlot.breakfast);
+      expect(mealSlotFromName(corrupted), isNot(MealSlot.preWorkout));
+    });
+
+    test('a genuinely Pre-Workout-first name still resolves correctly, symmetric to the above', () {
+      final corrupted = 'Pre-Workout | Breakfast | Lunch | Post-Workout | Dinner';
+      expect(mealSlotFromName(corrupted), MealSlot.preWorkout);
+    });
+
+    test('a genuinely Post-Workout-first name still resolves correctly, never breakfast/lunch/dinner', () {
+      final corrupted = 'Post-Workout | Breakfast | Lunch | Dinner';
+      final slot = mealSlotFromName(corrupted);
+      expect(slot, MealSlot.postWorkout);
+      expect(slot, isNot(MealSlot.breakfast));
+      expect(slot, isNot(MealSlot.lunch));
+      expect(slot, isNot(MealSlot.dinner));
+    });
+
+    test('BREAKFAST never becomes LUNCH, DINNER, PRE_WORKOUT, or POST_WORKOUT', () {
+      final slot = mealSlotFromName('Breakfast');
+      expect(slot, MealSlot.breakfast);
+      expect(slot, isNot(MealSlot.lunch));
+      expect(slot, isNot(MealSlot.dinner));
+      expect(slot, isNot(MealSlot.preWorkout));
+      expect(slot, isNot(MealSlot.postWorkout));
+    });
+
+    test('LUNCH never becomes BREAKFAST, PRE_WORKOUT, or POST_WORKOUT', () {
+      final slot = mealSlotFromName('Lunch');
+      expect(slot, MealSlot.lunch);
+      expect(slot, isNot(MealSlot.breakfast));
+      expect(slot, isNot(MealSlot.preWorkout));
+      expect(slot, isNot(MealSlot.postWorkout));
+    });
+
+    test('DINNER never becomes BREAKFAST, LUNCH, or PRE_WORKOUT', () {
+      final slot = mealSlotFromName('Dinner');
+      expect(slot, MealSlot.dinner);
+      expect(slot, isNot(MealSlot.breakfast));
+      expect(slot, isNot(MealSlot.lunch));
+      expect(slot, isNot(MealSlot.preWorkout));
     });
   });
 
@@ -84,6 +148,7 @@ void main() {
       expect(MealSlot.lunch.isWorkoutSlot, isFalse);
       expect(MealSlot.dinner.isWorkoutSlot, isFalse);
       expect(MealSlot.snack.isWorkoutSlot, isFalse);
+      expect(MealSlot.unknown.isWorkoutSlot, isFalse);
     });
 
     test('pre/post-workout kickers are distinct from the generic recipe kicker', () {
@@ -103,16 +168,22 @@ void main() {
   });
 
   // ── Regression guard for the reported bug: the Diet screen's Post-Workout
-  // card recommending Breakfast. Mirrors diet_screen.dart's EXACT
-  // `onGetRecipe` expression verbatim, so a regression there (someone
-  // swapping back to the raw `meal.mealName`, or reordering the
-  // classification checks) fails this test immediately.
+  // card recommending Breakfast (and the follow-up: Breakfast recommending
+  // Pre-Workout). Mirrors diet_screen.dart's EXACT `onGetRecipe` expression
+  // verbatim, so a regression there (someone swapping back to the raw
+  // `meal.mealName`, or reordering the classification checks) fails this
+  // test immediately.
   group('Diet screen builds the correct /recipe URL from a meal card (UI wiring)', () {
-    String pushUrlFor(String mealName) =>
-        '/recipe?meal_type=${Uri.encodeComponent(mealSlotFromName(mealName).apiValue)}';
+    // Mirrors diet_screen.dart's onGetRecipe exactly: null (no navigation)
+    // for MealSlot.unknown, otherwise the slot's own apiValue.
+    String? pushUrlFor(String mealName) {
+      final slot = mealSlotFromName(mealName);
+      if (slot == MealSlot.unknown) return null;
+      return '/recipe?meal_type=${Uri.encodeComponent(slot.apiValue)}';
+    }
 
     test('a Post-Workout meal card pushes meal_type=post_workout, never breakfast/lunch/dinner', () {
-      final url = pushUrlFor('Post-Workout');
+      final url = pushUrlFor('Post-Workout')!;
       expect(url, '/recipe?meal_type=post_workout');
       expect(url, isNot(contains('breakfast')));
       expect(url, isNot(contains('lunch')));
@@ -120,15 +191,18 @@ void main() {
     });
 
     test('a Pre-Workout Snack meal card pushes meal_type=pre_workout, never breakfast/lunch/dinner', () {
-      final url = pushUrlFor('Pre-Workout Snack');
+      final url = pushUrlFor('Pre-Workout Snack')!;
       expect(url, '/recipe?meal_type=pre_workout');
       expect(url, isNot(contains('breakfast')));
       expect(url, isNot(contains('lunch')));
       expect(url, isNot(contains('dinner')));
     });
 
-    test('a Breakfast meal card pushes meal_type=breakfast', () {
-      expect(pushUrlFor('Breakfast'), '/recipe?meal_type=breakfast');
+    test('a Breakfast meal card pushes meal_type=breakfast, never pre_workout/post_workout', () {
+      final url = pushUrlFor('Breakfast')!;
+      expect(url, '/recipe?meal_type=breakfast');
+      expect(url, isNot(contains('pre_workout')));
+      expect(url, isNot(contains('post_workout')));
     });
 
     test('a Lunch meal card pushes meal_type=lunch', () {
@@ -137,6 +211,15 @@ void main() {
 
     test('a Dinner meal card pushes meal_type=dinner', () {
       expect(pushUrlFor('Dinner'), '/recipe?meal_type=dinner');
+    });
+
+    test('a corrupted meal name that echoes the whole prompt schema still resolves to Breakfast, not Pre-Workout', () {
+      final url = pushUrlFor('Breakfast | Pre-Workout | Lunch | Post-Workout | Dinner')!;
+      expect(url, '/recipe?meal_type=breakfast');
+    });
+
+    test('an unrecognized meal name (MealSlot.unknown) never navigates at all — no cross-slot guess', () {
+      expect(pushUrlFor('Mid-Morning'), isNull);
     });
   });
 }

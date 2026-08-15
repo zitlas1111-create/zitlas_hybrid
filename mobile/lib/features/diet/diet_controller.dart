@@ -14,6 +14,8 @@ import '../coaching/data/coaching_plan_repository.dart';
 import '../coaching/data/meal_checkin_repository.dart';
 import '../coaching/models/coach_diet_plan.dart';
 import '../coaching/models/meal_checkin.dart';
+import '../dashboard/data/health_status_store.dart';
+import '../dashboard/models/health_status.dart';
 import '../experts/data/experts_repository.dart';
 import 'data/diet_repository.dart';
 import 'models/diet_calculations.dart';
@@ -52,6 +54,7 @@ class DietController extends ChangeNotifier {
     CoachingPlanRepository? coachingPlans,
     ExpertsRepository? experts,
     MealCheckinRepository? mealCheckins,
+    HealthStatusStore? healthStore,
   }) : _repository = repository, // ignore: prefer_initializing_formals
        _coachingPlans = coachingPlans ?? CoachingPlanRepository(),
        _experts = experts ??
@@ -59,7 +62,8 @@ class DietController extends ChangeNotifier {
              firestore: FirebaseFirestore.instance,
              auth: FirebaseAuth.instance,
            ),
-       _mealCheckins = mealCheckins ?? MealCheckinRepository() {
+       _mealCheckins = mealCheckins ?? MealCheckinRepository(),
+       _healthStore = healthStore ?? HealthStatusStore() {
     _init();
   }
 
@@ -68,6 +72,16 @@ class DietController extends ChangeNotifier {
   final CoachingPlanRepository _coachingPlans;
   final ExpertsRepository _experts;
   final MealCheckinRepository _mealCheckins;
+  final HealthStatusStore _healthStore;
+
+  /// Today's Health Status override, if the athlete checked in today via
+  /// the Dashboard's "How are you feeling?" card — same
+  /// `zitlas_health_today`-equivalent record `DashboardController` reads,
+  /// loaded independently here since Diet and Dashboard are separate
+  /// top-level tabs with their own controller instances (no shared state
+  /// to plumb through, and `HealthStatusStore` is a stateless
+  /// SharedPreferences wrapper, cheap to read twice).
+  HealthAdjustment? healthToday;
 
   StreamSubscription<Map<String, dynamic>?>? _userDocSub;
   StreamSubscription<List<DietReviewRequest>>? _reviewsSub;
@@ -174,6 +188,49 @@ class DietController extends ChangeNotifier {
         if (kDebugMode) debugPrint('[DIET] coach plan unavailable: $e');
       },
     );
+
+    unawaited(_loadHealthToday());
+  }
+
+  /// One-shot read (not a stream — `HealthStatusStore` is SharedPreferences,
+  /// not Firestore) of today's Health Status override, if any.
+  Future<void> _loadHealthToday() async {
+    try {
+      healthToday = await _healthStore.loadToday();
+      _safeNotify();
+    } catch (_) {
+      // Diet screen simply renders the normal plan — a health-status read
+      // failure must never block the actual diet plan from showing.
+    }
+  }
+
+  /// Re-reads today's Health Status override — called by the screen when it
+  /// resumes/refreshes, since a check-in on the Dashboard tab while Diet's
+  /// controller is already alive wouldn't otherwise be picked up (this is a
+  /// one-shot local read, not a live stream).
+  Future<void> refreshHealthToday() => _loadHealthToday();
+
+  /// Health Status recovery override — swaps ONLY today's meals with the
+  /// deterministic recovery template chosen on the Dashboard's "How are you
+  /// feeling today?" card (`computeHealthAdjustments`/`HealthStatusStore`).
+  /// Mirrors `diet.js`'s exact gating (`_hsApplies`): today's date (already
+  /// guaranteed by `HealthStatusStore.loadToday()`, which returns null for a
+  /// stale record), this specific day's weekday, and never over an active
+  /// coach-authored plan — the coach is alerted instead and adjusts the
+  /// coach plan themselves, so an AI-plan override would be misleading.
+  bool healthOverrideAppliesTo(DietDay day) {
+    final adj = healthToday;
+    if (adj?.diet == null || adj!.diet!.meals.isEmpty) return false;
+    if (day.day.toLowerCase() != _weekdayName(DateTime.now()).toLowerCase()) return false;
+    if (dietStorage?.isExpertPlan == true) return false;
+    return true;
+  }
+
+  /// What the screen should actually render for this day — the normal plan
+  /// unless [healthOverrideAppliesTo] says today's recovery template applies.
+  List<DietMeal> effectiveMealsFor(DietDay day) {
+    if (!healthOverrideAppliesTo(day)) return day.meals;
+    return healthToday!.diet!.meals.map(DietMeal.fromMap).toList();
   }
 
   /// The coach-authored plan document, or null until the first snapshot.
