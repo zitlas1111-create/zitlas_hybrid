@@ -1,0 +1,51 @@
+Recipe ID,Recipe Name,Category,Meal Type,Diet Type,Fitness Goals,Calories,Protein,Carbohydrates,Fat,Fiber,Prep Time,Cook Time,Difficulty,Cost Level,Equipment,Hostel Friendly,Home Friendly,Regional Tag,ZITLAS Original
+ZITLAS-REC-0251,ZITLAS Baked Aloo Paratha,Breakfast,Breakfast,Vegan,General Fitness,378,10.3,69.0,7.3,9.6,12,10,Moderate,Budget,Tawa,No,Yes,Punjabi-inspired,No
+ZITLAS-REC-0252,ZITLAS Gobi Paratha,Breakfast,Breakfast,Vegan,Weight Loss,329,9.9,53.0,9.4,9.4,12,10,Moderate,Budget,Tawa,No,Yes,Punjabi-inspired,No
+ZITLAS-REC-0253,ZITLAS Mooli Paratha,Breakfast,Breakfast,Vegan,Weight Loss,322,9.0,51.7,9.3,9.1,12,10,Moderate,Budget,Tawa,No,Yes,Punjabi-inspired,No
+ZITLAS-REC-0254,ZITLAS Thalipeeth,Breakfast,Breakfast,Vegan,General Fitness; Weight Loss,312,10.0,48.8,8.9,7.1,10,10,Moderate,Budget,Tawa,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0255,ZITLAS Sabudana Thalipeeth,Breakfast,Breakfast,Vegetarian,General Fitness,438,6.2,64.8,18.0,2.9,8,10,Moderate,Budget,Tawa,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0256,ZITLAS Misal Pav Bowl,Breakfast,Breakfast,Vegan,Muscle Gain; General Fitness,349,13.6,52.2,10.2,7.9,10,15,Moderate,Moderate,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0257,ZITLAS Dabeli,Breakfast,Breakfast,Vegan,General Fitness,400,10.8,55.8,15.4,4.9,12,8,Moderate,Budget,Tawa,Yes,Yes,Kutchi-inspired,No
+ZITLAS-REC-0258,ZITLAS Baked Moong Dal Kachori,Breakfast,Breakfast,Vegan,Muscle Gain; General Fitness,671,28.8,111.3,12.5,22.4,25,20,Moderate,Moderate,Oven,No,Yes,Rajasthani-inspired,Yes
+ZITLAS-REC-0259,ZITLAS Baked Vegetable Samosa Bites,Breakfast,Breakfast,Vegan,Weight Loss,448,13.2,74.0,11.9,12.8,25,20,Moderate,Budget,Oven,No,Yes,,Yes
+ZITLAS-REC-0260,ZITLAS Aloo Kulcha,Breakfast,Breakfast,Vegan,General Fitness,370,9.0,62.7,9.3,3.2,15,12,Moderate,Budget,Tawa,No,Yes,Punjabi-inspired,No
+ZITLAS-REC-0261,ZITLAS Khaman,Breakfast,Breakfast,Vegetarian,Weight Loss,431,23.1,59.4,13.0,10.8,15,15,Moderate,Budget,Pressure cooker,No,Yes,Gujarati-inspired,No
+ZITLAS-REC-0262,ZITLAS Rava Dhokla,Breakfast,Breakfast,Vegetarian,Weight Loss,443,12.2,76.3,8.7,2.2,15,15,Moderate,Budget,Pressure cooker,No,Yes,Gujarati-inspired,No
+ZITLAS-REC-0263,ZITLAS Instant Rava Dosa,Breakfast,Breakfast,Vegan,Weight Loss,296,5.6,47.4,8.7,1.7,15,10,Moderate,Budget,Tawa,Yes,Yes,South Indian-inspired,No
+ZITLAS-REC-0264,ZITLAS Neer Dosa,Breakfast,Breakfast,Vegan,Weight Loss,264,3.6,48.0,5.8,1.4,15,10,Moderate,Budget,Tawa,No,Yes,Mangalorean-inspired,No
+ZITLAS-REC-0265,ZITLAS Appam with Coconut Milk,Breakfast,Breakfast,Vegan,General Fitness,504,7.4,83.3,15.8,3.7,30,15,Moderate,Moderate,Tawa,No,Yes,Kerala-inspired,No
+ZITLAS-REC-0266,ZITLAS Puttu,Breakfast,Breakfast,Vegan,General Fitness,399,5.8,68.5,11.0,4.6,10,12,Moderate,Budget,Pressure cooker,No,Yes,Kerala-inspired,No
+ZITLAS-REC-0267,ZITLAS Adai,Breakfast,Breakfast,Vegan,Muscle Gain; General Fitness,393,14.0,61.9,9.8,9.3,20,15,Moderate,Budget,Tawa; Mixer,No,Yes,South Indian-inspired,No
+ZITLAS-REC-0268,ZITLAS Chettinad Egg Curry Bowl,Breakfast,Breakfast,Eggetarian,Muscle Gain; General Fitness,296,14.1,7.2,24.0,2.2,15,15,Moderate,Moderate,Kadai; Mixer,No,Yes,Tamil Nadu-inspired,No
+ZITLAS-REC-0269,ZITLAS Prawn Curry Rice Bowl,Breakfast,Breakfast,Non-Vegetarian,Muscle Gain; General Fitness,502,34.4,43.7,22.3,4.5,10,15,Moderate,Premium,Kadai,No,Yes,Coastal Indian-inspired,No
+ZITLAS-REC-0270,ZITLAS Lean Mutton Keema Paratha,Breakfast,Breakfast,Non-Vegetarian,Muscle Gain; Body Transformation,527,28.7,51.7,22.8,8.3,15,18,Moderate,Premium,Tawa; Kadai,No,Yes,Punjabi-inspired,No
+ZITLAS-REC-0271,ZITLAS Baked Kanda Bhaji Bites,Breakfast,Breakfast,Vegan,Weight Loss,364,15.2,55.8,9.9,8.5,12,18,Easy,Budget,Oven,No,Yes,Maharashtrian-inspired,Yes
+ZITLAS-REC-0272,ZITLAS Methi Thepla,Breakfast,Breakfast,Vegan,General Fitness,372,12.9,59.1,10.2,10.3,12,10,Moderate,Budget,Tawa,No,Yes,Gujarati-inspired,No
+ZITLAS-REC-0273,ZITLAS Moong Dal Khichu,Breakfast,Breakfast,Vegan,Weight Loss,375,12.6,63.6,7.2,7.6,10,15,Moderate,Budget,Kadai,No,Yes,Gujarati-inspired,Yes
+ZITLAS-REC-0274,ZITLAS Egg Appam Bowl,Breakfast,Breakfast,Eggetarian,Muscle Gain; General Fitness,568,18.4,62.0,27.6,3.1,30,15,Moderate,Moderate,Tawa; Kadai,No,Yes,Kerala-inspired,Yes
+ZITLAS-REC-0275,ZITLAS Baked Mathri Bites,Breakfast,Breakfast,Vegan,General Fitness,473,12.0,70.0,16.7,11.2,15,15,Easy,Budget,Oven,Yes,Yes,Rajasthani-inspired,Yes
+ZITLAS-REC-0276,ZITLAS Puffed Rice Upma,Breakfast,Breakfast,Vegan,Weight Loss,343,8.2,48.4,13.7,2.3,5,8,Easy,Budget,Kadai,Yes,Yes,,Yes
+ZITLAS-REC-0277,ZITLAS Baked Paneer Kachori Bites,Breakfast,Breakfast,Vegetarian,Muscle Gain; General Fitness,614,24.6,70.8,25.7,11.2,25,20,Moderate,Moderate,Oven,No,Yes,,No
+ZITLAS-REC-0278,ZITLAS Sprouted Ragi Dosa,Breakfast,Breakfast,Vegan,Weight Loss; General Fitness,368,7.4,67.8,8.3,8.5,30,10,Moderate,Budget,Tawa; Mixer,No,Yes,South Indian-inspired,Yes
+ZITLAS-REC-0279,ZITLAS Bajra Thalipeeth,Breakfast,Breakfast,Vegan,General Fitness,315,8.0,49.1,9.5,8.5,8,10,Moderate,Budget,Tawa,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0280,ZITLAS Vegetable Adai,Breakfast,Breakfast,Vegan,Muscle Gain; Weight Loss,309,8.9,46.8,9.4,6.2,20,15,Moderate,Budget,Tawa; Mixer,No,Yes,South Indian-inspired,No
+ZITLAS-REC-0281,ZITLAS Chicken Keema Kulcha,Breakfast,Breakfast,Non-Vegetarian,Muscle Gain; Body Transformation,392,20.6,44.7,14.2,1.6,18,15,Moderate,Moderate,Tawa,No,Yes,Punjabi-inspired,No
+ZITLAS-REC-0282,ZITLAS Chana Dal Khaman,Breakfast,Breakfast,Vegan,Muscle Gain; Weight Loss,268,11.7,33.8,10.1,9.1,20,15,Moderate,Budget,Pressure cooker; Mixer,No,Yes,Gujarati-inspired,No
+ZITLAS-REC-0283,ZITLAS Multigrain Thalipeeth,Breakfast,Breakfast,Vegan,General Fitness,301,7.3,49.8,8.1,7.4,10,10,Moderate,Budget,Tawa,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0284,ZITLAS Roasted Poha Chivda,Breakfast,Breakfast,Vegan,Weight Loss,376,9.3,49.4,16.5,3.1,5,10,Easy,Budget,Kadai,Yes,Yes,Maharashtrian-inspired,Yes
+ZITLAS-REC-0285,ZITLAS Baked Vegetable Kachori,Breakfast,Breakfast,Vegan,Weight Loss,451,13.3,74.5,11.9,13.0,25,20,Moderate,Budget,Oven,No,Yes,,No
+ZITLAS-REC-0286,ZITLAS Sabudana Khichu,Breakfast,Breakfast,Vegetarian,General Fitness,348,4.0,54.0,13.5,1.6,10,12,Moderate,Budget,Kadai,No,Yes,Gujarati-inspired,No
+ZITLAS-REC-0287,ZITLAS Paneer Adai,Breakfast,Breakfast,Vegetarian,Muscle Gain; General Fitness,405,15.5,45.3,17.3,5.4,20,15,Moderate,Moderate,Tawa; Mixer,No,Yes,South Indian-inspired,Yes
+ZITLAS-REC-0288,ZITLAS Vegetable Puttu Bowl,Breakfast,Breakfast,Vegan,Weight Loss,410,5.8,62.2,15.3,4.9,12,15,Moderate,Budget,Pressure cooker,No,Yes,Kerala-inspired,Yes
+ZITLAS-REC-0289,ZITLAS Egg Puttu Bowl,Breakfast,Breakfast,Eggetarian,Muscle Gain; General Fitness,483,11.7,62.1,20.8,4.3,12,15,Moderate,Moderate,Pressure cooker,No,Yes,Kerala-inspired,Yes
+ZITLAS-REC-0290,ZITLAS Fish Moilee Rice Bowl,Breakfast,Breakfast,Non-Vegetarian,Muscle Gain; General Fitness,522,27.4,44.1,27.3,4.8,10,15,Moderate,Premium,Kadai,No,Yes,Kerala-inspired,No
+ZITLAS-REC-0291,ZITLAS Prawn Cutlet Sandwich,Breakfast,Breakfast,Non-Vegetarian,Muscle Gain; General Fitness,337,29.6,31.4,10.4,4.5,15,12,Moderate,Premium,Tawa; Mixer,No,Yes,Coastal Indian-inspired,No
+ZITLAS-REC-0292,ZITLAS Vegetable Khichu,Breakfast,Breakfast,Vegan,Weight Loss,283,4.2,50.0,6.9,2.2,10,15,Moderate,Budget,Kadai,No,Yes,Gujarati-inspired,No
+ZITLAS-REC-0293,ZITLAS Egg Adai,Breakfast,Breakfast,Eggetarian,Muscle Gain; General Fitness,376,14.8,45.3,14.8,5.4,20,12,Moderate,Moderate,Tawa; Mixer,No,Yes,South Indian-inspired,Yes
+ZITLAS-REC-0294,ZITLAS Prawn Biryani Bowl,Breakfast,Breakfast,Non-Vegetarian,Muscle Gain; General Fitness,274,24.8,21.8,10.0,1.8,20,20,Moderate,Premium,Pressure cooker,No,Yes,Coastal Indian-inspired,No
+ZITLAS-REC-0295,ZITLAS Lean Mutton Curry Rice Bowl,Breakfast,Breakfast,Non-Vegetarian,Muscle Gain; Body Transformation,526,29.5,41.4,26.6,3.6,15,25,Moderate,Premium,Pressure cooker,No,Yes,,No
+ZITLAS-REC-0296,ZITLAS Paneer Puttu Bowl,Breakfast,Breakfast,Vegetarian,Muscle Gain; General Fitness,521,14.0,60.4,24.2,3.9,12,15,Moderate,Moderate,Pressure cooker,No,Yes,Kerala-inspired,Yes
+ZITLAS-REC-0297,ZITLAS Mutton Seekh Kebab Bowl,Breakfast,Breakfast,Non-Vegetarian,Muscle Gain; Body Transformation,279,25.9,4.5,17.1,1.3,20,12,Moderate,Premium,Oven; Air fryer,No,Yes,,Yes
+ZITLAS-REC-0298,ZITLAS Egg Neer Dosa Bowl,Breakfast,Breakfast,Eggetarian,Muscle Gain; General Fitness,322,9.7,42.3,12.2,1.5,15,12,Moderate,Budget,Tawa,No,Yes,Mangalorean-inspired,Yes
+ZITLAS-REC-0299,ZITLAS Roasted Chana Thalipeeth,Breakfast,Breakfast,Vegan,Muscle Gain; Weight Loss,323,11.6,45.1,9.9,7.9,10,10,Moderate,Budget,Tawa,No,Yes,Maharashtrian-inspired,Yes
+ZITLAS-REC-0300,ZITLAS Baked Aloo Kachori,Breakfast,Breakfast,Vegan,General Fitness,507,13.7,88.0,11.8,12.8,25,20,Moderate,Budget,Oven,No,Yes,Rajasthani-inspired,No

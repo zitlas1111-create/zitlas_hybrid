@@ -1,0 +1,2809 @@
+[
+  {
+    "id": "ZITLAS-REC-0351",
+    "name": "ZITLAS Odia Dalma Bowl",
+    "description": "An Odisha-style dal cooked with mixed vegetables and a light panch phoron tempering \u2014 a distinct regional dal-vegetable combination not resembling any other dal dish in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 20,
+    "total_time_min": 30,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Toor dal (dry) \u2014 40 g",
+      "Mixed vegetables (pumpkin, raw banana, papaya) \u2014 70 g",
+      "Oil \u2014 6 ml",
+      "Panch phoron, turmeric \u2014 4 g"
+    ],
+    "instructions": [
+      "Pressure cook toor dal with mixed vegetables and turmeric for 3 whistles until soft.",
+      "Mash lightly.",
+      "Heat oil, temper panch phoron, and pour over the dal.",
+      "Simmer 3-4 minutes and serve hot."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 205,
+      "protein_g": 10.0,
+      "carbs_g": 26.3,
+      "fat_g": 6.7,
+      "fiber_g": 7.4
+    },
+    "primary_protein_sources": [
+      "Toor dal"
+    ],
+    "why_it_works": [
+      "Panch phoron tempering and the specific vegetable mix (pumpkin, raw banana) give this a genuinely distinct Odia flavour from any Punjabi or South Indian dal in the database",
+      "One-pot, mostly hands-off",
+      "Traditionally a lunch dish, reframed here as a hearty breakfast bowl"
+    ],
+    "tags": [
+      "One Pot"
+    ],
+    "regional_tag": "Odia-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0352",
+    "name": "ZITLAS Kashmiri Nadru Yakhni Bowl",
+    "description": "Lotus stem (nadru) simmered in a mild yogurt-based Kashmiri gravy \u2014 introducing lotus stem, a vegetable not used anywhere else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 20,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Lotus stem (nadru), sliced \u2014 100 g",
+      "Curd \u2014 100 g",
+      "Oil \u2014 6 ml",
+      "Fennel powder, ginger powder, cardamom \u2014 5 g"
+    ],
+    "instructions": [
+      "Shallow-fry the sliced lotus stem in oil until lightly browned; set aside.",
+      "Whisk curd with fennel powder, ginger powder and cardamom.",
+      "Heat the whisked curd gently in a pan, stirring continuously to prevent curdling, until it thickens slightly.",
+      "Add the fried lotus stem and simmer 5-6 minutes.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 138,
+      "protein_g": 5.0,
+      "carbs_g": 9.7,
+      "fat_g": 9.5,
+      "fiber_g": 2.0
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Lotus stem is a genuinely unique vegetable for the database, with a distinct crunchy-then-tender texture",
+      "Kashmiri yakhni technique (yogurt-based, no onion-garlic) is a distinct regional gravy style",
+      "Curd base supplies real protein"
+    ],
+    "tags": [],
+    "regional_tag": "Kashmiri-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0353",
+    "name": "ZITLAS Himachali Siddu",
+    "description": "A steamed, stuffed whole wheat bread from Himachal Pradesh, filled with a spiced walnut-poppy seed paste \u2014 a distinct steamed-bread format not resembling any dhokla, idli or momo in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 90,
+    "cook_time_min": 20,
+    "total_time_min": 110,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Whole wheat atta \u2014 120 g",
+      "Walnuts, crushed \u2014 30 g",
+      "Yeast \u2014 2 g",
+      "Oil \u2014 8 ml",
+      "Cumin seeds, salt \u2014 3 g"
+    ],
+    "instructions": [
+      "Knead atta with yeast and warm water into a soft dough; let it rise for about 1.5 hours until doubled.",
+      "Mix crushed walnuts with cumin seeds and a little oil for the filling.",
+      "Divide the dough, flatten each portion, add filling, and seal into a ball.",
+      "Steam in a pressure cooker (without the whistle) for 18-20 minutes until cooked through.",
+      "Serve with a drizzle of ghee or chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 675,
+      "protein_g": 18.9,
+      "carbs_g": 88.2,
+      "fat_g": 29.5,
+      "fiber_g": 15.4
+    },
+    "primary_protein_sources": [
+      "Walnuts"
+    ],
+    "why_it_works": [
+      "Yeasted, steamed bread technique is entirely different from any dhokla, idli, khaman or momo already in the database",
+      "Walnut filling introduces a nut rarely used as a main filling elsewhere",
+      "Himachal Pradesh regional cuisine represented for the first time"
+    ],
+    "tags": [],
+    "regional_tag": "Himachali-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0354",
+    "name": "ZITLAS Chhattisgarhi Bore Basi",
+    "description": "Cooked rice soaked overnight in water and served with curd and green chilli the next morning \u2014 a traditional fermented-rice breakfast distinct from any curd rice or poha dish in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 600,
+    "cook_time_min": 0,
+    "total_time_min": 600,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Cooked rice \u2014 150 g",
+      "Water (for soaking) \u2014 100 ml",
+      "Curd \u2014 60 g",
+      "Green chilli, onion, salt \u2014 6 g"
+    ],
+    "instructions": [
+      "Soak cooked rice in water overnight at room temperature (this begins a mild natural fermentation).",
+      "In the morning, drain most of the water, leaving the rice slightly moist.",
+      "Mix in curd, chopped green chilli, onion and salt.",
+      "Eat at room temperature.",
+      "Note: overnight soak folded into prep time above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 216,
+      "protein_g": 6.0,
+      "carbs_g": 40.3,
+      "fat_g": 3.5,
+      "fiber_g": 2.7
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Mild overnight fermentation gives bore basi a distinct tang and gut-friendly quality that plain curd rice doesn't have",
+      "Traditional Chhattisgarhi farmer's breakfast, genuinely different preparation from any other rice dish in the database",
+      "Very low cost, zero cooking in the morning"
+    ],
+    "tags": [
+      "Budget Friendly",
+      "No Cook"
+    ],
+    "regional_tag": "Chhattisgarhi-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0355",
+    "name": "ZITLAS Litti-Style Baked Sattu Balls",
+    "description": "Whole wheat dough balls stuffed with spiced sattu and baked until crisp \u2014 the traditional Bihar-Jharkhand litti, made oven-baked instead of over open coals.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 20,
+    "cook_time_min": 25,
+    "total_time_min": 45,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sattu (roasted gram flour) \u2014 80 g",
+      "Whole wheat atta \u2014 100 g",
+      "Mustard oil \u2014 10 ml",
+      "Ajwain, nigella seeds, pickle masala \u2014 6 g"
+    ],
+    "instructions": [
+      "Mix sattu with mustard oil, ajwain, nigella seeds and pickle masala, adding a little water to form a moist, crumbly filling.",
+      "Knead atta into a firm dough and divide into balls; flatten each, stuff with the sattu filling and seal into a tight ball.",
+      "Bake at 200\u00b0C for 22-25 minutes, turning occasionally, until the crust is browned and firm.",
+      "Serve with a drizzle of ghee and a side of chokha or curd."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 732,
+      "protein_g": 28.0,
+      "carbs_g": 115.6,
+      "fat_g": 16.5,
+      "fiber_g": 19.2
+    },
+    "primary_protein_sources": [
+      "Sattu"
+    ],
+    "why_it_works": [
+      "Litti's stuffed-and-baked ball technique is distinct from the flat stuffed parathas already using sattu in the database",
+      "Baking is a genuine practical adaptation of the traditional coal-roasted method for a home kitchen",
+      "High protein, very low cost"
+    ],
+    "tags": [
+      "High Protein",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Bihar-Jharkhand-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0356",
+    "name": "ZITLAS Jhangora Millet Upma",
+    "description": "Upma made with jhangora (barnyard millet), a grain traditionally used in Uttarakhand and during fasting \u2014 a genuinely new millet base for the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 12,
+    "total_time_min": 22,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Jhangora (barnyard millet) \u2014 50 g",
+      "Peanuts \u2014 15 g",
+      "Mixed vegetables, chopped \u2014 40 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, curry leaves \u2014 3 g"
+    ],
+    "instructions": [
+      "Rinse jhangora well.",
+      "Heat oil, temper mustard seeds and curry leaves, roast peanuts, then saute vegetables 3 minutes.",
+      "Add jhangora and water (1:2.5 ratio), cover and simmer 10-12 minutes until soft.",
+      "Fluff and serve hot."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 319,
+      "protein_g": 7.6,
+      "carbs_g": 36.9,
+      "fat_g": 14.2,
+      "fiber_g": 7.1
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Jhangora is a genuinely uncommon millet outside Uttarakhand and fasting-day cooking",
+      "Very easy to digest, traditionally used for the same reason",
+      "Same familiar upma technique, new grain"
+    ],
+    "tags": [
+      "High Fiber"
+    ],
+    "regional_tag": "Uttarakhandi-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0357",
+    "name": "ZITLAS Black Rice Porridge",
+    "description": "A warm porridge made from black rice (chak-hao), a Manipuri specialty grain with a naturally nutty flavour and deep purple colour \u2014 a genuinely different rice variety from any other rice dish in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 120,
+    "cook_time_min": 25,
+    "total_time_min": 145,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Black rice (chak-hao), soaked \u2014 50 g",
+      "Water \u2014 200 ml",
+      "Jaggery \u2014 15 g",
+      "Coconut milk \u2014 30 ml"
+    ],
+    "instructions": [
+      "Soak black rice for at least 2 hours (it takes longer to cook than white rice).",
+      "Pressure cook the soaked rice with water for 4-5 whistles until very soft and porridge-like.",
+      "Stir in jaggery and coconut milk.",
+      "Simmer 2-3 minutes and serve warm.",
+      "Note: soak time folded into prep above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 191,
+      "protein_g": 2.8,
+      "carbs_g": 29.9,
+      "fat_g": 7.8,
+      "fiber_g": 2.9
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Black rice is a genuinely distinct grain variety, naturally higher in antioxidants than white or brown rice",
+      "Manipuri regional specialty rarely represented in fitness recipe collections",
+      "Distinctive colour and nutty flavour unlike any other porridge in the database"
+    ],
+    "tags": [],
+    "regional_tag": "Manipuri-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0358",
+    "name": "ZITLAS Bamboo Shoot Vegetable Bowl",
+    "description": "Fermented bamboo shoot stir-fried with vegetables, a staple ingredient across several Northeast Indian states \u2014 introducing an ingredient not used anywhere else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 12,
+    "total_time_min": 22,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Fermented bamboo shoot, sliced \u2014 60 g",
+      "Mixed vegetables, chopped \u2014 60 g",
+      "Oil \u2014 6 ml",
+      "Garlic, dried red chilli \u2014 5 g"
+    ],
+    "instructions": [
+      "Heat oil, saute garlic and dried red chilli briefly.",
+      "Add bamboo shoot and vegetables, stir-frying for 6-8 minutes until softened.",
+      "Season lightly (fermented bamboo shoot is already quite flavourful) and serve hot."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 84,
+      "protein_g": 2.5,
+      "carbs_g": 6.1,
+      "fat_g": 6.3,
+      "fiber_g": 2.5
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Fermented bamboo shoot is a genuinely unique ingredient for the database, common across Northeast Indian states but rarely seen in mainstream fitness recipe collections",
+      "Fermentation itself adds gut-friendly qualities",
+      "Distinct sharp, tangy flavour profile unlike anything else in the database"
+    ],
+    "tags": [],
+    "regional_tag": "Northeast Indian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0359",
+    "name": "ZITLAS Assamese Fish and Rice Bowl",
+    "description": "A very light, minimally spiced Assamese-style fish preparation with tomato and mustard oil, served over rice \u2014 a distinct regional fish technique from the Bengali, Kerala or Chettinad versions already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 12,
+    "total_time_min": 22,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Lean fish fillet \u2014 120 g",
+      "Cooked rice \u2014 150 g",
+      "Tomato, chopped \u2014 50 g",
+      "Mustard oil \u2014 8 ml",
+      "Turmeric, whole green chilli \u2014 3 g"
+    ],
+    "instructions": [
+      "Rub the fish with turmeric and a little salt.",
+      "Heat mustard oil, add tomato and cook until it breaks down into a thin, tangy gravy.",
+      "Add the fish and whole green chilli, and simmer gently for 6-8 minutes until just cooked, without heavy spicing.",
+      "Serve over warm rice."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 376,
+      "protein_g": 25.9,
+      "carbs_g": 39.5,
+      "fat_g": 12.6,
+      "fiber_g": 3.3
+    },
+    "primary_protein_sources": [
+      "Fish"
+    ],
+    "why_it_works": [
+      "Assamese cooking is known for minimal spicing and reliance on mustard oil and souring agents like tomato, a genuinely distinct technique from the richer Bengali or Chettinad fish preparations already in the database",
+      "Very light, easy to digest",
+      "Fourth distinct regional fish preparation, broadening variety further"
+    ],
+    "tags": [],
+    "regional_tag": "Assamese-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0360",
+    "name": "ZITLAS Fermented Greens Soup Bowl",
+    "description": "A warm soup made from fermented leafy greens, inspired by Sikkim's gundruk \u2014 a fermented-vegetable soup format not used anywhere else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Fermented mustard greens, chopped \u2014 50 g",
+      "Tomato, chopped \u2014 30 g",
+      "Water \u2014 200 ml",
+      "Oil \u2014 5 ml",
+      "Garlic, dried red chilli \u2014 4 g"
+    ],
+    "instructions": [
+      "Heat oil, saute garlic and dried red chilli.",
+      "Add tomato and cook until soft.",
+      "Add fermented greens and water, and simmer 10-12 minutes into a tangy, warming soup.",
+      "Serve hot in a bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 61,
+      "protein_g": 1.7,
+      "carbs_g": 3.0,
+      "fat_g": 5.3,
+      "fiber_g": 1.5
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Fermented greens give this soup a distinct sour, umami depth unlike any other soup in the database",
+      "Sikkim and hill-region cooking rarely represented in fitness recipe collections",
+      "Warm, comforting for cold mornings"
+    ],
+    "tags": [],
+    "regional_tag": "Sikkim-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0361",
+    "name": "ZITLAS Office Lunchbox Rajma Rice Bowl",
+    "description": "Rajma and rice specifically portioned and packed to travel well for a few hours without refrigeration \u2014 designed around the constraint of an office lunchbox, not just a home meal.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 20,
+    "total_time_min": 30,
+    "difficulty": "Easy",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rajma, boiled \u2014 120 g",
+      "Rice \u2014 60 g",
+      "Onion, chopped \u2014 30 g",
+      "Oil \u2014 6 ml",
+      "Ginger-garlic paste, garam masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Heat oil, saute onion until golden, add ginger-garlic paste and garam masala.",
+      "Add boiled rajma and cook down until the gravy is thick and clingy rather than watery (this is what makes it travel well).",
+      "Pack the thick rajma over rice in a lunchbox while still warm \u2014 sealing it warm helps it stay fresher longer.",
+      "Eat within 3-4 hours, reheating if a microwave is available."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 289,
+      "protein_g": 12.3,
+      "carbs_g": 45.1,
+      "fat_g": 7.2,
+      "fiber_g": 9.3
+    },
+    "primary_protein_sources": [
+      "Rajma"
+    ],
+    "why_it_works": [
+      "Deliberately thickened gravy (not the usual thinner home-style rajma) specifically so it travels without leaking or spoiling as fast",
+      "Designed around the actual constraint of a few hours outside a fridge, not just home eating",
+      "High protein, filling for a work morning"
+    ],
+    "tags": [
+      "Lunchbox Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0362",
+    "name": "ZITLAS Office Lunchbox Chole Wrap",
+    "description": "A thick, dry-cooked chole filling wrapped in roti specifically designed to hold together and stay fresh for an office commute, unlike a wetter chole-bhature preparation.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Chana, boiled \u2014 120 g",
+      "Whole wheat atta \u2014 70 g",
+      "Onion, chopped \u2014 30 g",
+      "Oil \u2014 7 ml",
+      "Chole masala, ginger-garlic paste \u2014 6 g"
+    ],
+    "instructions": [
+      "Roll out and roast the atta into a roti; keep warm.",
+      "Heat oil, saute onion until golden, add ginger-garlic paste and chole masala.",
+      "Add boiled chana and cook down, mashing a few lightly, until thick and dry rather than saucy.",
+      "Spoon onto the roti and roll tightly.",
+      "Wrap in foil \u2014 it holds together well for several hours."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 509,
+      "protein_g": 19.4,
+      "carbs_g": 84.1,
+      "fat_g": 11.3,
+      "fiber_g": 17.5
+    },
+    "primary_protein_sources": [
+      "Chana"
+    ],
+    "why_it_works": [
+      "Deliberately dry-cooked chole (unlike a typical wet chole curry) so it doesn't make the wrap soggy over a few hours",
+      "Designed specifically for the lunchbox use case rather than immediate home eating",
+      "High protein and fiber for sustained energy through a work morning"
+    ],
+    "tags": [
+      "Lunchbox Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0363",
+    "name": "ZITLAS Post-Workout Banana Peanut Protein Shake",
+    "description": "A fast-absorbing banana and peanut butter shake specifically timed for right after a workout \u2014 a thinner, quicker-to-drink format than a smoothie bowl, meant to be consumed within the post-workout window.",
+    "meal_type": [
+      "Breakfast",
+      "Post-Workout"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Body Transformation"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Banana \u2014 100 g",
+      "Peanut butter \u2014 15 g",
+      "Milk \u2014 200 ml"
+    ],
+    "instructions": [
+      "Blend banana, peanut butter and milk together until completely smooth.",
+      "Pour into a glass and drink within 30-45 minutes of finishing your workout.",
+      "No need to chew or wait \u2014 this is meant to be consumed quickly."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 297,
+      "protein_g": 11.2,
+      "carbs_g": 35.6,
+      "fat_g": 14.4,
+      "fiber_g": 3.5
+    },
+    "primary_protein_sources": [
+      "Milk",
+      "Peanut butter"
+    ],
+    "why_it_works": [
+      "Explicitly timed for the post-workout recovery window rather than being a general-purpose breakfast",
+      "Thin, fast-drinking format gets nutrients in quickly, unlike a spoon-eaten smoothie bowl",
+      "Banana replenishes glycogen while milk and peanut butter provide protein"
+    ],
+    "tags": [
+      "Post Workout",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0364",
+    "name": "ZITLAS Post-Workout Chocolate Banana Milk",
+    "description": "A simple cocoa-banana-milk recovery drink \u2014 a different flavour direction from the peanut butter shake, for users who prefer a chocolate option after training.",
+    "meal_type": [
+      "Breakfast",
+      "Post-Workout"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Body Transformation"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Banana \u2014 80 g",
+      "Milk \u2014 220 ml",
+      "Unsweetened cocoa powder \u2014 8 g"
+    ],
+    "instructions": [
+      "Blend banana, milk and cocoa powder together until smooth.",
+      "Pour into a glass and drink soon after training.",
+      "Chill briefly if a cold drink is preferred after a hot workout."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 203,
+      "protein_g": 7.9,
+      "carbs_g": 29.0,
+      "fat_g": 7.5,
+      "fiber_g": 2.1
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Chocolate flavour gives users a genuine choice alongside the peanut butter version in this batch, without added sugar since banana provides the sweetness",
+      "Same fast-absorbing, post-workout-timed format",
+      "Simple three-ingredient recovery drink"
+    ],
+    "tags": [
+      "Post Workout",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0365",
+    "name": "ZITLAS Overnight Fruit and Nut Muesli",
+    "description": "Muesli soaked overnight in milk with chopped fruit mixed in \u2014 a longer-soak, softer-texture variant distinct from the No-Cook Muesli Bowl eaten immediately.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 480,
+    "cook_time_min": 0,
+    "total_time_min": 480,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Muesli \u2014 50 g",
+      "Milk \u2014 150 ml",
+      "Apple, chopped \u2014 50 g"
+    ],
+    "instructions": [
+      "Combine muesli, milk and chopped apple in a jar.",
+      "Refrigerate overnight.",
+      "Stir and eat cold in the morning \u2014 the texture is noticeably softer than muesli eaten immediately.",
+      "Note: overnight soak folded into prep time above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 304,
+      "protein_g": 10.0,
+      "carbs_g": 47.2,
+      "fat_g": 8.0,
+      "fiber_g": 5.2
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Overnight soaking gives a completely different, softer texture from the crunchy immediate-eat muesli bowl in Batch 7",
+      "Apple adds fresh fruit and fiber not in the plain version",
+      "Genuinely zero morning effort"
+    ],
+    "tags": [
+      "No Cook",
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0366",
+    "name": "ZITLAS Watermelon Paneer Salad Bowl",
+    "description": "Cubed watermelon and paneer tossed together with mint \u2014 an unusual sweet-savoury fruit-and-dairy pairing, distinct from any other paneer or fruit recipe in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 0,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Watermelon, cubed \u2014 150 g",
+      "Paneer, cubed \u2014 50 g",
+      "Mint leaves, chopped \u2014 5 g",
+      "Lemon juice \u2014 5 ml"
+    ],
+    "instructions": [
+      "Cube the watermelon and paneer to similar sizes.",
+      "Toss together with chopped mint and a squeeze of lemon juice.",
+      "Serve chilled."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 178,
+      "protein_g": 9.9,
+      "carbs_g": 12.0,
+      "fat_g": 10.3,
+      "fiber_g": 0.6
+    },
+    "primary_protein_sources": [
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Watermelon is a genuinely new fruit for the database, and pairing it with paneer is an unusual but refreshing sweet-savoury combination",
+      "Entirely no-cook, very light and hydrating",
+      "Good hot-weather breakfast option"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0367",
+    "name": "ZITLAS Mango Lassi Protein Bowl",
+    "description": "A thick, spoonable mango lassi made with Greek yogurt instead of regular curd \u2014 a protein-boosted, bowl-format take on the classic drink, distinct from a thin sippable lassi.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Mango, chopped \u2014 100 g",
+      "Greek yogurt \u2014 150 g",
+      "Cardamom powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Blend mango, Greek yogurt and cardamom powder together until thick and smooth (use less liquid than a drinkable lassi).",
+      "Pour into a bowl \u2014 it should be thick enough to eat with a spoon.",
+      "Eat immediately while chilled."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 148,
+      "protein_g": 15.8,
+      "carbs_g": 20.4,
+      "fat_g": 1.0,
+      "fiber_g": 1.6
+    },
+    "primary_protein_sources": [
+      "Greek yogurt"
+    ],
+    "why_it_works": [
+      "Greek yogurt gives meaningfully more protein than the regular curd used in a traditional lassi",
+      "Bowl format (eaten with a spoon) is distinct from a drinkable glass of lassi",
+      "Seasonal mango makes this a genuinely different fruit base from any other recipe in the database"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0368",
+    "name": "ZITLAS Papaya and Curd Breakfast Bowl",
+    "description": "Chopped ripe papaya folded into curd with a touch of honey \u2014 introducing papaya, a fruit not used anywhere else in the database, known for being easy on digestion.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 6,
+    "cook_time_min": 0,
+    "total_time_min": 6,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Papaya, chopped \u2014 150 g",
+      "Curd \u2014 100 g",
+      "Honey \u2014 8 g"
+    ],
+    "instructions": [
+      "Chop the papaya into small cubes.",
+      "Fold into curd.",
+      "Drizzle with honey.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 124,
+      "protein_g": 4.2,
+      "carbs_g": 21.2,
+      "fat_g": 3.8,
+      "fiber_g": 2.5
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Papaya is a genuinely new fruit for the database, commonly recommended for easy digestion",
+      "Very low cost and widely available",
+      "Entirely no-cook, light breakfast"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Budget Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0369",
+    "name": "ZITLAS Guava and Peanut Chaat Bowl",
+    "description": "Chopped guava tossed with roasted peanuts and chaat masala \u2014 introducing guava, a fruit not used anywhere else in the database, paired with a crunchy protein element.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 6,
+    "cook_time_min": 0,
+    "total_time_min": 6,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Guava, chopped \u2014 150 g",
+      "Peanuts, roasted and crushed \u2014 20 g",
+      "Chaat masala, lemon juice \u2014 6 g"
+    ],
+    "instructions": [
+      "Chop the guava into bite-sized pieces.",
+      "Toss with crushed peanuts, chaat masala and a squeeze of lemon juice.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 215,
+      "protein_g": 9.1,
+      "carbs_g": 24.2,
+      "fat_g": 11.3,
+      "fiber_g": 9.8
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Guava is high in fiber and vitamin C, and is a genuinely new fruit for the database",
+      "Peanuts add crunch and protein a plain fruit chaat would lack",
+      "Entirely no-cook, high fiber"
+    ],
+    "tags": [
+      "No Cook",
+      "High Fiber",
+      "Budget Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0370",
+    "name": "ZITLAS Apple Cinnamon Oats Bowl",
+    "description": "Grated apple cooked briefly with oats and cinnamon \u2014 a warm, naturally sweet oats preparation distinct from the banana, date or peanut butter versions already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 6,
+    "total_time_min": 14,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rolled oats \u2014 40 g",
+      "Apple, grated \u2014 80 g",
+      "Milk \u2014 150 ml",
+      "Cinnamon powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Heat milk in a pan, add oats and grated apple.",
+      "Simmer 5-6 minutes, stirring often, until the oats soften and thicken.",
+      "Stir in cinnamon powder and serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 284,
+      "protein_g": 10.2,
+      "carbs_g": 45.2,
+      "fat_g": 7.9,
+      "fiber_g": 6.0
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Apple and cinnamon give a genuinely different flavour direction from the banana, date or peanut butter oats already in the database",
+      "Naturally sweetened, no added sugar needed",
+      "Warm, comforting for cooler mornings"
+    ],
+    "tags": [],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0371",
+    "name": "ZITLAS Pineapple Paneer Skewers",
+    "description": "Grilled paneer and pineapple chunks on skewers \u2014 a sweet-savoury grilled combination distinct from the plain Paneer Tikka Skewers already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 12,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven",
+      "Air fryer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Paneer, cubed \u2014 90 g",
+      "Pineapple, cubed \u2014 60 g",
+      "Curd \u2014 30 g",
+      "Tikka masala \u2014 4 g"
+    ],
+    "instructions": [
+      "Marinate paneer cubes in curd and tikka masala for at least 15 minutes.",
+      "Thread paneer and pineapple alternately onto skewers.",
+      "Grill in an oven or air fryer at 200\u00b0C for 10-12 minutes, turning once, until lightly charred.",
+      "Serve hot."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 286,
+      "protein_g": 17.6,
+      "carbs_g": 10.3,
+      "fat_g": 19.0,
+      "fiber_g": 0.8
+    },
+    "primary_protein_sources": [
+      "Paneer",
+      "Curd"
+    ],
+    "why_it_works": [
+      "Pineapple's natural sweetness against savoury marinated paneer is a genuinely different flavour combination from the plain vegetable tikka skewers already in the database",
+      "Grilled, not fried \u2014 low added oil",
+      "Fun, distinct presentation"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0372",
+    "name": "ZITLAS Mixed Berries and Greek Yogurt Bowl",
+    "description": "Greek yogurt topped with mixed berries \u2014 introducing berries as a fruit category not used anywhere else in the database, paired with a high-protein dairy base.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "Muscle Gain"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 4,
+    "cook_time_min": 0,
+    "total_time_min": 4,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Greek yogurt \u2014 150 g",
+      "Mixed berries \u2014 60 g",
+      "Honey \u2014 8 g"
+    ],
+    "instructions": [
+      "Spoon Greek yogurt into a bowl.",
+      "Top with mixed berries.",
+      "Drizzle honey over the top.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 116,
+      "protein_g": 15.5,
+      "carbs_g": 12.0,
+      "fat_g": 0.8,
+      "fiber_g": 1.8
+    },
+    "primary_protein_sources": [
+      "Greek yogurt"
+    ],
+    "why_it_works": [
+      "Berries are a genuinely new fruit category for the database, distinct from banana, mango, apple or citrus",
+      "High protein from Greek yogurt makes this more filling than a typical fruit bowl",
+      "Entirely no-cook, premium but simple"
+    ],
+    "tags": [
+      "No Cook",
+      "High Protein"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0373",
+    "name": "ZITLAS Roasted Beetroot Hummus Toast",
+    "description": "A homemade hummus made from chickpeas and roasted beetroot, spread on toast \u2014 a Middle-Eastern-inspired spread adapted with an Indian pulse base and a distinct pink colour.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 15,
+    "cook_time_min": 10,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven",
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Chana, boiled \u2014 120 g",
+      "Beetroot, roasted \u2014 50 g",
+      "Whole wheat bread \u2014 60 g",
+      "Oil \u2014 8 ml",
+      "Garlic, lemon juice \u2014 6 g"
+    ],
+    "instructions": [
+      "Roast the beetroot in an oven at 200\u00b0C for about 20 minutes until soft, or use pre-roasted.",
+      "Blend boiled chana with the roasted beetroot, garlic, lemon juice and oil into a smooth hummus.",
+      "Toast the bread.",
+      "Spread the beetroot hummus generously over the toast.",
+      "Serve immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 448,
+      "protein_g": 16.9,
+      "carbs_g": 66.8,
+      "fat_g": 13.3,
+      "fiber_g": 14.7
+    },
+    "primary_protein_sources": [
+      "Chana"
+    ],
+    "why_it_works": [
+      "A ZITLAS-inspired adaptation of hummus using chana rather than imported chickpea brands, with beetroot giving it a distinct colour and earthy sweetness",
+      "Genuinely different spread from every chutney or thecha used elsewhere in the database",
+      "Batch-makeable and keeps for a few days refrigerated"
+    ],
+    "tags": [
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0374",
+    "name": "ZITLAS Sprouted Moong Hummus Toast",
+    "description": "A hummus-style spread made from sprouted moong instead of chickpeas \u2014 a lighter, greener variant from the beetroot chana hummus in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 10,
+    "cook_time_min": 0,
+    "total_time_min": 10,
+    "difficulty": "Easy",
+    "equipment": [
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Moong sprouts \u2014 100 g",
+      "Whole wheat bread \u2014 60 g",
+      "Oil \u2014 8 ml",
+      "Garlic, lemon juice, cumin powder \u2014 6 g"
+    ],
+    "instructions": [
+      "Blend moong sprouts with garlic, lemon juice, cumin powder and oil into a smooth, spreadable paste.",
+      "Toast the bread.",
+      "Spread the moong hummus generously over the toast.",
+      "Serve immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 577,
+      "protein_g": 29.4,
+      "carbs_g": 88.4,
+      "fat_g": 11.3,
+      "fiber_g": 20.2
+    },
+    "primary_protein_sources": [
+      "Moong sprouts"
+    ],
+    "why_it_works": [
+      "Sprouted moong gives a lighter, greener hummus with a genuinely different base pulse from the chana version in this batch",
+      "No cooking needed at all since sprouts are already tender",
+      "Cheaper and quicker than the roasted-beetroot version"
+    ],
+    "tags": [
+      "No Cook",
+      "Budget Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0375",
+    "name": "ZITLAS Zucchini Besan Chilla",
+    "description": "A besan chilla batter with grated zucchini mixed in \u2014 introducing zucchini, a vegetable not used anywhere else in the database, in a familiar chilla format.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 8,
+    "total_time_min": 16,
+    "difficulty": "Easy",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Besan \u2014 50 g",
+      "Zucchini, grated \u2014 50 g",
+      "Water \u2014 30 ml",
+      "Oil \u2014 5 ml",
+      "Cumin seeds, ajwain \u2014 2 g"
+    ],
+    "instructions": [
+      "Whisk besan with water, cumin seeds and ajwain into a batter.",
+      "Mix in grated zucchini (its moisture helps thin the batter naturally).",
+      "Heat a tawa, pour a ladle of batter and spread thin.",
+      "Cook until golden on both sides with a little oil.",
+      "Serve with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 233,
+      "protein_g": 11.6,
+      "carbs_g": 30.6,
+      "fat_g": 8.2,
+      "fiber_g": 5.9
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "Zucchini is a genuinely new vegetable for the database, with a mild flavour and high water content",
+      "Same reliable chilla technique, different vegetable each time keeps the rotation varied",
+      "Very low calorie filling"
+    ],
+    "tags": [
+      "Weight Loss",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0376",
+    "name": "ZITLAS Broccoli Paneer Salad Bowl",
+    "description": "A no-cook salad of lightly blanched broccoli and cubed paneer tossed with lemon \u2014 introducing broccoli, a vegetable not used anywhere else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "Muscle Gain"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 3,
+    "total_time_min": 11,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Broccoli, blanched \u2014 100 g",
+      "Paneer, cubed \u2014 60 g",
+      "Lemon juice, black pepper \u2014 8 ml"
+    ],
+    "instructions": [
+      "Blanch broccoli florets in boiling water for 2 minutes, then drain and cool.",
+      "Toss with cubed paneer, lemon juice and black pepper.",
+      "Serve at room temperature or chilled."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 193,
+      "protein_g": 13.6,
+      "carbs_g": 7.3,
+      "fat_g": 12.4,
+      "fiber_g": 2.6
+    },
+    "primary_protein_sources": [
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Broccoli is a genuinely new vegetable for the database, offering a different fiber and micronutrient profile from cauliflower or cabbage",
+      "Very quick blanching, mostly a cold assembly",
+      "High protein, low calorie combination"
+    ],
+    "tags": [
+      "High Protein",
+      "Weight Loss"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0377",
+    "name": "ZITLAS Mushroom Besan Chilla",
+    "description": "A besan chilla batter with finely chopped mushrooms mixed in \u2014 introducing mushroom, an umami-rich ingredient not used anywhere else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 8,
+    "total_time_min": 18,
+    "difficulty": "Easy",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Besan \u2014 50 g",
+      "Mushroom, finely chopped \u2014 50 g",
+      "Water \u2014 30 ml",
+      "Oil \u2014 5 ml",
+      "Black pepper, cumin seeds \u2014 2 g"
+    ],
+    "instructions": [
+      "Saute the chopped mushrooms briefly in a dry pan to release excess moisture, then cool.",
+      "Whisk besan with water, black pepper and cumin seeds into a batter, and mix in the sauteed mushrooms.",
+      "Heat a tawa, pour a ladle of batter and spread thin.",
+      "Cook until golden on both sides with a little oil.",
+      "Serve with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 235,
+      "protein_g": 12.6,
+      "carbs_g": 30.6,
+      "fat_g": 8.2,
+      "fiber_g": 5.9
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "Mushroom's natural umami is a genuinely different flavour direction from any vegetable chilla already in the database",
+      "Pre-sauteing the mushroom prevents a soggy batter",
+      "New ingredient broadens the vegetable range"
+    ],
+    "tags": [
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0378",
+    "name": "ZITLAS Mushroom Egg Scramble Toast",
+    "description": "Scrambled egg with sauteed mushrooms served over toast \u2014 combining two umami-forward ingredients in a single dish, distinct from a plain egg bhurji.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 8,
+    "total_time_min": 16,
+    "difficulty": "Easy",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Whole egg \u2014 100 g",
+      "Mushroom, sliced \u2014 60 g",
+      "Whole wheat bread \u2014 60 g",
+      "Oil \u2014 6 ml",
+      "Black pepper \u2014 1 g"
+    ],
+    "instructions": [
+      "Heat oil, saute sliced mushrooms until they release their moisture and brown slightly, about 4-5 minutes.",
+      "Beat the egg and pour in, scrambling gently with the mushrooms until just set.",
+      "Toast the bread and spoon the mushroom-egg scramble over the top.",
+      "Season with black pepper and serve."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 380,
+      "protein_g": 20.3,
+      "carbs_g": 32.5,
+      "fat_g": 19.3,
+      "fiber_g": 4.8
+    },
+    "primary_protein_sources": [
+      "Whole egg"
+    ],
+    "why_it_works": [
+      "Mushroom's savoury depth pairs distinctly with egg, different from any tomato-onion-based egg preparation elsewhere in the database",
+      "Two umami ingredients combined intentionally",
+      "Quick, familiar toast format"
+    ],
+    "tags": [
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0379",
+    "name": "ZITLAS Quinoa Stuffed Capsicum",
+    "description": "Capsicum halves stuffed with cooked quinoa and vegetables, then baked \u2014 a distinct grain-stuffed-vegetable format from the paneer bhurji stuffed capsicum already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 20,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Quinoa, cooked \u2014 100 g",
+      "Capsicum, halved and deseeded \u2014 100 g",
+      "Onion, tomato, chopped \u2014 40 g",
+      "Oil \u2014 6 ml",
+      "Cumin powder, black pepper \u2014 3 g"
+    ],
+    "instructions": [
+      "Saute onion and tomato in oil until soft, then mix with cooked quinoa, cumin powder and black pepper.",
+      "Stuff the mixture into the capsicum halves.",
+      "Bake at 190\u00b0C for 18-20 minutes until the capsicum softens.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 214,
+      "protein_g": 6.3,
+      "carbs_g": 29.6,
+      "fat_g": 8.1,
+      "fiber_g": 5.5
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Quinoa filling is a genuinely different stuffing from the paneer bhurji version already in the database \u2014 grain-based rather than dairy-based",
+      "Baked rather than steamed, giving the capsicum a slightly different texture",
+      "Complete protein grain in a distinctive presentation"
+    ],
+    "tags": [],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0380",
+    "name": "ZITLAS Baked Stuffed Tomato with Egg",
+    "description": "A large tomato hollowed out and baked with an egg cracked inside \u2014 a distinct vegetable-as-vessel format using tomato rather than capsicum.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 20,
+    "total_time_min": 28,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Large tomato \u2014 150 g",
+      "Whole egg \u2014 50 g",
+      "Black pepper, oregano \u2014 2 g"
+    ],
+    "instructions": [
+      "Slice the top off the tomato and hollow out the pulp and seeds, leaving a sturdy shell.",
+      "Crack the egg into the hollowed tomato.",
+      "Season with black pepper and oregano.",
+      "Bake at 180\u00b0C for 18-20 minutes until the egg is set and the tomato has softened.",
+      "Serve warm, eaten straight from the tomato shell."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 104,
+      "protein_g": 7.8,
+      "carbs_g": 6.4,
+      "fat_g": 5.8,
+      "fiber_g": 1.8
+    },
+    "primary_protein_sources": [
+      "Whole egg"
+    ],
+    "why_it_works": [
+      "Using a tomato rather than capsicum as the vessel gives a distinctly juicier, tangier result",
+      "Novel presentation \u2014 the egg bakes directly inside the fruit",
+      "Low added fat since no oil is needed"
+    ],
+    "tags": [],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0381",
+    "name": "ZITLAS Spinach Corn Sandwich",
+    "description": "A grilled sandwich filled with sauteed spinach and sweet corn \u2014 a distinct vegetable pairing from any other sandwich in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 8,
+    "total_time_min": 16,
+    "difficulty": "Easy",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Spinach, chopped \u2014 60 g",
+      "Sweet corn kernels, boiled \u2014 40 g",
+      "Whole wheat bread \u2014 60 g",
+      "Oil \u2014 6 ml",
+      "Black pepper \u2014 1 g"
+    ],
+    "instructions": [
+      "Heat oil, saute spinach until wilted, then mix in boiled corn and black pepper.",
+      "Spread the mixture between two bread slices.",
+      "Grill on a lightly oiled tawa until both sides are golden and crisp.",
+      "Serve hot."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 264,
+      "protein_g": 8.5,
+      "carbs_g": 40.0,
+      "fat_g": 8.9,
+      "fiber_g": 6.5
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Spinach and corn together is a genuinely different pairing from every other sandwich filling in the database",
+      "Iron from spinach and natural sweetness from corn balance well",
+      "Quick, familiar grilled-sandwich format"
+    ],
+    "tags": [
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0382",
+    "name": "ZITLAS Beetroot Hummus Wrap",
+    "description": "The roasted beetroot hummus from this batch rolled inside a roti with fresh vegetables \u2014 a wrap format for the same spread, distinct from eating it on toast.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 5,
+    "total_time_min": 15,
+    "difficulty": "Easy",
+    "equipment": [
+      "Tawa",
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Chana, boiled \u2014 100 g",
+      "Beetroot, roasted \u2014 40 g",
+      "Whole wheat atta \u2014 70 g",
+      "Cucumber, sliced \u2014 30 g",
+      "Oil \u2014 6 ml"
+    ],
+    "instructions": [
+      "Blend boiled chana with roasted beetroot and a little oil into a smooth hummus.",
+      "Roll out and roast the atta into a roti.",
+      "Spread the beetroot hummus onto the roti, add cucumber slices, and roll tightly.",
+      "Serve immediately or wrap for later."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 480,
+      "protein_g": 18.4,
+      "carbs_g": 81.5,
+      "fat_g": 9.9,
+      "fiber_g": 17.2
+    },
+    "primary_protein_sources": [
+      "Chana"
+    ],
+    "why_it_works": [
+      "Wrap format is a genuinely different eating experience from the toast version in this batch, and travels better",
+      "Same hummus base, different delivery vehicle",
+      "Portable for a commute"
+    ],
+    "tags": [
+      "Lunchbox Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0383",
+    "name": "ZITLAS Roasted Vegetable Quinoa Bowl",
+    "description": "Oven-roasted mixed vegetables tossed with cooked quinoa \u2014 a distinct roasted-vegetable technique from the boiled or sauteed vegetable preparations used elsewhere with quinoa.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "Muscle Gain"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 20,
+    "total_time_min": 30,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Quinoa, cooked \u2014 120 g",
+      "Mixed vegetables, chopped \u2014 80 g",
+      "Oil \u2014 8 ml",
+      "Black pepper, oregano \u2014 3 g"
+    ],
+    "instructions": [
+      "Toss chopped vegetables with oil, black pepper and oregano.",
+      "Roast at 200\u00b0C for 18-20 minutes until edges are lightly charred.",
+      "Toss the roasted vegetables with cooked quinoa.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 235,
+      "protein_g": 6.5,
+      "carbs_g": 29.2,
+      "fat_g": 10.4,
+      "fiber_g": 5.0
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Roasting concentrates the vegetables' flavour differently from boiling or steaming, a genuinely different technique from the plain Quinoa Vegetable Poha-Style Bowl already in the database",
+      "Complete protein grain base",
+      "Good make-ahead-and-reheat option"
+    ],
+    "tags": [
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0384",
+    "name": "ZITLAS Sweet Buckwheat Porridge with Nuts",
+    "description": "Buckwheat (kuttu) flour cooked into a sweet milk porridge with walnuts \u2014 a dessert-style preparation distinct from the savoury kuttu pancake and chilla already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 8,
+    "total_time_min": 13,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Kuttu (buckwheat) flour \u2014 40 g",
+      "Milk \u2014 180 ml",
+      "Jaggery \u2014 15 g",
+      "Walnuts, crushed \u2014 15 g"
+    ],
+    "instructions": [
+      "Whisk kuttu flour into a little cold milk to avoid lumps.",
+      "Heat the rest of the milk, add the flour mixture and stir continuously.",
+      "Simmer 6-8 minutes until thickened.",
+      "Stir in jaggery, top with crushed walnuts, and serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 386,
+      "protein_g": 13.7,
+      "carbs_g": 50.6,
+      "fat_g": 17.1,
+      "fiber_g": 6.2
+    },
+    "primary_protein_sources": [
+      "Milk",
+      "Walnuts"
+    ],
+    "why_it_works": [
+      "Sweet, milk-based preparation gives kuttu a genuinely different everyday use from its savoury pancake or chilla forms already in the database",
+      "Walnuts add healthy fat and crunch",
+      "Naturally gluten-free"
+    ],
+    "tags": [],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0385",
+    "name": "ZITLAS Puffed Amaranth Ladoo",
+    "description": "No-bake ladoo made from puffed amaranth (rajgira) bound with jaggery \u2014 a popular fasting-day sweet reframed as a portable breakfast bite, distinct from the flour-based rajgira porridge already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 4,
+    "prep_time_min": 15,
+    "cook_time_min": 8,
+    "total_time_min": 23,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Puffed amaranth (rajgira) \u2014 100 g",
+      "Jaggery \u2014 50 g",
+      "Ghee \u2014 10 g"
+    ],
+    "instructions": [
+      "Melt jaggery with ghee in a kadai on low heat until it forms a thick syrup.",
+      "Turn off heat, quickly mix in puffed amaranth, coating evenly.",
+      "Shape into 8 small balls while still warm.",
+      "Cool completely and store in an airtight container for up to a week."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 602,
+      "protein_g": 15.2,
+      "carbs_g": 102.5,
+      "fat_g": 17.2,
+      "fiber_g": 11.0
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Puffed form gives a light, crisp texture entirely different from the smooth flour-based rajgira porridge already in the database",
+      "Traditional fasting-day sweet, genuinely portable",
+      "Batch-made once for the week"
+    ],
+    "tags": [
+      "Meal Prep",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0386",
+    "name": "ZITLAS Til Gud Ladoo",
+    "description": "No-bake sesame seed and jaggery ladoo \u2014 a traditional winter sweet using sesame (til) as the primary ingredient, a seed not used as a main component anywhere else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 4,
+    "prep_time_min": 15,
+    "cook_time_min": 8,
+    "total_time_min": 23,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sesame seeds \u2014 100 g",
+      "Jaggery \u2014 50 g",
+      "Ghee \u2014 8 g"
+    ],
+    "instructions": [
+      "Dry-roast the sesame seeds in a kadai on low heat until fragrant and lightly golden, about 4-5 minutes.",
+      "Melt jaggery with ghee separately until it forms a thick syrup.",
+      "Mix the roasted sesame seeds into the jaggery syrup, coating evenly.",
+      "Shape into 8 small balls while still warm.",
+      "Cool completely and store for up to two weeks."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 786,
+      "protein_g": 18.9,
+      "carbs_g": 60.5,
+      "fat_g": 58.2,
+      "fiber_g": 16.0
+    },
+    "primary_protein_sources": [
+      "Sesame seeds"
+    ],
+    "why_it_works": [
+      "Sesame seeds are used as the primary ingredient here rather than a minor tempering element, a genuinely new role for them in the database",
+      "Traditional winter combination believed to provide warmth and energy",
+      "High in calcium and healthy fats"
+    ],
+    "tags": [
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0387",
+    "name": "ZITLAS Walnut Date No-Cook Bites",
+    "description": "No-cook energy bites made from blended walnuts and dates \u2014 a raw, unheated preparation distinct from every cooked ladoo or chikki in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 4,
+    "prep_time_min": 15,
+    "cook_time_min": 0,
+    "total_time_min": 15,
+    "difficulty": "Easy",
+    "equipment": [
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Walnuts \u2014 80 g",
+      "Dates, pitted \u2014 80 g",
+      "Cocoa powder (optional) \u2014 5 g"
+    ],
+    "instructions": [
+      "Blend walnuts and dates together in a mixer until they form a sticky, dough-like mixture (add cocoa powder if using).",
+      "Shape into 8 small balls with your hands.",
+      "Store in an airtight container in the fridge for up to a week."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 749,
+      "protein_g": 14.0,
+      "carbs_g": 71.2,
+      "fat_g": 52.3,
+      "fiber_g": 11.8
+    },
+    "primary_protein_sources": [
+      "Walnuts"
+    ],
+    "why_it_works": [
+      "Entirely no-cook, unlike every jaggery-based ladoo or chikki elsewhere in the database which require heating",
+      "Walnuts bring omega-3 fats not present in the peanut- or sesame-based bites",
+      "Raw preparation keeps more of the nuts' natural nutrients intact"
+    ],
+    "tags": [
+      "No Cook",
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0388",
+    "name": "ZITLAS Makhana Kheer Protein Bowl",
+    "description": "A warm, milk-based makhana kheer with a portion-controlled serving size \u2014 a dessert-style, warm preparation distinct from the yogurt parfait, dry trail mix or savoury chaat uses of makhana already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 12,
+    "total_time_min": 17,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Makhana (fox nuts) \u2014 25 g",
+      "Milk \u2014 180 ml",
+      "Jaggery \u2014 12 g",
+      "Cardamom powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Lightly crush the makhana.",
+      "Heat milk in a pan, add the crushed makhana and simmer 8-10 minutes until softened and the milk thickens slightly.",
+      "Stir in jaggery and cardamom powder.",
+      "Simmer 2 more minutes and serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 229,
+      "protein_g": 8.5,
+      "carbs_g": 36.6,
+      "fat_g": 6.0,
+      "fiber_g": 4.5
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Warm, milk-simmered kheer format is the fourth distinct makhana preparation in the database, alongside the yogurt parfait, dry trail mix and savoury chaat",
+      "Single-serving format keeps portions controlled for a dessert-style breakfast",
+      "Traditional festive dish reframed as a controlled everyday option"
+    ],
+    "tags": [],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0389",
+    "name": "ZITLAS Paneer Stuffed Dates",
+    "description": "Pitted dates stuffed with a small amount of spiced paneer \u2014 a bite-sized sweet-savoury combination not resembling any other paneer or date recipe in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 0,
+    "total_time_min": 10,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Dates, pitted \u2014 60 g",
+      "Paneer, mashed \u2014 40 g",
+      "Cardamom powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Mash paneer with a pinch of cardamom powder.",
+      "Slit each pitted date lengthwise and stuff with a small amount of the paneer mixture.",
+      "Eat as bite-sized pieces, 3-4 at a time."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 275,
+      "protein_g": 8.7,
+      "carbs_g": 45.5,
+      "fat_g": 8.2,
+      "fiber_g": 4.8
+    },
+    "primary_protein_sources": [
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Bite-sized, stuffed-fruit format is genuinely different from any other paneer preparation in the database, which are all savoury mains",
+      "No cooking involved",
+      "Natural sweetness from dates balances the mild paneer filling"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0390",
+    "name": "ZITLAS Egg White Spinach Scramble Bowl",
+    "description": "A spinach-forward egg white scramble served as a bowl rather than a wrap \u2014 distinct from the Egg White Veggie Wrap already in the database by both format and the vegetable ratio.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "Body Transformation"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 8,
+    "total_time_min": 16,
+    "difficulty": "Easy",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Egg white \u2014 120 g",
+      "Spinach, chopped \u2014 80 g",
+      "Onion, chopped \u2014 20 g",
+      "Oil \u2014 4 ml",
+      "Black pepper \u2014 1 g"
+    ],
+    "instructions": [
+      "Heat oil, saute onion until soft, then add spinach and cook until wilted, about 3 minutes.",
+      "Pour in the egg whites and scramble gently until just set, mixing through the spinach.",
+      "Season with black pepper and serve in a bowl, no bread or wrap."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 124,
+      "protein_g": 15.7,
+      "carbs_g": 5.5,
+      "fat_g": 4.6,
+      "fiber_g": 2.1
+    },
+    "primary_protein_sources": [
+      "Egg white"
+    ],
+    "why_it_works": [
+      "Spinach makes up the bulk of this dish rather than being a minor addition, and the bowl format (no bread) is genuinely different from the existing wrap version",
+      "Very low fat, high protein",
+      "Good for a lean cutting-phase breakfast"
+    ],
+    "tags": [
+      "High Protein",
+      "Weight Loss"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0391",
+    "name": "ZITLAS Overnight Mango Oats",
+    "description": "Rolled oats soaked overnight in milk with pureed mango \u2014 a seasonal fruit variant of overnight oats distinct from the banana, date or chia versions already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 480,
+    "cook_time_min": 0,
+    "total_time_min": 480,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rolled oats \u2014 40 g",
+      "Milk \u2014 150 ml",
+      "Mango, pureed \u2014 80 g"
+    ],
+    "instructions": [
+      "Combine oats, milk and pureed mango in a jar.",
+      "Stir well.",
+      "Refrigerate overnight.",
+      "Stir again and eat cold in the morning.",
+      "Note: overnight soak folded into prep time above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 290,
+      "protein_g": 10.6,
+      "carbs_g": 46.0,
+      "fat_g": 8.0,
+      "fiber_g": 5.3
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Mango puree gives a genuinely different, seasonal flavour direction from the banana, date or chia-based overnight oats already in the database",
+      "Zero morning prep once made the night before",
+      "Naturally sweet, no added sugar needed"
+    ],
+    "tags": [
+      "No Cook",
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0392",
+    "name": "ZITLAS Besan Pancake Stack with Curd",
+    "description": "Small savoury besan pancakes stacked and topped with curd \u2014 a griddle-pancake format for besan, distinct from a chilla by being smaller, thicker, and stacked rather than one large round.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 10,
+    "total_time_min": 18,
+    "difficulty": "Easy",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Besan \u2014 50 g",
+      "Water \u2014 50 ml",
+      "Curd (topping) \u2014 80 g",
+      "Oil \u2014 6 ml",
+      "Cumin seeds, ajwain \u2014 2 g"
+    ],
+    "instructions": [
+      "Whisk besan with water, cumin seeds and ajwain into a thick, pourable batter.",
+      "Cook small, thick pancakes (about palm-sized) on a lightly oiled tawa, 2 minutes per side.",
+      "Stack 3-4 small pancakes.",
+      "Top with a dollop of curd and serve."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 281,
+      "protein_g": 13.8,
+      "carbs_g": 32.8,
+      "fat_g": 11.6,
+      "fiber_g": 5.4
+    },
+    "primary_protein_sources": [
+      "Besan",
+      "Curd"
+    ],
+    "why_it_works": [
+      "Small, thick, stacked pancake format is a genuinely different construction from a single large thin chilla",
+      "Curd topping (not a side) makes this distinct from every other besan preparation in the database",
+      "Fun, different presentation of a familiar batter"
+    ],
+    "tags": [
+      "Weight Loss"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0393",
+    "name": "ZITLAS Sweet Ragi Pancake with Jaggery Syrup",
+    "description": "A sweet, griddle-cooked ragi pancake served with a thin jaggery syrup \u2014 a dessert-style ragi preparation distinct from the savoury ragi dosa or idli already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 8,
+    "total_time_min": 16,
+    "difficulty": "Easy",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Ragi flour \u2014 50 g",
+      "Milk \u2014 80 ml",
+      "Jaggery \u2014 15 g",
+      "Oil (for cooking) \u2014 4 ml"
+    ],
+    "instructions": [
+      "Whisk ragi flour with milk into a smooth, pourable batter.",
+      "Melt half the jaggery in a little water to make a thin syrup; set aside.",
+      "Cook small pancakes on a lightly oiled tawa, 2 minutes per side.",
+      "Drizzle with the jaggery syrup before serving."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 286,
+      "protein_g": 6.6,
+      "carbs_g": 51.1,
+      "fat_g": 7.5,
+      "fiber_g": 7.0
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Sweet pancake format gives ragi a genuinely different everyday use from the savoury dosa or idli versions already in the database",
+      "Jaggery syrup instead of refined sugar",
+      "Calcium-rich grain in a dessert-style presentation"
+    ],
+    "tags": [],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0394",
+    "name": "ZITLAS Sweet Foxtail Millet Porridge with Dates",
+    "description": "Foxtail millet cooked into a sweet milk porridge with chopped dates \u2014 a dessert-style preparation distinct from the savoury foxtail millet upma and pongal already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 15,
+    "total_time_min": 20,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Foxtail millet \u2014 40 g",
+      "Milk \u2014 200 ml",
+      "Dates, chopped \u2014 20 g",
+      "Cardamom powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Rinse the foxtail millet.",
+      "Simmer in milk for 12-15 minutes, stirring occasionally, until soft and the milk thickens.",
+      "Stir in chopped dates and cardamom powder, simmer 2 more minutes.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 316,
+      "protein_g": 11.8,
+      "carbs_g": 50.6,
+      "fat_g": 8.4,
+      "fiber_g": 4.8
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Sweet, milk-based preparation gives foxtail millet a third distinct role in the database, alongside its savoury upma and pongal forms",
+      "Naturally sweetened by dates",
+      "Warm, comforting texture"
+    ],
+    "tags": [],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0395",
+    "name": "ZITLAS Lauki Halwa Protein Bowl",
+    "description": "A portion-controlled bottle gourd (lauki) halwa made with less ghee than the traditional version, served in a small single-serving bowl \u2014 a vegetable-based dessert-breakfast paralleling the Moong Dal Halwa already in the database.",
+    "meal_type": [
+      "Breakfast",
+      "Dessert"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Bottle gourd (lauki), grated \u2014 150 g",
+      "Milk \u2014 80 ml",
+      "Jaggery \u2014 20 g",
+      "Ghee \u2014 6 g"
+    ],
+    "instructions": [
+      "Squeeze excess water from the grated lauki.",
+      "Heat ghee in a kadai, add the lauki and saute for 5 minutes until it softens.",
+      "Add milk and simmer until it reduces and thickens, about 8-10 minutes.",
+      "Stir in jaggery and cook 2 more minutes.",
+      "Serve warm in a small bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 181,
+      "protein_g": 4.0,
+      "carbs_g": 23.9,
+      "fat_g": 8.9,
+      "fiber_g": 3.4
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Vegetable-based dessert (lauki, not a grain or dal) gives a genuinely different base from the Moong Dal Halwa already in the database",
+      "Deliberately less ghee than a traditional halwa, and a single-serving portion to control intake",
+      "Low calorie for a dessert-style dish thanks to lauki's high water content"
+    ],
+    "tags": [
+      "Weight Loss"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0396",
+    "name": "ZITLAS Gajar Halwa Protein Bowl",
+    "description": "A portion-controlled carrot (gajar) halwa made with less ghee and a portion of milk powder for extra protein \u2014 a second vegetable-based dessert-breakfast, distinct from the lauki version by using carrot's natural sweetness and colour.",
+    "meal_type": [
+      "Breakfast",
+      "Dessert"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 18,
+    "total_time_min": 28,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Carrot, grated \u2014 150 g",
+      "Milk \u2014 100 ml",
+      "Milk powder \u2014 15 g",
+      "Ghee \u2014 8 g"
+    ],
+    "instructions": [
+      "Heat ghee in a kadai, add grated carrot and saute for 5 minutes.",
+      "Add milk and simmer until it reduces significantly, about 10-12 minutes, stirring often.",
+      "Stir in milk powder for extra protein and creaminess, cooking 2-3 more minutes.",
+      "Serve warm in a small bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 202,
+      "protein_g": 5.0,
+      "carbs_g": 20.5,
+      "fat_g": 12.1,
+      "fiber_g": 4.2
+    },
+    "primary_protein_sources": [
+      "Milk",
+      "Milk powder"
+    ],
+    "why_it_works": [
+      "Milk powder addition gives this notably more protein than a traditional gajar halwa, a distinct nutritional strategy from the lauki version in this batch",
+      "Carrot's natural sweetness needs no added jaggery or sugar",
+      "Portion-controlled to keep this a reasonable breakfast rather than a heavy dessert serving"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0397",
+    "name": "ZITLAS Paneer Stuffed Baked Sweet Potato",
+    "description": "A baked sweet potato split and stuffed with spiced paneer bhurji \u2014 a distinct filling from the curd-topped or chaat versions of sweet potato already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 25,
+    "total_time_min": 33,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Sweet potato \u2014 150 g",
+      "Paneer, crumbled \u2014 60 g",
+      "Onion, chopped \u2014 20 g",
+      "Oil \u2014 5 ml",
+      "Turmeric, chilli powder \u2014 2 g"
+    ],
+    "instructions": [
+      "Bake the whole sweet potato at 200\u00b0C for 20-25 minutes until soft.",
+      "Meanwhile, heat oil, saute onion, add turmeric and chilli powder, then paneer, cooking 3-4 minutes.",
+      "Split the baked sweet potato open and stuff generously with the paneer mixture.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 340,
+      "protein_g": 13.4,
+      "carbs_g": 32.5,
+      "fat_g": 17.2,
+      "fiber_g": 4.8
+    },
+    "primary_protein_sources": [
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Paneer filling gives notably more protein than the curd-topped or chaat-style sweet potato preparations already in the database",
+      "Filling makes this a more complete meal rather than a side",
+      "Baked base keeps this simple and mostly hands-off"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0398",
+    "name": "ZITLAS Roasted Chickpea and Pumpkin Seed Trail Mix",
+    "description": "A dry mix of roasted chickpeas and pumpkin seeds \u2014 introducing pumpkin seeds, a genuinely new seed for the database, in a portable no-cook format.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 4,
+    "cook_time_min": 0,
+    "total_time_min": 4,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Roasted chana (dry) \u2014 40 g",
+      "Pumpkin seeds, roasted \u2014 20 g"
+    ],
+    "instructions": [
+      "Combine roasted chana and pumpkin seeds in a small container.",
+      "Mix well.",
+      "Carry and eat on the move, or as a sit-down bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 177,
+      "protein_g": 9.6,
+      "carbs_g": 13.0,
+      "fat_g": 10.8,
+      "fiber_g": 4.2
+    },
+    "primary_protein_sources": [
+      "Roasted chana",
+      "Pumpkin seeds"
+    ],
+    "why_it_works": [
+      "Pumpkin seeds are unusually high in protein and zinc and haven't been used anywhere else in the database",
+      "Entirely dry, shelf-stable mix",
+      "Genuinely no prep beyond mixing"
+    ],
+    "tags": [
+      "No Cook",
+      "Hostel Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0399",
+    "name": "ZITLAS Flax and Chia Energy Bites",
+    "description": "No-bake bites combining ground flaxseed and chia seeds bound with dates \u2014 a double-seed combination distinct from the single-seed flaxseed-peanut bites already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 4,
+    "prep_time_min": 15,
+    "cook_time_min": 0,
+    "total_time_min": 15,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Flaxseed, ground \u2014 30 g",
+      "Chia seeds \u2014 20 g",
+      "Dates, pitted \u2014 80 g"
+    ],
+    "instructions": [
+      "Blend the dates in a mixer until they form a sticky paste (or mash by hand).",
+      "Mix in ground flaxseed and chia seeds until well combined into a firm, moist mixture.",
+      "Shape into 8 small balls.",
+      "Store in an airtight container in the fridge for up to a week."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 483,
+      "protein_g": 10.8,
+      "carbs_g": 77.1,
+      "fat_g": 19.1,
+      "fiber_g": 21.3
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Combining two seeds (flax and chia) rather than one gives a broader omega-3 and fiber profile than the single-seed bites elsewhere in the database",
+      "Entirely no-cook, unlike the jaggery-syrup ladoo bites",
+      "Genuinely portable"
+    ],
+    "tags": [
+      "No Cook",
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0400",
+    "name": "ZITLAS Coconut Water Chia Pudding",
+    "description": "Chia seeds soaked in coconut water instead of milk \u2014 a dairy-free, lighter chia pudding distinct from the milk or soya-milk versions already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Chia seeds \u2014 20 g",
+      "Coconut water \u2014 180 ml",
+      "Honey \u2014 8 g"
+    ],
+    "instructions": [
+      "Stir chia seeds into coconut water, whisking well to prevent clumping.",
+      "Add honey and stir again.",
+      "Refrigerate for at least 4 hours or overnight until thickened.",
+      "Eat cold with a spoon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 131,
+      "protein_g": 4.7,
+      "carbs_g": 15.1,
+      "fat_g": 6.6,
+      "fiber_g": 8.8
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Coconut water base is a genuinely different, dairy-free liquid from the milk or soya-milk chia puddings already in the database",
+      "Naturally hydrating and light, good for hot mornings",
+      "Fully vegan and low calorie"
+    ],
+    "tags": [
+      "No Cook",
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  }
+]

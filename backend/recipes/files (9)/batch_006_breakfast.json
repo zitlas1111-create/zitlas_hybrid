@@ -1,0 +1,2859 @@
+[
+  {
+    "id": "ZITLAS-REC-0251",
+    "name": "ZITLAS Baked Aloo Paratha",
+    "description": "A classic potato-stuffed paratha, but roasted with a bare minimum of oil rather than the usual generous ghee \u2014 a genuinely lighter version of the most common Indian breakfast paratha.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 10,
+    "total_time_min": 22,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Potato, boiled and mashed \u2014 100 g",
+      "Whole wheat atta \u2014 70 g",
+      "Oil \u2014 6 ml",
+      "Green chilli, coriander, ajwain \u2014 5 g"
+    ],
+    "instructions": [
+      "Mash boiled potato with green chilli, coriander and ajwain.",
+      "Knead atta into a dough, stuff with the potato mixture and seal well.",
+      "Roll out gently and roast on a hot tawa using only a light brushing of oil rather than pooling it.",
+      "Serve hot with curd."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 378,
+      "protein_g": 10.3,
+      "carbs_g": 69.0,
+      "fat_g": 7.3,
+      "fiber_g": 9.6
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Deliberately low-oil roasting technique keeps this meaningfully lighter than a typical restaurant aloo paratha",
+      "The most requested classic paratha, finally represented in the database",
+      "Filling, familiar comfort food"
+    ],
+    "tags": [],
+    "regional_tag": "Punjabi-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0252",
+    "name": "ZITLAS Gobi Paratha",
+    "description": "A stuffed paratha filled with finely grated cauliflower (gobi) \u2014 a distinct low-calorie vegetable filling from potato, peas or beetroot already used.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 10,
+    "total_time_min": 22,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Cauliflower, grated and squeezed \u2014 80 g",
+      "Whole wheat atta \u2014 70 g",
+      "Oil \u2014 8 ml",
+      "Ginger, green chilli, garam masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Grate cauliflower finely, squeeze out excess water, and mix with ginger, green chilli and garam masala.",
+      "Knead atta into a dough, stuff with the cauliflower mixture and seal well.",
+      "Roll out gently and roast on a tawa with a little oil until golden.",
+      "Serve hot with curd."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 329,
+      "protein_g": 9.9,
+      "carbs_g": 53.0,
+      "fat_g": 9.4,
+      "fiber_g": 9.4
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Cauliflower is a genuinely low-calorie, high-volume filling distinct from every other vegetable paratha in the database",
+      "Classic North Indian combination",
+      "Good weight-loss-friendly stuffed paratha option"
+    ],
+    "tags": [
+      "Weight Loss"
+    ],
+    "regional_tag": "Punjabi-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0253",
+    "name": "ZITLAS Mooli Paratha",
+    "description": "A stuffed paratha filled with grated radish (mooli) \u2014 a peppery, high-water filling distinct from every other vegetable paratha in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 10,
+    "total_time_min": 22,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Radish, grated and squeezed \u2014 80 g",
+      "Whole wheat atta \u2014 70 g",
+      "Oil \u2014 8 ml",
+      "Green chilli, coriander, ajwain \u2014 5 g"
+    ],
+    "instructions": [
+      "Grate radish finely, squeeze out excess water thoroughly (essential to avoid a soggy paratha), and mix with green chilli, coriander and ajwain.",
+      "Knead atta into a dough, stuff with the radish mixture and seal well.",
+      "Roll out gently and roast on a tawa with a little oil until golden.",
+      "Serve hot with curd and pickle."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 322,
+      "protein_g": 9.0,
+      "carbs_g": 51.7,
+      "fat_g": 9.3,
+      "fiber_g": 9.1
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Radish's sharp, peppery flavour is distinctly different from any other vegetable filling in the database",
+      "Traditional North Indian winter breakfast",
+      "Very low calorie filling"
+    ],
+    "tags": [
+      "Weight Loss"
+    ],
+    "regional_tag": "Punjabi-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0254",
+    "name": "ZITLAS Thalipeeth",
+    "description": "A Maharashtrian multi-flour savoury pancake made from a blend of jowar, bajra and besan \u2014 an entirely different cooking technique from any chilla, dosa or paratha, mixed and patted directly on the tawa.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 10,
+    "total_time_min": 20,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Jowar flour \u2014 25 g",
+      "Bajra flour \u2014 25 g",
+      "Besan \u2014 20 g",
+      "Onion, finely chopped \u2014 25 g",
+      "Oil \u2014 6 ml",
+      "Cumin seeds, ajwain \u2014 3 g"
+    ],
+    "instructions": [
+      "Mix the three flours with onion, cumin seeds and ajwain, and enough water to form a soft, pliable dough.",
+      "Pat the dough directly onto a hot, lightly oiled tawa with wet hands into a thin round (a distinct technique from rolling with a pin).",
+      "Poke a few holes in the centre with a finger, drizzle a little oil, and cook covered until golden on both sides.",
+      "Serve hot with curd."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 312,
+      "protein_g": 10.0,
+      "carbs_g": 48.8,
+      "fat_g": 8.9,
+      "fiber_g": 7.1
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "Multi-flour blend gives a broader nutrient profile than any single-grain flatbread in the database",
+      "Hand-patted-on-the-tawa technique is genuinely different from rolling a dough with a pin",
+      "Traditional Maharashtrian breakfast staple"
+    ],
+    "tags": [
+      "High Fiber"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0255",
+    "name": "ZITLAS Sabudana Thalipeeth",
+    "description": "A thalipeeth made primarily from crushed sabudana and boiled potato \u2014 a fasting-day-style flour-free version, distinct from the mixed-grain thalipeeth.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 10,
+    "total_time_min": 18,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sabudana, soaked overnight \u2014 60 g",
+      "Potato, boiled and mashed \u2014 50 g",
+      "Peanuts, crushed \u2014 20 g",
+      "Oil \u2014 8 ml",
+      "Green chilli, cumin seeds \u2014 4 g"
+    ],
+    "instructions": [
+      "Mix soaked sabudana with mashed potato, crushed peanuts, green chilli and cumin seeds into a soft dough.",
+      "Pat directly onto a hot, lightly oiled tawa into a thin round.",
+      "Cook covered until golden on both sides, flipping once.",
+      "Serve hot with curd.",
+      "Note: sabudana needs overnight soaking, not counted in active prep time above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 438,
+      "protein_g": 6.2,
+      "carbs_g": 64.8,
+      "fat_g": 18.0,
+      "fiber_g": 2.9
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Flour-free, fasting-day-appropriate ingredient base distinct from the grain-flour thalipeeth",
+      "Same hand-patting technique applied to a genuinely different base",
+      "Peanuts supply most of the protein here"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0256",
+    "name": "ZITLAS Misal Pav Bowl",
+    "description": "Sprouted moth bean curry topped with crunchy farsan and served with pav \u2014 a spicier, farsan-topped format distinct from the plain Matki Usal Bowl.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Sprouted matki, boiled \u2014 120 g",
+      "Onion, chopped \u2014 30 g",
+      "Tomato, chopped \u2014 30 g",
+      "Pav bun \u2014 50 g",
+      "Oil \u2014 8 ml",
+      "Misal masala or goda masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Heat oil, saute onion until golden, add tomato and cook soft.",
+      "Add boiled matki and misal masala with water to form a thin, spicy gravy; simmer 10 minutes.",
+      "Ladle into a bowl and top with a handful of farsan (store-bought or homemade thin sev) just before serving.",
+      "Serve with pav on the side."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 349,
+      "protein_g": 13.6,
+      "carbs_g": 52.2,
+      "fat_g": 10.2,
+      "fiber_g": 7.9
+    },
+    "primary_protein_sources": [
+      "Matki"
+    ],
+    "why_it_works": [
+      "The farsan topping and pav pairing make this a genuinely different eating experience from the plain Matki Usal Bowl already in the database",
+      "Iconic Maharashtrian breakfast, distinctly spicier and more textured",
+      "Filling, complete meal-style breakfast"
+    ],
+    "tags": [
+      "Home Friendly"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0257",
+    "name": "ZITLAS Dabeli",
+    "description": "A Kutchi-style spiced mashed potato filling stuffed into a pav with peanuts, pomegranate and chutney \u2014 a distinctly sweet-tangy-spicy regional street food not resembling any other roll or sandwich in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 8,
+    "total_time_min": 20,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Potato, boiled and mashed \u2014 100 g",
+      "Pav bun \u2014 60 g",
+      "Peanuts, roasted \u2014 15 g",
+      "Pomegranate seeds \u2014 15 g",
+      "Oil \u2014 6 ml",
+      "Dabeli masala, tamarind chutney \u2014 6 g"
+    ],
+    "instructions": [
+      "Mash boiled potato with dabeli masala and a spoon of tamarind chutney until well combined.",
+      "Warm the mixture in a pan with a little oil.",
+      "Slice the pav and lightly toast the cut sides.",
+      "Stuff with the spiced potato, then top with roasted peanuts and pomegranate seeds before closing.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 400,
+      "protein_g": 10.8,
+      "carbs_g": 55.8,
+      "fat_g": 15.4,
+      "fiber_g": 4.9
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "The sweet-tart-crunchy combination of tamarind chutney, peanuts and pomegranate makes this genuinely distinct from every other bun or roll in the database",
+      "Kutchi (Gujarat) street food rarely represented in fitness recipe collections",
+      "Peanuts and pomegranate turn a simple potato filling into something texturally complex"
+    ],
+    "tags": [],
+    "regional_tag": "Kutchi-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0258",
+    "name": "ZITLAS Baked Moong Dal Kachori",
+    "description": "A whole wheat kachori filled with spiced moong dal, baked instead of deep-fried \u2014 a distinct pastry-like format not represented anywhere else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 25,
+    "cook_time_min": 20,
+    "total_time_min": 45,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Moong dal, soaked and coarsely ground \u2014 70 g",
+      "Whole wheat atta \u2014 100 g",
+      "Oil \u2014 10 ml",
+      "Fennel seeds, ginger, asafoetida \u2014 5 g"
+    ],
+    "instructions": [
+      "Cook the ground moong dal with fennel seeds, ginger and asafoetida in a dry pan until thick and moisture-free; cool.",
+      "Knead atta with a little oil and water into a firm dough.",
+      "Roll small discs, stuff with the dal filling, seal and flatten gently.",
+      "Preheat oven to 200\u00b0C and bake the kachoris for 18-20 minutes, turning once, until golden and crisp.",
+      "Serve with mint chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 671,
+      "protein_g": 28.8,
+      "carbs_g": 111.3,
+      "fat_g": 12.5,
+      "fiber_g": 22.4
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "Baking instead of deep-frying keeps this meaningfully lighter than a traditional kachori while keeping the flaky, stuffed pastry format",
+      "A pastry-style stuffed bread not represented anywhere else in the database",
+      "Good make-ahead batch option"
+    ],
+    "tags": [
+      "Meal Prep"
+    ],
+    "regional_tag": "Rajasthani-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0259",
+    "name": "ZITLAS Baked Vegetable Samosa Bites",
+    "description": "Small whole wheat samosas filled with spiced mixed vegetables, baked rather than fried \u2014 a bite-sized version distinct from the full-size kachori.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 25,
+    "cook_time_min": 20,
+    "total_time_min": 45,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Mixed vegetables, finely chopped \u2014 80 g",
+      "Whole wheat atta \u2014 100 g",
+      "Oil \u2014 10 ml",
+      "Cumin seeds, garam masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Cook finely chopped vegetables with cumin seeds and garam masala in a dry pan until soft and moisture-free.",
+      "Knead atta with a little oil and water into a firm dough.",
+      "Roll small discs, fold into cones, stuff with the vegetable filling and seal into small triangles.",
+      "Preheat oven to 200\u00b0C and bake for 18-20 minutes, turning once, until golden and crisp.",
+      "Serve with tamarind chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 448,
+      "protein_g": 13.2,
+      "carbs_g": 74.0,
+      "fat_g": 11.9,
+      "fiber_g": 12.8
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Bite-sized, baked format cuts the oil dramatically compared to deep-fried samosas while keeping the familiar shape and crunch",
+      "Vegetable-only filling distinct from the dal-filled kachori in this batch",
+      "Good for sharing or a family breakfast"
+    ],
+    "tags": [
+      "Family Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0260",
+    "name": "ZITLAS Aloo Kulcha",
+    "description": "A soft, curd-leavened kulcha stuffed with spiced potato \u2014 a different filling from the paneer kulcha already in the database, using the same distinct dough technique.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 12,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Potato, boiled and mashed \u2014 90 g",
+      "Refined flour (maida) \u2014 60 g",
+      "Curd (for dough) \u2014 20 g",
+      "Oil \u2014 8 ml",
+      "Onion, coriander, garam masala \u2014 6 g"
+    ],
+    "instructions": [
+      "Knead maida with curd and water into a soft dough; rest 15 minutes.",
+      "Mash potato with onion, coriander and garam masala for the filling.",
+      "Roll out the dough, stuff with the potato filling and seal.",
+      "Roast on a hot tawa with a little oil until golden with brown spots on both sides.",
+      "Serve hot with pickle."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 370,
+      "protein_g": 9.0,
+      "carbs_g": 62.7,
+      "fat_g": 9.3,
+      "fiber_g": 3.2
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Same curd-leavened kulcha dough as the paneer version but with a distinctly different, more traditional filling",
+      "Soft, pillowy texture unlike a plain roti",
+      "Restaurant-style comfort food at home"
+    ],
+    "tags": [],
+    "regional_tag": "Punjabi-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0261",
+    "name": "ZITLAS Khaman",
+    "description": "A fluffy, spongy steamed besan snack made with a different batter ratio and technique from dhokla, giving it a distinctly lighter, more porous texture.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 2,
+    "prep_time_min": 15,
+    "cook_time_min": 15,
+    "total_time_min": 30,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Besan \u2014 100 g",
+      "Curd \u2014 30 g",
+      "Water \u2014 80 ml",
+      "Eno fruit salt \u2014 4 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, green chilli \u2014 4 g"
+    ],
+    "instructions": [
+      "Whisk besan with curd and water into a thin, well-beaten batter (beat vigorously for extra air, unlike a standard dhokla batter).",
+      "Add eno fruit salt and mix gently just before steaming.",
+      "Pour into a greased tin and steam for 12-15 minutes until well risen and spongy.",
+      "Cut into cubes, then temper mustard seeds and green chilli in oil and pour over the top."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 431,
+      "protein_g": 23.1,
+      "carbs_g": 59.4,
+      "fat_g": 13.0,
+      "fiber_g": 10.8
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "Deliberately thinner batter and vigorous beating give khaman a distinctly spongier, lighter texture than the denser dhokla already in the database",
+      "Steamed, essentially fat-free base",
+      "Classic Gujarati street food"
+    ],
+    "tags": [
+      "Weight Loss"
+    ],
+    "regional_tag": "Gujarati-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0262",
+    "name": "ZITLAS Rava Dhokla",
+    "description": "A steamed dhokla made from semolina (rava) instead of besan \u2014 a different grain base with a distinctly grainier texture from the besan, oats, moong or multigrain versions.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 2,
+    "prep_time_min": 15,
+    "cook_time_min": 15,
+    "total_time_min": 30,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rava \u2014 100 g",
+      "Curd \u2014 50 g",
+      "Water \u2014 50 ml",
+      "Eno fruit salt \u2014 3 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, curry leaves \u2014 4 g"
+    ],
+    "instructions": [
+      "Whisk rava with curd and water into a thick batter; rest 15 minutes to let the rava soften.",
+      "Add eno fruit salt just before steaming and mix gently.",
+      "Pour into a greased tin and steam for 12-15 minutes.",
+      "Cool slightly, cut into squares, and temper mustard seeds and curry leaves in oil poured over the top."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 443,
+      "protein_g": 12.2,
+      "carbs_g": 76.3,
+      "fat_g": 8.7,
+      "fiber_g": 2.2
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Semolina base gives a distinctly grainier bite from the smoother besan or moong dhokla already in the database",
+      "Faster to prepare since rava needs no grinding",
+      "Steamed, low added fat"
+    ],
+    "tags": [
+      "Weight Loss"
+    ],
+    "regional_tag": "Gujarati-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0263",
+    "name": "ZITLAS Instant Rava Dosa",
+    "description": "A thin, lacy, crisp dosa made from a rava-rice flour batter that needs no fermentation \u2014 a distinctly different texture and technique from the fermented urad-rice dosas already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 10,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rava \u2014 40 g",
+      "Rice flour \u2014 20 g",
+      "Onion, finely chopped \u2014 20 g",
+      "Oil \u2014 8 ml",
+      "Cumin seeds, green chilli \u2014 3 g"
+    ],
+    "instructions": [
+      "Whisk rava and rice flour with plenty of water into a thin, watery batter (much thinner than a regular dosa batter); rest 15 minutes.",
+      "Mix in onion, cumin seeds and green chilli.",
+      "Pour the batter from height around the edges of a hot tawa first, then fill the centre, to create lacy holes.",
+      "Drizzle oil around the edges and cook until crisp and golden; no flipping needed.",
+      "Serve hot with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 296,
+      "protein_g": 5.6,
+      "carbs_g": 47.4,
+      "fat_g": 8.7,
+      "fiber_g": 1.7
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "No-fermentation, instant technique is genuinely different from every fermented dosa or idli batter in the database",
+      "Distinctly lacy, crisp texture unlike a soft, thick dosa",
+      "Good for when there's no time to plan a fermented batter ahead"
+    ],
+    "tags": [
+      "Quick Meal"
+    ],
+    "regional_tag": "South Indian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0264",
+    "name": "ZITLAS Neer Dosa",
+    "description": "An ultra-thin, soft rice dosa from Mangalore made without fermentation or urad dal \u2014 a distinctly different rice-only batter and delicate texture from any other dosa in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 10,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice, soaked and ground \u2014 60 g",
+      "Water \u2014 120 ml",
+      "Oil \u2014 5 ml",
+      "Salt \u2014 1 g"
+    ],
+    "instructions": [
+      "Soak rice for at least 2 hours, then grind with water into a very thin, watery batter, thinner than any other dosa batter used elsewhere.",
+      "Heat a tawa, pour a thin layer of batter and swirl quickly to spread it thin.",
+      "Cover and cook briefly until the edges lift, without flipping.",
+      "Fold gently into a soft, delicate dosa.",
+      "Serve with coconut chutney or a light curry.",
+      "Note: rice needs 2+ hours soaking, folded into prep time above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 264,
+      "protein_g": 3.6,
+      "carbs_g": 48.0,
+      "fat_g": 5.8,
+      "fiber_g": 1.4
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Rice-only, no-urad, no-fermentation batter is genuinely distinct from every other dosa technique in the database",
+      "Delicate, soft texture (not crisp) sets it apart from Instant Rava Dosa or a regular dosa",
+      "Coastal Karnataka home cooking rarely represented in fitness recipe collections"
+    ],
+    "tags": [],
+    "regional_tag": "Mangalorean-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0265",
+    "name": "ZITLAS Appam with Coconut Milk",
+    "description": "A Kerala fermented rice-and-coconut-milk pancake, cooked in a curved pan for soft, spongy centres and lacy, crisp edges \u2014 a bowl-shaped format entirely unlike a flat dosa or uttapam.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 30,
+    "cook_time_min": 15,
+    "total_time_min": 45,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rice, soaked and ground \u2014 100 g",
+      "Coconut milk \u2014 60 ml",
+      "Water \u2014 40 ml",
+      "Sugar or jaggery, yeast \u2014 4 g"
+    ],
+    "instructions": [
+      "Soak rice for several hours, grind with a little of the coconut milk into a smooth batter, mix in yeast and a pinch of sugar, and let ferment overnight.",
+      "Just before cooking, thin the batter with the remaining coconut milk and water.",
+      "Heat a curved appam pan (or a small kadai), pour a ladle of batter and swirl quickly up the sides.",
+      "Cover and cook until the centre is soft and set and the edges are golden and lacy.",
+      "Serve as is or with a light vegetable stew.",
+      "Note: batter needs overnight fermentation, not counted in active prep time above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 504,
+      "protein_g": 7.4,
+      "carbs_g": 83.3,
+      "fat_g": 15.8,
+      "fiber_g": 3.7
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "The curved-pan technique produces a bowl shape with a distinct soft-centre, crisp-edge texture unlike any flat dosa or uttapam in the database",
+      "Coconut milk gives a naturally mild sweetness without added sugar",
+      "Classic Kerala breakfast staple, genuinely different from Tamil or Karnataka rice preparations already represented"
+    ],
+    "tags": [],
+    "regional_tag": "Kerala-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0266",
+    "name": "ZITLAS Puttu",
+    "description": "Steamed layers of rice flour and grated coconut, cooked in a cylindrical mould \u2014 a distinctly different steamed texture (crumbly, not smooth like idli) from anything else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 12,
+    "total_time_min": 22,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice flour \u2014 80 g",
+      "Grated coconut \u2014 30 g",
+      "Water \u2014 30 ml",
+      "Salt \u2014 1 g"
+    ],
+    "instructions": [
+      "Sprinkle water gradually over rice flour, rubbing it in with your fingers until it reaches a coarse, breadcrumb-like consistency (not a smooth batter).",
+      "Layer the moistened flour and grated coconut alternately into a puttu mould (or a tall steamer vessel with holes).",
+      "Steam for 10-12 minutes until firm.",
+      "Unmould onto a plate and serve with banana or a light curry on the side."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 399,
+      "protein_g": 5.8,
+      "carbs_g": 68.5,
+      "fat_g": 11.0,
+      "fiber_g": 4.6
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Layered, crumbly steamed texture is entirely unlike the smooth batter of an idli or the flat shape of a dosa",
+      "No fermentation and no blending required, just a coarse hand-mixed flour",
+      "Kerala breakfast staple rarely represented in fitness recipe collections"
+    ],
+    "tags": [],
+    "regional_tag": "Kerala-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0267",
+    "name": "ZITLAS Adai",
+    "description": "A thick, savoury dosa made from a coarse blend of rice and several dals together, needing no fermentation \u2014 a distinctly different batter composition and texture from any single-dal dosa in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 20,
+    "cook_time_min": 15,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa",
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice, soaked \u2014 40 g",
+      "Toor dal, soaked \u2014 25 g",
+      "Chana dal, soaked \u2014 25 g",
+      "Urad dal, soaked \u2014 15 g",
+      "Oil \u2014 8 ml",
+      "Red chilli, ginger \u2014 5 g"
+    ],
+    "instructions": [
+      "Soak rice and all three dals together for at least 4 hours, then grind coarsely (not smooth) with red chilli and ginger.",
+      "No fermentation needed \u2014 the batter can be used right after grinding.",
+      "Heat a tawa, pour a thick ladle of batter and spread into a coarse, thick round.",
+      "Drizzle oil around the edges and cook until crisp on both sides.",
+      "Serve hot with jaggery and butter, or coconut chutney.",
+      "Note: soaking time folded into prep above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 393,
+      "protein_g": 14.0,
+      "carbs_g": 61.9,
+      "fat_g": 9.8,
+      "fiber_g": 9.3
+    },
+    "primary_protein_sources": [
+      "Toor dal",
+      "Chana dal",
+      "Urad dal"
+    ],
+    "why_it_works": [
+      "Combining three dals with rice gives adai notably more protein and a coarser, heartier texture than any fermented dosa in the database",
+      "No fermentation wait needed, unlike a regular dosa",
+      "Traditional South Indian dish specifically designed around multi-pulse nutrition"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "South Indian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0268",
+    "name": "ZITLAS Chettinad Egg Curry Bowl",
+    "description": "Boiled eggs simmered in a fiery, freshly ground Chettinad-style spice paste \u2014 a distinctly different South Indian regional flavour profile from the Bengali or standard multigrain-roti egg curries in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 15,
+    "total_time_min": 30,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Boiled egg \u2014 100 g",
+      "Onion, chopped \u2014 30 g",
+      "Tomato, chopped \u2014 30 g",
+      "Coconut, grated \u2014 15 g",
+      "Oil \u2014 8 ml",
+      "Chettinad masala (fennel, star anise, dried chilli) \u2014 6 g"
+    ],
+    "instructions": [
+      "Grind grated coconut with the Chettinad spice mix into a thick paste.",
+      "Heat oil, saute onion until golden, add tomato and cook soft.",
+      "Add the ground spice paste and a little water; simmer 8-10 minutes into a thick gravy.",
+      "Halve the boiled eggs and simmer in the gravy for 3-4 minutes.",
+      "Serve hot with rice or a plain dosa."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 296,
+      "protein_g": 14.1,
+      "carbs_g": 7.2,
+      "fat_g": 24.0,
+      "fiber_g": 2.2
+    },
+    "primary_protein_sources": [
+      "Egg"
+    ],
+    "why_it_works": [
+      "Chettinad spicing (fennel, star anise, coconut) is a genuinely distinct regional flavour direction from the Bengali panch-phoron or North Indian garam-masala egg curries already in the database",
+      "Freshly ground spice paste, not a pre-mixed masala powder",
+      "Tamil Nadu regional cuisine represented for the first time with eggs"
+    ],
+    "tags": [],
+    "regional_tag": "Tamil Nadu-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0269",
+    "name": "ZITLAS Prawn Curry Rice Bowl",
+    "description": "A light coconut-based prawn curry served over rice \u2014 introducing prawn, a seafood protein not used anywhere else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Prawns, cleaned \u2014 120 g",
+      "Cooked rice \u2014 150 g",
+      "Coconut milk \u2014 60 ml",
+      "Onion, chopped \u2014 30 g",
+      "Oil \u2014 6 ml",
+      "Turmeric, red chilli powder \u2014 3 g"
+    ],
+    "instructions": [
+      "Heat oil, saute onion until soft, add turmeric and red chilli powder.",
+      "Add coconut milk and a little water, bring to a gentle simmer.",
+      "Add the prawns and cook for 4-5 minutes only, until just pink and cooked through (overcooking makes them rubbery).",
+      "Serve the curry over warm rice."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 502,
+      "protein_g": 34.4,
+      "carbs_g": 43.7,
+      "fat_g": 22.3,
+      "fiber_g": 4.5
+    },
+    "primary_protein_sources": [
+      "Prawns"
+    ],
+    "why_it_works": [
+      "Prawns are a genuinely new protein source for the database, giving non-vegetarian users seafood variety beyond fish, chicken and mutton",
+      "Coconut-based gravy is light and quick to prepare",
+      "Prawns cook very fast, making this a realistically quick non-vegetarian breakfast"
+    ],
+    "tags": [],
+    "regional_tag": "Coastal Indian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0270",
+    "name": "ZITLAS Lean Mutton Keema Paratha",
+    "description": "A stuffed paratha filled with spiced lean mutton mince \u2014 introducing mutton, a red meat protein not used anywhere else in the database, alongside the existing chicken keema paratha.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Body Transformation"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 18,
+    "total_time_min": 33,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa",
+      "Kadai"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Mutton mince, lean \u2014 80 g",
+      "Whole wheat atta \u2014 70 g",
+      "Onion, finely chopped \u2014 30 g",
+      "Oil \u2014 8 ml",
+      "Ginger-garlic paste, garam masala \u2014 6 g"
+    ],
+    "instructions": [
+      "Cook the mutton mince with onion, ginger-garlic paste and garam masala in a pan until fully cooked and fairly dry; cool slightly.",
+      "Knead atta into a dough, stuff with the cooked mince filling and seal well.",
+      "Roll out carefully and roast on a tawa with a little oil until golden and cooked through on both sides.",
+      "Serve hot with curd."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 527,
+      "protein_g": 28.7,
+      "carbs_g": 51.7,
+      "fat_g": 22.8,
+      "fiber_g": 8.3
+    },
+    "primary_protein_sources": [
+      "Mutton mince"
+    ],
+    "why_it_works": [
+      "Mutton is a genuinely new red-meat protein source for the database, offering variety beyond chicken for non-vegetarian users",
+      "Lean mince selection keeps saturated fat more moderate than a fattier cut",
+      "Same proven stuffed-paratha technique as the chicken version, giving users a choice"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Punjabi-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0271",
+    "name": "ZITLAS Baked Kanda Bhaji Bites",
+    "description": "Onion fritter batter shaped into small bites and baked instead of deep-fried \u2014 a lighter version of a popular tea-time snack, reframed for breakfast.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 12,
+    "cook_time_min": 18,
+    "total_time_min": 30,
+    "difficulty": "Easy",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Besan \u2014 60 g",
+      "Onion, thinly sliced \u2014 100 g",
+      "Rice flour \u2014 15 g",
+      "Oil \u2014 6 ml",
+      "Red chilli powder, turmeric \u2014 3 g"
+    ],
+    "instructions": [
+      "Mix thinly sliced onion with besan, rice flour, red chilli powder and turmeric, adding just enough water to bind (the onion releases its own moisture too).",
+      "Shape into small, loose bite-sized mounds on a lightly greased tray.",
+      "Bake at 200\u00b0C for 15-18 minutes, turning once, until golden and crisp at the edges.",
+      "Serve with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 364,
+      "protein_g": 15.2,
+      "carbs_g": 55.8,
+      "fat_g": 9.9,
+      "fiber_g": 8.5
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "Baking instead of deep-frying keeps the fat dramatically lower than a traditional kanda bhaji while keeping the crisp edges",
+      "Turns a popular monsoon tea-time snack into a genuinely lighter breakfast bite",
+      "Simple, mostly hands-off baking"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0272",
+    "name": "ZITLAS Methi Thepla",
+    "description": "A Gujarati flatbread made with fresh fenugreek leaves worked directly into the dough \u2014 a distinct bread-making tradition (thepla) from the paneer-stuffed Methi Paneer Paratha already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 10,
+    "total_time_min": 22,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Fresh fenugreek (methi) leaves, chopped \u2014 40 g",
+      "Whole wheat atta \u2014 70 g",
+      "Besan \u2014 15 g",
+      "Oil \u2014 8 ml",
+      "Turmeric, ajwain \u2014 3 g"
+    ],
+    "instructions": [
+      "Knead atta and besan with chopped methi leaves, turmeric, ajwain and a little oil and water into a firm dough.",
+      "Roll out thin (theplas are rolled thinner than a regular roti) and roast on a hot tawa with a little oil until golden with brown spots.",
+      "Serve hot, often with curd or pickle."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 372,
+      "protein_g": 12.9,
+      "carbs_g": 59.1,
+      "fat_g": 10.2,
+      "fiber_g": 10.3
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "Methi is kneaded directly into the dough itself, unlike the paneer version which uses methi only as a stuffing \u2014 a genuinely different construction technique",
+      "Theplas are traditionally rolled thinner and travel well, unlike a thicker paratha",
+      "Classic Gujarati travel-food staple"
+    ],
+    "tags": [
+      "Lunchbox Friendly"
+    ],
+    "regional_tag": "Gujarati-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0273",
+    "name": "ZITLAS Moong Dal Khichu",
+    "description": "A steamed, spoonable rice-flour dumpling mixture flavoured with moong dal \u2014 a Gujarati steamed-batter format entirely unlike a chilla, dhokla or idli.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice flour \u2014 50 g",
+      "Moong dal, cooked and mashed \u2014 40 g",
+      "Water \u2014 150 ml",
+      "Oil \u2014 6 ml",
+      "Cumin seeds, ajwain \u2014 3 g"
+    ],
+    "instructions": [
+      "Bring water to a boil with cumin seeds and ajwain.",
+      "Slowly whisk in rice flour and mashed moong dal, stirring continuously to avoid lumps, until it thickens into a soft, cohesive dough-like mass directly in the pan.",
+      "Cover and cook on very low heat for 8-10 minutes, stirring occasionally.",
+      "Spoon into a bowl, drizzle with a little warm oil, and eat with a spoon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 375,
+      "protein_g": 12.6,
+      "carbs_g": 63.6,
+      "fat_g": 7.2,
+      "fiber_g": 7.6
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "Cooked and eaten with a spoon straight from the pan, unlike any steamed or pan-cooked dish elsewhere in the database",
+      "Moong dal addition raises protein above a plain rice-flour khichu",
+      "Simple, single-pot Gujarati home food"
+    ],
+    "tags": [
+      "One Pot"
+    ],
+    "regional_tag": "Gujarati-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0274",
+    "name": "ZITLAS Egg Appam Bowl",
+    "description": "Soft, spongy appam torn into pieces and served with a light egg curry \u2014 a distinct pairing from the classic coconut-stew accompaniment.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 30,
+    "cook_time_min": 15,
+    "total_time_min": 45,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa",
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rice, soaked and ground \u2014 70 g",
+      "Coconut milk \u2014 40 ml",
+      "Boiled egg \u2014 100 g",
+      "Onion, chopped \u2014 30 g",
+      "Oil \u2014 6 ml"
+    ],
+    "instructions": [
+      "Ferment the rice-coconut milk batter overnight as for a regular appam.",
+      "Cook appams in a curved pan as usual.",
+      "Separately, saute onion in oil, add a little water and simmer the halved boiled eggs in a light gravy for 3-4 minutes.",
+      "Serve the appams with the egg curry spooned over or alongside.",
+      "Note: batter needs overnight fermentation, not counted in active prep time above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 568,
+      "protein_g": 18.4,
+      "carbs_g": 62.0,
+      "fat_g": 27.6,
+      "fiber_g": 3.1
+    },
+    "primary_protein_sources": [
+      "Egg"
+    ],
+    "why_it_works": [
+      "Egg curry pairing raises the protein of a meal that's traditionally quite light on protein",
+      "Distinct from the standard vegetable stew accompaniment to appam",
+      "Genuinely different from any other egg preparation by the appam's soft, spongy texture"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Kerala-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0275",
+    "name": "ZITLAS Baked Mathri Bites",
+    "description": "Small, flaky whole wheat crackers, baked instead of deep-fried \u2014 a crunchy, shelf-stable snack reframed as a grab-and-go breakfast.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 3,
+    "prep_time_min": 15,
+    "cook_time_min": 15,
+    "total_time_min": 30,
+    "difficulty": "Easy",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Whole wheat atta \u2014 100 g",
+      "Oil \u2014 15 ml",
+      "Ajwain, cumin seeds \u2014 4 g"
+    ],
+    "instructions": [
+      "Knead atta with oil, ajwain, cumin seeds and just enough water into a firm, slightly stiff dough.",
+      "Roll out thick and cut into small discs, pricking each with a fork.",
+      "Bake at 180\u00b0C for 12-15 minutes until firm and lightly golden.",
+      "Cool completely \u2014 mathri crisps up further as it cools.",
+      "Store in an airtight container for up to two weeks."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 473,
+      "protein_g": 12.0,
+      "carbs_g": 70.0,
+      "fat_g": 16.7,
+      "fiber_g": 11.2
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Baking removes almost all the oil a deep-fried mathri would need while keeping the flaky crunch",
+      "Long shelf life makes this a genuine grab-and-go option for busy mornings, unlike most other recipes here",
+      "Simple ingredient list, easy to batch"
+    ],
+    "tags": [
+      "Meal Prep",
+      "Hostel Friendly"
+    ],
+    "regional_tag": "Rajasthani-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0276",
+    "name": "ZITLAS Puffed Rice Upma",
+    "description": "A dry, tempered upma made from puffed rice (murmura) instead of rava or poha \u2014 a different, lighter-textured upma from anything else labelled 'upma' in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 8,
+    "total_time_min": 13,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Puffed rice (murmura) \u2014 60 g",
+      "Onion, chopped \u2014 25 g",
+      "Peanuts \u2014 15 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, curry leaves, turmeric \u2014 3 g"
+    ],
+    "instructions": [
+      "Heat oil, temper mustard seeds and curry leaves, roast peanuts, then saute onion until soft.",
+      "Add turmeric and the puffed rice, tossing on low heat for just 2-3 minutes (puffed rice needs far less cooking than rava or poha).",
+      "Serve immediately while still light and crisp."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 343,
+      "protein_g": 8.2,
+      "carbs_g": 48.4,
+      "fat_g": 13.7,
+      "fiber_g": 2.3
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Puffed rice cooks in a fraction of the time of rava or poha upma and stays airier rather than dense",
+      "Genuinely different texture (light, crunchy) from the rava or poha versions already in the database",
+      "Very quick, very low cost"
+    ],
+    "tags": [
+      "Quick Meal",
+      "Budget Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0277",
+    "name": "ZITLAS Baked Paneer Kachori Bites",
+    "description": "Small whole wheat kachoris filled with spiced paneer, baked rather than fried \u2014 a distinct filling from the moong dal kachori already in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 2,
+    "prep_time_min": 25,
+    "cook_time_min": 20,
+    "total_time_min": 45,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Paneer, crumbled \u2014 70 g",
+      "Whole wheat atta \u2014 100 g",
+      "Oil \u2014 10 ml",
+      "Onion, coriander, garam masala \u2014 6 g"
+    ],
+    "instructions": [
+      "Mix crumbled paneer with onion, coriander and garam masala for the filling.",
+      "Knead atta with a little oil and water into a firm dough.",
+      "Roll small discs, stuff with the paneer filling, seal and flatten gently.",
+      "Bake at 200\u00b0C for 18-20 minutes, turning once, until golden.",
+      "Serve with mint chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 614,
+      "protein_g": 24.6,
+      "carbs_g": 70.8,
+      "fat_g": 25.7,
+      "fiber_g": 11.2
+    },
+    "primary_protein_sources": [
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Paneer filling gives a softer, creamier bite than the drier moong dal kachori filling",
+      "Baked rather than fried, keeping this meaningfully lighter than a traditional kachori",
+      "Good make-ahead batch option"
+    ],
+    "tags": [
+      "High Protein",
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0278",
+    "name": "ZITLAS Sprouted Ragi Dosa",
+    "description": "A dosa batter made by grinding sprouted ragi rather than plain ragi flour \u2014 a distinct preparation that changes both nutrition and flavour from the plain Ragi Dosa already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 30,
+    "cook_time_min": 10,
+    "total_time_min": 40,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa",
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Ragi, sprouted and ground \u2014 70 g",
+      "Rice flour \u2014 20 g",
+      "Curd \u2014 30 g",
+      "Oil \u2014 6 ml",
+      "Cumin seeds \u2014 2 g"
+    ],
+    "instructions": [
+      "Sprout ragi grains over 1-2 days ahead of time (rinse and drain twice daily until small shoots appear), then grind with rice flour and curd into a batter.",
+      "Rest 15 minutes.",
+      "Heat a tawa, pour the batter and spread into a dosa.",
+      "Drizzle a little oil around the edges and cook until crisp, then flip briefly.",
+      "Serve hot with chutney.",
+      "Note: sprouting ragi takes 1-2 days ahead of cooking, not counted in prep time above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 368,
+      "protein_g": 7.4,
+      "carbs_g": 67.8,
+      "fat_g": 8.3,
+      "fiber_g": 8.5
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Sprouting ragi before grinding meaningfully changes its nutrient availability and gives a noticeably different, slightly sweeter flavour from the plain-flour Ragi Dosa in the database",
+      "A genuinely different preparation process, not just a renamed dish",
+      "High fiber, naturally gluten-free"
+    ],
+    "tags": [
+      "High Fiber"
+    ],
+    "regional_tag": "South Indian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0279",
+    "name": "ZITLAS Bajra Thalipeeth",
+    "description": "A single-grain bajra thalipeeth \u2014 a simpler, more traditional version distinct from the multi-flour blend used in the standard Thalipeeth recipe.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 10,
+    "total_time_min": 18,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Bajra flour \u2014 70 g",
+      "Onion, finely chopped \u2014 25 g",
+      "Oil \u2014 6 ml",
+      "Cumin seeds, green chilli \u2014 3 g"
+    ],
+    "instructions": [
+      "Mix bajra flour with onion, cumin seeds, green chilli and enough water to form a soft dough.",
+      "Pat directly onto a hot, lightly oiled tawa into a thin round.",
+      "Poke a few holes, drizzle oil, and cook covered until golden on both sides.",
+      "Serve hot with curd."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 315,
+      "protein_g": 8.0,
+      "carbs_g": 49.1,
+      "fat_g": 9.5,
+      "fiber_g": 8.5
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Single-grain version offers a purer bajra flavour and texture, distinct from the blended multi-flour thalipeeth",
+      "Same hand-patting technique, simpler ingredient list",
+      "Good winter-season breakfast, bajra being traditionally warming"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0280",
+    "name": "ZITLAS Vegetable Adai",
+    "description": "Adai batter with finely chopped vegetables mixed in before cooking \u2014 a vegetable-forward variant of the plain multi-dal Adai earlier in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 20,
+    "cook_time_min": 15,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa",
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice, soaked \u2014 35 g",
+      "Toor dal, soaked \u2014 20 g",
+      "Chana dal, soaked \u2014 20 g",
+      "Mixed vegetables, finely chopped \u2014 40 g",
+      "Oil \u2014 8 ml",
+      "Red chilli, ginger \u2014 5 g"
+    ],
+    "instructions": [
+      "Soak rice and dals together for at least 4 hours, then grind coarsely with red chilli and ginger.",
+      "Mix in finely chopped vegetables.",
+      "Heat a tawa, pour a thick ladle of batter and spread into a coarse round.",
+      "Drizzle oil around the edges and cook until crisp on both sides.",
+      "Serve hot with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 309,
+      "protein_g": 8.9,
+      "carbs_g": 46.8,
+      "fat_g": 9.4,
+      "fiber_g": 6.2
+    },
+    "primary_protein_sources": [
+      "Toor dal",
+      "Chana dal"
+    ],
+    "why_it_works": [
+      "Vegetables mixed directly into the batter make this genuinely different from the plain multi-dal adai, adding fiber and micronutrients",
+      "Same protein-dense multi-dal base, broader nutrient profile",
+      "No fermentation needed"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "South Indian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0281",
+    "name": "ZITLAS Chicken Keema Kulcha",
+    "description": "A curd-leavened kulcha stuffed with spiced chicken mince \u2014 a non-vegetarian kulcha filling distinct from the paneer or potato versions already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Body Transformation"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 18,
+    "cook_time_min": 15,
+    "total_time_min": 33,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Chicken mince, lean \u2014 70 g",
+      "Refined flour (maida) \u2014 60 g",
+      "Curd (for dough) \u2014 20 g",
+      "Oil \u2014 8 ml",
+      "Ginger-garlic paste, garam masala \u2014 6 g"
+    ],
+    "instructions": [
+      "Cook the chicken mince with ginger-garlic paste and garam masala until fully cooked and fairly dry; cool.",
+      "Knead maida with curd and water into a soft dough; rest 15 minutes.",
+      "Roll out, stuff with the cooked mince and seal.",
+      "Roast on a hot tawa with a little oil until golden with brown spots on both sides.",
+      "Serve hot with curd."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 392,
+      "protein_g": 20.6,
+      "carbs_g": 44.7,
+      "fat_g": 14.2,
+      "fiber_g": 1.6
+    },
+    "primary_protein_sources": [
+      "Chicken mince"
+    ],
+    "why_it_works": [
+      "Non-vegetarian option within the soft, curd-leavened kulcha format, distinct from the vegetarian paneer and aloo versions",
+      "Lean mince keeps this high protein without excess fat",
+      "Same proven dough technique, different filling entirely"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Punjabi-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0282",
+    "name": "ZITLAS Chana Dal Khaman",
+    "description": "A khaman made from ground chana dal instead of besan \u2014 a chunkier, higher-fiber variation on the classic spongy Gujarati steamed snack.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 20,
+    "cook_time_min": 15,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker",
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Chana dal, soaked and ground \u2014 120 g",
+      "Curd \u2014 30 g",
+      "Eno fruit salt \u2014 4 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, green chilli \u2014 4 g"
+    ],
+    "instructions": [
+      "Soak chana dal for at least 4 hours, grind with curd into a thick batter.",
+      "Add eno fruit salt just before steaming and mix gently.",
+      "Pour into a greased tin and steam for 12-15 minutes until well risen.",
+      "Cut into cubes, then temper mustard seeds and green chilli in oil and pour over the top."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 268,
+      "protein_g": 11.7,
+      "carbs_g": 33.8,
+      "fat_g": 10.1,
+      "fiber_g": 9.1
+    },
+    "primary_protein_sources": [
+      "Chana dal"
+    ],
+    "why_it_works": [
+      "Chana dal gives notably more protein and fiber than the refined besan version, with a slightly coarser bite",
+      "Same spongy steaming technique, genuinely different base pulse",
+      "Steamed, low added fat"
+    ],
+    "tags": [
+      "High Protein",
+      "High Fiber"
+    ],
+    "regional_tag": "Gujarati-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0283",
+    "name": "ZITLAS Multigrain Thalipeeth",
+    "description": "A thalipeeth made from a blend of five flours (jowar, bajra, ragi, besan, rice) \u2014 the most grain-diverse flatbread in the database, distinct from the three-flour standard Thalipeeth.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 10,
+    "total_time_min": 20,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Multigrain flour blend (jowar, bajra, ragi, besan, rice) \u2014 70 g",
+      "Onion, finely chopped \u2014 25 g",
+      "Oil \u2014 6 ml",
+      "Cumin seeds, ajwain \u2014 3 g"
+    ],
+    "instructions": [
+      "Mix the multigrain flour blend with onion, cumin seeds, ajwain and enough water to form a soft dough.",
+      "Pat directly onto a hot, lightly oiled tawa into a thin round.",
+      "Poke a few holes, drizzle oil, and cook covered until golden on both sides.",
+      "Serve hot with curd."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 301,
+      "protein_g": 7.3,
+      "carbs_g": 49.8,
+      "fat_g": 8.1,
+      "fiber_g": 7.4
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Broadest grain blend of any thalipeeth in the database, spreading fiber and micronutrients across five sources rather than one to three",
+      "Same reliable hand-patting technique",
+      "Good grain-rotation option across the week"
+    ],
+    "tags": [
+      "High Fiber"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0284",
+    "name": "ZITLAS Roasted Poha Chivda",
+    "description": "Dry roasted (not oil-tempered) poha tossed with peanuts and light spices \u2014 a genuinely different technique from the tempered kanda poha or oil-based chivda preparations elsewhere.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 5,
+    "cook_time_min": 10,
+    "total_time_min": 15,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Poha (flattened rice), thin variety \u2014 60 g",
+      "Peanuts \u2014 20 g",
+      "Curry leaves, turmeric \u2014 4 g",
+      "Oil \u2014 6 ml"
+    ],
+    "instructions": [
+      "Dry-roast the thin poha in a wide kadai on low heat, stirring constantly, until crisp \u2014 this takes longer than tempering but uses no extra oil for the poha itself.",
+      "Separately, roast peanuts and curry leaves in a little oil with turmeric.",
+      "Toss the roasted poha with the peanut mixture.",
+      "Cool and store, or eat warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 376,
+      "protein_g": 9.3,
+      "carbs_g": 49.4,
+      "fat_g": 16.5,
+      "fiber_g": 3.1
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Dry-roasting the poha itself (rather than tempering it wet with oil and vegetables) is a genuinely different technique from every other poha preparation in the database",
+      "Can be stored for several days, unlike the fresh, wet kanda poha",
+      "Very low oil overall"
+    ],
+    "tags": [
+      "Meal Prep",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0285",
+    "name": "ZITLAS Baked Vegetable Kachori",
+    "description": "A whole wheat kachori filled with spiced mixed vegetables (not moong dal or paneer), baked \u2014 completing three distinct fillings for the baked-kachori format introduced in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 25,
+    "cook_time_min": 20,
+    "total_time_min": 45,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Mixed vegetables, finely chopped \u2014 90 g",
+      "Whole wheat atta \u2014 100 g",
+      "Oil \u2014 10 ml",
+      "Fennel seeds, coriander powder \u2014 5 g"
+    ],
+    "instructions": [
+      "Cook finely chopped vegetables with fennel seeds and coriander powder in a dry pan until soft and dry.",
+      "Knead atta with a little oil and water into a firm dough.",
+      "Roll small discs, stuff with the vegetable filling, seal and flatten gently.",
+      "Bake at 200\u00b0C for 18-20 minutes, turning once, until golden.",
+      "Serve with mint chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 451,
+      "protein_g": 13.3,
+      "carbs_g": 74.5,
+      "fat_g": 11.9,
+      "fiber_g": 13.0
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Vegetable-only filling gives users a lower-protein, higher-fiber choice alongside the moong dal and paneer kachoris in this batch",
+      "Baked, not fried, keeping this meaningfully lighter",
+      "Good vegan option within the kachori family"
+    ],
+    "tags": [],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0286",
+    "name": "ZITLAS Sabudana Khichu",
+    "description": "A khichu made from sabudana instead of rice flour \u2014 a distinct fasting-day-style spoonable steamed-in-pan dish from the Moong Dal Khichu earlier in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 12,
+    "total_time_min": 22,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sabudana, soaked \u2014 60 g",
+      "Water \u2014 100 ml",
+      "Peanuts, crushed \u2014 15 g",
+      "Oil \u2014 6 ml",
+      "Cumin seeds, green chilli \u2014 3 g"
+    ],
+    "instructions": [
+      "Heat oil, temper cumin seeds and green chilli.",
+      "Add soaked sabudana, crushed peanuts and water, stirring continuously as it thickens and turns translucent, about 8-10 minutes.",
+      "Spoon into a bowl and eat with a spoon, while warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 348,
+      "protein_g": 4.0,
+      "carbs_g": 54.0,
+      "fat_g": 13.5,
+      "fiber_g": 1.6
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Sabudana's translucent, chewy texture is genuinely different from the smoother rice-moong khichu",
+      "Traditionally a fasting-day dish, reframed as a regular breakfast option",
+      "One-pot, minimal cleanup"
+    ],
+    "tags": [
+      "One Pot"
+    ],
+    "regional_tag": "Gujarati-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0287",
+    "name": "ZITLAS Paneer Adai",
+    "description": "Adai batter topped with crumbled paneer just before flipping \u2014 a protein-boosted adai variant distinct from the plain or vegetable versions.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 2,
+    "prep_time_min": 20,
+    "cook_time_min": 15,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa",
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rice, soaked \u2014 35 g",
+      "Toor dal, soaked \u2014 20 g",
+      "Chana dal, soaked \u2014 20 g",
+      "Paneer, crumbled \u2014 40 g",
+      "Oil \u2014 8 ml",
+      "Red chilli, ginger \u2014 5 g"
+    ],
+    "instructions": [
+      "Soak rice and dals for at least 4 hours, grind coarsely with red chilli and ginger.",
+      "Heat a tawa, pour a thick ladle of batter and spread into a coarse round.",
+      "Scatter crumbled paneer over the top while the first side cooks, pressing gently so it sticks.",
+      "Drizzle oil around the edges, flip carefully, and cook until crisp.",
+      "Serve hot with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 405,
+      "protein_g": 15.5,
+      "carbs_g": 45.3,
+      "fat_g": 17.3,
+      "fiber_g": 5.4
+    },
+    "primary_protein_sources": [
+      "Toor dal",
+      "Chana dal",
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Paneer topping raises the protein of an already high-protein multi-dal base even further",
+      "Distinct from the plain and vegetable adai variants by adding a dairy protein layer",
+      "Same reliable no-ferment technique"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "South Indian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0288",
+    "name": "ZITLAS Vegetable Puttu Bowl",
+    "description": "Steamed puttu crumbled into a bowl and tossed with a light vegetable stir-fry \u2014 a distinct serving format from the traditional cylindrical unmoulded puttu.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 15,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice flour \u2014 70 g",
+      "Grated coconut \u2014 25 g",
+      "Mixed vegetables, chopped \u2014 50 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, curry leaves \u2014 3 g"
+    ],
+    "instructions": [
+      "Prepare and steam puttu as usual with rice flour and grated coconut.",
+      "Heat oil, temper mustard seeds and curry leaves, then saute vegetables 3-4 minutes.",
+      "Crumble the steamed puttu into the pan and toss gently with the vegetables.",
+      "Serve warm in a bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 410,
+      "protein_g": 5.8,
+      "carbs_g": 62.2,
+      "fat_g": 15.3,
+      "fiber_g": 4.9
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Crumbled-and-tossed bowl format is a genuinely different eating experience from the traditional unmoulded cylinder served plain",
+      "Vegetables add fiber and micronutrients not present in the plain version",
+      "Same steaming technique, different finishing"
+    ],
+    "tags": [
+      "High Fiber"
+    ],
+    "regional_tag": "Kerala-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0289",
+    "name": "ZITLAS Egg Puttu Bowl",
+    "description": "Steamed puttu crumbled and tossed with scrambled egg \u2014 a protein-added variant of the puttu family, distinct from the vegetable or plain versions.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 15,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rice flour \u2014 70 g",
+      "Grated coconut \u2014 25 g",
+      "Whole egg \u2014 50 g",
+      "Onion, chopped \u2014 20 g",
+      "Oil \u2014 6 ml"
+    ],
+    "instructions": [
+      "Prepare and steam puttu as usual with rice flour and grated coconut.",
+      "Heat oil, saute onion, then scramble in the beaten egg until just cooked.",
+      "Crumble the steamed puttu into the pan and toss gently with the scrambled egg.",
+      "Serve warm in a bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 483,
+      "protein_g": 11.7,
+      "carbs_g": 62.1,
+      "fat_g": 20.8,
+      "fiber_g": 4.3
+    },
+    "primary_protein_sources": [
+      "Whole egg"
+    ],
+    "why_it_works": [
+      "Egg addition meaningfully raises the protein of the traditionally protein-light puttu",
+      "Distinct texture combination \u2014 crumbly rice-coconut with soft scrambled egg",
+      "Same steaming technique, third distinct finishing in this batch"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Kerala-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0290",
+    "name": "ZITLAS Fish Moilee Rice Bowl",
+    "description": "A Kerala-style mild coconut-milk fish curry with curry leaves and turmeric, served over rice \u2014 a distinct regional fish preparation from the Bengali mustard-based fish curry already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Lean fish fillet \u2014 120 g",
+      "Cooked rice \u2014 150 g",
+      "Coconut milk \u2014 70 ml",
+      "Onion, sliced \u2014 30 g",
+      "Oil \u2014 6 ml",
+      "Curry leaves, turmeric, green chilli \u2014 4 g"
+    ],
+    "instructions": [
+      "Heat oil, saute sliced onion until soft, add curry leaves, turmeric and green chilli.",
+      "Add coconut milk and a little water, bring to a gentle simmer.",
+      "Add the fish and simmer for 6-8 minutes until just cooked through, without stirring too much so it doesn't break apart.",
+      "Serve the curry over warm rice."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 522,
+      "protein_g": 27.4,
+      "carbs_g": 44.1,
+      "fat_g": 27.3,
+      "fiber_g": 4.8
+    },
+    "primary_protein_sources": [
+      "Fish"
+    ],
+    "why_it_works": [
+      "Coconut milk and curry leaves give a distinctly mild, creamy Kerala flavour profile, genuinely different from the mustard-and-panch-phoron Bengali fish curry already in the database",
+      "Gentle simmering keeps the fish tender",
+      "Third distinct regional fish preparation, broadening non-vegetarian variety"
+    ],
+    "tags": [],
+    "regional_tag": "Kerala-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0291",
+    "name": "ZITLAS Prawn Cutlet Sandwich",
+    "description": "Pan-fried prawn cutlets sandwiched in toasted bread \u2014 a distinct seafood-based cutlet-sandwich format from the fish cutlet sandwich already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 12,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa",
+      "Mixer"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Prawns, cleaned and chopped \u2014 100 g",
+      "Whole wheat bread \u2014 60 g",
+      "Onion, finely chopped \u2014 20 g",
+      "Oil \u2014 8 ml",
+      "Ginger, green chilli, black pepper \u2014 5 g"
+    ],
+    "instructions": [
+      "Finely chop the prawns and mix with onion, ginger, green chilli and black pepper.",
+      "Shape into a flat cutlet.",
+      "Pan-fry in oil until golden and firm on both sides, about 3-4 minutes per side.",
+      "Toast the bread and sandwich the cutlet inside.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 337,
+      "protein_g": 29.6,
+      "carbs_g": 31.4,
+      "fat_g": 10.4,
+      "fiber_g": 4.5
+    },
+    "primary_protein_sources": [
+      "Prawns"
+    ],
+    "why_it_works": [
+      "Prawn gives a distinctly different texture (slightly springy) from the flaky fish cutlet already in the database",
+      "Fourth distinct non-vegetarian protein source represented across the database (egg, chicken, fish, mutton, and now prawn)",
+      "Portable sandwich format"
+    ],
+    "tags": [
+      "Lunchbox Friendly"
+    ],
+    "regional_tag": "Coastal Indian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0292",
+    "name": "ZITLAS Vegetable Khichu",
+    "description": "A khichu made with finely chopped vegetables mixed into the rice-flour batter \u2014 a vegetable-forward variant of the Moong Dal Khichu and Sabudana Khichu in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice flour \u2014 60 g",
+      "Mixed vegetables, finely chopped \u2014 40 g",
+      "Water \u2014 150 ml",
+      "Oil \u2014 6 ml",
+      "Cumin seeds, ajwain \u2014 3 g"
+    ],
+    "instructions": [
+      "Bring water to a boil with cumin seeds and ajwain.",
+      "Add finely chopped vegetables and simmer 2 minutes.",
+      "Slowly whisk in rice flour, stirring continuously to avoid lumps, until it thickens into a soft mass.",
+      "Cover and cook on very low heat for 8-10 minutes, stirring occasionally.",
+      "Spoon into a bowl, drizzle with warm oil, and eat with a spoon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 283,
+      "protein_g": 4.2,
+      "carbs_g": 50.0,
+      "fat_g": 6.9,
+      "fiber_g": 2.2
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Vegetables cooked directly into the khichu base add fiber the plain or moong dal versions lack",
+      "Completes a set of three distinct khichu variants (moong dal, sabudana, vegetable) for different nutritional needs",
+      "One-pot, minimal cleanup"
+    ],
+    "tags": [
+      "One Pot"
+    ],
+    "regional_tag": "Gujarati-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0293",
+    "name": "ZITLAS Egg Adai",
+    "description": "Adai topped with a fried egg placed directly on top while cooking \u2014 a fourth distinct adai variant, adding a runny-yolk protein element not present in the plain, vegetable or paneer versions.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 20,
+    "cook_time_min": 12,
+    "total_time_min": 32,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa",
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rice, soaked \u2014 35 g",
+      "Toor dal, soaked \u2014 20 g",
+      "Chana dal, soaked \u2014 20 g",
+      "Whole egg \u2014 50 g",
+      "Oil \u2014 8 ml",
+      "Red chilli, ginger \u2014 5 g"
+    ],
+    "instructions": [
+      "Soak rice and dals for at least 4 hours, grind coarsely with red chilli and ginger.",
+      "Heat a tawa, pour a thick ladle of batter and spread into a coarse round.",
+      "Crack an egg directly onto the centre of the adai while the first side cooks, and let it set into the surface.",
+      "Drizzle oil around the edges, cover briefly to finish cooking the egg, and serve without flipping."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 376,
+      "protein_g": 14.8,
+      "carbs_g": 45.3,
+      "fat_g": 14.8,
+      "fiber_g": 5.4
+    },
+    "primary_protein_sources": [
+      "Toor dal",
+      "Chana dal",
+      "Whole egg"
+    ],
+    "why_it_works": [
+      "Egg cracked directly onto the adai surface (not mixed in or served alongside) is a distinct construction from the paneer-topped or vegetable-mixed versions",
+      "Runny yolk adds a different textural element from any other egg preparation in the database",
+      "High protein from both the multi-dal base and the egg"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "South Indian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0294",
+    "name": "ZITLAS Prawn Biryani Bowl",
+    "description": "Rice layered and dum-cooked with marinated prawns and biryani spices \u2014 a seafood biryani distinct from the vegetarian soya version already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 20,
+    "cook_time_min": 20,
+    "total_time_min": 40,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Rice \u2014 70 g",
+      "Prawns, cleaned \u2014 90 g",
+      "Onion, sliced \u2014 30 g",
+      "Curd \u2014 30 g",
+      "Oil \u2014 8 ml",
+      "Biryani masala, whole spices \u2014 6 g"
+    ],
+    "instructions": [
+      "Marinate the prawns in curd and biryani masala for 10-15 minutes.",
+      "Heat oil, fry sliced onion until golden and set aside half for garnish.",
+      "Layer partially-cooked rice with the marinated prawns and remaining fried onion in the cooker.",
+      "Cover tightly and cook on low heat (dum-style) for 10-12 minutes \u2014 prawns cook fast, so avoid overcooking.",
+      "Fluff gently and garnish with reserved onion."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 274,
+      "protein_g": 24.8,
+      "carbs_g": 21.8,
+      "fat_g": 10.0,
+      "fiber_g": 1.8
+    },
+    "primary_protein_sources": [
+      "Prawns"
+    ],
+    "why_it_works": [
+      "Prawns cook far faster than chicken or mutton, so the dum time is shorter, a genuinely different technique consideration from a meat biryani",
+      "Seafood biryani variant distinct from the vegetarian soya version already in the database",
+      "Weekend-special feel with a quick-cooking protein"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Coastal Indian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0295",
+    "name": "ZITLAS Lean Mutton Curry Rice Bowl",
+    "description": "A light, home-style lean mutton curry served over rice \u2014 a curry-and-rice bowl format distinct from the stuffed keema paratha already using mutton in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Body Transformation"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 25,
+    "total_time_min": 40,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Mutton, lean cubes \u2014 100 g",
+      "Cooked rice \u2014 150 g",
+      "Onion, chopped \u2014 30 g",
+      "Tomato, chopped \u2014 30 g",
+      "Oil \u2014 8 ml",
+      "Ginger-garlic paste, garam masala \u2014 6 g"
+    ],
+    "instructions": [
+      "Heat oil, saute onion until golden, add ginger-garlic paste and tomato, cook until soft.",
+      "Add the mutton and garam masala, along with enough water to cover.",
+      "Pressure cook for 15-18 minutes until the mutton is tender.",
+      "Serve the curry over warm rice."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 526,
+      "protein_g": 29.5,
+      "carbs_g": 41.4,
+      "fat_g": 26.6,
+      "fiber_g": 3.6
+    },
+    "primary_protein_sources": [
+      "Mutton"
+    ],
+    "why_it_works": [
+      "Curry-and-rice format is genuinely different from the stuffed paratha use of mutton earlier in this batch, giving a second distinct way to eat the same protein",
+      "Pressure cooking keeps this practical despite mutton's usually longer cooking time",
+      "Home-style, moderate spicing"
+    ],
+    "tags": [],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0296",
+    "name": "ZITLAS Paneer Puttu Bowl",
+    "description": "Steamed puttu crumbled and tossed with crumbled paneer \u2014 a dairy-protein-added puttu variant distinct from the vegetable or egg versions in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 15,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rice flour \u2014 70 g",
+      "Grated coconut \u2014 25 g",
+      "Paneer, crumbled \u2014 50 g",
+      "Oil \u2014 5 ml",
+      "Black pepper \u2014 1 g"
+    ],
+    "instructions": [
+      "Prepare and steam puttu as usual with rice flour and grated coconut.",
+      "Warm the crumbled paneer briefly in a pan with a little oil and black pepper.",
+      "Crumble the steamed puttu into the pan and toss gently with the warmed paneer.",
+      "Serve warm in a bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 521,
+      "protein_g": 14.0,
+      "carbs_g": 60.4,
+      "fat_g": 24.2,
+      "fiber_g": 3.9
+    },
+    "primary_protein_sources": [
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Paneer gives a creamier, richer protein addition than the egg or plain vegetable puttu variants",
+      "Completes a set of three distinct puttu bowl variants for different dietary preferences",
+      "Same steaming technique throughout"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Kerala-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0297",
+    "name": "ZITLAS Mutton Seekh Kebab Bowl",
+    "description": "Grilled lean mutton mince skewers served over a light salad \u2014 a distinct grilled-kebab format from the paratha or curry uses of mutton elsewhere in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Body Transformation"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 20,
+    "cook_time_min": 12,
+    "total_time_min": 32,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven",
+      "Air fryer"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Mutton mince, lean \u2014 100 g",
+      "Onion, grated \u2014 20 g",
+      "Cucumber, chopped \u2014 30 g",
+      "Tomato, chopped \u2014 30 g",
+      "Ginger-garlic paste, garam masala \u2014 6 g"
+    ],
+    "instructions": [
+      "Mix mutton mince with grated onion, ginger-garlic paste and garam masala, kneading well to bind.",
+      "Shape into small skewer-less kebabs (or thread onto skewers if available).",
+      "Grill in an oven or air fryer at 200\u00b0C for 10-12 minutes, turning once, until cooked through.",
+      "Serve over a bed of chopped cucumber and tomato."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 279,
+      "protein_g": 25.9,
+      "carbs_g": 4.5,
+      "fat_g": 17.1,
+      "fiber_g": 1.3
+    },
+    "primary_protein_sources": [
+      "Mutton mince"
+    ],
+    "why_it_works": [
+      "Grilled kebab format is genuinely different from the stuffed paratha or curry preparations of mutton elsewhere in this batch, using no added oil beyond what's in the mince itself",
+      "Salad base keeps this lower carb than a bread-based mutton dish",
+      "Third distinct way to use lean mutton across the database"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0298",
+    "name": "ZITLAS Egg Neer Dosa Bowl",
+    "description": "Neer dosa torn into pieces and tossed with scrambled egg \u2014 a distinct combination format from serving neer dosa plain with a side curry.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 12,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice, soaked and ground \u2014 50 g",
+      "Water \u2014 100 ml",
+      "Whole egg \u2014 50 g",
+      "Onion, chopped \u2014 20 g",
+      "Oil \u2014 6 ml"
+    ],
+    "instructions": [
+      "Soak and grind rice into a very thin batter as for neer dosa; cook thin, soft dosas on a tawa.",
+      "Tear the cooked dosas into bite-sized pieces.",
+      "Heat oil, saute onion, then scramble in the beaten egg until just cooked.",
+      "Toss the torn neer dosa pieces with the scrambled egg.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 322,
+      "protein_g": 9.7,
+      "carbs_g": 42.3,
+      "fat_g": 12.2,
+      "fiber_g": 1.5
+    },
+    "primary_protein_sources": [
+      "Whole egg"
+    ],
+    "why_it_works": [
+      "Torn-and-tossed bowl format is genuinely different from serving neer dosa flat with a side curry",
+      "Egg addition raises the protein of a dish that's traditionally very light",
+      "Distinct from every other egg-and-grain combination in the database by the neer dosa's delicate texture"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Mangalorean-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0299",
+    "name": "ZITLAS Roasted Chana Thalipeeth",
+    "description": "A thalipeeth made with roasted chana (dalia) flour blended into the dough \u2014 a fifth distinct thalipeeth base, adding a nutty flavour and extra protein from roasted gram.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 10,
+    "total_time_min": 20,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Roasted chana dal flour (sattu) \u2014 40 g",
+      "Bajra flour \u2014 30 g",
+      "Onion, finely chopped \u2014 25 g",
+      "Oil \u2014 6 ml",
+      "Cumin seeds, ajwain \u2014 3 g"
+    ],
+    "instructions": [
+      "Mix sattu and bajra flour with onion, cumin seeds, ajwain and enough water to form a soft dough.",
+      "Pat directly onto a hot, lightly oiled tawa into a thin round.",
+      "Poke a few holes, drizzle oil, and cook covered until golden on both sides.",
+      "Serve hot with curd."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 323,
+      "protein_g": 11.6,
+      "carbs_g": 45.1,
+      "fat_g": 9.9,
+      "fiber_g": 7.9
+    },
+    "primary_protein_sources": [
+      "Sattu"
+    ],
+    "why_it_works": [
+      "Roasted gram flour gives notably more protein than the jowar-bajra-besan blend used in the standard thalipeeth",
+      "Nutty, toasted flavour distinct from the other thalipeeth variants in the database",
+      "Same reliable hand-patting technique"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0300",
+    "name": "ZITLAS Baked Aloo Kachori",
+    "description": "A whole wheat kachori filled with spiced mashed potato, baked \u2014 the third distinct filling for the baked-kachori format, alongside moong dal and paneer.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 25,
+    "cook_time_min": 20,
+    "total_time_min": 45,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Potato, boiled and mashed \u2014 90 g",
+      "Whole wheat atta \u2014 100 g",
+      "Oil \u2014 10 ml",
+      "Fennel seeds, coriander powder, red chilli \u2014 6 g"
+    ],
+    "instructions": [
+      "Mix mashed potato with fennel seeds, coriander powder and red chilli for the filling.",
+      "Knead atta with a little oil and water into a firm dough.",
+      "Roll small discs, stuff with the potato filling, seal and flatten gently.",
+      "Bake at 200\u00b0C for 18-20 minutes, turning once, until golden.",
+      "Serve with tamarind chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 507,
+      "protein_g": 13.7,
+      "carbs_g": 88.0,
+      "fat_g": 11.8,
+      "fiber_g": 12.8
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Potato filling completes a set of three distinct kachori options (moong dal, paneer, potato) so users can pick by protein need or preference",
+      "Baked, not fried, keeping this meaningfully lighter than a traditional aloo kachori",
+      "Classic, widely-loved filling made healthier"
+    ],
+    "tags": [],
+    "regional_tag": "Rajasthani-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  }
+]

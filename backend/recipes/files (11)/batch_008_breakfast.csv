@@ -1,0 +1,51 @@
+Recipe ID,Recipe Name,Category,Meal Type,Diet Type,Fitness Goals,Calories,Protein,Carbohydrates,Fat,Fiber,Prep Time,Cook Time,Difficulty,Cost Level,Equipment,Hostel Friendly,Home Friendly,Regional Tag,ZITLAS Original
+ZITLAS-REC-0351,ZITLAS Odia Dalma Bowl,Breakfast,Breakfast,Vegan,General Fitness; Weight Loss,205,10.0,26.3,6.7,7.4,10,20,Moderate,Budget,Pressure cooker,No,Yes,Odia-inspired,No
+ZITLAS-REC-0352,ZITLAS Kashmiri Nadru Yakhni Bowl,Breakfast,Breakfast,Vegetarian,General Fitness,138,5.0,9.7,9.5,2.0,15,20,Moderate,Premium,Kadai,No,Yes,Kashmiri-inspired,No
+ZITLAS-REC-0353,ZITLAS Himachali Siddu,Breakfast,Breakfast,Vegan,General Fitness,675,18.9,88.2,29.5,15.4,90,20,Moderate,Moderate,Pressure cooker,No,Yes,Himachali-inspired,No
+ZITLAS-REC-0354,ZITLAS Chhattisgarhi Bore Basi,Breakfast,Breakfast,Vegetarian,Weight Loss,216,6.0,40.3,3.5,2.7,600,0,Easy,Budget,No-cook,No,Yes,Chhattisgarhi-inspired,No
+ZITLAS-REC-0355,ZITLAS Litti-Style Baked Sattu Balls,Breakfast,Breakfast,Vegan,Muscle Gain; General Fitness,732,28.0,115.6,16.5,19.2,20,25,Moderate,Budget,Oven,No,Yes,Bihar-Jharkhand-inspired,No
+ZITLAS-REC-0356,ZITLAS Jhangora Millet Upma,Breakfast,Breakfast,Vegan,Weight Loss,319,7.6,36.9,14.2,7.1,10,12,Easy,Moderate,Kadai,No,Yes,Uttarakhandi-inspired,No
+ZITLAS-REC-0357,ZITLAS Black Rice Porridge,Breakfast,Breakfast,Vegan,General Fitness,191,2.8,29.9,7.8,2.9,120,25,Moderate,Premium,Pressure cooker,No,Yes,Manipuri-inspired,No
+ZITLAS-REC-0358,ZITLAS Bamboo Shoot Vegetable Bowl,Breakfast,Breakfast,Vegan,Weight Loss,84,2.5,6.1,6.3,2.5,10,12,Moderate,Premium,Kadai,No,Yes,Northeast Indian-inspired,No
+ZITLAS-REC-0359,ZITLAS Assamese Fish and Rice Bowl,Breakfast,Breakfast,Non-Vegetarian,Muscle Gain; General Fitness,376,25.9,39.5,12.6,3.3,10,12,Moderate,Premium,Kadai,No,Yes,Assamese-inspired,No
+ZITLAS-REC-0360,ZITLAS Fermented Greens Soup Bowl,Breakfast,Breakfast,Vegan,Weight Loss,61,1.7,3.0,5.3,1.5,10,15,Moderate,Moderate,Kadai,No,Yes,Sikkim-inspired,Yes
+ZITLAS-REC-0361,ZITLAS Office Lunchbox Rajma Rice Bowl,Breakfast,Breakfast,Vegan,Muscle Gain; General Fitness,289,12.3,45.1,7.2,9.3,10,20,Easy,Budget,Pressure cooker,No,Yes,,Yes
+ZITLAS-REC-0362,ZITLAS Office Lunchbox Chole Wrap,Breakfast,Breakfast,Vegan,Muscle Gain; General Fitness,509,19.4,84.1,11.3,17.5,10,15,Moderate,Budget,Kadai; Tawa,No,Yes,,Yes
+ZITLAS-REC-0363,ZITLAS Post-Workout Banana Peanut Protein Shake,Breakfast,Breakfast; Post-Workout,Vegetarian,Muscle Gain; Body Transformation,297,11.2,35.6,14.4,3.5,5,0,Easy,Moderate,Mixer,Yes,Yes,,No
+ZITLAS-REC-0364,ZITLAS Post-Workout Chocolate Banana Milk,Breakfast,Breakfast; Post-Workout,Vegetarian,Muscle Gain; Body Transformation,203,7.9,29.0,7.5,2.1,5,0,Easy,Moderate,Mixer,Yes,Yes,,No
+ZITLAS-REC-0365,ZITLAS Overnight Fruit and Nut Muesli,Breakfast,Breakfast,Vegetarian,General Fitness,304,10.0,47.2,8.0,5.2,480,0,Easy,Moderate,No-cook,Yes,Yes,,No
+ZITLAS-REC-0366,ZITLAS Watermelon Paneer Salad Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss,178,9.9,12.0,10.3,0.6,8,0,Easy,Moderate,No-cook,Yes,Yes,,Yes
+ZITLAS-REC-0367,ZITLAS Mango Lassi Protein Bowl,Breakfast,Breakfast,Vegetarian,Muscle Gain; General Fitness,148,15.8,20.4,1.0,1.6,5,0,Easy,Moderate,Mixer,Yes,Yes,,Yes
+ZITLAS-REC-0368,ZITLAS Papaya and Curd Breakfast Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss,124,4.2,21.2,3.8,2.5,6,0,Easy,Budget,No-cook,Yes,Yes,,No
+ZITLAS-REC-0369,ZITLAS Guava and Peanut Chaat Bowl,Breakfast,Breakfast,Vegan,Weight Loss,215,9.1,24.2,11.3,9.8,6,0,Easy,Budget,No-cook,Yes,Yes,,No
+ZITLAS-REC-0370,ZITLAS Apple Cinnamon Oats Bowl,Breakfast,Breakfast,Vegetarian,General Fitness,284,10.2,45.2,7.9,6.0,8,6,Easy,Moderate,Kadai,No,Yes,,No
+ZITLAS-REC-0371,ZITLAS Pineapple Paneer Skewers,Breakfast,Breakfast,Vegetarian,Muscle Gain; General Fitness,286,17.6,10.3,19.0,0.8,15,12,Moderate,Moderate,Oven; Air fryer,No,Yes,,Yes
+ZITLAS-REC-0372,ZITLAS Mixed Berries and Greek Yogurt Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss; Muscle Gain,116,15.5,12.0,0.8,1.8,4,0,Easy,Premium,No-cook,Yes,Yes,,No
+ZITLAS-REC-0373,ZITLAS Roasted Beetroot Hummus Toast,Breakfast,Breakfast,Vegan,Weight Loss,448,16.9,66.8,13.3,14.7,15,10,Moderate,Moderate,Oven; Mixer,No,Yes,,Yes
+ZITLAS-REC-0374,ZITLAS Sprouted Moong Hummus Toast,Breakfast,Breakfast,Vegan,Weight Loss,577,29.4,88.4,11.3,20.2,10,0,Easy,Budget,Mixer,Yes,Yes,,Yes
+ZITLAS-REC-0375,ZITLAS Zucchini Besan Chilla,Breakfast,Breakfast,Vegan,Weight Loss,233,11.6,30.6,8.2,5.9,8,8,Easy,Moderate,Tawa,Yes,Yes,,No
+ZITLAS-REC-0376,ZITLAS Broccoli Paneer Salad Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss; Muscle Gain,193,13.6,7.3,12.4,2.6,8,3,Easy,Moderate,No-cook,No,Yes,,Yes
+ZITLAS-REC-0377,ZITLAS Mushroom Besan Chilla,Breakfast,Breakfast,Vegan,Weight Loss,235,12.6,30.6,8.2,5.9,10,8,Easy,Moderate,Tawa,Yes,Yes,,No
+ZITLAS-REC-0378,ZITLAS Mushroom Egg Scramble Toast,Breakfast,Breakfast,Eggetarian,Muscle Gain; General Fitness,380,20.3,32.5,19.3,4.8,8,8,Easy,Moderate,Tawa,Yes,Yes,,No
+ZITLAS-REC-0379,ZITLAS Quinoa Stuffed Capsicum,Breakfast,Breakfast,Vegan,Muscle Gain; Weight Loss,214,6.3,29.6,8.1,5.5,15,20,Moderate,Premium,Oven,No,Yes,,Yes
+ZITLAS-REC-0380,ZITLAS Baked Stuffed Tomato with Egg,Breakfast,Breakfast,Eggetarian,Muscle Gain,104,7.8,6.4,5.8,1.8,8,20,Moderate,Moderate,Oven,No,Yes,,Yes
+ZITLAS-REC-0381,ZITLAS Spinach Corn Sandwich,Breakfast,Breakfast,Vegan,Weight Loss,264,8.5,40.0,8.9,6.5,8,8,Easy,Budget,Tawa,Yes,Yes,,No
+ZITLAS-REC-0382,ZITLAS Beetroot Hummus Wrap,Breakfast,Breakfast,Vegan,Weight Loss,480,18.4,81.5,9.9,17.2,10,5,Easy,Moderate,Tawa; Mixer,Yes,Yes,,Yes
+ZITLAS-REC-0383,ZITLAS Roasted Vegetable Quinoa Bowl,Breakfast,Breakfast,Vegan,Weight Loss; Muscle Gain,235,6.5,29.2,10.4,5.0,10,20,Moderate,Premium,Oven,No,Yes,,No
+ZITLAS-REC-0384,ZITLAS Sweet Buckwheat Porridge with Nuts,Breakfast,Breakfast,Vegetarian,General Fitness,386,13.7,50.6,17.1,6.2,5,8,Easy,Moderate,Kadai,No,Yes,,Yes
+ZITLAS-REC-0385,ZITLAS Puffed Amaranth Ladoo,Breakfast,Breakfast,Vegan,General Fitness,602,15.2,102.5,17.2,11.0,15,8,Easy,Moderate,Kadai,Yes,Yes,,No
+ZITLAS-REC-0386,ZITLAS Til Gud Ladoo,Breakfast,Breakfast,Vegan,General Fitness,786,18.9,60.5,58.2,16.0,15,8,Easy,Budget,Kadai,Yes,Yes,,No
+ZITLAS-REC-0387,ZITLAS Walnut Date No-Cook Bites,Breakfast,Breakfast,Vegan,General Fitness,749,14.0,71.2,52.3,11.8,15,0,Easy,Moderate,Mixer,Yes,Yes,,Yes
+ZITLAS-REC-0388,ZITLAS Makhana Kheer Protein Bowl,Breakfast,Breakfast,Vegetarian,General Fitness,229,8.5,36.6,6.0,4.5,5,12,Easy,Moderate,Kadai,No,Yes,,No
+ZITLAS-REC-0389,ZITLAS Paneer Stuffed Dates,Breakfast,Breakfast,Vegetarian,General Fitness,275,8.7,45.5,8.2,4.8,10,0,Easy,Moderate,No-cook,Yes,Yes,,Yes
+ZITLAS-REC-0390,ZITLAS Egg White Spinach Scramble Bowl,Breakfast,Breakfast,Eggetarian,Weight Loss; Body Transformation,124,15.7,5.5,4.6,2.1,8,8,Easy,Moderate,Tawa,Yes,Yes,,No
+ZITLAS-REC-0391,ZITLAS Overnight Mango Oats,Breakfast,Breakfast,Vegetarian,General Fitness,290,10.6,46.0,8.0,5.3,480,0,Easy,Moderate,No-cook,Yes,Yes,,No
+ZITLAS-REC-0392,ZITLAS Besan Pancake Stack with Curd,Breakfast,Breakfast,Vegetarian,Weight Loss,281,13.8,32.8,11.6,5.4,8,10,Easy,Budget,Tawa,Yes,Yes,,Yes
+ZITLAS-REC-0393,ZITLAS Sweet Ragi Pancake with Jaggery Syrup,Breakfast,Breakfast,Vegetarian,General Fitness,286,6.6,51.1,7.5,7.0,8,8,Easy,Budget,Tawa,No,Yes,,Yes
+ZITLAS-REC-0394,ZITLAS Sweet Foxtail Millet Porridge with Dates,Breakfast,Breakfast,Vegetarian,General Fitness,316,11.8,50.6,8.4,4.8,5,15,Easy,Moderate,Kadai,No,Yes,,Yes
+ZITLAS-REC-0395,ZITLAS Lauki Halwa Protein Bowl,Breakfast,Breakfast; Dessert,Vegetarian,Weight Loss,181,4.0,23.9,8.9,3.4,10,15,Moderate,Moderate,Kadai,No,Yes,,Yes
+ZITLAS-REC-0396,ZITLAS Gajar Halwa Protein Bowl,Breakfast,Breakfast; Dessert,Vegetarian,General Fitness,202,5.0,20.5,12.1,4.2,10,18,Moderate,Moderate,Kadai,No,Yes,,Yes
+ZITLAS-REC-0397,ZITLAS Paneer Stuffed Baked Sweet Potato,Breakfast,Breakfast,Vegetarian,Muscle Gain; General Fitness,340,13.4,32.5,17.2,4.8,8,25,Moderate,Moderate,Oven,No,Yes,,Yes
+ZITLAS-REC-0398,ZITLAS Roasted Chickpea and Pumpkin Seed Trail Mix,Breakfast,Breakfast,Vegan,Muscle Gain; General Fitness,177,9.6,13.0,10.8,4.2,4,0,Easy,Moderate,No-cook,Yes,Yes,,No
+ZITLAS-REC-0399,ZITLAS Flax and Chia Energy Bites,Breakfast,Breakfast,Vegan,General Fitness,483,10.8,77.1,19.1,21.3,15,0,Easy,Moderate,No-cook,Yes,Yes,,Yes
+ZITLAS-REC-0400,ZITLAS Coconut Water Chia Pudding,Breakfast,Breakfast,Vegan,Weight Loss,131,4.7,15.1,6.6,8.8,5,0,Easy,Moderate,No-cook,Yes,Yes,,No

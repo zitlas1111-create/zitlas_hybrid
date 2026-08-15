@@ -1,0 +1,2867 @@
+[
+  {
+    "id": "ZITLAS-REC-0301",
+    "name": "ZITLAS Microwave Moong Cheela Mug",
+    "description": "Moong dal batter cooked directly in a microwave-safe mug \u2014 no tawa or gas needed at all, genuinely built for a hostel room with only a microwave.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "Muscle Gain"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 3,
+    "total_time_min": 13,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Moong dal, soaked and ground \u2014 50 g",
+      "Onion, finely chopped \u2014 20 g",
+      "Water \u2014 20 ml",
+      "Oil \u2014 3 ml",
+      "Cumin seeds, turmeric \u2014 2 g"
+    ],
+    "instructions": [
+      "Grind soaked moong dal with water into a thick batter; mix in onion, cumin seeds and turmeric.",
+      "Grease a microwave-safe mug with the oil and pour in the batter, filling only halfway.",
+      "Microwave on high for 2-3 minutes until set and cooked through (check with a toothpick).",
+      "Run a knife around the edge, tip out onto a plate, and eat."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 208,
+      "protein_g": 12.2,
+      "carbs_g": 31.3,
+      "fat_g": 3.6,
+      "fiber_g": 8.3
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "No tawa, no gas, no induction \u2014 genuinely works with just a microwave and a mug",
+      "Same protein base as a regular cheela, just a different cooking vessel",
+      "Minimal cleanup: one mug, one bowl"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0302",
+    "name": "ZITLAS Microwave Egg Omelette Mug",
+    "description": "A whisked egg omelette with vegetables, cooked entirely in a microwave-safe mug \u2014 for a hostel room with a microwave but no stove.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 2,
+    "total_time_min": 7,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Whole egg \u2014 100 g",
+      "Onion, finely chopped \u2014 20 g",
+      "Tomato, finely chopped \u2014 20 g",
+      "Black pepper \u2014 1 g"
+    ],
+    "instructions": [
+      "Whisk the egg with onion, tomato and black pepper directly in a microwave-safe mug.",
+      "Microwave on high for 90 seconds, stir gently, then microwave a further 30-45 seconds until just set.",
+      "Eat straight from the mug with a fork."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 167,
+      "protein_g": 13.4,
+      "carbs_g": 3.7,
+      "fat_g": 11.1,
+      "fiber_g": 0.6
+    },
+    "primary_protein_sources": [
+      "Whole egg"
+    ],
+    "why_it_works": [
+      "Entirely microwave-cooked, no pan required",
+      "Ready in under 3 minutes of actual cooking",
+      "One mug, minimal washing up"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0303",
+    "name": "ZITLAS Microwave Oats Upma Mug",
+    "description": "Savoury oats upma cooked entirely in a microwave-safe mug \u2014 a stove-free version of a familiar tempered dish.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 4,
+    "total_time_min": 9,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rolled oats \u2014 40 g",
+      "Mixed vegetables, finely chopped \u2014 30 g",
+      "Water \u2014 100 ml",
+      "Oil \u2014 4 ml",
+      "Mustard seeds, turmeric \u2014 2 g"
+    ],
+    "instructions": [
+      "Combine oats, chopped vegetables, water, oil, mustard seeds and turmeric directly in a large microwave-safe mug.",
+      "Microwave on high for 3-4 minutes, stirring once halfway through, until the oats have absorbed the water and softened.",
+      "Stir well and eat straight from the mug."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 195,
+      "protein_g": 5.7,
+      "carbs_g": 28.3,
+      "fat_g": 6.8,
+      "fiber_g": 4.6
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "No tempering pan needed \u2014 everything cooks together in one mug",
+      "Familiar upma flavour with zero stove access required",
+      "Very fast for a genuinely rushed morning"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Quick Meal",
+      "No Cook"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0304",
+    "name": "ZITLAS Kettle Poha",
+    "description": "Poha softened and served using only boiling water from an electric kettle \u2014 no stove, no tempering, just a kettle and a bowl.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "Electric kettle"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Poha (flattened rice) \u2014 50 g",
+      "Boiling water \u2014 100 ml",
+      "Peanuts, roasted \u2014 15 g",
+      "Lemon juice, chaat masala \u2014 6 ml"
+    ],
+    "instructions": [
+      "Boil water in the electric kettle.",
+      "Place poha in a bowl and pour just enough boiling water over it to soften, then drain any excess after a minute.",
+      "Mix in roasted peanuts, lemon juice and chaat masala.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 260,
+      "protein_g": 7.3,
+      "carbs_g": 40.9,
+      "fat_g": 7.9,
+      "fiber_g": 2.4
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Uses only a kettle and a bowl \u2014 no tawa, no tempering step",
+      "Peanuts supply the protein a plain poha would lack",
+      "Genuinely realistic for a hostel room with just a kettle"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "No Cook",
+      "Quick Meal",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0305",
+    "name": "ZITLAS No-Cook Peanut Butter Banana Oats Jar",
+    "description": "A simple no-soak, no-cook jar of raw oats mixed straight with peanut butter, mashed banana and milk \u2014 ready to eat within minutes, not requiring the overnight wait of a chia jar.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rolled oats \u2014 40 g",
+      "Peanut butter \u2014 20 g",
+      "Banana, mashed \u2014 80 g",
+      "Milk \u2014 100 ml"
+    ],
+    "instructions": [
+      "Mash the banana in a bowl.",
+      "Mix in peanut butter until smooth.",
+      "Stir in oats and milk, mixing until well combined.",
+      "Let sit for 5 minutes to soften slightly, then eat \u2014 no overnight wait needed."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 401,
+      "protein_g": 14.3,
+      "carbs_g": 54.0,
+      "fat_g": 16.3,
+      "fiber_g": 7.3
+    },
+    "primary_protein_sources": [
+      "Peanut butter",
+      "Milk"
+    ],
+    "why_it_works": [
+      "Ready in 5 minutes, unlike the overnight soak the chia jar recipe needs",
+      "No cooking, no equipment beyond a bowl and spoon",
+      "High protein and naturally sweetened by banana"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Hostel Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0306",
+    "name": "ZITLAS Rice Cooker Vegetable Khichdi",
+    "description": "Rice, moong dal and vegetables cooked together entirely in a rice cooker \u2014 a genuinely different equipment path from the pressure-cooker khichdis elsewhere in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 25,
+    "total_time_min": 33,
+    "difficulty": "Easy",
+    "equipment": [
+      "Rice cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice \u2014 50 g",
+      "Moong dal (dry) \u2014 30 g",
+      "Mixed vegetables, chopped \u2014 50 g",
+      "Oil \u2014 5 ml",
+      "Turmeric \u2014 2 g"
+    ],
+    "instructions": [
+      "Rinse rice and moong dal together.",
+      "Add to the rice cooker with chopped vegetables, oil, turmeric and water (roughly 1:3 ratio).",
+      "Close the lid and run the rice cooker's normal cooking cycle.",
+      "Once it switches to 'keep warm', stir and serve."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 221,
+      "protein_g": 9.2,
+      "carbs_g": 32.7,
+      "fat_g": 6.0,
+      "fiber_g": 6.7
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "Rice cookers are common in hostels where a pressure cooker isn't available or allowed",
+      "Completely hands-off once started",
+      "Same familiar khichdi flavour, different practical equipment path"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "One Pot"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0307",
+    "name": "ZITLAS Rice Cooker Moong Dal Rice",
+    "description": "Rice and moong dal cooked together plain in a rice cooker with minimal tempering added afterward \u2014 a simpler, faster rice-cooker dish than the full vegetable khichdi.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 25,
+    "total_time_min": 30,
+    "difficulty": "Easy",
+    "equipment": [
+      "Rice cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice \u2014 50 g",
+      "Moong dal (dry) \u2014 30 g",
+      "Ghee \u2014 5 g",
+      "Cumin seeds \u2014 2 g"
+    ],
+    "instructions": [
+      "Rinse rice and moong dal together and add to the rice cooker with water (roughly 1:3 ratio).",
+      "Run the normal cooking cycle.",
+      "Once done, stir in ghee and a pinch of roasted cumin seeds for flavour.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 209,
+      "protein_g": 8.5,
+      "carbs_g": 30.2,
+      "fat_g": 5.9,
+      "fiber_g": 5.7
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "Simpler and faster than the vegetable khichdi, for mornings with even less time",
+      "No chopping required at all",
+      "Realistic minimal-effort hostel breakfast"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Budget Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0308",
+    "name": "ZITLAS Microwave Besan Chilla Mug",
+    "description": "Besan batter cooked in a microwave-safe mug instead of on a tawa \u2014 the same protein-rich batter, a completely different cooking method for a stove-free room.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 3,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Besan \u2014 40 g",
+      "Water \u2014 40 ml",
+      "Onion, finely chopped \u2014 15 g",
+      "Oil \u2014 3 ml",
+      "Turmeric, ajwain \u2014 2 g"
+    ],
+    "instructions": [
+      "Whisk besan with water, turmeric and ajwain into a smooth batter; mix in onion.",
+      "Grease a microwave-safe mug lightly with oil and pour in the batter.",
+      "Microwave on high for 2-3 minutes until set.",
+      "Tip out and eat with chutney if available."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 177,
+      "protein_g": 9.0,
+      "carbs_g": 24.6,
+      "fat_g": 5.4,
+      "fiber_g": 4.6
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "Same besan protein base as a regular chilla, cooked with zero flame or tawa needed",
+      "Very fast, one mug to wash",
+      "Genuinely realistic for a microwave-only hostel setup"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0309",
+    "name": "ZITLAS No-Cook Muesli Bowl with Milk",
+    "description": "Store-bought muesli soaked briefly in cold milk \u2014 a genuinely instant breakfast with zero preparation beyond pouring.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 2,
+    "cook_time_min": 0,
+    "total_time_min": 2,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Muesli \u2014 50 g",
+      "Milk \u2014 150 ml"
+    ],
+    "instructions": [
+      "Pour muesli into a bowl.",
+      "Add cold milk.",
+      "Let sit for a minute if you prefer it slightly softened, or eat immediately for more crunch."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 278,
+      "protein_g": 9.8,
+      "carbs_g": 40.2,
+      "fat_g": 7.9,
+      "fiber_g": 4.0
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "About as close to zero-effort as breakfast gets \u2014 two ingredients, no prep",
+      "Muesli's mixed grains and dried fruit give more variety than plain oats",
+      "Good option for mornings with genuinely no time at all"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Hostel Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0310",
+    "name": "ZITLAS No-Cook Cornflakes Protein Bowl",
+    "description": "Cornflakes with milk and a scoop of roasted peanuts \u2014 introducing cornflakes as a base, a genuinely different cereal from oats, poha or muesli used elsewhere.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 3,
+    "cook_time_min": 0,
+    "total_time_min": 3,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Cornflakes \u2014 40 g",
+      "Milk \u2014 150 ml",
+      "Peanuts, roasted \u2014 15 g"
+    ],
+    "instructions": [
+      "Pour cornflakes into a bowl.",
+      "Add cold milk.",
+      "Top with roasted peanuts for extra protein and crunch.",
+      "Eat immediately before the flakes soften too much."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 318,
+      "protein_g": 11.7,
+      "carbs_g": 43.2,
+      "fat_g": 12.5,
+      "fiber_g": 2.5
+    },
+    "primary_protein_sources": [
+      "Milk",
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Cornflakes are a genuinely new cereal base for the database, distinct from oats, poha or muesli",
+      "Peanuts specifically added since cornflakes alone are quite low protein",
+      "Zero cooking, instant"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Hostel Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0311",
+    "name": "ZITLAS No-Cook Peanut Butter Banana Sandwich",
+    "description": "Peanut butter and sliced banana between two slices of bread \u2014 no toasting, no cooking, assembled in under two minutes.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 3,
+    "cook_time_min": 0,
+    "total_time_min": 3,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Whole wheat bread \u2014 60 g",
+      "Peanut butter \u2014 20 g",
+      "Banana, sliced \u2014 80 g"
+    ],
+    "instructions": [
+      "Spread peanut butter on one slice of bread.",
+      "Layer banana slices on top.",
+      "Close with the second slice.",
+      "Eat immediately or wrap for later."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 348,
+      "protein_g": 11.3,
+      "carbs_g": 51.8,
+      "fat_g": 12.3,
+      "fiber_g": 7.5
+    },
+    "primary_protein_sources": [
+      "Peanut butter"
+    ],
+    "why_it_works": [
+      "No toasting or cooking at all, unlike the grilled sandwiches elsewhere in the database",
+      "Naturally sweetened by banana, no added sugar",
+      "Genuinely two-minute assembly"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Hostel Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0312",
+    "name": "ZITLAS Microwave Poached Egg Mug",
+    "description": "An egg gently poached in water inside a microwave-safe mug \u2014 a soft, runny-yolk egg preparation without needing a stovetop pan of simmering water.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 3,
+    "cook_time_min": 2,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Whole egg \u2014 50 g",
+      "Water \u2014 100 ml",
+      "Black pepper \u2014 1 g"
+    ],
+    "instructions": [
+      "Fill a microwave-safe mug with water and crack the egg gently into it, keeping the yolk intact.",
+      "Microwave on medium power for 60-90 seconds, checking every 30 seconds, until the white is set but the yolk is still soft.",
+      "Lift out with a spoon, drain, and season with black pepper."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 78,
+      "protein_g": 6.5,
+      "carbs_g": 0.6,
+      "fat_g": 5.5,
+      "fiber_g": 0.0
+    },
+    "primary_protein_sources": [
+      "Whole egg"
+    ],
+    "why_it_works": [
+      "Achieves a poached-egg texture without a stovetop pan of simmering water",
+      "Very quick and needs only a mug and a spoon",
+      "Different egg preparation from every fried, scrambled or boiled version elsewhere in the database"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0313",
+    "name": "ZITLAS Kettle Instant Oats with Milk Powder",
+    "description": "Oats cooked using only boiling water from a kettle, finished with milk powder for creaminess and jaggery for sweetness \u2014 a sweeter alternative to the savoury Kettle Oats with Roasted Chana in Batch 1.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 3,
+    "cook_time_min": 4,
+    "total_time_min": 7,
+    "difficulty": "Easy",
+    "equipment": [
+      "Electric kettle"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rolled oats \u2014 40 g",
+      "Boiling water \u2014 180 ml",
+      "Milk powder \u2014 20 g",
+      "Jaggery \u2014 10 g"
+    ],
+    "instructions": [
+      "Boil water in the kettle.",
+      "Add oats and milk powder to a mug, pour in the boiling water, stir and cover for 3-4 minutes.",
+      "Stir in jaggery to sweeten.",
+      "Eat straight from the mug."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 192,
+      "protein_g": 6.1,
+      "carbs_g": 35.3,
+      "fat_g": 3.5,
+      "fiber_g": 4.8
+    },
+    "primary_protein_sources": [
+      "Milk powder"
+    ],
+    "why_it_works": [
+      "Sweet milk-powder-and-jaggery finish is a genuinely different flavour direction from the savoury roasted-chana version already in the database",
+      "Needs only a kettle and a mug",
+      "Very low cost"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "No Cook",
+      "Quick Meal",
+      "Budget Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0314",
+    "name": "ZITLAS No-Cook Greek Yogurt Muesli Cup",
+    "description": "Layered Greek yogurt and muesli in a cup \u2014 a higher-protein pairing than the milk-and-muesli bowl, assembled with zero cooking.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 3,
+    "cook_time_min": 0,
+    "total_time_min": 3,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Greek yogurt \u2014 150 g",
+      "Muesli \u2014 30 g"
+    ],
+    "instructions": [
+      "Spoon a layer of Greek yogurt into a cup.",
+      "Sprinkle a layer of muesli.",
+      "Repeat once more.",
+      "Eat immediately for the best texture contrast."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 201,
+      "protein_g": 18.0,
+      "carbs_g": 25.2,
+      "fat_g": 2.4,
+      "fiber_g": 2.4
+    },
+    "primary_protein_sources": [
+      "Greek yogurt"
+    ],
+    "why_it_works": [
+      "Greek yogurt raises the protein well above the plain-milk muesli bowl in this batch",
+      "Layered, no-stir format keeps the muesli crunchy longer",
+      "Genuinely two-minute assembly"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Hostel Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0315",
+    "name": "ZITLAS Microwave Savoury Steamed Egg Mug",
+    "description": "A silky, custard-like savoury steamed egg made in the microwave with milk and light seasoning \u2014 a distinctly different egg texture from an omelette or scramble.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 3,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Whole egg \u2014 100 g",
+      "Milk \u2014 60 ml",
+      "Spring onion, chopped \u2014 10 g",
+      "Soy sauce \u2014 3 ml"
+    ],
+    "instructions": [
+      "Whisk the egg with milk and soy sauce until smooth (avoid over-beating to reduce bubbles).",
+      "Pour into a microwave-safe mug.",
+      "Microwave on medium power for 2-3 minutes, checking every 45 seconds, until just set into a soft, custard-like texture.",
+      "Top with spring onion and eat with a spoon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 195,
+      "protein_g": 15.0,
+      "carbs_g": 4.9,
+      "fat_g": 13.0,
+      "fiber_g": 0.2
+    },
+    "primary_protein_sources": [
+      "Whole egg",
+      "Milk"
+    ],
+    "why_it_works": [
+      "Custard-like, silky texture is genuinely different from a fried or scrambled egg",
+      "Milk dilution and gentle microwave power give it a smoother mouthfeel than a regular mug omelette",
+      "Distinct East-Asian-inspired technique (chawanmushi-style) rarely seen in Indian fitness recipes"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0316",
+    "name": "ZITLAS Kettle Vermicelli Upma",
+    "description": "Vermicelli softened and lightly seasoned using only boiling water from a kettle \u2014 no stove, no tempering pan needed.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "Electric kettle"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Vermicelli (semiya), thin roasted \u2014 40 g",
+      "Boiling water \u2014 120 ml",
+      "Peanuts, roasted \u2014 15 g",
+      "Lemon juice, chaat masala \u2014 6 ml"
+    ],
+    "instructions": [
+      "Boil water in the kettle.",
+      "Place the vermicelli in a bowl and pour boiling water over it; cover for 3-4 minutes until softened.",
+      "Drain any excess water.",
+      "Mix in roasted peanuts, lemon juice and chaat masala.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 225,
+      "protein_g": 7.9,
+      "carbs_g": 32.4,
+      "fat_g": 7.8,
+      "fiber_g": 2.1
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "No tempering pan or stove needed, unlike the standard soya or egg vermicelli upmas elsewhere in the database",
+      "Peanuts supply the protein",
+      "Works with just a kettle and a bowl"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0317",
+    "name": "ZITLAS Microwave Rava Idli Mug",
+    "description": "A single-serving rava idli batter cooked directly in a microwave-safe mug \u2014 no steamer or pressure cooker needed.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 3,
+    "total_time_min": 11,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rava \u2014 40 g",
+      "Curd \u2014 30 g",
+      "Water \u2014 20 ml",
+      "Eno fruit salt \u2014 2 g",
+      "Oil (greasing) \u2014 3 ml"
+    ],
+    "instructions": [
+      "Whisk rava with curd and water into a thick batter; rest 5 minutes.",
+      "Add eno fruit salt and mix gently.",
+      "Grease a microwave-safe mug and pour in the batter, filling halfway.",
+      "Microwave on high for 2-3 minutes until well risen and set.",
+      "Tip out and eat with chutney if available."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 189,
+      "protein_g": 5.2,
+      "carbs_g": 31.0,
+      "fat_g": 4.4,
+      "fiber_g": 0.9
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Achieves an idli-like steamed texture with zero steamer equipment, using only a microwave",
+      "Single-serving format avoids needing a full idli mould set",
+      "Genuinely practical for a hostel room"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": "South Indian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0318",
+    "name": "ZITLAS No-Cook Cucumber Peanut Salad Cup",
+    "description": "Chopped cucumber tossed with crushed peanuts and lemon in a portable cup \u2014 genuinely zero preparation beyond chopping.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Cucumber, chopped \u2014 150 g",
+      "Peanuts, crushed \u2014 20 g",
+      "Lemon juice, chaat masala \u2014 8 ml"
+    ],
+    "instructions": [
+      "Chop the cucumber into a cup or bowl.",
+      "Add crushed peanuts, lemon juice and chaat masala.",
+      "Toss and eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 151,
+      "protein_g": 7.4,
+      "carbs_g": 10.7,
+      "fat_g": 10.1,
+      "fiber_g": 4.7
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Extremely low prep \u2014 just chopping and mixing",
+      "Very low calorie, high volume, good for a weight-loss-focused light breakfast",
+      "Portable cup format for eating on the move"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Weight Loss"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0319",
+    "name": "ZITLAS Rice Cooker Vegetable Pulao",
+    "description": "A lightly spiced vegetable pulao cooked entirely in a rice cooker \u2014 a distinct equipment path from the pressure-cooker pulao and biryani recipes elsewhere in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 25,
+    "total_time_min": 33,
+    "difficulty": "Easy",
+    "equipment": [
+      "Rice cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice \u2014 60 g",
+      "Mixed vegetables, chopped \u2014 50 g",
+      "Oil \u2014 6 ml",
+      "Whole spices, garam masala \u2014 4 g"
+    ],
+    "instructions": [
+      "Rinse the rice.",
+      "Add rice, chopped vegetables, oil, whole spices and garam masala to the rice cooker with water in the standard ratio.",
+      "Run the normal cooking cycle.",
+      "Once done, fluff with a fork and serve."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 138,
+      "protein_g": 2.3,
+      "carbs_g": 17.5,
+      "fat_g": 6.7,
+      "fiber_g": 2.1
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Rice cooker path is genuinely practical for hostels where a pressure cooker isn't allowed or available",
+      "Completely hands-off once started, unlike stovetop pulao that needs monitoring",
+      "Same familiar pulao flavour, different equipment access"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "One Pot"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0320",
+    "name": "ZITLAS No-Cook Banana Oats Smoothie",
+    "description": "A simple, thin, drinkable blend of banana, oats and milk \u2014 a sippable smoothie distinct from the thick, spoonable Peanut Banana Oats Smoothie Bowl in Batch 1.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Banana \u2014 100 g",
+      "Rolled oats \u2014 20 g",
+      "Milk \u2014 180 ml"
+    ],
+    "instructions": [
+      "Blend banana, oats and milk together until smooth and pourable (thinner than a smoothie bowl consistency).",
+      "Pour into a glass and drink.",
+      "No toppings needed \u2014 this is meant to be sipped, not eaten with a spoon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 273,
+      "protein_g": 9.5,
+      "carbs_g": 45.0,
+      "fat_g": 7.6,
+      "fiber_g": 4.6
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Thin, drinkable format is a genuinely different way to eat the same base ingredients from the thick smoothie bowl elsewhere in the database",
+      "Just three ingredients, blended in under a minute",
+      "Good for eating on the move, unlike a bowl"
+    ],
+    "tags": [
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0321",
+    "name": "ZITLAS Microwave Vegetable Poha Mug",
+    "description": "Poha softened and lightly seasoned entirely in a microwave-safe mug \u2014 a stove-free version of the tempered kanda poha.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 3,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Poha (flattened rice) \u2014 50 g",
+      "Mixed vegetables, finely chopped \u2014 30 g",
+      "Water \u2014 60 ml",
+      "Oil \u2014 4 ml",
+      "Turmeric \u2014 1 g"
+    ],
+    "instructions": [
+      "Rinse the poha briefly.",
+      "Combine poha, vegetables, water, oil and turmeric in a microwave-safe mug.",
+      "Microwave on high for 2-3 minutes, stirring once, until heated through and the vegetables have softened slightly.",
+      "Eat straight from the mug."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 218,
+      "protein_g": 3.9,
+      "carbs_g": 40.0,
+      "fat_g": 4.7,
+      "fiber_g": 1.8
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Achieves the tempered-poha flavour profile without any tawa or tempering pan",
+      "One mug, minimal cleanup",
+      "Genuinely practical for a microwave-only hostel setup"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0322",
+    "name": "ZITLAS Kettle Sweet Semiya",
+    "description": "Vermicelli cooked into a warm, lightly sweet, milk-based drink-porridge using kettle hot water and milk powder \u2014 a sweet breakfast distinct from the savoury Kettle Vermicelli Upma in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 5,
+    "total_time_min": 10,
+    "difficulty": "Easy",
+    "equipment": [
+      "Electric kettle"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Vermicelli (semiya) \u2014 30 g",
+      "Boiling water \u2014 150 ml",
+      "Milk powder \u2014 20 g",
+      "Jaggery \u2014 10 g",
+      "Cardamom powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Boil water in the kettle.",
+      "Place vermicelli, milk powder and jaggery in a mug and pour in the boiling water.",
+      "Stir well and cover for 4-5 minutes until the vermicelli softens.",
+      "Stir in cardamom powder and eat with a spoon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 145,
+      "protein_g": 3.9,
+      "carbs_g": 31.0,
+      "fat_g": 1.0,
+      "fiber_g": 1.4
+    },
+    "primary_protein_sources": [
+      "Milk powder"
+    ],
+    "why_it_works": [
+      "Sweet, milk-based version gives users a dessert-like option alongside the savoury kettle vermicelli in this batch",
+      "Needs only a kettle and a mug",
+      "Comforting, porridge-like texture"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "No Cook"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0323",
+    "name": "ZITLAS No-Cook Trail Mix Cup",
+    "description": "A simple dry mix of roasted peanuts, almonds and dates in a portable cup \u2014 genuinely zero preparation and shelf-stable for days.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 3,
+    "cook_time_min": 0,
+    "total_time_min": 3,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Peanuts, roasted \u2014 20 g",
+      "Almonds \u2014 15 g",
+      "Dates, chopped \u2014 15 g"
+    ],
+    "instructions": [
+      "Combine roasted peanuts, almonds and chopped dates in a small container.",
+      "Mix well.",
+      "Carry and eat on the move, or as a sit-down bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 243,
+      "protein_g": 8.7,
+      "carbs_g": 17.8,
+      "fat_g": 17.4,
+      "fiber_g": 4.8
+    },
+    "primary_protein_sources": [
+      "Peanuts",
+      "Almonds"
+    ],
+    "why_it_works": [
+      "Fully dry, shelf-stable mix distinct from the makhana-based trail mix elsewhere in the database by using almonds and dates instead",
+      "Genuinely no prep beyond mixing",
+      "Good for a genuinely rushed morning with no fridge access"
+    ],
+    "tags": [
+      "No Cook",
+      "Hostel Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0324",
+    "name": "ZITLAS Microwave Moong Dal Khichdi Mug",
+    "description": "A single-serving khichdi cooked directly in a microwave-safe mug using pre-soaked rice and moong dal \u2014 no pressure cooker or rice cooker needed.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 120,
+    "cook_time_min": 8,
+    "total_time_min": 128,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice, soaked \u2014 40 g",
+      "Moong dal, soaked \u2014 25 g",
+      "Water \u2014 150 ml",
+      "Oil \u2014 4 ml",
+      "Turmeric \u2014 1 g"
+    ],
+    "instructions": [
+      "Soak rice and moong dal together for at least 2 hours beforehand (this is essential since a microwave alone won't soften unsoaked grains fully).",
+      "Combine the soaked rice and dal with water, oil and turmeric in a large microwave-safe mug or bowl.",
+      "Microwave on high for 6-8 minutes, stopping to stir every 2 minutes, until soft and porridge-like.",
+      "Eat straight from the mug.",
+      "Note: soak time folded into prep above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 170,
+      "protein_g": 7.0,
+      "carbs_g": 24.8,
+      "fat_g": 4.7,
+      "fiber_g": 4.7
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "Pre-soaking makes microwave-only cooking genuinely achievable for a full khichdi, unlike attempting it with dry grains",
+      "No pressure cooker or rice cooker required at all",
+      "Realistic for a hostel room with just a microwave"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0325",
+    "name": "ZITLAS No-Cook Curd Cornflakes Bowl",
+    "description": "Cornflakes mixed with curd instead of milk \u2014 a tangier, thicker alternative to the milk-based cornflakes bowl in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 3,
+    "cook_time_min": 0,
+    "total_time_min": 3,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Cornflakes \u2014 40 g",
+      "Curd \u2014 120 g",
+      "Honey \u2014 8 g"
+    ],
+    "instructions": [
+      "Pour cornflakes into a bowl.",
+      "Add curd and mix.",
+      "Drizzle honey on top.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 215,
+      "protein_g": 7.2,
+      "carbs_g": 39.2,
+      "fat_g": 4.1,
+      "fiber_g": 1.2
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Curd base gives a tangier flavour and slightly higher protein than the milk version already in this batch",
+      "Genuinely zero cooking",
+      "Different texture \u2014 thicker than a milk-based cereal bowl"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0326",
+    "name": "ZITLAS Rice Cooker Egg Fried Rice",
+    "description": "Leftover rice stir-fried with egg and vegetables using the saute function of a rice cooker \u2014 a genuinely different equipment path from the kadai-based fried rice elsewhere in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 10,
+    "total_time_min": 15,
+    "difficulty": "Easy",
+    "equipment": [
+      "Rice cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Cooked leftover rice (cold) \u2014 150 g",
+      "Whole egg \u2014 50 g",
+      "Mixed vegetables, chopped \u2014 40 g",
+      "Oil \u2014 6 ml",
+      "Soy sauce \u2014 5 ml"
+    ],
+    "instructions": [
+      "Set the rice cooker to its 'cook' or saute function and heat the oil directly in the pot.",
+      "Add vegetables and stir-fry for 2 minutes.",
+      "Push to one side, crack in the egg and scramble.",
+      "Add cold rice and soy sauce, mixing everything together for 3-4 minutes until heated through.",
+      "Serve directly from the pot."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 321,
+      "protein_g": 11.0,
+      "carbs_g": 40.0,
+      "fat_g": 13.1,
+      "fiber_g": 3.5
+    },
+    "primary_protein_sources": [
+      "Whole egg"
+    ],
+    "why_it_works": [
+      "Uses a rice cooker's saute function, a genuinely different technique from a kadai for users without stovetop access",
+      "Rescues leftover rice",
+      "Realistic for a hostel with only a rice cooker"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Budget Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0327",
+    "name": "ZITLAS Microwave Sweet Corn Upma Mug",
+    "description": "A rava upma with sweet corn kernels, cooked entirely in a microwave-safe mug \u2014 a distinct vegetable addition from the plain vegetable versions.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 4,
+    "total_time_min": 9,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rava \u2014 40 g",
+      "Sweet corn kernels, boiled \u2014 30 g",
+      "Water \u2014 100 ml",
+      "Oil \u2014 4 ml",
+      "Mustard seeds \u2014 2 g"
+    ],
+    "instructions": [
+      "Dry-roast the rava briefly in the microwave (30 seconds uncovered) to remove rawness.",
+      "Combine roasted rava, corn, water, oil and mustard seeds in a microwave-safe mug.",
+      "Microwave on high for 3 minutes, stirring once, until the water is absorbed.",
+      "Eat straight from the mug."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 208,
+      "protein_g": 5.2,
+      "carbs_g": 35.9,
+      "fat_g": 4.8,
+      "fiber_g": 1.6
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Corn's natural sweetness gives a different flavour direction from a plain vegetable upma",
+      "Entirely microwave-cooked, no tawa needed",
+      "Quick, one-mug preparation"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0328",
+    "name": "ZITLAS Kettle Ragi Malt",
+    "description": "Ragi flour mixed with buttermilk using only hot water from a kettle \u2014 a stove-free version of the stovetop Ragi Malt Drink already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "Electric kettle"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Ragi flour \u2014 30 g",
+      "Boiling water \u2014 150 ml",
+      "Buttermilk \u2014 100 ml",
+      "Cumin powder, salt \u2014 2 g"
+    ],
+    "instructions": [
+      "Boil water in the kettle.",
+      "Whisk ragi flour into the boiling water in a large mug until smooth and slightly thickened, letting it sit covered for 5 minutes.",
+      "Cool to room temperature, then whisk in buttermilk and cumin powder.",
+      "Drink from the mug."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 126,
+      "protein_g": 3.7,
+      "carbs_g": 24.6,
+      "fat_g": 1.4,
+      "fiber_g": 3.4
+    },
+    "primary_protein_sources": [
+      "Buttermilk"
+    ],
+    "why_it_works": [
+      "Kettle-only technique makes this genuinely achievable without a stove, unlike the simmered stovetop version already in the database",
+      "Same cooling, savoury flavour profile",
+      "Realistic for hostel rooms without gas access"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Karnataka-inspired",
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0329",
+    "name": "ZITLAS No-Cook Paneer Cube Chaat Bowl",
+    "description": "Cubed paneer tossed with chaat masala and lemon \u2014 genuinely zero cooking, using paneer straight from the packet.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 4,
+    "cook_time_min": 0,
+    "total_time_min": 4,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Paneer, cubed \u2014 100 g",
+      "Onion, chopped \u2014 20 g",
+      "Lemon juice, chaat masala \u2014 8 ml"
+    ],
+    "instructions": [
+      "Cube the paneer.",
+      "Toss with chopped onion, lemon juice and chaat masala.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 273,
+      "protein_g": 18.2,
+      "carbs_g": 3.0,
+      "fat_g": 20.0,
+      "fiber_g": 0.3
+    },
+    "primary_protein_sources": [
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Genuinely zero cooking \u2014 paneer is eaten raw from the packet, unlike every other paneer preparation in the database",
+      "Very fast, high protein for the effort",
+      "Good for mornings with truly no cooking access at all"
+    ],
+    "tags": [
+      "No Cook",
+      "High Protein",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0330",
+    "name": "ZITLAS No-Cook Soaked Almonds and Dates Bowl",
+    "description": "Almonds and dates soaked overnight in water, eaten plain \u2014 a traditional Ayurvedic-style breakfast pairing distinct from any roasted nut mix in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 480,
+    "cook_time_min": 0,
+    "total_time_min": 480,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Almonds \u2014 20 g",
+      "Dates \u2014 20 g",
+      "Water \u2014 100 ml"
+    ],
+    "instructions": [
+      "Soak almonds and dates together in water overnight.",
+      "In the morning, drain (peel the almonds if you prefer, though it's optional) and eat plain.",
+      "Note: overnight soak folded into prep time above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 172,
+      "protein_g": 4.7,
+      "carbs_g": 19.4,
+      "fat_g": 10.1,
+      "fiber_g": 4.1
+    },
+    "primary_protein_sources": [
+      "Almonds"
+    ],
+    "why_it_works": [
+      "Soaking (not roasting) is a traditional technique believed to improve digestibility, genuinely different preparation from every roasted nut mix elsewhere",
+      "Zero morning effort once soaked the night before",
+      "Traditional, simple pairing"
+    ],
+    "tags": [
+      "No Cook",
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0331",
+    "name": "ZITLAS No-Cook Protein Milk Chia Pudding",
+    "description": "Chia seeds soaked in plain milk with honey \u2014 a simpler, dairy-forward chia pudding distinct from the soya-milk-and-dates version already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Chia seeds \u2014 20 g",
+      "Milk \u2014 180 ml",
+      "Honey \u2014 10 g"
+    ],
+    "instructions": [
+      "Stir chia seeds into milk, whisking well to prevent clumping.",
+      "Add honey and stir again.",
+      "Refrigerate for at least 4 hours or overnight until it thickens into a pudding.",
+      "Eat cold with a spoon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 205,
+      "protein_g": 9.2,
+      "carbs_g": 17.0,
+      "fat_g": 12.1,
+      "fiber_g": 6.8
+    },
+    "primary_protein_sources": [
+      "Milk"
+    ],
+    "why_it_works": [
+      "Dairy milk base gives more protein than the soya milk version already in the database",
+      "Honey instead of dates gives a different, simpler sweetness",
+      "Minimal ingredients, genuinely no cooking"
+    ],
+    "tags": [
+      "No Cook",
+      "Meal Prep"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0332",
+    "name": "ZITLAS Rice Cooker Idli",
+    "description": "Idli batter steamed using a rice cooker's steaming rack instead of a pressure cooker or dedicated steamer \u2014 a different equipment path for the same classic dish.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Easy",
+    "equipment": [
+      "Rice cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Idli batter (fermented) \u2014 200 g",
+      "Water (for steaming) \u2014 200 ml"
+    ],
+    "instructions": [
+      "Add water to the base of the rice cooker and place a steaming rack or small stand inside.",
+      "Pour batter into small greased cups or a mini idli mould that fits inside the rice cooker.",
+      "Cover and run the rice cooker's steam or cook function for about 15 minutes until a knife comes out clean.",
+      "Serve hot with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 682,
+      "protein_g": 50.0,
+      "carbs_g": 118.0,
+      "fat_g": 3.2,
+      "fiber_g": 36.0
+    },
+    "primary_protein_sources": [
+      "Urad dal"
+    ],
+    "why_it_works": [
+      "Rice cooker steaming is a genuinely practical option for hostels without a pressure cooker",
+      "Same fermented batter, different steaming equipment",
+      "Realistic workaround for limited hostel cookware"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly"
+    ],
+    "regional_tag": "South Indian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0333",
+    "name": "ZITLAS Microwave Baked Egg Mug",
+    "description": "A single whole egg cracked into a mug and baked in the microwave until the white is set and the yolk stays soft \u2014 a distinct sunny-side-up-style texture from the omelette or poached mug versions.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 2,
+    "cook_time_min": 2,
+    "total_time_min": 4,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Whole egg \u2014 50 g",
+      "Oil \u2014 2 ml",
+      "Black pepper \u2014 1 g"
+    ],
+    "instructions": [
+      "Lightly grease a microwave-safe mug with oil.",
+      "Crack the egg into the mug without breaking the yolk, and pierce the yolk gently with a toothpick (to prevent it exploding).",
+      "Microwave on medium power for 45-60 seconds, checking often, until the white is just set.",
+      "Season with black pepper and eat with a spoon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 95,
+      "protein_g": 6.5,
+      "carbs_g": 0.6,
+      "fat_g": 7.5,
+      "fiber_g": 0.0
+    },
+    "primary_protein_sources": [
+      "Whole egg"
+    ],
+    "why_it_works": [
+      "Sunny-side-up-style texture is distinct from the whisked omelette or water-poached mug egg elsewhere in this batch",
+      "Extremely quick, one mug",
+      "Piercing the yolk is a genuinely necessary technique detail for microwave egg safety"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0334",
+    "name": "ZITLAS No-Cook Peanut Date Energy Bowl",
+    "description": "Crushed peanuts and chopped dates mashed together into a soft, spoonable bowl \u2014 no shaping into balls, no baking, just mash and eat.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Peanuts, crushed \u2014 25 g",
+      "Dates, chopped and mashed \u2014 30 g"
+    ],
+    "instructions": [
+      "Mash the dates with a fork until they form a soft paste.",
+      "Mix in crushed peanuts until well combined.",
+      "Eat with a spoon straight from the bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 226,
+      "protein_g": 7.2,
+      "carbs_g": 26.5,
+      "fat_g": 12.4,
+      "fiber_g": 4.5
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Spoonable bowl format is simpler than shaping into ladoo or chikki bites elsewhere in the database \u2014 no cooking or setting time at all",
+      "Just two ingredients, mixed by hand",
+      "Genuinely under 5 minutes"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Budget Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0335",
+    "name": "ZITLAS Kettle Corn Soup Mug",
+    "description": "A simple sweet corn soup made using only boiling water from a kettle, thickened with a little cornflour \u2014 a warm, savoury drink-meal for a stove-free room.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 3,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "Electric kettle"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sweet corn kernels, boiled and lightly mashed \u2014 60 g",
+      "Boiling water \u2014 150 ml",
+      "Cornflour \u2014 5 g",
+      "Black pepper \u2014 1 g"
+    ],
+    "instructions": [
+      "Boil water in the kettle.",
+      "Mix cornflour with a splash of cold water into a smooth slurry in a mug.",
+      "Add the mashed corn and pour in the boiling water, stirring continuously as it thickens slightly.",
+      "Season with black pepper and sip warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 58,
+      "protein_g": 2.0,
+      "carbs_g": 12.6,
+      "fat_g": 0.9,
+      "fiber_g": 1.4
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "A genuinely warm, savoury drink-meal option using only a kettle",
+      "Corn provides natural sweetness and some fiber",
+      "Different from every other breakfast format by being a thin, sippable soup"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0336",
+    "name": "ZITLAS No-Cook Buttermilk Oats Bowl",
+    "description": "Raw oats soaked briefly in spiced buttermilk instead of milk or curd \u2014 a tangier, lighter no-cook oats preparation.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 0,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rolled oats \u2014 30 g",
+      "Buttermilk \u2014 180 ml",
+      "Roasted cumin powder, black salt \u2014 2 g"
+    ],
+    "instructions": [
+      "Combine oats and buttermilk in a bowl.",
+      "Season with roasted cumin powder and black salt.",
+      "Let sit for 5-8 minutes until the oats soften slightly.",
+      "Eat cold."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 168,
+      "protein_g": 6.6,
+      "carbs_g": 25.5,
+      "fat_g": 3.9,
+      "fiber_g": 3.0
+    },
+    "primary_protein_sources": [
+      "Buttermilk"
+    ],
+    "why_it_works": [
+      "Buttermilk base gives a lighter, tangier result than the milk-based overnight oats or curd-based bowl elsewhere in the database",
+      "No refrigeration wait required, unlike overnight oats",
+      "Very low calorie"
+    ],
+    "tags": [
+      "No Cook",
+      "Weight Loss",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0337",
+    "name": "ZITLAS Rice Cooker Vegetable Dalia",
+    "description": "Broken wheat cooked with vegetables entirely in a rice cooker \u2014 a different equipment path from the pressure-cooker Vegetable Dalia Upma in Batch 1.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 25,
+    "total_time_min": 33,
+    "difficulty": "Easy",
+    "equipment": [
+      "Rice cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Broken wheat (dalia) \u2014 50 g",
+      "Mixed vegetables, chopped \u2014 50 g",
+      "Oil \u2014 5 ml",
+      "Mustard seeds \u2014 2 g"
+    ],
+    "instructions": [
+      "Add dalia, vegetables, oil, mustard seeds and water (roughly 1:2.5 ratio) to the rice cooker.",
+      "Run the normal cooking cycle.",
+      "Once done, stir and serve."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 227,
+      "protein_g": 6.8,
+      "carbs_g": 38.5,
+      "fat_g": 5.8,
+      "fiber_g": 6.0
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Rice cooker path means users without a pressure cooker can still make this fiber-rich dish",
+      "Completely hands-off cooking",
+      "Same dish, genuinely different accessible equipment"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "High Fiber"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0338",
+    "name": "ZITLAS Microwave Scrambled Tofu Mug",
+    "description": "Crumbled tofu scrambled with spices, cooked entirely in a microwave-safe mug \u2014 a vegan protein option needing no pan or stove.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 3,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Tofu, crumbled \u2014 100 g",
+      "Onion, finely chopped \u2014 20 g",
+      "Oil \u2014 4 ml",
+      "Turmeric, chilli powder \u2014 2 g"
+    ],
+    "instructions": [
+      "Combine crumbled tofu, onion, oil, turmeric and chilli powder directly in a microwave-safe mug.",
+      "Microwave on high for 2-3 minutes, stirring once halfway, until heated through and the onion softens.",
+      "Eat straight from the mug."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 119,
+      "protein_g": 8.2,
+      "carbs_g": 3.7,
+      "fat_g": 8.8,
+      "fiber_g": 0.6
+    },
+    "primary_protein_sources": [
+      "Tofu"
+    ],
+    "why_it_works": [
+      "Fully vegan, microwave-only protein option \u2014 no pan, no stove",
+      "Tofu holds up well to microwave reheating unlike some other proteins",
+      "One mug, minimal cleanup"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0339",
+    "name": "ZITLAS No-Cook Roasted Chana Muesli Mix",
+    "description": "Roasted chana mixed into store-bought muesli \u2014 a budget-friendly way to boost the protein of a plain muesli bowl without buying a protein-fortified brand.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "Muscle Gain"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 3,
+    "cook_time_min": 0,
+    "total_time_min": 3,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Muesli \u2014 40 g",
+      "Roasted chana (dry) \u2014 25 g",
+      "Milk \u2014 120 ml"
+    ],
+    "instructions": [
+      "Combine muesli and roasted chana in a bowl.",
+      "Add milk.",
+      "Eat immediately for maximum crunch."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 263,
+      "protein_g": 10.1,
+      "carbs_g": 38.9,
+      "fat_g": 7.0,
+      "fiber_g": 5.1
+    },
+    "primary_protein_sources": [
+      "Roasted chana",
+      "Milk"
+    ],
+    "why_it_works": [
+      "Roasted chana is a much cheaper protein boost than buying a specialty high-protein muesli",
+      "Adds a distinct crunchy texture from the flakes alone",
+      "Genuinely no cooking"
+    ],
+    "tags": [
+      "No Cook",
+      "Budget Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0340",
+    "name": "ZITLAS Kettle Sattu Porridge",
+    "description": "Sattu cooked into a warm, thick porridge using only boiling water from a kettle \u2014 a hot alternative to the cold Sattu Power Shot and Curd Sattu Cooler Bowl already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "Muscle Gain"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 3,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "Electric kettle"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sattu (roasted gram flour) \u2014 40 g",
+      "Boiling water \u2014 150 ml",
+      "Roasted cumin powder, black salt \u2014 2 g"
+    ],
+    "instructions": [
+      "Boil water in the kettle.",
+      "Whisk sattu into the boiling water in a mug, stirring continuously until it thickens into a smooth porridge.",
+      "Season with roasted cumin powder and black salt.",
+      "Eat warm with a spoon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 152,
+      "protein_g": 8.0,
+      "carbs_g": 22.8,
+      "fat_g": 2.4,
+      "fiber_g": 4.0
+    },
+    "primary_protein_sources": [
+      "Sattu"
+    ],
+    "why_it_works": [
+      "Warm porridge format is genuinely different from the cold drink or curd-bowl uses of sattu already in the database",
+      "Needs only a kettle and a mug",
+      "Comforting option for cold mornings"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Bihar-inspired",
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0341",
+    "name": "ZITLAS Rice Cooker Sweet Potato and Rice Bowl",
+    "description": "Sweet potato chunks and rice cooked together in a rice cooker \u2014 a distinct combination not used elsewhere in the database, in a genuinely hands-off format.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 25,
+    "total_time_min": 33,
+    "difficulty": "Easy",
+    "equipment": [
+      "Rice cooker"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rice \u2014 50 g",
+      "Sweet potato, cubed \u2014 80 g",
+      "Oil \u2014 4 ml",
+      "Cumin seeds \u2014 2 g"
+    ],
+    "instructions": [
+      "Rinse the rice.",
+      "Add rice, cubed sweet potato, oil and cumin seeds to the rice cooker with water in the standard ratio.",
+      "Run the normal cooking cycle.",
+      "Once done, mash the sweet potato slightly into the rice and serve."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 164,
+      "protein_g": 2.6,
+      "carbs_g": 28.5,
+      "fat_g": 4.6,
+      "fiber_g": 3.3
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Sweet potato and rice cooked together is a genuinely different combination from any other rice cooker dish here",
+      "High fiber and beta-carotene from the sweet potato",
+      "Completely hands-off"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "High Fiber"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0342",
+    "name": "ZITLAS No-Cook Fruit and Nut Curd Bowl",
+    "description": "A simple bowl of curd topped with chopped seasonal fruit and crushed nuts \u2014 genuinely no cooking, using whatever fruit is on hand.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Curd \u2014 150 g",
+      "Banana, chopped \u2014 50 g",
+      "Almonds, crushed \u2014 10 g"
+    ],
+    "instructions": [
+      "Spoon curd into a bowl.",
+      "Top with chopped fruit and crushed almonds.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 192,
+      "protein_g": 7.9,
+      "carbs_g": 20.8,
+      "fat_g": 10.1,
+      "fiber_g": 2.5
+    },
+    "primary_protein_sources": [
+      "Curd",
+      "Almonds"
+    ],
+    "why_it_works": [
+      "Genuinely flexible with whatever fruit is available, unlike a fixed-recipe fruit bowl",
+      "Zero cooking, minimal prep",
+      "Good light option for a hot morning"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0343",
+    "name": "ZITLAS Microwave Vegetable Oats Khichdi Mug",
+    "description": "Oats and moong dal cooked together into a khichdi-style mixture entirely in a microwave-safe mug \u2014 a genuinely stove-free version of the savoury Masala Oats Khichdi in Batch 4.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 30,
+    "cook_time_min": 5,
+    "total_time_min": 35,
+    "difficulty": "Easy",
+    "equipment": [
+      "Microwave"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rolled oats \u2014 30 g",
+      "Moong dal, soaked \u2014 20 g",
+      "Mixed vegetables, chopped \u2014 30 g",
+      "Water \u2014 130 ml",
+      "Oil \u2014 3 ml"
+    ],
+    "instructions": [
+      "Soak the moong dal for at least 30 minutes beforehand.",
+      "Combine oats, soaked moong dal, vegetables, water and oil in a large microwave-safe mug.",
+      "Microwave on high for 4-5 minutes, stirring once, until soft and porridge-like.",
+      "Eat straight from the mug."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 217,
+      "protein_g": 9.2,
+      "carbs_g": 33.4,
+      "fat_g": 5.4,
+      "fiber_g": 6.8
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "Achieves the same savoury khichdi flavour as the pressure-cooker version without needing a stove at all",
+      "Pre-soaking the dal makes microwave cooking genuinely sufficient",
+      "One mug, minimal cleanup"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0344",
+    "name": "ZITLAS Kettle Peanut Butter Oats Mug",
+    "description": "Oats mixed with peanut butter and softened using only boiling water from a kettle \u2014 a creamy, protein-rich option needing no stove.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 3,
+    "cook_time_min": 4,
+    "total_time_min": 7,
+    "difficulty": "Easy",
+    "equipment": [
+      "Electric kettle"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rolled oats \u2014 40 g",
+      "Peanut butter \u2014 20 g",
+      "Boiling water \u2014 150 ml"
+    ],
+    "instructions": [
+      "Boil water in the kettle.",
+      "Add oats and peanut butter to a mug, pour in the boiling water, and stir until the peanut butter melts in evenly.",
+      "Cover and let sit for 3-4 minutes until thickened.",
+      "Eat straight from the mug."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 270,
+      "protein_g": 10.2,
+      "carbs_g": 30.8,
+      "fat_g": 12.8,
+      "fiber_g": 5.2
+    },
+    "primary_protein_sources": [
+      "Peanut butter"
+    ],
+    "why_it_works": [
+      "Peanut butter melted in with hot water gives a creamier result than adding it cold",
+      "Needs only a kettle and a mug",
+      "Higher protein than a plain kettle-oats preparation"
+    ],
+    "tags": [
+      "Hostel Friendly",
+      "Student Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0345",
+    "name": "ZITLAS No-Cook Cucumber Curd Raita with Roasted Chana",
+    "description": "A simple cucumber raita topped with roasted chana for crunch and protein \u2014 genuinely zero cooking, ready in under five minutes.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Cucumber, grated \u2014 60 g",
+      "Curd \u2014 150 g",
+      "Roasted chana (dry) \u2014 20 g",
+      "Roasted cumin powder \u2014 2 g"
+    ],
+    "instructions": [
+      "Grate the cucumber and squeeze out a little excess water.",
+      "Mix into curd along with roasted cumin powder.",
+      "Top with roasted chana just before eating for crunch."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 138,
+      "protein_g": 7.9,
+      "carbs_g": 15.5,
+      "fat_g": 5.6,
+      "fiber_g": 2.7
+    },
+    "primary_protein_sources": [
+      "Curd",
+      "Roasted chana"
+    ],
+    "why_it_works": [
+      "Roasted chana on top adds crunch and protein a plain raita wouldn't have",
+      "Genuinely zero cooking, very light",
+      "Cooling option for hot mornings"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Weight Loss"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0346",
+    "name": "ZITLAS Rice Cooker Moong Dal Khichdi",
+    "description": "A softer, more porridge-like moong dal khichdi cooked with extra water in a rice cooker \u2014 a wetter consistency than the standard Rice Cooker Vegetable Khichdi in this batch, closer to a congee.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 30,
+    "total_time_min": 38,
+    "difficulty": "Easy",
+    "equipment": [
+      "Rice cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice \u2014 40 g",
+      "Moong dal (dry) \u2014 35 g",
+      "Water \u2014 250 ml",
+      "Ghee \u2014 5 g",
+      "Cumin seeds \u2014 2 g"
+    ],
+    "instructions": [
+      "Rinse rice and moong dal together.",
+      "Add to the rice cooker with a generous amount of water (deliberately more than a standard khichdi) and cumin seeds.",
+      "Run the cooking cycle, and if needed, run it a second time for a softer, more porridge-like result.",
+      "Stir in ghee before serving."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 214,
+      "protein_g": 9.4,
+      "carbs_g": 30.6,
+      "fat_g": 5.8,
+      "fiber_g": 6.3
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "Deliberately wetter, congee-like consistency is a genuinely different texture from the firmer vegetable khichdi earlier in this batch",
+      "Very easy to digest, good for a light or unwell morning",
+      "Completely hands-off in the rice cooker"
+    ],
+    "tags": [
+      "Hostel Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0347",
+    "name": "ZITLAS No-Cook Sprouts and Corn Salad Cup",
+    "description": "Mixed sprouts and boiled sweet corn tossed together with lemon \u2014 a no-cook combination distinct from any other sprouts or corn recipe in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Mixed sprouts \u2014 70 g",
+      "Sweet corn kernels, boiled \u2014 50 g",
+      "Lemon juice, chaat masala \u2014 8 ml"
+    ],
+    "instructions": [
+      "Combine mixed sprouts and boiled corn in a cup or bowl.",
+      "Add lemon juice and chaat masala.",
+      "Toss and eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 291,
+      "protein_g": 18.5,
+      "carbs_g": 51.8,
+      "fat_g": 1.6,
+      "fiber_g": 12.4
+    },
+    "primary_protein_sources": [
+      "Sprouts"
+    ],
+    "why_it_works": [
+      "Corn and sprouts together is a genuinely different pairing from any other sprouts recipe in the database",
+      "Entirely no-cook if the corn is pre-boiled",
+      "High fiber, naturally sweet-savoury balance"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Weight Loss"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0348",
+    "name": "ZITLAS Rice Cooker Savoury Rice Porridge",
+    "description": "A Chinese-style savoury rice congee cooked in a rice cooker with a very high water ratio \u2014 a distinctly different rice preparation from every pulao, khichdi or biryani in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 35,
+    "total_time_min": 40,
+    "difficulty": "Easy",
+    "equipment": [
+      "Rice cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice \u2014 40 g",
+      "Water \u2014 350 ml",
+      "Ginger, chopped \u2014 5 g",
+      "Spring onion, soy sauce \u2014 5 g"
+    ],
+    "instructions": [
+      "Add rice, water and chopped ginger to the rice cooker.",
+      "Run the normal cooking cycle, then run a second cycle if the rice hasn't broken down into a thick, porridge-like consistency.",
+      "Season with soy sauce and top with spring onion before serving."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 48,
+      "protein_g": 1.0,
+      "carbs_g": 10.0,
+      "fat_g": 0.4,
+      "fiber_g": 0.7
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Congee-style deliberately breaks the rice down into a smooth porridge, a texture and technique entirely unlike any pulao or khichdi in the database",
+      "Very gentle on the stomach",
+      "East-Asian technique applied with fully Indian-available ingredients"
+    ],
+    "tags": [
+      "Hostel Friendly"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": false,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0349",
+    "name": "ZITLAS No-Cook Peanut Butter Date Oats Cup",
+    "description": "Oats mixed cold with peanut butter and chopped dates \u2014 a firmer, no-milk version distinct from the peanut butter banana oats jar in this batch.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rolled oats \u2014 30 g",
+      "Peanut butter \u2014 20 g",
+      "Dates, chopped \u2014 25 g",
+      "Water \u2014 30 ml"
+    ],
+    "instructions": [
+      "Mix peanut butter with a little water until slightly loosened.",
+      "Stir in oats and chopped dates until well combined into a thick, chewy mixture.",
+      "Eat with a spoon, or press into a container and slice into bars."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 302,
+      "protein_g": 9.5,
+      "carbs_g": 42.8,
+      "fat_g": 12.2,
+      "fiber_g": 6.2
+    },
+    "primary_protein_sources": [
+      "Peanut butter"
+    ],
+    "why_it_works": [
+      "No milk needed at all, unlike the banana-oats jar in this batch, making it more shelf-stable",
+      "Can be eaten as a bowl or pressed into portable bars",
+      "Naturally sweetened by dates"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0350",
+    "name": "ZITLAS No-Cook Watermelon Seeds and Curd Bowl",
+    "description": "Roasted watermelon seeds folded into curd \u2014 introducing watermelon seeds, a protein-rich seed not used anywhere else in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 4,
+    "cook_time_min": 0,
+    "total_time_min": 4,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Curd \u2014 150 g",
+      "Watermelon seeds, roasted \u2014 15 g",
+      "Honey \u2014 8 g"
+    ],
+    "instructions": [
+      "Spoon curd into a bowl.",
+      "Mix in roasted watermelon seeds.",
+      "Drizzle honey on top.",
+      "Eat immediately for the best crunch."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 174,
+      "protein_g": 9.4,
+      "carbs_g": 9.3,
+      "fat_g": 12.0,
+      "fiber_g": 0.6
+    },
+    "primary_protein_sources": [
+      "Curd",
+      "Watermelon seeds"
+    ],
+    "why_it_works": [
+      "Watermelon seeds are unusually high in protein for a seed and haven't been used anywhere else in the database",
+      "Genuinely zero cooking",
+      "Simple, high-protein combination"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": null,
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": true,
+    "category": "Breakfast"
+  }
+]

@@ -1,0 +1,57 @@
+Recipe ID,Recipe Name,Category,Meal Type,Diet Type,Fitness Goals,Calories,Protein,Carbohydrates,Fat,Fiber,Prep Time,Cook Time,Difficulty,Cost Level,Equipment,Hostel Friendly,Home Friendly,Regional Tag,ZITLAS Original
+ZITLAS-REC-0582,ZITLAS Chikoo Curd Bowl,Breakfast,Breakfast,Vegetarian,General Fitness,155,4.6,25.6,5.1,5.3,6,0,Easy,Moderate,No-cook,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0583,ZITLAS Amla Chutney Toast,Breakfast,Breakfast,Vegan,Weight Loss,209,6.1,41.9,2.4,7.1,10,0,Easy,Moderate,Mixer,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0584,ZITLAS Kulith Pithi Bhakri,Breakfast,Breakfast,Vegan,Muscle Gain; Weight Loss,327,14.2,41.7,10.2,7.3,10,10,Moderate,Budget,Tawa,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0585,ZITLAS Gavar Bhaji with Bhakri,Breakfast,Breakfast,Vegan,Weight Loss,387,13.9,54.5,14.6,10.8,10,15,Easy,Budget,Tawa; Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0586,ZITLAS Khandeshi Shev Bhaji Breakfast Bowl,Breakfast,Breakfast,Vegan,General Fitness,262,11.6,33.5,10.1,6.2,10,15,Moderate,Budget,Kadai,No,Yes,Khandesh-inspired,No
+ZITLAS-REC-0587,ZITLAS Ukad Rice Dumpling Bowl,Breakfast,Breakfast,Vegan,General Fitness,283,3.9,50.2,6.9,1.9,10,15,Moderate,Budget,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0588,ZITLAS Ber Chutney Toast,Breakfast,Breakfast,Vegan,Weight Loss,231,6.1,47.9,2.2,5.1,10,5,Easy,Budget,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0589,ZITLAS Fansachi Bhaji Bowl,Breakfast,Breakfast,Vegan,Muscle Gain; General Fitness,207,4.6,28.5,7.4,3.8,15,18,Moderate,Moderate,Kadai,No,Yes,Konkan-inspired,No
+ZITLAS-REC-0590,ZITLAS Sandge Bhaji Breakfast Bowl,Breakfast,Breakfast,Vegan,Muscle Gain; General Fitness,239,12.3,32.2,6.6,8.5,15,15,Moderate,Budget,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0591,ZITLAS Roasted Kardai Seed Chutney Toast,Breakfast,Breakfast,Vegan,General Fitness,314,10.3,39.7,13.6,5.2,10,5,Easy,Moderate,Kadai; Mixer,Yes,Yes,Solapur-inspired,No
+ZITLAS-REC-0592,ZITLAS Khandeshi Wangi Bharit with Kala Masala,Lunch,Lunch,Vegan,Weight Loss,105,1.6,10.1,7.3,4.4,15,15,Moderate,Budget,Gas stove; Kadai,No,Yes,Khandesh-inspired,No
+ZITLAS-REC-0593,ZITLAS Vali Dana Usal Bowl,Lunch,Lunch,Vegan,Weight Loss,195,8.7,25.5,6.5,6.5,10,15,Easy,Moderate,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0594,ZITLAS Kakadi Chi Koshimbir Bowl,Lunch,Lunch,Vegan,Weight Loss,143,7.0,9.2,10.0,4.1,8,0,Easy,Budget,No-cook,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0595,ZITLAS Gavar Usal Bowl,Lunch,Lunch,Vegan,Weight Loss,266,15.2,38.1,6.8,12.6,10,15,Easy,Budget,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0596,ZITLAS Custard Apple and Paneer Bowl,Lunch,Lunch,Vegetarian,Muscle Gain,253,12.4,24.3,12.3,4.4,10,0,Easy,Premium,No-cook,No,Yes,Marathwada-inspired,No
+ZITLAS-REC-0597,ZITLAS Khandeshi Patodi Curry,Lunch,Lunch,Vegetarian,Weight Loss,469,23.6,63.9,15.0,11.7,20,20,Moderate,Budget,Kadai,No,Yes,Khandesh-inspired,No
+ZITLAS-REC-0598,ZITLAS Kohla Bhaji Bowl,Lunch,Lunch,Vegan,Weight Loss,83,0.9,6.8,6.3,4.8,10,12,Easy,Budget,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0599,ZITLAS Amla Achaar Rice Bowl,Lunch,Lunch,Vegan,Weight Loss,232,3.7,36.0,8.6,4.7,10,8,Easy,Moderate,Kadai,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0600,ZITLAS Kurdai Bhaji Bowl,Lunch,Lunch,Vegan,General Fitness,248,3.3,42.7,6.7,1.7,15,15,Moderate,Budget,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0601,ZITLAS Vidarbha Zunka Powder Rice Bowl,Lunch,Lunch,Vegan,Weight Loss,359,11.9,53.2,11.6,6.5,8,8,Easy,Budget,Kadai,Yes,Yes,Vidarbha-inspired,No
+ZITLAS-REC-0602,ZITLAS Leftover Varan Rice Fritters,Lunch,Lunch,Vegan,General Fitness,517,27.1,80.8,9.4,17.3,10,20,Moderate,Budget,Oven,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0603,ZITLAS Khandeshi Chicken Rassa,Dinner,Dinner,Non-Vegetarian,Muscle Gain; Body Transformation,258,23.2,3.6,16.4,0.7,15,25,Moderate,Premium,Kadai,No,Yes,Khandesh-inspired,No
+ZITLAS-REC-0604,ZITLAS Fish Amchur Konkan Bowl,Dinner,Dinner,Non-Vegetarian,Muscle Gain; General Fitness,190,21.9,2.7,10.0,0.5,10,15,Moderate,Premium,Kadai,No,Yes,Konkan-inspired,No
+ZITLAS-REC-0605,ZITLAS Egg Khandeshi Curry Bowl,Dinner,Dinner,Eggetarian,Muscle Gain; General Fitness,231,13.4,4.2,18.0,0.6,12,15,Moderate,Moderate,Kadai,No,Yes,Khandesh-inspired,No
+ZITLAS-REC-0606,ZITLAS Cluster Beans and Peanut Dinner Bowl,Dinner,Dinner,Vegan,Weight Loss; Muscle Gain,247,10.6,13.2,19.5,8.1,10,15,Easy,Budget,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0607,ZITLAS Ash Gourd Chana Dal Dinner Bowl,Dinner,Dinner,Vegan,General Fitness,132,3.5,12.4,8.1,5.6,12,18,Moderate,Budget,Pressure cooker,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0608,ZITLAS Post-Workout Bhagar Khichdi Bowl,Dinner,Dinner; Post-Workout,Vegan,Muscle Gain; Body Transformation,328,13.4,52.9,6.9,5.9,10,15,Easy,Moderate,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0609,ZITLAS Family-Style Khandeshi Vegetable Rassa,Dinner,Dinner,Vegan,Weight Loss,236,4.6,19.7,16.6,6.4,15,20,Moderate,Budget,Kadai,No,Yes,Khandesh-inspired,No
+ZITLAS-REC-0610,ZITLAS Leftover Bhakri Vegetable Casserole Bake,Dinner,Dinner,Vegetarian,General Fitness,657,20.3,117.6,12.0,11.7,15,20,Moderate,Budget,Oven,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0611,ZITLAS Mixed Millet Dinner Khichdi,Dinner,Dinner,Vegan,Weight Loss; General Fitness,289,11.2,46.2,6.9,7.5,10,18,Moderate,Moderate,Pressure cooker,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0612,ZITLAS Roasted Kurdai Snack Bites,Snacks,Evening Snack,Vegan,General Fitness,191,2.4,32.0,5.6,1.0,3,8,Easy,Budget,Kadai,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0613,ZITLAS Baked Sandge Chips Snack,Snacks,Evening Snack,Vegan,Weight Loss,218,12.0,29.5,5.6,8.0,5,12,Easy,Budget,Oven,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0614,ZITLAS Chikoo Peanut Chaat Snack,Snacks,Evening Snack,Vegan,Weight Loss,168,4.3,22.4,8.4,6.6,6,0,Easy,Moderate,No-cook,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0615,ZITLAS Ber Curd Snack Bowl,Snacks,Evening Snack,Vegetarian,Weight Loss,123,4.1,20.7,3.4,0.5,6,0,Easy,Budget,No-cook,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0616,ZITLAS Amla Chutney Dip Snack,Snacks,Evening Snack,Vegan,Weight Loss,65,2.1,15.0,0.5,4.4,8,0,Easy,Moderate,Mixer,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0617,ZITLAS Khandeshi Shev Peanut Snack Mix,Snacks,Evening Snack,Vegan,Weight Loss,257,14.0,26.4,12.2,6.0,5,5,Easy,Budget,Kadai,Yes,Yes,Khandesh-inspired,No
+ZITLAS-REC-0618,ZITLAS Baked Gavar Chips Snack,Snacks,Evening Snack,Vegan,Weight Loss,120,4.8,10.6,8.3,6.9,15,18,Easy,Budget,Oven,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0619,ZITLAS Roasted Ash Gourd Seeds Snack,Snacks,Evening Snack,Vegan,General Fitness,194,9.0,3.3,17.7,1.8,10,8,Easy,Budget,Kadai,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0620,ZITLAS Custard Apple Pulp Snack Cup,Snacks,Evening Snack,Vegan,General Fitness,113,1.9,28.3,0.4,5.3,8,0,Easy,Premium,No-cook,Yes,Yes,Marathwada-inspired,No
+ZITLAS-REC-0621,ZITLAS Solapur Kardai Chutney Snack Bowl,Snacks,Evening Snack,Vegan,General Fitness,269,8.2,30.7,13.3,3.4,10,5,Easy,Moderate,Kadai; Mixer,Yes,Yes,Solapur-inspired,No
+ZITLAS-REC-0622,ZITLAS Khandesh Shev Bhaji Deluxe Special,Specials,Evening Snack; Dinner,Eggetarian,Muscle Gain,394,20.1,35.3,20.5,6.9,12,15,Moderate,Moderate,Kadai,No,Yes,Khandesh-inspired,No
+ZITLAS-REC-0623,ZITLAS Kala Masala Special Curry Bowl,Specials,Dinner,Vegetarian,Muscle Gain; General Fitness,274,13.8,6.5,21.1,1.7,12,15,Moderate,Moderate,Kadai,No,Yes,Khandesh-inspired,No
+ZITLAS-REC-0624,ZITLAS Nagpur Santra Barfi-Inspired Protein Bites,Specials,Dessert,Vegetarian,General Fitness,152,2.8,7.4,12.7,0.7,15,8,Easy,Moderate,Kadai,No,Yes,Nagpur-inspired,No
+ZITLAS-REC-0625,ZITLAS Khandeshi Wangi Zunka Combo Thali,Specials,Dinner,Vegan,General Fitness,461,15.8,71.3,13.6,10.7,20,20,Moderate,Moderate,Gas stove; Kadai; Tawa,No,Yes,Khandesh-inspired,No
+ZITLAS-REC-0626,ZITLAS Solapur Kardai Oil Bhakri Special,Specials,Lunch; Dinner,Vegan,General Fitness,315,7.3,50.8,9.2,4.7,10,10,Moderate,Moderate,Tawa,No,Yes,Solapur-inspired,No
+ZITLAS-REC-0627,ZITLAS Sitaphal Protein Bowl,Desserts,Dessert,Vegetarian,Muscle Gain,148,7.9,30.5,0.6,5.3,8,0,Easy,Premium,No-cook,No,Yes,Marathwada-inspired,No
+ZITLAS-REC-0628,ZITLAS Amla Murabba-Inspired Protein Bites,Desserts,Dessert,Vegan,General Fitness,311,6.2,55.4,10.6,9.9,15,0,Easy,Moderate,No-cook,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0629,ZITLAS Ber Halwa Bowl,Desserts,Dessert,Vegetarian,General Fitness,213,3.1,34.4,8.1,1.5,10,15,Moderate,Budget,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0630,ZITLAS Kohla Halwa Protein Bowl,Desserts,Dessert,Vegetarian,Weight Loss,158,3.2,19.1,8.7,5.5,10,18,Moderate,Moderate,Kadai,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0631,ZITLAS Chikoo Protein Shake Bowl,Desserts,Dessert,Vegetarian,Muscle Gain,171,7.0,29.3,4.1,6.4,8,0,Easy,Moderate,Mixer,No,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0632,ZITLAS Amla Shot Drink,Drinks,Beverage,Vegetarian,General Fitness,18,0.4,4.0,0.2,1.7,8,0,Easy,Moderate,Mixer,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0633,ZITLAS Chikoo Milkshake Drink,Drinks,Beverage,Vegetarian,Muscle Gain,203,6.8,29.6,7.7,5.3,6,0,Easy,Moderate,Mixer,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0634,ZITLAS Kokum Amla Cooler,Drinks,Beverage,Vegan,Weight Loss,43,0.5,10.9,0.2,2.1,10,0,Easy,Moderate,Mixer,Yes,Yes,Maharashtrian-inspired,No
+ZITLAS-REC-0635,ZITLAS Khandeshi Buttermilk Jeera Drink,Drinks,Beverage,Vegetarian,Weight Loss,60,3.5,4.7,3.3,0.0,5,0,Easy,Budget,No-cook,Yes,Yes,Khandesh-inspired,No
+ZITLAS-REC-0636,ZITLAS Sitaphal Milkshake Drink,Drinks,Beverage,Vegetarian,Muscle Gain,214,8.0,33.2,6.9,4.4,8,0,Easy,Premium,Mixer,Yes,Yes,Marathwada-inspired,No
+ZITLAS-REC-0637,ZITLAS Ber Sherbet Drink,Drinks,Beverage,Vegan,Weight Loss,89,0.9,23.0,0.1,1.4,10,5,Easy,Budget,Kadai,Yes,Yes,Maharashtrian-inspired,No

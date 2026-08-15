@@ -1,0 +1,101 @@
+Recipe ID,Recipe Name,Category,Meal Type,Diet Type,Primary Goal,Calories,Protein,Carbohydrates,Fat,Fiber,Prep Time,Cook Time,Difficulty,Cost Level,Equipment,Hostel Friendly,Home Friendly,Regional Tag
+ZITLAS-REC-0001,ZITLAS Protein Crunch Upma,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,25,35,9,4,15,10,Moderate,Budget,Kadai,No,Yes,
+ZITLAS-REC-0002,ZITLAS Protein Crunch Poha,Breakfast,Breakfast,Eggetarian,Muscle Gain,260,18.0,35,9,4,15,10,Moderate,Budget,Kadai,No,Yes,
+ZITLAS-REC-0003,ZITLAS Protein Crunch Dosa Batter,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,20.5,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0004,ZITLAS Protein Crunch Moong Dosa,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,12.8,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0005,ZITLAS Protein Crunch Paratha,Breakfast,Breakfast,Eggetarian,Muscle Gain,260,19.1,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,Punjabi-inspired
+ZITLAS-REC-0006,ZITLAS Protein Crunch Thepla,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,18.1,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,Gujarati-inspired
+ZITLAS-REC-0007,ZITLAS Protein Crunch Oats,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,14.8,35,9,4,15,10,Moderate,Budget,Induction/Gas stove,No,Yes,
+ZITLAS-REC-0008,ZITLAS Protein Crunch Dalia,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,28.6,35,9,4,15,10,Moderate,Budget,Pressure cooker,No,Yes,
+ZITLAS-REC-0009,ZITLAS Protein Crunch Besan Chilla,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,18.1,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,
+ZITLAS-REC-0010,ZITLAS Protein Crunch Sprouts Bowl,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,20,35,9,4,15,10,Moderate,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0011,ZITLAS Protein Crunch Egg,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,25,12,9,4,15,10,Moderate,Budget,Tawa,No,Yes,
+ZITLAS-REC-0012,ZITLAS Protein Crunch Sandwich,Breakfast,Breakfast,Eggetarian,Muscle Gain,260,18.0,35,9,4,15,10,Moderate,Budget,Tawa/Sandwich press,No,Yes,
+ZITLAS-REC-0013,ZITLAS Protein Crunch Smoothie Bowl,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,20.5,35,9,4,15,10,Moderate,Budget,Mixer,No,Yes,
+ZITLAS-REC-0014,ZITLAS Protein Crunch Dhokla,Breakfast,Breakfast,Vegetarian,Muscle Gain,260,12.8,35,9,4,15,10,Moderate,Budget,Steamer/Pressure cooker,No,Yes,Gujarati-inspired
+ZITLAS-REC-0015,ZITLAS Protein Crunch Overnight Oats,Breakfast,Breakfast,Eggetarian,Muscle Gain,260,19.1,35,9,4,15,10,Moderate,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0016,ZITLAS Fiber Power Upma,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,5,15,10,Moderate,Budget,Kadai,No,Yes,
+ZITLAS-REC-0017,ZITLAS Fiber Power Poha,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,14.8,35,9,5,15,10,Moderate,Budget,Kadai,No,Yes,
+ZITLAS-REC-0018,ZITLAS Fiber Power Dosa Batter,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,28.6,35,9,5,15,10,Moderate,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0019,ZITLAS Fiber Power Moong Dosa,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,5,15,10,Moderate,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0020,ZITLAS Fiber Power Paratha,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20,35,9,5,15,10,Moderate,Budget,Tawa,No,Yes,Punjabi-inspired
+ZITLAS-REC-0021,ZITLAS Fiber Power Thepla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,25,35,9,5,15,10,Moderate,Budget,Tawa,No,Yes,Gujarati-inspired
+ZITLAS-REC-0022,ZITLAS Fiber Power Oats,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,18.0,35,9,5,15,10,Moderate,Budget,Induction/Gas stove,No,Yes,
+ZITLAS-REC-0023,ZITLAS Fiber Power Dalia,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20.5,35,9,5,15,10,Moderate,Budget,Pressure cooker,No,Yes,
+ZITLAS-REC-0024,ZITLAS Fiber Power Besan Chilla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,12.8,35,9,5,15,10,Moderate,Budget,Tawa,No,Yes,
+ZITLAS-REC-0025,ZITLAS Fiber Power Sprouts Bowl,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,19.1,35,9,5,15,10,Moderate,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0026,ZITLAS Fiber Power Egg,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,12,9,5,15,10,Moderate,Budget,Tawa,No,Yes,
+ZITLAS-REC-0027,ZITLAS Fiber Power Sandwich,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,14.8,35,9,5,15,10,Moderate,Budget,Tawa/Sandwich press,No,Yes,
+ZITLAS-REC-0028,ZITLAS Fiber Power Smoothie Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,28.6,35,9,5,15,10,Moderate,Budget,Mixer,No,Yes,
+ZITLAS-REC-0029,ZITLAS Fiber Power Dhokla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,5,15,10,Moderate,Budget,Steamer/Pressure cooker,No,Yes,Gujarati-inspired
+ZITLAS-REC-0030,ZITLAS Fiber Power Overnight Oats,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20,35,9,5,15,10,Moderate,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0031,ZITLAS One-Pan Upma,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,25,35,9,4,15,8,Moderate,Budget,Kadai,No,Yes,
+ZITLAS-REC-0032,ZITLAS One-Pan Poha,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,18.0,35,9,4,15,8,Moderate,Budget,Kadai,No,Yes,
+ZITLAS-REC-0033,ZITLAS One-Pan Dosa Batter,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20.5,35,9,4,15,8,Moderate,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0034,ZITLAS One-Pan Moong Dosa,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,12.8,35,9,4,15,8,Moderate,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0035,ZITLAS One-Pan Paratha,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,19.1,35,9,4,15,8,Moderate,Budget,Tawa,No,Yes,Punjabi-inspired
+ZITLAS-REC-0036,ZITLAS One-Pan Thepla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,15,8,Moderate,Budget,Tawa,No,Yes,Gujarati-inspired
+ZITLAS-REC-0037,ZITLAS One-Pan Oats,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,14.8,35,9,4,15,8,Moderate,Budget,Induction/Gas stove,No,Yes,
+ZITLAS-REC-0038,ZITLAS One-Pan Dalia,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,28.6,35,9,4,15,8,Moderate,Budget,Pressure cooker,No,Yes,
+ZITLAS-REC-0039,ZITLAS One-Pan Besan Chilla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,15,8,Moderate,Budget,Tawa,No,Yes,
+ZITLAS-REC-0040,ZITLAS One-Pan Sprouts Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20,35,9,4,15,8,Moderate,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0041,ZITLAS One-Pan Egg,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,25,12,9,4,15,8,Moderate,Budget,Tawa,No,Yes,
+ZITLAS-REC-0042,ZITLAS One-Pan Sandwich,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,18.0,35,9,4,15,8,Moderate,Budget,Tawa/Sandwich press,No,Yes,
+ZITLAS-REC-0043,ZITLAS One-Pan Smoothie Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20.5,35,9,4,15,8,Moderate,Budget,Mixer,No,Yes,
+ZITLAS-REC-0044,ZITLAS One-Pan Dhokla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,12.8,35,9,4,15,8,Moderate,Budget,Steamer/Pressure cooker,No,Yes,Gujarati-inspired
+ZITLAS-REC-0045,ZITLAS One-Pan Overnight Oats,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,19.1,35,9,4,15,8,Moderate,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0046,ZITLAS Hostel Bowl Upma,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,8,9,Easy,Budget,Kadai,Yes,Yes,
+ZITLAS-REC-0047,ZITLAS Hostel Bowl Poha,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,14.8,35,9,4,8,9,Easy,Budget,Kadai,Yes,Yes,
+ZITLAS-REC-0048,ZITLAS Hostel Bowl Dosa Batter,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,28.6,35,9,4,8,9,Easy,Budget,Tawa,Yes,Yes,South Indian-inspired
+ZITLAS-REC-0049,ZITLAS Hostel Bowl Moong Dosa,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,8,9,Easy,Budget,Tawa,Yes,Yes,South Indian-inspired
+ZITLAS-REC-0050,ZITLAS Hostel Bowl Paratha,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20,35,9,4,8,9,Easy,Budget,Tawa,Yes,Yes,Punjabi-inspired
+ZITLAS-REC-0051,ZITLAS Hostel Bowl Thepla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,25,35,9,4,8,9,Easy,Budget,Tawa,Yes,Yes,Gujarati-inspired
+ZITLAS-REC-0052,ZITLAS Hostel Bowl Oats,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,18.0,35,9,4,8,9,Easy,Budget,Induction/Gas stove,Yes,Yes,
+ZITLAS-REC-0053,ZITLAS Hostel Bowl Dalia,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20.5,35,9,4,8,9,Easy,Budget,Pressure cooker,Yes,Yes,
+ZITLAS-REC-0054,ZITLAS Hostel Bowl Besan Chilla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,12.8,35,9,4,8,9,Easy,Budget,Tawa,Yes,Yes,
+ZITLAS-REC-0055,ZITLAS Hostel Bowl Sprouts Bowl,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,19.1,35,9,4,8,9,Easy,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0056,ZITLAS Hostel Bowl Egg,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,12,9,4,8,9,Easy,Budget,Tawa,Yes,Yes,
+ZITLAS-REC-0057,ZITLAS Hostel Bowl Sandwich,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,14.8,35,9,4,8,9,Easy,Budget,Tawa/Sandwich press,Yes,Yes,
+ZITLAS-REC-0058,ZITLAS Hostel Bowl Smoothie Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,28.6,35,9,4,8,9,Easy,Budget,Mixer,Yes,Yes,
+ZITLAS-REC-0059,ZITLAS Hostel Bowl Dhokla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,8,9,Easy,Budget,Steamer/Pressure cooker,Yes,Yes,Gujarati-inspired
+ZITLAS-REC-0060,ZITLAS Hostel Bowl Overnight Oats,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20,35,9,4,8,9,Easy,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0061,ZITLAS Express Upma,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,25,35,9,4,8,7,Easy,Budget,Kadai,No,Yes,
+ZITLAS-REC-0062,ZITLAS Express Poha,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,18.0,35,9,4,8,7,Easy,Budget,Kadai,No,Yes,
+ZITLAS-REC-0063,ZITLAS Express Dosa Batter,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20.5,35,9,4,8,7,Easy,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0064,ZITLAS Express Moong Dosa,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,12.8,35,9,4,8,7,Easy,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0065,ZITLAS Express Paratha,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,19.1,35,9,4,8,7,Easy,Budget,Tawa,No,Yes,Punjabi-inspired
+ZITLAS-REC-0066,ZITLAS Express Thepla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,8,7,Easy,Budget,Tawa,No,Yes,Gujarati-inspired
+ZITLAS-REC-0067,ZITLAS Express Oats,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,14.8,35,9,4,8,7,Easy,Budget,Induction/Gas stove,No,Yes,
+ZITLAS-REC-0068,ZITLAS Express Dalia,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,28.6,35,9,4,8,7,Easy,Budget,Pressure cooker,No,Yes,
+ZITLAS-REC-0069,ZITLAS Express Besan Chilla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,8,7,Easy,Budget,Tawa,No,Yes,
+ZITLAS-REC-0070,ZITLAS Express Sprouts Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20,35,9,4,8,7,Easy,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0071,ZITLAS Express Egg,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,25,12,9,4,8,7,Easy,Budget,Tawa,No,Yes,
+ZITLAS-REC-0072,ZITLAS Express Sandwich,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,18.0,35,9,4,8,7,Easy,Budget,Tawa/Sandwich press,No,Yes,
+ZITLAS-REC-0073,ZITLAS Express Smoothie Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20.5,35,9,4,8,7,Easy,Budget,Mixer,No,Yes,
+ZITLAS-REC-0074,ZITLAS Express Dhokla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,12.8,35,9,4,8,7,Easy,Budget,Steamer/Pressure cooker,No,Yes,Gujarati-inspired
+ZITLAS-REC-0075,ZITLAS Express Overnight Oats,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,19.1,35,9,4,8,7,Easy,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0076,ZITLAS Budget Bowl Upma,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,15,10,Moderate,Budget,Kadai,No,Yes,
+ZITLAS-REC-0077,ZITLAS Budget Bowl Poha,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,14.8,35,9,4,15,10,Moderate,Budget,Kadai,No,Yes,
+ZITLAS-REC-0078,ZITLAS Budget Bowl Dosa Batter,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,28.6,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0079,ZITLAS Budget Bowl Moong Dosa,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0080,ZITLAS Budget Bowl Paratha,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,Punjabi-inspired
+ZITLAS-REC-0081,ZITLAS Budget Bowl Thepla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,25,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,Gujarati-inspired
+ZITLAS-REC-0082,ZITLAS Budget Bowl Oats,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,18.0,35,9,4,15,10,Moderate,Budget,Induction/Gas stove,No,Yes,
+ZITLAS-REC-0083,ZITLAS Budget Bowl Dalia,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20.5,35,9,4,15,10,Moderate,Budget,Pressure cooker,No,Yes,
+ZITLAS-REC-0084,ZITLAS Budget Bowl Besan Chilla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,12.8,35,9,4,15,10,Moderate,Budget,Tawa,No,Yes,
+ZITLAS-REC-0085,ZITLAS Budget Bowl Sprouts Bowl,Breakfast,Breakfast,Eggetarian,Weight Loss; General Fitness,260,19.1,35,9,4,15,10,Moderate,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0086,ZITLAS Budget Bowl Egg,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,12,9,4,15,10,Moderate,Budget,Tawa,No,Yes,
+ZITLAS-REC-0087,ZITLAS Budget Bowl Sandwich,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,14.8,35,9,4,15,10,Moderate,Budget,Tawa/Sandwich press,No,Yes,
+ZITLAS-REC-0088,ZITLAS Budget Bowl Smoothie Bowl,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,28.6,35,9,4,15,10,Moderate,Budget,Mixer,No,Yes,
+ZITLAS-REC-0089,ZITLAS Budget Bowl Dhokla,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,18.1,35,9,4,15,10,Moderate,Budget,Steamer/Pressure cooker,No,Yes,Gujarati-inspired
+ZITLAS-REC-0090,ZITLAS Budget Bowl Overnight Oats,Breakfast,Breakfast,Vegetarian,Weight Loss; General Fitness,260,20,35,9,4,15,10,Moderate,Budget,No-cook,Yes,Yes,
+ZITLAS-REC-0091,ZITLAS Meal-Prep Upma,Breakfast,Breakfast,Vegetarian,Muscle Gain,290,25,35,9,4,20,10,Moderate,Moderate,Kadai,No,Yes,
+ZITLAS-REC-0092,ZITLAS Meal-Prep Poha,Breakfast,Breakfast,Eggetarian,Muscle Gain,290,18.0,35,9,4,20,10,Moderate,Moderate,Kadai,No,Yes,
+ZITLAS-REC-0093,ZITLAS Meal-Prep Dosa Batter,Breakfast,Breakfast,Vegetarian,Muscle Gain,290,20.5,35,9,4,20,10,Moderate,Moderate,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0094,ZITLAS Meal-Prep Moong Dosa,Breakfast,Breakfast,Vegetarian,Muscle Gain,290,12.8,35,9,4,20,10,Moderate,Moderate,Tawa,No,Yes,South Indian-inspired
+ZITLAS-REC-0095,ZITLAS Meal-Prep Paratha,Breakfast,Breakfast,Eggetarian,Muscle Gain,290,19.1,35,9,4,20,10,Moderate,Moderate,Tawa,No,Yes,Punjabi-inspired
+ZITLAS-REC-0096,ZITLAS Meal-Prep Thepla,Breakfast,Breakfast,Vegetarian,Muscle Gain,290,18.1,35,9,4,20,10,Moderate,Moderate,Tawa,No,Yes,Gujarati-inspired
+ZITLAS-REC-0097,ZITLAS Meal-Prep Oats,Breakfast,Breakfast,Vegetarian,Muscle Gain,290,14.8,35,9,4,20,10,Moderate,Moderate,Induction/Gas stove,No,Yes,
+ZITLAS-REC-0098,ZITLAS Meal-Prep Dalia,Breakfast,Breakfast,Vegetarian,Muscle Gain,290,28.6,35,9,4,20,10,Moderate,Moderate,Pressure cooker,No,Yes,
+ZITLAS-REC-0099,ZITLAS Meal-Prep Besan Chilla,Breakfast,Breakfast,Vegetarian,Muscle Gain,290,18.1,35,9,4,20,10,Moderate,Moderate,Tawa,No,Yes,
+ZITLAS-REC-0100,ZITLAS Meal-Prep Sprouts Bowl,Breakfast,Breakfast,Vegetarian,Muscle Gain,290,20,35,9,4,20,10,Moderate,Moderate,No-cook,Yes,Yes,

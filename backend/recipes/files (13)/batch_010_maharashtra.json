@@ -1,0 +1,3374 @@
+[
+  {
+    "id": "ZITLAS-REC-0461",
+    "name": "ZITLAS Sprouted Moong Sheera Bowl",
+    "description": "A savoury-sweet sheera made from ground sprouted moong instead of rava \u2014 a distinct grain-free take on the traditional semolina sheera already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 10,
+    "total_time_min": 20,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Moong sprouts, ground \u2014 70 g",
+      "Milk \u2014 100 ml",
+      "Jaggery \u2014 15 g",
+      "Ghee \u2014 6 g"
+    ],
+    "instructions": [
+      "Heat ghee in a kadai, add ground moong sprouts and roast for 3-4 minutes.",
+      "Add milk gradually, stirring continuously.",
+      "Once thickened, stir in jaggery and cook 2 more minutes.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 399,
+      "protein_g": 20.4,
+      "carbs_g": 57.3,
+      "fat_g": 10.2,
+      "fiber_g": 12.4
+    },
+    "primary_protein_sources": [
+      "Moong sprouts"
+    ],
+    "why_it_works": [
+      "Moong sprouts base gives notably more protein and fiber than the semolina used in a traditional sheera",
+      "Distinct grain-free composition from the Rava Sheera Protein Bowl already in the database",
+      "Naturally sweet, comforting texture"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0462",
+    "name": "ZITLAS Nachni Ambil Breakfast Bowl",
+    "description": "A fermented ragi (nachni) porridge mixed with curd \u2014 a ragi-based variant of the bajra Dahi Ambil already in the database, offering a genuinely different grain and mineral profile.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 600,
+    "cook_time_min": 10,
+    "total_time_min": 610,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Ragi flour \u2014 40 g",
+      "Water \u2014 200 ml",
+      "Curd \u2014 100 g",
+      "Roasted cumin powder, black salt \u2014 2 g"
+    ],
+    "instructions": [
+      "Whisk ragi flour with water and let it ferment at room temperature for 8-10 hours.",
+      "Cook the fermented mixture for 8-10 minutes until slightly thickened, then cool.",
+      "Mix in curd, roasted cumin powder and black salt.",
+      "Serve chilled or at room temperature."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 188,
+      "protein_g": 6.4,
+      "carbs_g": 33.5,
+      "fat_g": 3.9,
+      "fiber_g": 4.6
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Ragi's calcium content gives this a genuinely different mineral profile from the bajra-based Dahi Ambil already in the database",
+      "Same fermentation technique applied to a different grain",
+      "Cooling, probiotic breakfast"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0463",
+    "name": "ZITLAS Nagpur-Style Curd Rice with Orange",
+    "description": "Curd rice finished with fresh orange segments instead of pomegranate or peanuts \u2014 a Nagpur-inspired twist celebrating the city's famous citrus crop.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 2,
+    "total_time_min": 10,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Cooked rice (cold) \u2014 120 g",
+      "Curd \u2014 100 g",
+      "Orange, segmented \u2014 60 g",
+      "Mustard seeds, curry leaves, oil \u2014 3 ml"
+    ],
+    "instructions": [
+      "Mash the cold rice slightly and mix with curd.",
+      "Quickly temper mustard seeds and curry leaves in a few drops of oil and stir in.",
+      "Top with fresh orange segments just before serving.",
+      "Serve chilled."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 259,
+      "protein_g": 7.2,
+      "carbs_g": 41.9,
+      "fat_g": 7.6,
+      "fiber_g": 3.6
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Orange is a genuinely distinct topping from the peanut or pomegranate versions of curd rice already in the database, and specifically nods to Nagpur's famous orange orchards",
+      "Almost entirely no-cook",
+      "Bright, citrusy contrast to the tempered rice"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": "Nagpur-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0464",
+    "name": "ZITLAS Sabudana Idli-Style Steamed Bites",
+    "description": "Soaked sabudana steamed in an idli mould instead of shaped into khichdi, vada or thalipeeth \u2014 a fourth genuinely distinct format for the same fasting-day ingredient.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 12,
+    "total_time_min": 22,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sabudana, soaked \u2014 70 g",
+      "Curd \u2014 30 g",
+      "Peanuts, crushed \u2014 15 g",
+      "Green chilli, cumin seeds \u2014 4 g"
+    ],
+    "instructions": [
+      "Mix soaked sabudana with curd, crushed peanuts, green chilli and cumin seeds.",
+      "Spoon into greased idli moulds.",
+      "Steam in a pressure cooker (without the whistle) for 10-12 minutes until set.",
+      "Unmould and serve with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 348,
+      "protein_g": 5.1,
+      "carbs_g": 64.0,
+      "fat_g": 8.5,
+      "fiber_g": 1.6
+    },
+    "primary_protein_sources": [
+      "Curd",
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Idli-mould steaming is a genuinely different construction from the khichdi, vada or thalipeeth uses of sabudana already in the database",
+      "Curd binds the sabudana without needing potato",
+      "Portion-controlled, bite-sized format"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0465",
+    "name": "ZITLAS Moong Amboli",
+    "description": "Amboli made with ground moong dal instead of urad dal \u2014 a protein-boosted, genuinely different legume base from the classic Konkan amboli already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 480,
+    "cook_time_min": 10,
+    "total_time_min": 490,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa",
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice, soaked \u2014 60 g",
+      "Moong dal, soaked \u2014 30 g",
+      "Cooked rice \u2014 20 g",
+      "Oil \u2014 6 ml",
+      "Salt \u2014 1 g"
+    ],
+    "instructions": [
+      "Soak rice and moong dal separately, then grind together with a little cooked rice into a thick batter.",
+      "Ferment for 6-8 hours.",
+      "Heat a tawa, pour a thick ladle of batter and spread only slightly.",
+      "Cover and cook until the top sets with small holes, then flip briefly.",
+      "Serve with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 401,
+      "protein_g": 11.3,
+      "carbs_g": 70.7,
+      "fat_g": 7.4,
+      "fiber_g": 6.6
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "Moong dal ferments and cooks differently from urad dal, giving a genuinely different flavour and slightly higher protein than the classic amboli already in the database",
+      "Same thick, spongy Konkan technique, different legume",
+      "Good protein-forward alternative for users who prefer moong over urad"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Konkan-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0466",
+    "name": "ZITLAS Besan Ghavan",
+    "description": "A thin rice-and-besan crepe, distinct from the plain rice-flour Ghavan already in the database by its added protein and slightly nutty flavour.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 8,
+    "total_time_min": 18,
+    "difficulty": "Easy",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice flour \u2014 40 g",
+      "Besan \u2014 25 g",
+      "Water \u2014 130 ml",
+      "Oil \u2014 5 ml",
+      "Salt \u2014 1 g"
+    ],
+    "instructions": [
+      "Whisk rice flour and besan with water into a thin, watery batter; rest 10 minutes.",
+      "Heat a tawa, pour a thin layer of batter and spread quickly.",
+      "Cook until the edges lift, without needing to flip.",
+      "Serve warm with chutney or jaggery."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 281,
+      "protein_g": 7.9,
+      "carbs_g": 46.5,
+      "fat_g": 7.1,
+      "fiber_g": 3.7
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "Besan addition gives more protein than the plain rice-flour ghavan already in the database, while keeping the same thin, unfermented technique",
+      "Quick, no fermentation wait",
+      "Distinct nutty flavour from the plain version"
+    ],
+    "tags": [
+      "Quick Meal"
+    ],
+    "regional_tag": "Konkan-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0467",
+    "name": "ZITLAS Chana Misal Breakfast Bowl",
+    "description": "A misal-style curry made from boiled chana instead of sprouted matki \u2014 a distinct legume base from the Misal Pav Bowl and Farsan-Free Sprouts Misal Bowl already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "Muscle Gain"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Chana, boiled \u2014 130 g",
+      "Onion, chopped \u2014 30 g",
+      "Tomato, chopped \u2014 30 g",
+      "Oil \u2014 7 ml",
+      "Goda masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Heat oil, saute onion until golden, add tomato and cook soft.",
+      "Add boiled chana and goda masala with water to form a moderately thick gravy; simmer 8-10 minutes.",
+      "Serve hot with a squeeze of lemon."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 292,
+      "protein_g": 12.2,
+      "carbs_g": 39.0,
+      "fat_g": 10.5,
+      "fiber_g": 10.7
+    },
+    "primary_protein_sources": [
+      "Chana"
+    ],
+    "why_it_works": [
+      "Chana as the base legume is a genuinely different choice from the matki used in every other misal-style recipe already in the database",
+      "Milder, less bitter flavour than matki, appealing to a different palate",
+      "Same misal technique, different pulse"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0468",
+    "name": "ZITLAS Bajri Ambil with Peanuts",
+    "description": "A bajra ambil finished with crushed peanuts instead of just curd \u2014 a textured, protein-boosted variant of the plain Dahi Ambil already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 600,
+    "cook_time_min": 10,
+    "total_time_min": 610,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Bajra flour \u2014 40 g",
+      "Water \u2014 200 ml",
+      "Peanuts, crushed \u2014 20 g",
+      "Roasted cumin powder, black salt \u2014 2 g"
+    ],
+    "instructions": [
+      "Whisk bajra flour with water and ferment at room temperature for 8-10 hours.",
+      "Cook the fermented mixture for 8-10 minutes until slightly thickened, then cool.",
+      "Stir in crushed peanuts, roasted cumin powder and black salt.",
+      "Serve at room temperature."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 257,
+      "protein_g": 9.6,
+      "carbs_g": 30.0,
+      "fat_g": 11.8,
+      "fiber_g": 6.3
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Peanuts add crunch and meaningfully more protein than the curd-only Dahi Ambil already in the database",
+      "Fully vegan alternative to the dairy-based version",
+      "Same fermentation technique, different finishing"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0469",
+    "name": "ZITLAS Steamed Moong Patodi Breakfast Bites",
+    "description": "Steamed squares made from ground moong dal instead of besan \u2014 a distinct legume base from the besan Patodi already in the database.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 20,
+    "cook_time_min": 15,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker",
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Moong dal, soaked and ground \u2014 120 g",
+      "Curd \u2014 30 g",
+      "Oil \u2014 6 ml",
+      "Sesame seeds, turmeric \u2014 4 g"
+    ],
+    "instructions": [
+      "Grind soaked moong dal with curd and turmeric into a thick batter.",
+      "Pour into a greased tin and steam in a pressure cooker (without the whistle) for 12-15 minutes.",
+      "Cool slightly and cut into squares.",
+      "Temper sesame seeds in oil and pour over the top."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 510,
+      "protein_g": 30.6,
+      "carbs_g": 73.1,
+      "fat_g": 10.4,
+      "fiber_g": 19.7
+    },
+    "primary_protein_sources": [
+      "Moong dal",
+      "Curd"
+    ],
+    "why_it_works": [
+      "Moong dal base gives notably more protein than the besan Patodi already in the database",
+      "Denser, nuttier texture from the whole-legume base",
+      "Same steaming and tempering technique, different pulse"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0470",
+    "name": "ZITLAS Kairi Panha with Sattu Combo",
+    "description": "A traditional raw mango cooler (panha) paired with a side of sattu for protein \u2014 a distinct drink-plus-protein breakfast combination for hot Maharashtra summers.",
+    "meal_type": [
+      "Breakfast"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 5,
+    "total_time_min": 20,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Raw mango, boiled and pulped \u2014 80 g",
+      "Jaggery \u2014 15 g",
+      "Water \u2014 150 ml",
+      "Sattu (roasted gram flour) \u2014 30 g",
+      "Roasted cumin powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Boil the raw mango until soft, then pulp it.",
+      "Mix the pulp with jaggery and water to make a tangy-sweet panha; dilute to a drinkable consistency.",
+      "Separately whisk sattu with a little water and roasted cumin powder into a thick drink.",
+      "Serve both side by side \u2014 the panha for cooling, the sattu for protein."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 204,
+      "protein_g": 7.0,
+      "carbs_g": 40.3,
+      "fat_g": 2.2,
+      "fiber_g": 5.5
+    },
+    "primary_protein_sources": [
+      "Sattu"
+    ],
+    "why_it_works": [
+      "Panha (a diluted raw mango drink) is distinct from the thick Aamras already in the database, which uses ripe mango and isn't diluted",
+      "Pairing with sattu specifically addresses panha's very low protein content",
+      "Traditional Maharashtrian summer cooler with a genuine fitness purpose added"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Breakfast"
+  },
+  {
+    "id": "ZITLAS-REC-0471",
+    "name": "ZITLAS Toor Dal Amti Thali with Solkadhi",
+    "description": "A complete lunch thali combining toor dal amti, rice, and a small side of solkadhi \u2014 a multi-component meal structure distinct from a single dal-and-rice bowl.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 20,
+    "total_time_min": 32,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker",
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Toor dal (dry) \u2014 50 g",
+      "Rice \u2014 60 g",
+      "Kokum \u2014 6 g",
+      "Coconut milk \u2014 40 ml",
+      "Oil \u2014 6 ml",
+      "Goda masala, jaggery \u2014 5 g"
+    ],
+    "instructions": [
+      "Pressure cook toor dal until soft, then temper with goda masala and a little jaggery to make amti.",
+      "Separately mix kokum water with coconut milk for a small side of solkadhi.",
+      "Serve the amti over rice with the solkadhi alongside as a palate-cleansing drink."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 386,
+      "protein_g": 13.6,
+      "carbs_g": 46.1,
+      "fat_g": 17.0,
+      "fiber_g": 9.5
+    },
+    "primary_protein_sources": [
+      "Toor dal"
+    ],
+    "why_it_works": [
+      "Thali format with a purposeful solkadhi side is a genuinely different meal structure from a plain amti bowl",
+      "Solkadhi traditionally aids digestion after a legume-heavy meal",
+      "Complete, considered Maharashtrian lunch structure"
+    ],
+    "tags": [
+      "One Pot"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0472",
+    "name": "ZITLAS Vegetable Kolhapuri Rassa Bowl",
+    "description": "A vegetable-only version of the fiery Kolhapuri rassa gravy \u2014 using the same dried-chilli paste as the meat and egg versions, but built around vegetables for a fully plant-based option.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 18,
+    "total_time_min": 33,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Mixed vegetables (potato, peas, cauliflower) \u2014 100 g",
+      "Onion, sliced \u2014 35 g",
+      "Dried Kolhapuri red chillies, ground \u2014 6 g",
+      "Oil \u2014 7 ml",
+      "Garlic, coconut \u2014 6 g"
+    ],
+    "instructions": [
+      "Fry sliced onion until golden, blend with dried Kolhapuri chillies, garlic and coconut into a paste.",
+      "Heat oil, cook the paste until fragrant.",
+      "Add the vegetables and water, and simmer 15-18 minutes until tender.",
+      "Serve hot with rice or bhakri."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 122,
+      "protein_g": 2.1,
+      "carbs_g": 9.1,
+      "fat_g": 9.2,
+      "fiber_g": 3.1
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Gives fully plant-based users access to the same distinctive Kolhapuri flavour used for the meat, egg, soya and paneer versions across the database",
+      "Lowest-cost of the Kolhapuri-style dishes",
+      "Genuine vegetable-forward option within the regional flavour family"
+    ],
+    "tags": [
+      "Weight Loss"
+    ],
+    "regional_tag": "Kolhapur-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0473",
+    "name": "ZITLAS Chicken Sukka Lunchbox Wrap",
+    "description": "Dry-cooked spiced chicken sukka wrapped in a roti specifically for an office lunchbox \u2014 a portable format distinct from the bowl-served Kombdi Sukka already in the database.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 20,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Tawa"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Chicken, lean, cubed \u2014 100 g",
+      "Coconut, grated \u2014 25 g",
+      "Whole wheat atta \u2014 70 g",
+      "Oil \u2014 8 ml",
+      "Malvani masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Cook the chicken with coconut and Malvani masala, allowing the mixture to dry down completely rather than staying saucy.",
+      "Roll out and roast the atta into a roti.",
+      "Spread the dry sukka onto the roti and roll tightly.",
+      "Wrap in foil \u2014 it travels well for several hours."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 540,
+      "protein_g": 28.2,
+      "carbs_g": 52.8,
+      "fat_g": 24.4,
+      "fiber_g": 10.1
+    },
+    "primary_protein_sources": [
+      "Chicken"
+    ],
+    "why_it_works": [
+      "Wrap format is a genuinely different delivery method from the bowl-served Kombdi Sukka already in the database, engineered specifically for lunchbox portability",
+      "Dry preparation means no leaking or sogginess over a few hours",
+      "Same regional flavour, different practical purpose"
+    ],
+    "tags": [
+      "Lunchbox Friendly",
+      "High Protein"
+    ],
+    "regional_tag": "Malvani-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0474",
+    "name": "ZITLAS Baked Malvani-Style Fish",
+    "description": "Fish marinated in Malvani spices and baked instead of pan-fried \u2014 a distinct cooking technique from the curry or sukka fish preparations already in the database.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 15,
+    "total_time_min": 30,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Lean fish fillet \u2014 130 g",
+      "Rice flour \u2014 15 g",
+      "Oil \u2014 7 ml",
+      "Malvani masala, turmeric \u2014 6 g"
+    ],
+    "instructions": [
+      "Marinate the fish in Malvani masala and turmeric for 10 minutes.",
+      "Coat lightly in rice flour.",
+      "Arrange on a lightly oiled tray and bake at 200\u00b0C for 12-15 minutes, turning once, until crisp and cooked through.",
+      "Serve with lemon wedges."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 243,
+      "protein_g": 24.3,
+      "carbs_g": 12.0,
+      "fat_g": 10.5,
+      "fiber_g": 0.4
+    },
+    "primary_protein_sources": [
+      "Fish"
+    ],
+    "why_it_works": [
+      "Baking is a genuinely different technique from the wet curry (Malvani Fish Curry) or dry masala-roast (Prawn/Chicken Sukka) preparations already in the database",
+      "Traditionally this dish would be pan-fried in generous oil; baking meaningfully cuts the fat",
+      "Crisp texture without deep frying"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Malvani-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0475",
+    "name": "ZITLAS Paneer Bhaji with Bhakri",
+    "description": "Paneer cooked in a simple onion-tomato Maharashtrian home-style bhaji with goda masala \u2014 distinct from the fiery Paneer Kolhapuri Bowl already in the database by its milder, everyday preparation.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 12,
+    "total_time_min": 22,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai",
+      "Tawa"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Paneer, cubed \u2014 90 g",
+      "Jowar flour \u2014 60 g",
+      "Onion, tomato, chopped \u2014 50 g",
+      "Oil \u2014 7 ml",
+      "Goda masala \u2014 4 g"
+    ],
+    "instructions": [
+      "Knead jowar flour into a bhakri and cook on a tawa.",
+      "Heat oil, saute onion and tomato until soft, add goda masala.",
+      "Add paneer cubes and a little water, simmering gently 5-6 minutes.",
+      "Serve hot with the bhakri."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 530,
+      "protein_g": 23.0,
+      "carbs_g": 49.1,
+      "fat_g": 26.1,
+      "fiber_g": 4.9
+    },
+    "primary_protein_sources": [
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Milder, everyday home-style bhaji preparation is genuinely different from the fiery dried-chilli-paste Kolhapuri version already in the database",
+      "Bhakri pairing rather than roti or rice",
+      "Simple, quick, family-friendly"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0476",
+    "name": "ZITLAS Masoor Khichdi Maharashtra-Style",
+    "description": "A khichdi made with whole masoor and rice, flavoured with goda masala \u2014 a distinct spice profile from the plain or Gujarati-style khichdis already in the database.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 20,
+    "total_time_min": 30,
+    "difficulty": "Easy",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice \u2014 50 g",
+      "Masoor, whole \u2014 35 g",
+      "Mixed vegetables, chopped \u2014 40 g",
+      "Oil \u2014 6 ml",
+      "Goda masala \u2014 4 g"
+    ],
+    "instructions": [
+      "Rinse rice and masoor together.",
+      "Heat oil, temper with goda masala, saute vegetables briefly, then add the rice and masoor.",
+      "Add water and pressure cook for 3 whistles until soft.",
+      "Serve hot."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 243,
+      "protein_g": 10.7,
+      "carbs_g": 35.1,
+      "fat_g": 6.9,
+      "fiber_g": 5.5
+    },
+    "primary_protein_sources": [
+      "Masoor"
+    ],
+    "why_it_works": [
+      "Goda masala gives this khichdi a distinctly Maharashtrian sweet-spicy character, different from the plain or North Indian khichdis already in the database",
+      "Whole masoor cooks faster than most other legumes, making this a quicker option",
+      "One-pot, minimal cleanup"
+    ],
+    "tags": [
+      "One Pot",
+      "Quick Meal"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0477",
+    "name": "ZITLAS Egg Bhaji with Bhakri",
+    "description": "A home-style Maharashtrian egg curry with goda masala, milder and simpler than the Kolhapuri or saoji versions already in the database \u2014 everyday comfort food.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai",
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Boiled egg \u2014 100 g",
+      "Jowar flour \u2014 60 g",
+      "Onion, tomato, chopped \u2014 50 g",
+      "Oil \u2014 7 ml",
+      "Goda masala \u2014 4 g"
+    ],
+    "instructions": [
+      "Knead jowar flour into a bhakri and cook on a tawa.",
+      "Heat oil, saute onion and tomato until soft, add goda masala.",
+      "Add water to form a gravy, then halve the boiled eggs and simmer 3-4 minutes.",
+      "Serve hot with the bhakri."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 446,
+      "protein_g": 19.8,
+      "carbs_g": 49.2,
+      "fat_g": 19.1,
+      "fiber_g": 4.9
+    },
+    "primary_protein_sources": [
+      "Egg"
+    ],
+    "why_it_works": [
+      "Everyday goda-masala-based egg preparation is milder and simpler than the Kolhapuri or Vidarbha saoji egg curries already in the database, genuinely representing typical home cooking",
+      "Budget-friendly protein option",
+      "Bhakri pairing"
+    ],
+    "tags": [
+      "Budget Friendly"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0478",
+    "name": "ZITLAS Tondli Bhaji Bowl",
+    "description": "Ivy gourd (tondli) stir-fried Maharashtrian-style \u2014 introducing a vegetable not used anywhere else in the database, a common everyday Maharashtrian sabzi.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 12,
+    "total_time_min": 22,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Ivy gourd (tondli), sliced \u2014 120 g",
+      "Peanuts, crushed \u2014 15 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, turmeric \u2014 3 g"
+    ],
+    "instructions": [
+      "Heat oil, temper mustard seeds and turmeric.",
+      "Add sliced tondli and saute, covered, for 10-12 minutes until tender, stirring occasionally.",
+      "Stir in crushed peanuts for the last 2 minutes.",
+      "Serve with rice or bhakri."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 158,
+      "protein_g": 5.3,
+      "carbs_g": 6.7,
+      "fat_g": 13.5,
+      "fiber_g": 3.2
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Ivy gourd is a genuinely new vegetable for the database, a very common everyday Maharashtrian sabzi rarely represented in fitness recipe collections",
+      "Peanuts add crunch and protein a plain sabzi would lack",
+      "Simple, quick, budget-friendly"
+    ],
+    "tags": [
+      "Budget Friendly",
+      "Quick Meal"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0479",
+    "name": "ZITLAS Val Dal Khichdi",
+    "description": "A khichdi made from val (field beans) combined with rice \u2014 a distinct legume-khichdi combination from the moong, masoor or bajra khichdis already in the database.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 20,
+    "total_time_min": 30,
+    "difficulty": "Easy",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice \u2014 50 g",
+      "Val (field beans), boiled \u2014 50 g",
+      "Oil \u2014 6 ml",
+      "Goda masala \u2014 4 g"
+    ],
+    "instructions": [
+      "Heat oil, temper with goda masala.",
+      "Add rice and boiled val beans with water, and pressure cook for 2-3 whistles until soft.",
+      "Serve hot."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 167,
+      "protein_g": 4.8,
+      "carbs_g": 22.0,
+      "fat_g": 6.7,
+      "fiber_g": 3.4
+    },
+    "primary_protein_sources": [
+      "Val beans"
+    ],
+    "why_it_works": [
+      "Val is a genuinely new legume choice for a khichdi in the database, distinct from moong, masoor or the millet-based versions already used",
+      "Winter-season Maharashtrian legume, adding seasonal variety",
+      "Simple, one-pot"
+    ],
+    "tags": [
+      "One Pot"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0480",
+    "name": "ZITLAS Vegetable Amboli Wrap",
+    "description": "A ghavan/amboli-style crepe rolled around a vegetable filling \u2014 a wrap format for a traditionally flat, plate-served Konkan crepe.",
+    "meal_type": [
+      "Lunch"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 12,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Tawa"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Rice flour \u2014 40 g",
+      "Water \u2014 90 ml",
+      "Mixed vegetables, chopped \u2014 50 g",
+      "Oil \u2014 7 ml",
+      "Green chilli, coriander \u2014 4 g"
+    ],
+    "instructions": [
+      "Whisk rice flour with water into a thin batter and cook a ghavan on a tawa.",
+      "Heat a little oil, saute vegetables with green chilli until soft.",
+      "Spread the vegetable filling onto the warm ghavan and roll tightly.",
+      "Serve immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 221,
+      "protein_g": 3.2,
+      "carbs_g": 34.5,
+      "fat_g": 7.7,
+      "fiber_g": 2.0
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Rolling the traditionally flat ghavan into a wrap is a genuinely different eating format from serving it plain with chutney or jaggery",
+      "Portable for a lunchbox, unlike a plate-served crepe",
+      "Vegetable-forward, low calorie"
+    ],
+    "tags": [
+      "Lunchbox Friendly"
+    ],
+    "regional_tag": "Konkan-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Lunch"
+  },
+  {
+    "id": "ZITLAS-REC-0481",
+    "name": "ZITLAS Paneer Malvani Bowl",
+    "description": "Paneer simmered in a coconut-based Malvani gravy \u2014 a vegetarian dairy option within the Malvani flavour family, parallel to the Tofu Malvani Bowl already in the database.",
+    "meal_type": [
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 12,
+    "total_time_min": 24,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Paneer, cubed \u2014 90 g",
+      "Coconut, grated \u2014 30 g",
+      "Onion, chopped \u2014 30 g",
+      "Oil \u2014 7 ml",
+      "Malvani masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Grind grated coconut with Malvani masala into a paste.",
+      "Heat oil, saute onion, add the coconut paste and cook until fragrant.",
+      "Add water to form a gravy, then gently add the paneer and simmer 5-6 minutes.",
+      "Serve hot with rice."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 419,
+      "protein_g": 17.5,
+      "carbs_g": 8.3,
+      "fat_g": 34.9,
+      "fiber_g": 3.2
+    },
+    "primary_protein_sources": [
+      "Paneer"
+    ],
+    "why_it_works": [
+      "Gives users a dairy-protein choice within the Malvani flavour family, alongside the already-existing Tofu Malvani Bowl",
+      "Paneer's mildness absorbs the coconut-forward masala well",
+      "Same coastal regional identity, different protein"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Malvani-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0482",
+    "name": "ZITLAS Fish Kolhapuri Bowl",
+    "description": "Fish cooked in the deep-red Kolhapuri dried-chilli paste \u2014 a distinctly different regional treatment of fish from the coconut-forward Malvani fish curry already in the database.",
+    "meal_type": [
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 15,
+    "total_time_min": 30,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Mixer"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Lean fish fillet \u2014 120 g",
+      "Onion, sliced \u2014 35 g",
+      "Dried Kolhapuri red chillies, ground \u2014 6 g",
+      "Oil \u2014 8 ml",
+      "Garlic, coconut \u2014 6 g"
+    ],
+    "instructions": [
+      "Fry sliced onion until golden, blend with dried Kolhapuri chillies, garlic and coconut into a paste.",
+      "Heat oil, cook the paste until fragrant.",
+      "Add water to form a gravy, then gently add the fish and simmer 6-8 minutes until just cooked.",
+      "Serve hot with rice."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 222,
+      "protein_g": 22.2,
+      "carbs_g": 4.0,
+      "fat_g": 13.0,
+      "fiber_g": 1.1
+    },
+    "primary_protein_sources": [
+      "Fish"
+    ],
+    "why_it_works": [
+      "Kolhapuri's inland, deep-fried-onion-based masala is a genuinely different regional treatment of fish from the coastal Malvani coconut-based curry already in the database",
+      "Uncommon pairing of Kolhapuri masala with fish (usually used for meat), offering real variety",
+      "Deep red, intensely flavoured"
+    ],
+    "tags": [],
+    "regional_tag": "Kolhapur-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0483",
+    "name": "ZITLAS Chicken Amti-Style Light Dinner",
+    "description": "Chicken cooked in a tangy, kokum-soured amti-style gravy \u2014 a lighter, souring-forward preparation distinct from the richer Kolhapuri rassa or Malvani curries already in the database.",
+    "meal_type": [
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "Weight Loss",
+      "Muscle Gain"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 20,
+    "total_time_min": 32,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Chicken, lean, cubed \u2014 110 g",
+      "Onion, chopped \u2014 30 g",
+      "Kokum \u2014 6 g",
+      "Oil \u2014 7 ml",
+      "Goda masala, jaggery \u2014 5 g"
+    ],
+    "instructions": [
+      "Heat oil, saute onion until golden, add goda masala.",
+      "Add the chicken, kokum and a little jaggery with water; simmer 18-20 minutes until tender.",
+      "Serve hot, deliberately lighter and tangier than a coconut-based curry."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 233,
+      "protein_g": 21.2,
+      "carbs_g": 3.1,
+      "fat_g": 14.7,
+      "fiber_g": 0.6
+    },
+    "primary_protein_sources": [
+      "Chicken"
+    ],
+    "why_it_works": [
+      "Kokum souring rather than coconut milk or dried-chilli paste gives this a genuinely lighter, tangier profile than the richer curries already in the database",
+      "Suited to an evening meal that shouldn't feel too heavy",
+      "Same amti technique used for legumes in this collection, applied to chicken"
+    ],
+    "tags": [
+      "Weight Loss"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0484",
+    "name": "ZITLAS Soya Sukka Dinner Bowl",
+    "description": "Dry, roasted spiced soya chunks with coconut \u2014 a plant-based parallel to the Kombdi Sukka and Malvani Prawn Sukka already in the database.",
+    "meal_type": [
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Soya chunks, rehydrated \u2014 90 g",
+      "Coconut, grated \u2014 25 g",
+      "Onion, chopped \u2014 30 g",
+      "Oil \u2014 7 ml",
+      "Malvani masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Heat oil, saute onion until golden.",
+      "Add Malvani masala and grated coconut, roasting until fragrant.",
+      "Add the soya chunks and a small splash of water, cooking down until dry and roasted rather than saucy, about 8-10 minutes.",
+      "Serve as a dry side."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 473,
+      "protein_g": 48.0,
+      "carbs_g": 36.2,
+      "fat_g": 15.7,
+      "fiber_g": 14.5
+    },
+    "primary_protein_sources": [
+      "Soya chunks"
+    ],
+    "why_it_works": [
+      "Completes the dry-sukka technique across a fully plant-based protein, alongside the chicken and prawn versions already in the database",
+      "High protein, budget-friendly",
+      "Distinct texture from any wet-gravy soya preparation elsewhere"
+    ],
+    "tags": [
+      "High Protein",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Malvani-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0485",
+    "name": "ZITLAS Egg Kolhapuri Dinner Wrap",
+    "description": "The Kolhapuri-style egg curry, dried down and wrapped in a roti \u2014 a portable dinner-wrap format distinct from the bowl-served Kolhapuri-Style Egg Curry Bowl already in the database.",
+    "meal_type": [
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 15,
+    "total_time_min": 30,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Tawa"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Boiled egg \u2014 100 g",
+      "Whole wheat atta \u2014 70 g",
+      "Onion, sliced \u2014 30 g",
+      "Oil \u2014 8 ml",
+      "Kolhapuri masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Roll out and roast the atta into a roti.",
+      "Cook chopped boiled egg in oil with sliced onion and Kolhapuri masala, letting the mixture dry down rather than staying saucy.",
+      "Spread onto the roti and roll tightly.",
+      "Serve warm, or wrap for later."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 476,
+      "protein_g": 21.7,
+      "carbs_g": 52.8,
+      "fat_g": 20.2,
+      "fiber_g": 8.3
+    },
+    "primary_protein_sources": [
+      "Egg"
+    ],
+    "why_it_works": [
+      "Dry, wrap-friendly construction is a genuinely different eating format from the bowl-served Kolhapuri egg curry already in the database",
+      "Same fiery regional flavour, different practical delivery",
+      "Good for a quick, portable dinner"
+    ],
+    "tags": [
+      "Lunchbox Friendly"
+    ],
+    "regional_tag": "Kolhapur-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0486",
+    "name": "ZITLAS Prawn Kolhapuri Bowl",
+    "description": "Prawns cooked in the deep-red Kolhapuri dried-chilli paste \u2014 distinct from the coconut-based Malvani prawn preparations already in the database by its inland spice base.",
+    "meal_type": [
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "General Fitness"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 12,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Mixer"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Prawns, cleaned \u2014 120 g",
+      "Onion, sliced \u2014 35 g",
+      "Dried Kolhapuri red chillies, ground \u2014 6 g",
+      "Oil \u2014 8 ml",
+      "Garlic, coconut \u2014 6 g"
+    ],
+    "instructions": [
+      "Fry sliced onion until golden, blend with dried Kolhapuri chillies, garlic and coconut into a paste.",
+      "Heat oil, cook the paste until fragrant.",
+      "Add water to form a gravy, then add the prawns and simmer just 4-5 minutes until cooked through.",
+      "Serve over rice."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 225,
+      "protein_g": 29.4,
+      "carbs_g": 4.3,
+      "fat_g": 10.4,
+      "fiber_g": 1.1
+    },
+    "primary_protein_sources": [
+      "Prawns"
+    ],
+    "why_it_works": [
+      "Kolhapuri masala applied to prawns is a genuinely different regional pairing from the Malvani (coastal, coconut-forward) prawn dishes already in the database",
+      "Prawns cook fast, keeping this quick despite the elaborate paste",
+      "Deep, intense inland spice character with a coastal protein"
+    ],
+    "tags": [],
+    "regional_tag": "Kolhapur-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0487",
+    "name": "ZITLAS Mutton Sukka Dinner Bowl",
+    "description": "Dry, deeply roasted spiced mutton with coconut \u2014 distinct from the wet Kolhapuri Mutton Rassa already in the database by its dry, roasted texture.",
+    "meal_type": [
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Body Transformation"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 30,
+    "total_time_min": 45,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker",
+      "Kadai"
+    ],
+    "cost_level": "Premium",
+    "ingredients": [
+      "Mutton, lean cubes \u2014 110 g",
+      "Coconut, grated \u2014 30 g",
+      "Onion, chopped \u2014 35 g",
+      "Oil \u2014 8 ml",
+      "Malvani masala \u2014 5 g"
+    ],
+    "instructions": [
+      "Pressure cook the mutton with a little water until tender, about 15-18 minutes.",
+      "Heat oil, saute onion, add Malvani masala and grated coconut, roasting until fragrant.",
+      "Add the cooked mutton and cook down on medium heat, stirring, until dry and roasted rather than saucy, about 10-12 minutes.",
+      "Serve as a dry side."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 475,
+      "protein_g": 28.9,
+      "carbs_g": 7.7,
+      "fat_g": 36.6,
+      "fiber_g": 3.3
+    },
+    "primary_protein_sources": [
+      "Mutton"
+    ],
+    "why_it_works": [
+      "Dry sukka texture gives users a genuinely different way to eat mutton from the wet rassa curry already in the database",
+      "Pressure cooking first keeps the mutton tender despite the final dry-roasting step",
+      "Concentrated, intensely flavoured"
+    ],
+    "tags": [],
+    "regional_tag": "Malvani-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0488",
+    "name": "ZITLAS Tofu Kolhapuri Bowl",
+    "description": "Tofu simmered in Kolhapuri masala \u2014 completes the set of Kolhapuri-style proteins with a fully vegan dairy-free option, distinct from the coconut-based Tofu Malvani Bowl already in the database.",
+    "meal_type": [
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 12,
+    "total_time_min": 24,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Mixer"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Tofu, cubed \u2014 100 g",
+      "Onion, sliced \u2014 35 g",
+      "Dried Kolhapuri red chillies, ground \u2014 6 g",
+      "Oil \u2014 7 ml",
+      "Garlic, coconut \u2014 6 g"
+    ],
+    "instructions": [
+      "Fry sliced onion until golden, blend with dried Kolhapuri chillies, garlic and coconut into a paste.",
+      "Heat oil, cook the paste until fragrant.",
+      "Add water to form a gravy, then gently add the tofu and simmer 6-8 minutes.",
+      "Serve hot with rice."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 173,
+      "protein_g": 8.6,
+      "carbs_g": 5.9,
+      "fat_g": 13.8,
+      "fiber_g": 1.4
+    },
+    "primary_protein_sources": [
+      "Tofu"
+    ],
+    "why_it_works": [
+      "Uses the inland Kolhapuri masala rather than the coastal Malvani base already applied to tofu in the database, giving genuinely different regional flavour variety for the same protein",
+      "Fully vegan, high protein",
+      "Completes the six-protein Kolhapuri set (mutton, chicken, egg, soya, paneer, tofu) across the database"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Kolhapur-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0489",
+    "name": "ZITLAS Post-Workout Chicken Amti Bowl",
+    "description": "Chicken cooked in a tangy kokum amti gravy over rice, specifically timed and portioned for right after an evening workout \u2014 a non-vegetarian counterpart to the Post-Workout Soya Amti Bowl already in the database.",
+    "meal_type": [
+      "Dinner",
+      "Post-Workout"
+    ],
+    "fitness_goals": [
+      "Muscle Gain",
+      "Body Transformation"
+    ],
+    "diet_type": "Non-Vegetarian",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 20,
+    "total_time_min": 32,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Chicken, lean, cubed \u2014 120 g",
+      "Cooked rice \u2014 120 g",
+      "Kokum \u2014 5 g",
+      "Oil \u2014 7 ml",
+      "Goda masala, jaggery \u2014 5 g"
+    ],
+    "instructions": [
+      "Heat oil, temper with goda masala.",
+      "Add chicken, kokum and a little jaggery with water; simmer 18-20 minutes until tender.",
+      "Serve hot over rice within 45-60 minutes of finishing an evening workout."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 379,
+      "protein_g": 25.9,
+      "carbs_g": 30.3,
+      "fat_g": 16.6,
+      "fiber_g": 2.2
+    },
+    "primary_protein_sources": [
+      "Chicken"
+    ],
+    "why_it_works": [
+      "Gives non-vegetarian users a post-workout-timed option alongside the soya version already in the database, using the same amti technique with more complete-protein content from chicken",
+      "Rice provides fast-digesting carbohydrate for glycogen replenishment",
+      "Explicit timing purpose distinct from a general-purpose chicken amti"
+    ],
+    "tags": [
+      "Post Workout",
+      "High Protein"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0490",
+    "name": "ZITLAS Family-Style Kolhapuri Mixed Vegetable Rassa Platter",
+    "description": "A larger-batch version of the Vegetable Kolhapuri Rassa Bowl, plated with rice for sharing across a family \u2014 distinct from the individual lunch portion by scale and serving format.",
+    "meal_type": [
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 3,
+    "prep_time_min": 20,
+    "cook_time_min": 20,
+    "total_time_min": 40,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai",
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Mixed vegetables (potato, peas, cauliflower) \u2014 250 g",
+      "Onion, sliced \u2014 80 g",
+      "Dried Kolhapuri red chillies, ground \u2014 14 g",
+      "Oil \u2014 16 ml",
+      "Garlic, coconut \u2014 14 g"
+    ],
+    "instructions": [
+      "Fry sliced onion until golden, blend with dried Kolhapuri chillies, garlic and coconut into a paste.",
+      "Heat oil, cook the paste until fragrant.",
+      "Add the vegetables and water, and simmer 18-20 minutes until tender.",
+      "Serve family-style on a large platter with rice, for three people to share."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 286,
+      "protein_g": 5.1,
+      "carbs_g": 21.8,
+      "fat_g": 21.2,
+      "fiber_g": 7.6
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Scaled specifically for family sharing rather than an individual lunch portion, a genuinely different meal-planning purpose from the Vegetable Kolhapuri Rassa Bowl already in the database",
+      "Budget-friendly way to feed several people the same distinctive regional flavour",
+      "Same recipe, deliberately different serving context"
+    ],
+    "tags": [
+      "Family Friendly",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Kolhapur-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Dinner"
+  },
+  {
+    "id": "ZITLAS-REC-0491",
+    "name": "ZITLAS Chana Usal Snack Bowl",
+    "description": "A dry-roasted chana usal, portioned as an evening snack rather than a full meal \u2014 distinct from the Chana Misal Breakfast Bowl by its smaller portion and drier consistency.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 6,
+    "cook_time_min": 10,
+    "total_time_min": 16,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Chana, boiled \u2014 90 g",
+      "Onion, chopped \u2014 20 g",
+      "Oil \u2014 5 ml",
+      "Mustard seeds, turmeric \u2014 2 g"
+    ],
+    "instructions": [
+      "Heat oil, temper mustard seeds and turmeric, saute onion briefly.",
+      "Add boiled chana and toss for 4-5 minutes until warmed through and dry.",
+      "Serve as a light evening snack."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 200,
+      "protein_g": 8.2,
+      "carbs_g": 26.1,
+      "fat_g": 7.4,
+      "fiber_g": 7.2
+    },
+    "primary_protein_sources": [
+      "Chana"
+    ],
+    "why_it_works": [
+      "Small, dry-tossed portion is genuinely different from the gravy-based breakfast misal preparations already in the database",
+      "Quick, minimal ingredients",
+      "Good light evening protein snack"
+    ],
+    "tags": [
+      "Quick Meal",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0492",
+    "name": "ZITLAS Moong Sprouts Chaat Snack",
+    "description": "A quick no-cook moong sprouts chaat sized as an evening snack \u2014 light and fast to assemble.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Moong sprouts \u2014 80 g",
+      "Onion, tomato, chopped \u2014 30 g",
+      "Lemon juice, chaat masala \u2014 8 ml"
+    ],
+    "instructions": [
+      "Toss moong sprouts with onion and tomato.",
+      "Add lemon juice and chaat masala.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 290,
+      "protein_g": 19.5,
+      "carbs_g": 49.9,
+      "fat_g": 1.0,
+      "fiber_g": 13.3
+    },
+    "primary_protein_sources": [
+      "Sprouts"
+    ],
+    "why_it_works": [
+      "Genuinely quick, no-cook evening snack with real protein and fiber",
+      "Light enough not to interfere with dinner",
+      "Simple, minimal cleanup"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0493",
+    "name": "ZITLAS Roasted Makhana Kolhapuri Masala Snack",
+    "description": "Roasted makhana tossed with Kolhapuri spice powder \u2014 a fiery Maharashtrian-flavoured spin on makhana, distinct from the plain, chaat-style or trail-mix uses already in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 6,
+    "total_time_min": 11,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Makhana (fox nuts) \u2014 30 g",
+      "Oil \u2014 5 ml",
+      "Kolhapuri masala powder \u2014 3 g"
+    ],
+    "instructions": [
+      "Dry-roast the makhana in oil until crisp, 4-5 minutes.",
+      "Toss with Kolhapuri masala powder while still warm.",
+      "Cool slightly and serve."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 148,
+      "protein_g": 2.9,
+      "carbs_g": 22.8,
+      "fat_g": 5.0,
+      "fiber_g": 4.2
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Kolhapuri spicing is a genuinely different flavour direction from the plain, chaat-style or trail-mix uses of makhana already in the database",
+      "Very low calorie, high volume snack",
+      "Quick, shelf-stable if made in a batch"
+    ],
+    "tags": [
+      "Quick Meal"
+    ],
+    "regional_tag": "Kolhapur-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0494",
+    "name": "ZITLAS Baked Kanda Bhajiya Curd Dip Snack",
+    "description": "Baked onion fritter bites served with a cooling curd dip \u2014 a distinct pairing from the plain Baked Kanda Bhaji Bites already in the database, which had no dip.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 15,
+    "total_time_min": 25,
+    "difficulty": "Easy",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Besan \u2014 40 g",
+      "Onion, thinly sliced \u2014 70 g",
+      "Curd (dip) \u2014 80 g",
+      "Oil \u2014 5 ml",
+      "Red chilli powder \u2014 2 g"
+    ],
+    "instructions": [
+      "Mix sliced onion with besan, red chilli powder and a little water to bind.",
+      "Shape into small mounds and bake at 200\u00b0C for 15 minutes until golden.",
+      "Serve with a bowl of plain curd for dipping."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 264,
+      "protein_g": 12.4,
+      "carbs_g": 33.3,
+      "fat_g": 10.1,
+      "fiber_g": 5.5
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Curd dip pairing gives this meaningfully more protein than the plain baked bhaji bites already in the database, and a cooling contrast to the spice",
+      "Baked, not fried, keeping fat low",
+      "Distinct serving format from the earlier version"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0495",
+    "name": "ZITLAS Sprouted Matki Chaat Snack Cup",
+    "description": "A no-cook sprouted matki chaat in a portable cup \u2014 distinct from the cooked Matki-based dishes already in the database by being entirely raw and quick.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sprouted matki (raw) \u2014 80 g",
+      "Onion, tomato, chopped \u2014 30 g",
+      "Lemon juice, chaat masala \u2014 8 ml"
+    ],
+    "instructions": [
+      "Toss raw sprouted matki with onion and tomato.",
+      "Add lemon juice and chaat masala.",
+      "Eat immediately for maximum crunch."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 96,
+      "protein_g": 6.3,
+      "carbs_g": 17.9,
+      "fat_g": 0.4,
+      "fiber_g": 4.5
+    },
+    "primary_protein_sources": [
+      "Matki"
+    ],
+    "why_it_works": [
+      "Raw, crunchy sprouts give a genuinely different texture from every cooked matki dish already in the database",
+      "Entirely no-cook, fast evening snack",
+      "Portable cup format"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0496",
+    "name": "ZITLAS Baked Batata Wada-Style Bites",
+    "description": "Spiced mashed potato balls, baked instead of the traditional deep-fried batata wada \u2014 a lighter take on the iconic Mumbai vada pav filling, served as standalone bites.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 15,
+    "cook_time_min": 20,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Potato, boiled and mashed \u2014 150 g",
+      "Besan (for coating) \u2014 20 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, turmeric, green chilli \u2014 5 g"
+    ],
+    "instructions": [
+      "Heat oil, temper mustard seeds, add turmeric and green chilli, then mashed potato, mixing well.",
+      "Shape into small balls and roll lightly in besan.",
+      "Bake at 200\u00b0C for 18-20 minutes, turning once, until golden.",
+      "Serve with green chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 256,
+      "protein_g": 7.2,
+      "carbs_g": 41.6,
+      "fat_g": 7.3,
+      "fiber_g": 4.9
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "Baking instead of deep-frying meaningfully cuts the fat of Mumbai's iconic batata wada while keeping the familiar shape and spice",
+      "Served as standalone bites rather than inside a pav, distinct from the earlier Soya Stuffed Pav or Dabeli",
+      "Popular street food made genuinely lighter"
+    ],
+    "tags": [],
+    "regional_tag": "Mumbai-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0497",
+    "name": "ZITLAS Corn Bhel Maharashtrian-Style",
+    "description": "A bhel made with boiled sweet corn as the base instead of puffed rice or poha \u2014 a genuinely different bhel composition from the Puffed Rice Bhel Bowl already in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 6,
+    "cook_time_min": 0,
+    "total_time_min": 6,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sweet corn kernels, boiled \u2014 100 g",
+      "Onion, tomato, chopped \u2014 40 g",
+      "Peanuts \u2014 15 g",
+      "Tamarind chutney, lemon juice \u2014 8 g"
+    ],
+    "instructions": [
+      "Combine boiled corn, onion, tomato and peanuts in a bowl.",
+      "Add tamarind chutney and lemon juice.",
+      "Toss well and eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 197,
+      "protein_g": 7.7,
+      "carbs_g": 27.0,
+      "fat_g": 8.9,
+      "fiber_g": 4.4
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Corn as the base is a genuinely different composition from the puffed-rice bhel already in the database",
+      "Naturally sweet-savoury balance from the corn itself",
+      "Entirely no-cook"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0498",
+    "name": "ZITLAS Peanut Masala Sundal Snack",
+    "description": "Boiled peanuts tempered Maharashtrian-style with mustard seeds and curry leaves \u2014 a distinct dry, tempered peanut snack from the boiled or roasted uses of peanuts already in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 10,
+    "cook_time_min": 8,
+    "total_time_min": 18,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai",
+      "Pressure cooker"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Raw peanuts, boiled and shelled \u2014 80 g",
+      "Onion, chopped \u2014 20 g",
+      "Oil \u2014 5 ml",
+      "Mustard seeds, curry leaves, turmeric \u2014 3 g"
+    ],
+    "instructions": [
+      "Boil raw peanuts until soft, then shell them.",
+      "Heat oil, temper mustard seeds, curry leaves and turmeric, saute onion briefly.",
+      "Add the boiled peanuts and toss for 3-4 minutes.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 506,
+      "protein_g": 20.9,
+      "carbs_g": 14.6,
+      "fat_g": 44.2,
+      "fiber_g": 7.1
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Tempered warm-snack format is a genuinely different way to eat boiled peanuts from the cold chaat-style Boiled Peanut Chaat Bowl already in the database",
+      "South Indian sundal technique applied to a Maharashtrian everyday snack",
+      "Quick, budget-friendly"
+    ],
+    "tags": [
+      "Quick Meal",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0499",
+    "name": "ZITLAS Roasted Chana Chivda Snack Mix",
+    "description": "A dry chivda made from roasted chana, peanuts and light spices, without any rice or poha base \u2014 a distinct pulse-only chivda from the poha-, puffed-rice- or roti-based chivdas already in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 8,
+    "cook_time_min": 8,
+    "total_time_min": 16,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Roasted chana (dry) \u2014 80 g",
+      "Peanuts \u2014 30 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, curry leaves, turmeric \u2014 3 g"
+    ],
+    "instructions": [
+      "Heat oil, temper mustard seeds, curry leaves and turmeric.",
+      "Add roasted chana and peanuts, tossing for 3-4 minutes to coat well.",
+      "Cool and store, or eat warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 354,
+      "protein_g": 14.9,
+      "carbs_g": 26.4,
+      "fat_g": 22.8,
+      "fiber_g": 8.6
+    },
+    "primary_protein_sources": [
+      "Roasted chana",
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Pulse-only composition (no rice, poha or roti) is a genuinely different chivda base from every other chivda already in the database",
+      "Higher protein per serving than a grain-based chivda",
+      "Batch-makeable, keeps for days"
+    ],
+    "tags": [
+      "Meal Prep",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0500",
+    "name": "ZITLAS Curd Sabudana Snack Bowl",
+    "description": "A small, snack-sized portion of sabudana mixed cold with curd \u2014 distinct from the full-meal khichdi, vada or thalipeeth uses of sabudana by its smaller, no-cook format.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 6,
+    "cook_time_min": 0,
+    "total_time_min": 6,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Sabudana, soaked and boiled \u2014 50 g",
+      "Curd \u2014 100 g",
+      "Roasted cumin powder, black salt \u2014 2 g"
+    ],
+    "instructions": [
+      "Mix boiled, cooled sabudana into curd.",
+      "Season with roasted cumin powder and black salt.",
+      "Eat as a light snack, not a full meal."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 235,
+      "protein_g": 3.6,
+      "carbs_g": 47.7,
+      "fat_g": 3.4,
+      "fiber_g": 0.2
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "Small, curd-based, no-cook portion is genuinely different from every other sabudana preparation in the database, all of which are full-meal formats",
+      "Very light, cooling",
+      "Quick to assemble if sabudana is pre-boiled"
+    ],
+    "tags": [
+      "No Cook"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0501",
+    "name": "ZITLAS Sprouts Peanut Farsan-Free Bhel",
+    "description": "Mixed sprouts and peanuts tossed bhel-style without any fried farsan or puffed rice \u2014 a distinct composition from the Puffed Rice Bhel Bowl or Corn Bhel already in this collection.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 6,
+    "cook_time_min": 0,
+    "total_time_min": 6,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Mixed sprouts \u2014 90 g",
+      "Peanuts \u2014 15 g",
+      "Onion, tomato, chopped \u2014 30 g",
+      "Tamarind chutney, lemon juice \u2014 8 g"
+    ],
+    "instructions": [
+      "Combine mixed sprouts, peanuts, onion and tomato.",
+      "Add tamarind chutney and lemon juice.",
+      "Toss and eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 409,
+      "protein_g": 25.8,
+      "carbs_g": 58.2,
+      "fat_g": 8.5,
+      "fiber_g": 16.2
+    },
+    "primary_protein_sources": [
+      "Sprouts",
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "No fried farsan or puffed rice base keeps this notably lower in refined carbohydrate than a standard bhel, and higher in protein from the sprouts",
+      "Entirely no-cook",
+      "High fiber, filling despite being light"
+    ],
+    "tags": [
+      "No Cook",
+      "High Fiber"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0502",
+    "name": "ZITLAS Steamed Moong Vada Snack",
+    "description": "Moong dal vadas steamed rather than fried or air-fried \u2014 a genuinely different cooking technique from the Air-Fried Urad Dal Vada or Air-Fried Chana Dal Vada already in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Muscle Gain"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 20,
+    "cook_time_min": 15,
+    "total_time_min": 35,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker",
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Moong dal, soaked and ground \u2014 100 g",
+      "Onion, finely chopped \u2014 25 g",
+      "Green chilli, ginger \u2014 5 g"
+    ],
+    "instructions": [
+      "Grind soaked moong dal with ginger and green chilli into a thick batter; mix in onion.",
+      "Shape into small discs.",
+      "Steam in a pressure cooker (without the whistle) for 12-15 minutes until firm.",
+      "Serve with chutney."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 357,
+      "protein_g": 24.3,
+      "carbs_g": 61.2,
+      "fat_g": 1.2,
+      "fiber_g": 16.4
+    },
+    "primary_protein_sources": [
+      "Moong dal"
+    ],
+    "why_it_works": [
+      "Steaming rather than air-frying is a genuinely different technique from the vadas already in the database, using zero added oil in the vada itself",
+      "Softer texture than a fried or air-fried vada",
+      "High protein, minimal fat"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0503",
+    "name": "ZITLAS Roasted Peanut Thecha Dip Snack Bowl",
+    "description": "The Maharashtrian peanut-garlic thecha served as a dip with raw vegetable sticks \u2014 a distinct serving format from the Thecha Peanut Sandwich already in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 0,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "Mixer"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Peanuts, roasted \u2014 25 g",
+      "Garlic, green chilli \u2014 6 g",
+      "Cucumber, carrot sticks \u2014 100 g"
+    ],
+    "instructions": [
+      "Pound or blend roasted peanuts with garlic and green chilli into a thick, coarse thecha paste.",
+      "Cut cucumber and carrot into sticks.",
+      "Serve the thecha as a dip alongside the vegetable sticks."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 167,
+      "protein_g": 8.0,
+      "carbs_g": 9.0,
+      "fat_g": 12.4,
+      "fiber_g": 4.1
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Dip-with-vegetables format is a genuinely different way to eat thecha from the bread-sandwich version already in the database",
+      "Very low calorie overall thanks to the raw vegetable base",
+      "Quick, no cooking needed"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal",
+      "Weight Loss"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0504",
+    "name": "ZITLAS Curd Roasted Chana Snack Cup",
+    "description": "Roasted chana folded into curd as a portable snack cup \u2014 a distinct combination and format from the breakfast Roasted Chana Dal and Curd Bowl already in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 4,
+    "cook_time_min": 0,
+    "total_time_min": 4,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Curd \u2014 120 g",
+      "Roasted chana (dry) \u2014 30 g",
+      "Roasted cumin powder \u2014 2 g"
+    ],
+    "instructions": [
+      "Fold roasted chana into curd.",
+      "Season with roasted cumin powder.",
+      "Eat as a light evening snack, portioned smaller than the breakfast bowl version."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 121,
+      "protein_g": 6.9,
+      "carbs_g": 13.7,
+      "fat_g": 4.7,
+      "fiber_g": 2.3
+    },
+    "primary_protein_sources": [
+      "Curd",
+      "Roasted chana"
+    ],
+    "why_it_works": [
+      "Smaller, snack-portioned version distinct from the full breakfast-bowl serving already in the database",
+      "Genuinely zero cooking",
+      "Good light evening protein option"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0505",
+    "name": "ZITLAS Roasted Peanut Jaggery Bites Snack",
+    "description": "A quick no-bake peanut-jaggery bite sized as a small evening snack rather than a meal-replacement bar \u2014 distinct portioning from the meal-prep chikki bites already in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 5,
+    "total_time_min": 13,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Peanuts, roasted and crushed \u2014 25 g",
+      "Jaggery \u2014 12 g",
+      "Ghee \u2014 3 g"
+    ],
+    "instructions": [
+      "Melt jaggery with ghee in a small pan on low heat until syrupy.",
+      "Mix in crushed peanuts, coating evenly.",
+      "Shape into 2-3 small bites while still warm.",
+      "Cool before eating."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 203,
+      "protein_g": 6.8,
+      "carbs_g": 13.0,
+      "fat_g": 15.3,
+      "fiber_g": 3.1
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Single-serving snack portion, distinct from the batch-made meal-prep chikki bites already in the database",
+      "Quick to make fresh rather than stored for the week",
+      "Simple, minimal ingredients"
+    ],
+    "tags": [
+      "Quick Meal"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Snacks"
+  },
+  {
+    "id": "ZITLAS-REC-0506",
+    "name": "ZITLAS Nagpur Orange Peel Chivda",
+    "description": "A dry chivda mixed with finely grated dried orange peel \u2014 a genuinely unique Nagpur specialty celebrating the city's famous orange crop, distinct from any other chivda in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 15,
+    "cook_time_min": 10,
+    "total_time_min": 25,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Poha (thin variety) \u2014 60 g",
+      "Peanuts \u2014 20 g",
+      "Dried orange peel, finely grated \u2014 8 g",
+      "Oil \u2014 6 ml",
+      "Mustard seeds, curry leaves, turmeric \u2014 3 g"
+    ],
+    "instructions": [
+      "Dry-roast the poha until crisp.",
+      "Heat oil, temper mustard seeds, curry leaves and turmeric, roast the peanuts.",
+      "Toss the roasted poha with the tempering and grated dried orange peel.",
+      "Cool and store, or eat warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 380,
+      "protein_g": 9.4,
+      "carbs_g": 50.4,
+      "fat_g": 16.5,
+      "fiber_g": 3.3
+    },
+    "primary_protein_sources": [
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Dried orange peel is a genuinely unique Nagpur ingredient not used anywhere else in the database, giving a distinct citrus-forward chivda",
+      "Nagpur is famously known as 'Orange City', and this recipe deliberately celebrates that regional identity",
+      "Batch-makeable, keeps for days"
+    ],
+    "tags": [
+      "Meal Prep"
+    ],
+    "regional_tag": "Nagpur-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Specials"
+  },
+  {
+    "id": "ZITLAS-REC-0507",
+    "name": "ZITLAS Bhakarwadi-Inspired Baked Rolls",
+    "description": "Maharashtra's famous spiral-rolled, spiced snack, baked instead of deep-fried \u2014 a distinct rolled-and-sliced construction not resembling any other recipe in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 3,
+    "prep_time_min": 30,
+    "cook_time_min": 20,
+    "total_time_min": 50,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Oven"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Besan \u2014 80 g",
+      "Whole wheat atta \u2014 60 g",
+      "Sesame seeds, poppy seeds, coriander seeds \u2014 10 g",
+      "Oil \u2014 10 ml",
+      "Tamarind, jaggery \u2014 8 g"
+    ],
+    "instructions": [
+      "Knead besan and atta with a little oil and water into a firm dough; roll out into a large thin sheet.",
+      "Spread a paste of sesame seeds, poppy seeds, coriander seeds, tamarind and jaggery evenly over the sheet.",
+      "Roll tightly into a log, then slice into thin rounds.",
+      "Arrange the spirals on a tray and bake at 190\u00b0C for 18-20 minutes until crisp.",
+      "Cool completely before storing."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 638,
+      "protein_g": 26.6,
+      "carbs_g": 90.7,
+      "fat_g": 20.8,
+      "fiber_g": 16.6
+    },
+    "primary_protein_sources": [
+      "Besan"
+    ],
+    "why_it_works": [
+      "The spiral roll-and-slice construction is genuinely unlike any other recipe in the database",
+      "Baking dramatically cuts the fat of the traditionally deep-fried snack while keeping the signature texture",
+      "One of Maharashtra's most iconic tea-time snacks, made into a lighter everyday option"
+    ],
+    "tags": [
+      "Meal Prep"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Specials"
+  },
+  {
+    "id": "ZITLAS-REC-0508",
+    "name": "ZITLAS Kanda Lasun Masala Curd Bowl",
+    "description": "A curd bowl seasoned with Kolhapur's famous kanda-lasun (onion-garlic) masala powder instead of the usual cumin \u2014 an unusual but genuinely distinct use of a spice blend normally reserved for curries.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Curd \u2014 150 g",
+      "Kanda-lasun masala powder \u2014 3 g",
+      "Roasted peanuts, crushed \u2014 15 g"
+    ],
+    "instructions": [
+      "Whisk kanda-lasun masala powder into curd.",
+      "Top with crushed roasted peanuts.",
+      "Eat immediately."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 175,
+      "protein_g": 9.1,
+      "carbs_g": 9.5,
+      "fat_g": 12.3,
+      "fiber_g": 1.3
+    },
+    "primary_protein_sources": [
+      "Curd",
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "Kanda-lasun masala is normally reserved for curries; using it to season a simple curd bowl is a genuinely unusual, distinctive application specific to Kolhapur's spice tradition",
+      "Very low effort, entirely no-cook",
+      "Peanuts add protein and crunch"
+    ],
+    "tags": [
+      "No Cook",
+      "Quick Meal"
+    ],
+    "regional_tag": "Kolhapur-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Specials"
+  },
+  {
+    "id": "ZITLAS-REC-0509",
+    "name": "ZITLAS Puran Poli Ladoo-Style Bites",
+    "description": "The traditional puran poli filling (jaggery-sweetened chana dal) rolled into small bite-sized balls instead of being encased in a rolled flatbread \u2014 a genuinely different construction from the Portion-Controlled Puran Poli already in the database.",
+    "meal_type": [
+      "Evening Snack"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 4,
+    "prep_time_min": 20,
+    "cook_time_min": 12,
+    "total_time_min": 32,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Chana dal, cooked and mashed \u2014 100 g",
+      "Jaggery \u2014 40 g",
+      "Cardamom powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Cook mashed chana dal with jaggery on low heat, stirring continuously, until it forms a very thick, dry paste (drier than for stuffing a poli).",
+      "Stir in cardamom powder.",
+      "Cool slightly and roll into 8 small balls.",
+      "Store in an airtight container for up to a week."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 277,
+      "protein_g": 9.9,
+      "carbs_g": 57.0,
+      "fat_g": 2.8,
+      "fiber_g": 10.8
+    },
+    "primary_protein_sources": [
+      "Chana dal"
+    ],
+    "why_it_works": [
+      "No flatbread wrapping at all \u2014 this is purely the traditional puran filling shaped into portable bites, a genuinely different format from the wrapped poli already in the database",
+      "Chana dal itself contributes real protein, unlike a purely sugar-based sweet",
+      "Portable, no cooking of a separate dough needed"
+    ],
+    "tags": [
+      "Meal Prep"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Specials"
+  },
+  {
+    "id": "ZITLAS-REC-0510",
+    "name": "ZITLAS Kolhapuri Misal Deluxe Bowl",
+    "description": "A richer version of misal topped with a boiled egg and extra peanuts \u2014 a more indulgent 'special' variant distinct from the standard breakfast and lunchbox misal preparations already in the database.",
+    "meal_type": [
+      "Evening Snack",
+      "Dinner"
+    ],
+    "fitness_goals": [
+      "Muscle Gain"
+    ],
+    "diet_type": "Eggetarian",
+    "servings": 1,
+    "prep_time_min": 12,
+    "cook_time_min": 15,
+    "total_time_min": 27,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Sprouted matki, boiled \u2014 120 g",
+      "Onion, tomato, chopped \u2014 50 g",
+      "Boiled egg \u2014 50 g",
+      "Oil \u2014 7 ml",
+      "Goda masala, peanuts \u2014 8 g"
+    ],
+    "instructions": [
+      "Heat oil, saute onion and tomato until soft, add goda masala.",
+      "Add boiled matki with water and simmer 10 minutes into a gravy.",
+      "Top with a halved boiled egg and a scatter of extra peanuts just before serving.",
+      "Serve as a special, more filling version of misal."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 331,
+      "protein_g": 18.1,
+      "carbs_g": 29.1,
+      "fat_g": 17.1,
+      "fiber_g": 7.5
+    },
+    "primary_protein_sources": [
+      "Matki",
+      "Egg",
+      "Peanuts"
+    ],
+    "why_it_works": [
+      "The egg-and-extra-peanut topping makes this a deliberately richer, higher-protein 'special' version, genuinely different in composition and purpose from the everyday misal recipes already in the database",
+      "Highest protein of any misal-style dish in the database thanks to the combined legume-egg-peanut protein",
+      "Positioned as an occasional indulgence rather than an everyday meal"
+    ],
+    "tags": [
+      "High Protein"
+    ],
+    "regional_tag": "Kolhapur-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Specials"
+  },
+  {
+    "id": "ZITLAS-REC-0511",
+    "name": "ZITLAS Shrikhand Protein Bowl",
+    "description": "Hung curd whipped with cardamom and saffron, with a spoon of Greek yogurt blended in for extra protein \u2014 a lightened, protein-boosted take on the classic Maharashtrian festive dessert.",
+    "meal_type": [
+      "Dessert"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 240,
+    "cook_time_min": 0,
+    "total_time_min": 240,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Curd, hung overnight \u2014 100 g",
+      "Greek yogurt \u2014 50 g",
+      "Sugar or jaggery \u2014 15 g",
+      "Cardamom powder, saffron \u2014 1 g"
+    ],
+    "instructions": [
+      "Hang curd in a muslin cloth for several hours to drain excess whey, leaving a thick base (chakka).",
+      "Whisk the hung curd with Greek yogurt, sugar or jaggery, cardamom powder and a few saffron strands until smooth.",
+      "Chill for at least 30 minutes before serving.",
+      "Note: hanging time folded into prep above."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 90,
+      "protein_g": 8.5,
+      "carbs_g": 6.5,
+      "fat_g": 3.5,
+      "fiber_g": 0.0
+    },
+    "primary_protein_sources": [
+      "Curd",
+      "Greek yogurt"
+    ],
+    "why_it_works": [
+      "Blending in Greek yogurt raises the protein meaningfully above a traditional shrikhand",
+      "Portion-controlled dessert bowl rather than a large festive serving",
+      "Classic Maharashtrian sweet made into a more considered everyday treat"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Desserts"
+  },
+  {
+    "id": "ZITLAS-REC-0512",
+    "name": "ZITLAS Basundi Protein Bowl",
+    "description": "A reduced, sweetened milk dessert finished with a spoon of milk powder for extra protein and nuts for texture \u2014 a portion-controlled version of the rich Maharashtrian classic.",
+    "meal_type": [
+      "Dessert"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 20,
+    "total_time_min": 25,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Milk \u2014 250 ml",
+      "Milk powder \u2014 15 g",
+      "Jaggery \u2014 15 g",
+      "Cardamom powder, almonds, crushed \u2014 10 g"
+    ],
+    "instructions": [
+      "Simmer milk on low heat, stirring occasionally, until it reduces by roughly half, about 18-20 minutes.",
+      "Stir in milk powder, jaggery and cardamom powder.",
+      "Top with crushed almonds and serve warm or chilled in a small bowl."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 259,
+      "protein_g": 11.0,
+      "carbs_g": 26.2,
+      "fat_g": 13.8,
+      "fiber_g": 2.5
+    },
+    "primary_protein_sources": [
+      "Milk",
+      "Milk powder",
+      "Almonds"
+    ],
+    "why_it_works": [
+      "Milk powder addition raises the protein notably above a traditional basundi",
+      "Single, portion-controlled serving rather than a large festive batch",
+      "Almonds add healthy fat and crunch"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Desserts"
+  },
+  {
+    "id": "ZITLAS-REC-0513",
+    "name": "ZITLAS Ukadiche Modak Bites",
+    "description": "Traditional steamed rice-flour dumplings filled with sweet coconut and jaggery, made in a smaller, portion-controlled batch \u2014 the sweet counterpart to the savoury modak-inspired recipes already in the database.",
+    "meal_type": [
+      "Dessert"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 2,
+    "prep_time_min": 25,
+    "cook_time_min": 15,
+    "total_time_min": 40,
+    "difficulty": "Moderate",
+    "equipment": [
+      "Pressure cooker"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Rice flour \u2014 70 g",
+      "Boiling water \u2014 60 ml",
+      "Coconut, grated \u2014 40 g",
+      "Jaggery \u2014 25 g",
+      "Cardamom powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Knead rice flour with boiling water into a smooth, pliable dough.",
+      "Cook grated coconut with jaggery and cardamom powder in a pan until it thickens into a sweet filling.",
+      "Shape small discs of dough, pleat the edges, fill with the coconut-jaggery mixture, and gather into the traditional modak shape.",
+      "Steam in a pressure cooker (without the whistle) for 12-15 minutes.",
+      "Serve warm."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 468,
+      "protein_g": 6.1,
+      "carbs_g": 80.8,
+      "fat_g": 14.3,
+      "fiber_g": 7.3
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "The authentic sweet festive version, distinct from the savoury moong- and soya-filled modak adaptations already in the database",
+      "Smaller batch and portion size than a festival-scale preparation",
+      "Traditional shape and technique preserved, genuinely representing Maharashtra's most iconic sweet"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Desserts"
+  },
+  {
+    "id": "ZITLAS-REC-0514",
+    "name": "ZITLAS Sabudana Kheer Protein Bowl",
+    "description": "A milk-based sabudana kheer finished with a little milk powder for extra protein \u2014 a dessert use of sabudana, distinct from its khichdi, vada, thalipeeth, khichu and idli-style forms already in the database.",
+    "meal_type": [
+      "Dessert"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 15,
+    "total_time_min": 20,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Sabudana, soaked \u2014 30 g",
+      "Milk \u2014 200 ml",
+      "Milk powder \u2014 10 g",
+      "Jaggery \u2014 15 g",
+      "Cardamom powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Simmer soaked sabudana in milk for 12-15 minutes until translucent and the milk thickens.",
+      "Stir in milk powder, jaggery and cardamom powder.",
+      "Serve warm or chilled."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 273,
+      "protein_g": 7.2,
+      "carbs_g": 47.1,
+      "fat_g": 7.0,
+      "fiber_g": 1.3
+    },
+    "primary_protein_sources": [
+      "Milk",
+      "Milk powder"
+    ],
+    "why_it_works": [
+      "Dessert kheer format is the sixth genuinely distinct use of sabudana across the database, alongside khichdi, vada, thalipeeth, khichu and idli-style steaming",
+      "Milk powder gives more protein than a traditional kheer",
+      "Comforting, familiar sweet"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": false,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Desserts"
+  },
+  {
+    "id": "ZITLAS-REC-0515",
+    "name": "ZITLAS Modak Protein Bites",
+    "description": "No-cook bites shaped like modak, made from crushed makhana, coconut and dates bound together \u2014 a raw, unsteamed dessert alternative to the traditional steamed modak already in this collection.",
+    "meal_type": [
+      "Dessert"
+    ],
+    "fitness_goals": [
+      "General Fitness"
+    ],
+    "diet_type": "Vegan",
+    "servings": 4,
+    "prep_time_min": 15,
+    "cook_time_min": 0,
+    "total_time_min": 15,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Makhana, crushed \u2014 30 g",
+      "Coconut, grated \u2014 30 g",
+      "Dates, pitted \u2014 60 g"
+    ],
+    "instructions": [
+      "Blend dates into a sticky paste.",
+      "Mix in crushed makhana and grated coconut until well combined into a firm, moist mixture.",
+      "Shape by hand into a rough modak-like point at the top (or simply round balls if a mould isn't available).",
+      "Chill for 20 minutes before serving; store refrigerated for up to a week."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 380,
+      "protein_g": 5.4,
+      "carbs_g": 72.3,
+      "fat_g": 10.2,
+      "fiber_g": 11.7
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Entirely no-cook, unlike the steamed Ukadiche Modak Bites in this collection, offering a genuinely different preparation method for users without steaming equipment",
+      "Makhana and coconut give a distinct texture from a typical date-nut energy bite",
+      "Shape nods to the traditional festive sweet while being a fundamentally different recipe"
+    ],
+    "tags": [
+      "No Cook",
+      "Meal Prep"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Desserts"
+  },
+  {
+    "id": "ZITLAS-REC-0516",
+    "name": "ZITLAS Chilled Solkadhi Drink",
+    "description": "A pure, chilled kokum-and-coconut-milk drink served on its own \u2014 a standalone beverage distinct from the breakfast Solkadhi-and-chana or dinner Solkadhi-and-rice combos already in the database.",
+    "meal_type": [
+      "Beverage"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 0,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Kokum \u2014 8 g",
+      "Coconut milk \u2014 120 ml",
+      "Water \u2014 60 ml",
+      "Garlic, cumin, green chilli \u2014 4 g"
+    ],
+    "instructions": [
+      "Soak kokum in a little warm water to extract its colour and tang.",
+      "Whisk the kokum water into coconut milk with garlic, cumin and green chilli, thinning with plain water.",
+      "Chill and serve as a standalone cooling drink."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 278,
+      "protein_g": 2.8,
+      "carbs_g": 7.1,
+      "fat_g": 28.8,
+      "fiber_g": 2.7
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Served purely as a drink, without a food pairing, distinct from the breakfast and dinner combo uses of solkadhi already in the database",
+      "Deeply cooling, traditionally drunk on its own after a heavy or spicy meal",
+      "Very low calorie"
+    ],
+    "tags": [
+      "No Cook"
+    ],
+    "regional_tag": "Konkan-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Drinks"
+  },
+  {
+    "id": "ZITLAS-REC-0517",
+    "name": "ZITLAS Kokum Sherbet Protein Drink",
+    "description": "A sweet-tart kokum sherbet blended with a spoon of Greek yogurt for protein \u2014 a distinctly sweeter, dessert-drink use of kokum from the savoury solkadhi preparations already in the database.",
+    "meal_type": [
+      "Beverage"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 0,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Kokum syrup or soaked kokum \u2014 30 g",
+      "Greek yogurt \u2014 50 g",
+      "Water \u2014 150 ml",
+      "Sugar or jaggery \u2014 10 g"
+    ],
+    "instructions": [
+      "Blend soaked kokum (or kokum syrup) with Greek yogurt, water and sugar or jaggery until smooth.",
+      "Chill and serve over ice if available."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 37,
+      "protein_g": 5.1,
+      "carbs_g": 3.6,
+      "fat_g": 0.2,
+      "fiber_g": 0.3
+    },
+    "primary_protein_sources": [
+      "Greek yogurt"
+    ],
+    "why_it_works": [
+      "Sweet sherbet style is a genuinely different use of kokum from the savoury, garlic-cumin solkadhi drinks already in the database",
+      "Greek yogurt adds protein a traditional sherbet lacks entirely",
+      "Bright pink colour and tart-sweet flavour, distinctly different drink experience"
+    ],
+    "tags": [],
+    "regional_tag": "Konkan-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Drinks"
+  },
+  {
+    "id": "ZITLAS-REC-0518",
+    "name": "ZITLAS Sol Kadhi Buttermilk Fusion",
+    "description": "A hybrid drink combining kokum-coconut solkadhi with spiced buttermilk \u2014 a distinct fusion not resembling either the pure solkadhi or a plain chaas already in the database.",
+    "meal_type": [
+      "Beverage"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 8,
+    "cook_time_min": 0,
+    "total_time_min": 8,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Moderate",
+    "ingredients": [
+      "Kokum \u2014 6 g",
+      "Coconut milk \u2014 60 ml",
+      "Buttermilk \u2014 100 ml",
+      "Roasted cumin powder \u2014 1 g"
+    ],
+    "instructions": [
+      "Soak kokum in warm water.",
+      "Whisk the kokum water with coconut milk and buttermilk, along with roasted cumin powder.",
+      "Chill and serve."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 169,
+      "protein_g": 2.9,
+      "carbs_g": 6.7,
+      "fat_g": 15.4,
+      "fiber_g": 1.4
+    },
+    "primary_protein_sources": [
+      "Buttermilk"
+    ],
+    "why_it_works": [
+      "Combining two distinct Maharashtrian cooling drinks into one fusion gives a genuinely different flavour and protein profile from either alone",
+      "Buttermilk adds real protein missing from a pure solkadhi",
+      "Very refreshing, low calorie"
+    ],
+    "tags": [],
+    "regional_tag": "Konkan-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Drinks"
+  },
+  {
+    "id": "ZITLAS-REC-0519",
+    "name": "ZITLAS Kairi Panha Cooler Drink",
+    "description": "A diluted, drinkable raw mango cooler, distinct from the thick pulped Aamras or the panha-with-sattu combo already in the database by being served purely as a light, sippable drink.",
+    "meal_type": [
+      "Beverage"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegan",
+    "servings": 1,
+    "prep_time_min": 15,
+    "cook_time_min": 5,
+    "total_time_min": 20,
+    "difficulty": "Easy",
+    "equipment": [
+      "Kadai"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Raw mango, boiled and pulped \u2014 60 g",
+      "Jaggery \u2014 12 g",
+      "Water \u2014 200 ml",
+      "Roasted cumin powder, black salt \u2014 2 g"
+    ],
+    "instructions": [
+      "Boil the raw mango until soft, then pulp it.",
+      "Mix the pulp with jaggery, water, roasted cumin powder and black salt, diluting to a thin, drinkable consistency.",
+      "Chill and serve."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 70,
+      "protein_g": 0.8,
+      "carbs_g": 18.0,
+      "fat_g": 0.3,
+      "fiber_g": 1.9
+    },
+    "primary_protein_sources": [],
+    "why_it_works": [
+      "Served purely as a light sipping drink rather than paired with sattu for protein, this is a genuinely different, simpler use of panha from the earlier combo recipe",
+      "Very cooling, traditional Maharashtrian summer refreshment",
+      "Naturally low calorie"
+    ],
+    "tags": [],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Drinks"
+  },
+  {
+    "id": "ZITLAS-REC-0520",
+    "name": "ZITLAS Curd Chaas Jeera Drink",
+    "description": "A simple spiced buttermilk with roasted cumin and curry leaves \u2014 a plain, everyday Maharashtrian chaas distinct from the fusion or fruit-based drinks already in this collection.",
+    "meal_type": [
+      "Beverage"
+    ],
+    "fitness_goals": [
+      "Weight Loss"
+    ],
+    "diet_type": "Vegetarian",
+    "servings": 1,
+    "prep_time_min": 5,
+    "cook_time_min": 0,
+    "total_time_min": 5,
+    "difficulty": "Easy",
+    "equipment": [
+      "No-cook"
+    ],
+    "cost_level": "Budget",
+    "ingredients": [
+      "Curd \u2014 100 g",
+      "Water \u2014 150 ml",
+      "Roasted cumin powder, curry leaves, black salt \u2014 3 g"
+    ],
+    "instructions": [
+      "Whisk curd with water until smooth and frothy.",
+      "Stir in roasted cumin powder, finely chopped curry leaves and black salt.",
+      "Serve chilled."
+    ],
+    "nutrition_estimated": {
+      "calories_kcal": 60,
+      "protein_g": 3.5,
+      "carbs_g": 4.7,
+      "fat_g": 3.3,
+      "fiber_g": 0.0
+    },
+    "primary_protein_sources": [
+      "Curd"
+    ],
+    "why_it_works": [
+      "The simplest, most everyday version of chaas in the collection, genuinely distinct from the kokum-fusion or fruit-based drinks by being unadorned and traditional",
+      "Very low cost, made from ingredients almost every household has",
+      "Classic digestive drink after a meal"
+    ],
+    "tags": [
+      "No Cook",
+      "Budget Friendly"
+    ],
+    "regional_tag": "Maharashtrian-inspired",
+    "hostel_friendly": true,
+    "home_friendly": true,
+    "zitlas_original": false,
+    "category": "Drinks"
+  }
+]
