@@ -17,6 +17,7 @@ import '../features/chat/presentation/screens/chat_screen.dart';
 import '../features/coaching_webview/coaching_webview_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/diet/presentation/screens/diet_screen.dart';
+import '../features/diet/presentation/screens/recipe_screen.dart';
 // NOTE: ExpertDashboardScreen (native coach dashboard) is intentionally NOT
 // imported — /expert-dashboard now renders CoachingWebViewScreen. The native
 // screen stays in the tree, dormant, for the eventual return to native parity.
@@ -170,6 +171,15 @@ GoRouter buildRouter(AuthState authState) {
         ),
       ),
       GoRoute(path: '/reviews/:id', builder: (context, state) => const ReviewsScreen()),
+      // "Get Easy ZITLAS Recipe" — top-level (not nested in the Diet tab's
+      // shell) so it pushes as a real full-screen page with its own back
+      // button, the same way /chat/:roomId and /experts/:id do.
+      GoRoute(
+        path: '/recipe',
+        builder: (context, state) => RecipeScreen(
+          mealType: state.uri.queryParameters['meal_type'] ?? 'breakfast',
+        ),
+      ),
       GoRoute(
         path: '/chat/:roomId',
         builder: (context, state) => ChatScreen(

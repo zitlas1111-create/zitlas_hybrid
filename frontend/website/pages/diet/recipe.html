@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>ZITLAS — Easy ZITLAS Recipes</title>
+  <!-- Shared chrome (header/icon-btn/main-content/toast/CSS variables) reused
+       from the Diet page — this is deliberately the SAME stylesheet, not a
+       parallel visual language, per the feature spec's "keep the design
+       consistent" requirement. recipe.css adds only what's new here. -->
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="diet.css?v=20260716" />
+  <link rel="stylesheet" href="recipe.css?v=1" />
+  <script src="../../assets/js/i18n.js"></script>
+</head>
+<body class="zitlas-premium-bg">
+
+  <!-- ════════════ HEADER ════════════ -->
+  <header class="diet-header">
+    <button class="icon-btn" id="backBtn" aria-label="Back to Diet">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="19" y1="12" x2="5" y2="12"/>
+        <polyline points="12 19 5 12 12 5"/>
+      </svg>
+    </button>
+    <div class="header-center">
+      <h1 class="header-title">🍳 Easy ZITLAS Recipes</h1>
+      <p class="header-subtitle" id="recipeMealLabel">Finding your recipe…</p>
+    </div>
+    <button class="icon-btn recipe-filters-toggle" id="recipeFiltersToggle" aria-label="Filters">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
+        <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+        <line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
+      </svg>
+    </button>
+  </header>
+
+  <main class="main-content recipe-page">
+
+    <!-- ── FILTERS (collapsed by default — item 15: keep it simple) ── -->
+    <div class="recipe-filters-panel" id="recipeFiltersPanel" style="display:none">
+      <label class="recipe-filter-field">
+        <span>Meal Type</span>
+        <select id="filterMealType">
+          <option value="breakfast">Breakfast</option>
+          <option value="lunch">Lunch</option>
+          <option value="dinner">Dinner</option>
+          <option value="snack">Snack</option>
+        </select>
+      </label>
+      <label class="recipe-filter-field">
+        <span>Cooking Situation</span>
+        <select id="filterCooking">
+          <option value="">Use my profile</option>
+          <option value="home">Home Cook</option>
+          <option value="hostel">Hostel Student</option>
+          <option value="pg">PG / Limited Kitchen</option>
+          <option value="travel">Quick / Minimal Equipment</option>
+        </select>
+      </label>
+      <label class="recipe-filter-field">
+        <span>Diet</span>
+        <select id="filterDiet">
+          <option value="">Use my profile</option>
+          <option value="vegetarian">Vegetarian</option>
+          <option value="non-vegetarian">Non-Vegetarian</option>
+          <option value="eggetarian">Egg</option>
+          <option value="vegan">Vegan</option>
+        </select>
+      </label>
+      <label class="recipe-filter-field">
+        <span>Fitness Goal</span>
+        <select id="filterGoal">
+          <option value="">Use my profile</option>
+          <option value="weight_loss">Weight Loss</option>
+          <option value="muscle_gain">Muscle Gain</option>
+          <option value="general_fitness">General Fitness</option>
+        </select>
+      </label>
+      <button class="recipe-apply-btn" id="applyFiltersBtn">Apply</button>
+    </div>
+
+    <!-- ── LOADING STATE ── -->
+    <div class="recipe-state" id="recipeLoading">
+      <div class="recipe-spinner"></div>
+      <p>Finding the best ZITLAS recipe for you…</p>
+    </div>
+
+    <!-- ── ERROR STATE ── -->
+    <div class="recipe-state" id="recipeError" style="display:none">
+      <p>Recipe service is temporarily unavailable.</p>
+      <button class="recipe-retry-btn" id="recipeRetryBtn">Try Again</button>
+    </div>
+
+    <!-- ── NO-RECIPE STATE (dataset genuinely has nothing for this combo) ── -->
+    <div class="recipe-state" id="recipeNone" style="display:none">
+      <p>No ZITLAS recipe matches this yet — check back as our recipe library grows.</p>
+      <a class="recipe-retry-btn" href="diet.html">Back to Diet</a>
+    </div>
+
+    <!-- ── "closest match" honesty banner (item 22) ── -->
+    <div class="recipe-fallback-note" id="recipeFallbackNote" style="display:none">
+      Couldn't find an exact match. Here's the closest ZITLAS recipe.
+    </div>
+
+    <!-- ── PREVIEW CARD (item 4) ── -->
+    <div class="recipe-preview-card" id="recipePreview" style="display:none">
+      <span class="recipe-preview-kicker">🍳 Easy ZITLAS Recipe</span>
+      <h2 class="recipe-preview-name" id="previewName"></h2>
+      <div class="recipe-preview-stats" id="previewStats"></div>
+      <div class="recipe-preview-tags" id="previewTags"></div>
+      <p class="recipe-why-line" id="previewWhy"></p>
+      <button class="recipe-view-btn" id="viewRecipeBtn">View Recipe</button>
+    </div>
+
+    <!-- ── FULL RECIPE DETAIL (item 12/13 — revealed by "View Recipe") ── -->
+    <div class="recipe-detail" id="recipeDetail" style="display:none">
+      <h2 class="recipe-detail-name" id="detailName"></h2>
+      <p class="recipe-detail-desc" id="detailDescription"></p>
+      <div class="recipe-detail-badges" id="detailBadges"></div>
+      <div class="recipe-macro-row" id="detailMacros"></div>
+
+      <div class="recipe-section" id="familySection" style="display:none">
+        <span class="recipe-family-badge">👨‍👩‍👧‍👦 Family Friendly</span>
+        <p class="recipe-family-note">Portions can be adjusted per family member's goal.</p>
+      </div>
+
+      <div class="recipe-section">
+        <h3>Nutrition</h3>
+        <div class="recipe-nutrition-grid" id="detailNutrition"></div>
+      </div>
+
+      <div class="recipe-section">
+        <h3>Ingredients</h3>
+        <ul class="recipe-list" id="detailIngredients"></ul>
+      </div>
+
+      <div class="recipe-section">
+        <h3>How to Make It</h3>
+        <ol class="recipe-list recipe-list--numbered" id="detailInstructions"></ol>
+      </div>
+
+      <div class="recipe-section" id="proteinSection" style="display:none">
+        <h3>Primary Protein Sources</h3>
+        <ul class="recipe-list" id="detailProtein"></ul>
+      </div>
+
+      <div class="recipe-section" id="whySection" style="display:none">
+        <h3>Why It Works</h3>
+        <ul class="recipe-list" id="detailWhy"></ul>
+      </div>
+
+      <div class="recipe-section">
+        <h3>Why ZITLAS Recommends It</h3>
+        <p class="recipe-recommend-reason" id="detailReason"></p>
+      </div>
+
+      <div class="recipe-tags" id="detailTags"></div>
+
+      <button class="recipe-another-btn" id="getAnotherBtn">🔄 Get Another Recipe</button>
+    </div>
+
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="../../components/navbar.js?v=20260718a"></script>
+  <script src="recipe.js?v=1"></script>
+</body>
+</html>

@@ -9,6 +9,7 @@ import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
 import '../../data/diet_repository.dart';
 import '../../diet_controller.dart';
+import '../../models/meal_slot.dart';
 import '../widgets/coach_diet_card.dart';
 import '../widgets/diet_day_focus_card.dart';
 import '../widgets/diet_day_selector.dart';
@@ -192,6 +193,14 @@ class _DietContent extends StatelessWidget {
               dayIndex: dayIndex,
               mealIndex: mealIndex,
               meal: meal,
+            ),
+            // The slot (breakfast/lunch/dinner/snack/pre_workout/
+            // post_workout) — NEVER the raw, unclassified `meal.mealName`
+            // ("Pre-Workout Snack" doesn't match any backend meal_type
+            // value on its own, and previously silently returned no
+            // recipe / the wrong one for a workout slot).
+            onGetRecipe: () => context.push(
+              '/recipe?meal_type=${Uri.encodeComponent(mealSlotFromName(meal.mealName).apiValue)}',
             ),
           );
         }),

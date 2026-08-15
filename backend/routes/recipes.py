@@ -52,6 +52,7 @@ async def list_recipes(
     hostel_friendly: bool | None = None,
     home_friendly: bool | None = None,
     zitlas_original: bool | None = None,
+    difficulty: str | None = None,
     max_calories: float | None = None,
     min_protein: float | None = None,
     q: str | None = None,
@@ -66,8 +67,8 @@ async def list_recipes(
         meal_type=meal_type, category=category, fitness_goal=fitness_goal,
         diet_type=diet_type, regional_tag=regional_tag,
         hostel_friendly=hostel_friendly, home_friendly=home_friendly,
-        zitlas_original=zitlas_original, max_calories=max_calories,
-        min_protein=min_protein, q=q,
+        zitlas_original=zitlas_original, difficulty=difficulty,
+        max_calories=max_calories, min_protein=min_protein, q=q,
     )
     limit = max(1, min(limit, 200))
     offset = max(0, offset)
@@ -80,24 +81,53 @@ async def recommended_recipe(
     meal_type: str | None = None,
     fitness_goal: str | None = None,
     diet_type: str | None = None,
+    living_situation: str | None = None,
     hostel_friendly: bool | None = None,
+    home_friendly: bool | None = None,
+    city: str | None = None,
+    state: str | None = None,
+    difficulty: str | None = None,
     max_calories: float | None = None,
+    exclude_ids: str | None = None,
     limit: int = 1,
 ) -> dict:
-    """Deterministic filtering/scoring (per spec: not an AI recommender).
-    Matches meal_type + fitness_goal + diet_type where possible; diet_type
-    is the one hard constraint that is never relaxed (never suggest a
-    non-vegetarian recipe to a vegetarian just because nothing else
-    matched). Falls back gracefully — see RecipeService.recommend's
-    docstring for the exact relaxation order. Returns an empty list, never
-    a 404/500, when even the diet-type-only pool is empty."""
+    """"Get Easy ZITLAS Recipe" — deterministic filtering/scoring (per spec:
+    not an AI recommender). meal_type + diet_type are hard filters (never
+    relaxed — item 2/9); fitness_goal, living_situation (the athlete's
+    EXISTING assessment field, see food_engine.living_tag_from_lifestyle —
+    not a new profile field), city/state (resolved via the SAME
+    location_food_engine.resolve_state the diet engine already uses) and
+    "easy"-ness (difficulty/time/cost) are scored. See RecipeService.
+    recommend()'s docstring for the exact weighting. Returns an empty list,
+    never a 404/500, when even the meal_type+diet_type pool is empty.
+
+    `meal_type` also accepts the two workout SLOTS — "pre_workout" and
+    "post_workout" — which are never a literal dataset meal_type; see
+    RecipeService.resolve_meal_slot()/recommend() for how each is served
+    (recovery/energy purpose-scoring, not a "closest meal type" fallback).
+
+    `exclude_ids` is a comma-separated list of recipe IDs already shown —
+    powers "Get Another Recipe" without repeating (a single id works too,
+    e.g. `exclude_ids=ZITLAS-REC-0521`)."""
     svc = recipe_service.get_service()
     limit = max(1, min(limit, 20))
+    location = {"city": city, "state": state} if (city or state) else None
+    exclude_set = {x.strip() for x in exclude_ids.split(",") if x.strip()} if exclude_ids else None
     results = svc.recommend(
         meal_type=meal_type, fitness_goal=fitness_goal, diet_type=diet_type,
-        hostel_friendly=hostel_friendly, max_calories=max_calories, limit=limit,
+        living_situation=living_situation, hostel_friendly=hostel_friendly,
+        home_friendly=home_friendly, location=location, difficulty=difficulty,
+        max_calories=max_calories, exclude_ids=exclude_set, limit=limit,
     )
-    return {"count": len(results), "recipes": results}
+    meal_slot = recipe_service.resolve_meal_slot(meal_type)
+    reasons_by_id = {
+        r["id"]: svc.explain_recommendation(
+            r, fitness_goal=fitness_goal, living_situation=living_situation, location=location,
+            meal_slot=meal_slot,
+        )
+        for r in results
+    }
+    return {"count": len(results), "recipes": results, "reasons": reasons_by_id}
 
 
 @router.get("/discover")

@@ -738,17 +738,19 @@
             ${meal.purpose ? `<span class="meal-purpose">${esc(meal.purpose)}</span>` : ''}
             ${expertNote}
           </div>
-          ${meal._recovery
-            ? `<button class="swap-btn swap-btn--locked" data-meal="${esc(meal.meal_name || '')}" data-recovery-locked="1" aria-label="Swap locked — recovery meal">
-                ${lockSvg}
-                <span class="swap-label">Recovery<br>meal</span>
-              </button>`
-            : `<button class="swap-btn" data-meal="${esc(meal.meal_name || '')}" aria-label="Swap ${esc(meal.meal_name || '')}">
-                ${swapSvg}
-                <span class="swap-label">Can't eat<br>this?</span>
-              </button>`}
-        </article>` + buildRecipeRow(meal)
-                     + buildCoachMealRow(meal, dayData.day || dayData.day_type)
+          <div class="meal-actions">
+            ${buildRecipeButton(meal)}
+            ${meal._recovery
+              ? `<button class="swap-btn swap-btn--locked" data-meal="${esc(meal.meal_name || '')}" data-recovery-locked="1" aria-label="Swap locked — recovery meal">
+                  ${lockSvg}
+                  <span class="swap-label">Recovery<br>meal</span>
+                </button>`
+              : `<button class="swap-btn" data-meal="${esc(meal.meal_name || '')}" aria-label="Swap ${esc(meal.meal_name || '')}">
+                  ${swapSvg}
+                  <span class="swap-label">Can't eat<br>this?</span>
+                </button>`}
+          </div>
+        </article>` + buildCoachMealRow(meal, dayData.day || dayData.day_type)
                      + buildSnapMealRow(meal, dayData.day || dayData.day_type);
     }).join('');
 
@@ -2286,111 +2288,31 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     ZITLAS RECIPE — "Get ZITLAS Recipe" per meal
-     Reads GET /api/recipes/recommended (backend/routes/recipes.py), never
-     invents a recipe client-side. meal.meal_name is the slot name
-     (Breakfast/Lunch/Dinner/Snacks) already used as the expertModifications
-     key elsewhere in this file, so it doubles as the recipe API's
-     meal_type filter with no extra mapping needed.
+     GET EASY ZITLAS RECIPE — per meal
+     Navigates to the dedicated recipe.html page (never a modal — the full
+     recipe needs its own page per the feature spec) with the meal context
+     in the URL. recipe.js re-derives goal/diet/cooking-situation/location
+     from the SAME localStorage keys the rest of this file already reads —
+     nothing is duplicated into the query string that the recipe page can
+     fetch for itself. meal.meal_name is the slot name (Breakfast/Lunch/
+     Dinner/Snacks) already used as the expertModifications key elsewhere
+     in this file, so it doubles as the recipe API's meal_type filter with
+     no extra mapping needed.
   ══════════════════════════════════════════════════════════════ */
-  function buildRecipeRow(meal) {
+  function buildRecipeButton(meal) {
     if (meal._recovery) return ''; // fixed recovery-day meal — no recipe swap-in
-    return '<div class="recipe-meal-row">' +
-      '<button class="recipe-meal-btn" data-recipe-meal="' + esc(meal.meal_name || '') + '">🍳 Get ZITLAS Recipe</button>' +
-      '</div>';
+    return '<button class="recipe-meal-btn" data-recipe-meal="' + esc(meal.meal_name || '') + '" aria-label="Get Easy ZITLAS Recipe for ' + esc(meal.meal_name || '') + '">' +
+      '🍳<span class="swap-label">Easy<br>Recipe</span>' +
+      '</button>';
   }
 
   function wireRecipeButtons() {
     document.querySelectorAll('.recipe-meal-btn').forEach((btn) => {
-      btn.addEventListener('click', () => openRecipeModal(btn.dataset.recipeMeal || ''));
+      btn.addEventListener('click', () => {
+        const mealType = btn.dataset.recipeMeal || '';
+        window.location.href = 'recipe.html?meal_type=' + encodeURIComponent(mealType);
+      });
     });
-  }
-
-  async function openRecipeModal(mealName) {
-    const modal = document.getElementById('recipeModal');
-    const body  = document.getElementById('recipeModalBody');
-    if (!modal || !body) return;
-    modal.classList.add('open');
-    document.body.style.overflow = 'hidden';
-    body.innerHTML = '<p class="recipe-modal-loading">Finding a ZITLAS recipe for you…</p>';
-
-    /* Same source the swap flow already merges from — reuses the
-       athlete's real goal/diet type, never re-asks for it. */
-    const athleteProfile = safeJSON('athlete_profile', {});
-    const assessment     = safeJSON('zitlas_assessment', {});
-    const fitnessGoal    = athleteProfile.fitness_goal || 'general_fitness';
-    const dietType        = assessment.diet_preference || '';
-
-    const params = new URLSearchParams({ meal_type: mealName, fitness_goal: fitnessGoal });
-    if (dietType) params.set('diet_type', dietType);
-
-    try {
-      const resp = await fetch('/api/recipes/recommended?' + params.toString());
-      if (!resp.ok) throw new Error('API error ' + resp.status);
-      const data = await resp.json();
-      const recipe = (data.recipes || [])[0];
-      body.innerHTML = recipe ? renderRecipeDetail(recipe) : (
-        '<p class="recipe-modal-empty">No ZITLAS recipe matched this meal yet — check back as our recipe library grows.</p>'
-      );
-    } catch (e) {
-      console.error('[RECIPE] fetch failed', e);
-      body.innerHTML = '<p class="recipe-modal-empty">Could not load a recipe right now — please try again.</p>';
-    }
-  }
-
-  function closeRecipeModal() {
-    const modal = document.getElementById('recipeModal');
-    if (!modal) return;
-    modal.classList.remove('open');
-    document.body.style.overflow = '';
-  }
-
-  function renderRecipeDetail(r) {
-    const nut = r.nutrition_estimated || {};
-    const list = (arr) => (arr || []).map((x) => `<li>${esc(x)}</li>`).join('');
-    /* esc() collapses falsy input (including the number 0) to '' via its
-       own `String(str || '')` — a real problem here, since 119 of 637
-       recipes are legitimately 0-minute no-cook dishes. Stringify
-       null/undefined-only (never 0) BEFORE esc() sees it. */
-    const numOr = (v, fallback) => esc(v === null || v === undefined ? fallback : String(v));
-    return `
-      <h2 class="recipe-title">${esc(r.name || '')}</h2>
-      ${r.regional_tag ? `<span class="recipe-region-tag">${esc(r.regional_tag)}</span>` : ''}
-      <p class="recipe-description">${esc(r.description || '')}</p>
-      <div class="recipe-nutrition-row">
-        <span>🔥 ${numOr(nut.calories_kcal, '—')} kcal</span>
-        <span>💪 ${numOr(nut.protein_g, '—')}g protein</span>
-        <span>🌾 ${numOr(nut.carbs_g, '—')}g carbs</span>
-        <span>🥑 ${numOr(nut.fat_g, '—')}g fat</span>
-        <span>🌿 ${numOr(nut.fiber_g, '—')}g fiber</span>
-      </div>
-      <div class="recipe-meta-row">
-        <span>⏱ Prep ${numOr(r.prep_time_min, '—')} min</span>
-        <span>🍳 Cook ${numOr(r.cook_time_min, '—')} min</span>
-        <span>📊 ${esc(r.difficulty || '—')}</span>
-        <span>🍽 ${esc((r.equipment || []).join(', ') || '—')}</span>
-      </div>
-      <h3>Ingredients</h3>
-      <ul class="recipe-ingredients">${list(r.ingredients)}</ul>
-      <h3>Instructions</h3>
-      <ol class="recipe-instructions">${list(r.instructions)}</ol>
-      ${r.why_it_works && r.why_it_works.length ? `
-        <h3>Why it works</h3>
-        <ul class="recipe-why">${list(r.why_it_works)}</ul>
-      ` : ''}
-      ${r.tags && r.tags.length ? `
-        <div class="recipe-tags">${r.tags.map((t) => `<span class="recipe-tag">${esc(t)}</span>`).join('')}</div>
-      ` : ''}
-    `;
-  }
-
-  function initRecipeModal() {
-    const modal = document.getElementById('recipeModal');
-    if (!modal) return;
-    const closeBtn = document.getElementById('recipeModalClose');
-    if (closeBtn) closeBtn.addEventListener('click', closeRecipeModal);
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeRecipeModal(); });
-    modal.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeRecipeModal(); });
   }
 
   function buildSnapMealRow(meal, dayName) {
@@ -2754,7 +2676,6 @@
     renderLocationNote();
     initDaySelector();
     initSwapModal();
-    initRecipeModal();
     initNutriSelectModal();
     initHeader();
 
