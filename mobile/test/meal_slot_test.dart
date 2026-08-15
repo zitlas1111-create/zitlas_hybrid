@@ -87,9 +87,18 @@ void main() {
     });
 
     test('pre/post-workout kickers are distinct from the generic recipe kicker', () {
-      expect(MealSlot.preWorkout.recipeKicker, contains('Pre-Workout'));
-      expect(MealSlot.postWorkout.recipeKicker, contains('Post-Workout'));
+      expect(MealSlot.preWorkout.recipeKicker, contains('Workout Fuel'));
+      expect(MealSlot.postWorkout.recipeKicker, contains('Workout Recovery'));
       expect(MealSlot.breakfast.recipeKicker, isNot(contains('Workout')));
+    });
+
+    test('action button labels are distinct per slot — never the same generic wording for all three', () {
+      expect(MealSlot.preWorkout.actionButtonLabel, 'Get Workout Fuel');
+      expect(MealSlot.postWorkout.actionButtonLabel, 'Get Recovery Recipe');
+      expect(MealSlot.breakfast.actionButtonLabel, 'Get Easy Recipe');
+      expect(MealSlot.lunch.actionButtonLabel, 'Get Easy Recipe');
+      expect(MealSlot.dinner.actionButtonLabel, 'Get Easy Recipe');
+      expect(MealSlot.snack.actionButtonLabel, 'Get Easy Recipe');
     });
   });
 }

@@ -173,13 +173,16 @@ class _RecipeScreenState extends State<RecipeScreen> {
   Widget _buildBody() {
     switch (_phase) {
       case _Phase.loading:
-        return const _CenteredMessage(
+        return _CenteredMessage(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(color: ZitlasTokens.primary),
-              SizedBox(height: 16),
-              Text('Finding the best ZITLAS recipe for you…', style: TextStyle(color: ZitlasTokens.textMuted, fontSize: 13.5)),
+              const CircularProgressIndicator(color: ZitlasTokens.primary),
+              const SizedBox(height: 16),
+              Text(
+                'Finding ${_slot?.findingLabel ?? 'the best ZITLAS recipe'} for you…',
+                style: const TextStyle(color: ZitlasTokens.textMuted, fontSize: 13.5),
+              ),
             ],
           ),
         );

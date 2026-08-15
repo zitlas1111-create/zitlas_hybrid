@@ -49,7 +49,7 @@ void main() {
     testWidgets('small Android phone width (320dp) — no RenderFlex overflow', (tester) async {
       await _pumpCardAt(tester, 320, meal: meal);
       expect(tester.takeException(), isNull);
-      expect(find.text('Easy Recipe'), findsOneWidget);
+      expect(find.text('Get Easy Recipe'), findsOneWidget);
       expect(find.text('Swap'), findsOneWidget);
     });
 
@@ -85,7 +85,7 @@ void main() {
           ),
         ),
       );
-      await tester.tap(find.text('Easy Recipe'));
+      await tester.tap(find.text('Get Easy Recipe'));
       await tester.pump();
       expect(recipeTaps, 1);
       expect(swapTaps, 0);
@@ -98,23 +98,28 @@ void main() {
   });
 
   group('Pre/Post-workout purpose badge (item 21)', () {
-    testWidgets('a Pre-Workout meal shows the Quick Energy badge', (tester) async {
+    testWidgets('a Pre-Workout meal shows the Quick Energy badge AND the Workout Fuel button', (tester) async {
       await _pumpCardAt(tester, 390, meal: preWorkoutMeal);
       expect(tester.takeException(), isNull);
-      expect(find.textContaining('Quick Energy'), findsOneWidget);
+      expect(find.text('⚡ Quick Energy'), findsOneWidget);
+      expect(find.text('Get Workout Fuel'), findsOneWidget);
+      expect(find.text('Get Easy Recipe'), findsNothing);
     });
 
-    testWidgets('a normal Breakfast meal shows no workout purpose badge', (tester) async {
+    testWidgets('a normal Breakfast meal shows no workout purpose badge, and the generic button label', (tester) async {
       await _pumpCardAt(tester, 390, meal: meal);
-      expect(find.textContaining('Quick Energy'), findsNothing);
-      expect(find.textContaining('Recovery'), findsNothing);
+      expect(find.text('⚡ Quick Energy'), findsNothing);
+      expect(find.text('💪 Recovery'), findsNothing);
+      expect(find.text('Get Easy Recipe'), findsOneWidget);
     });
 
-    testWidgets('a Post-Workout meal shows the Recovery badge', (tester) async {
+    testWidgets('a Post-Workout meal shows the Recovery badge AND the Recovery Recipe button', (tester) async {
       final postWorkoutMeal = const DietMeal(mealName: 'Post-Workout', foods: ['Protein Shake']);
       await _pumpCardAt(tester, 390, meal: postWorkoutMeal);
       expect(tester.takeException(), isNull);
-      expect(find.textContaining('Recovery'), findsOneWidget);
+      expect(find.text('💪 Recovery'), findsOneWidget);
+      expect(find.text('Get Recovery Recipe'), findsOneWidget);
+      expect(find.text('Get Easy Recipe'), findsNothing);
     });
   });
 
@@ -128,7 +133,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Easy Recipe'), findsNothing);
+      expect(find.text('Get Easy Recipe'), findsNothing);
       await tester.tap(find.text('Swap'));
       expect(swapTaps, 1);
     });
@@ -142,7 +147,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('Easy Recipe'), findsNothing);
+      expect(find.text('Get Easy Recipe'), findsNothing);
       expect(find.text('Swap'), findsNothing);
     });
   });

@@ -2,9 +2,12 @@
 ZITLAS — Recipe Routes (backend/routes/recipes.py)
 
 Read-only, deterministic access to the canonical recipe dataset
-(backend/recipes/data/zitlas_recipes.json, served via services/recipe_service.py).
-No LLM, no writes — same posture as routes/swap.py's deterministic engine and
-routes/diet.py's /foods/search.
+(backend/recipes/data/zitlas_recipes.json, served via services/recipe_service.py)
+for NORMAL MEALS, and to the small dedicated workout-nutrition dataset
+(backend/recipes/data/workout_nutrition.json, served via
+services/workout_nutrition_service.py) for the PRE_WORKOUT/POST_WORKOUT
+slots. No LLM, no writes — same posture as routes/swap.py's deterministic
+engine and routes/diet.py's /foods/search.
 
   GET /api/recipes/health        readiness probe (same convention as every
                                   other router)
@@ -12,12 +15,21 @@ routes/diet.py's /foods/search.
                                   fitness_goal, diet_type, regional_tag,
                                   hostel_friendly, home_friendly,
                                   zitlas_original, max_calories, min_protein, q
+                                  — NORMAL MEALS ONLY (the 637-recipe dataset)
   GET /api/recipes/recommended    meal_type + fitness_goal + diet_type (+diet
                                   ANDed as a hard filter, everything else
-                                  progressively relaxed) -> best available match
+                                  progressively relaxed) -> best available
+                                  match. `meal_type=pre_workout`/`post_workout`
+                                  is dispatched ENTIRELY to
+                                  workout_nutrition_service instead — see
+                                  recipe_service.resolve_meal_slot(). Normal
+                                  meal recommendation NEVER touches the
+                                  workout-nutrition dataset and vice versa.
   GET /api/recipes/discover       a random sample, same filters as the list
-                                  endpoint
-  GET /api/recipes/{recipe_id}    one full recipe by ID
+                                  endpoint — NORMAL MEALS ONLY
+  GET /api/recipes/{recipe_id}    one full recipe by ID (checks the normal
+                                  dataset first, then the workout-nutrition
+                                  one)
 
 IMPORTANT: the {recipe_id} route is registered LAST — FastAPI matches routes
 in declaration order, so a literal /recommended or /discover path would
@@ -31,7 +43,7 @@ import random
 
 from fastapi import APIRouter, HTTPException
 
-from services import recipe_service
+from services import recipe_service, workout_nutrition_service
 
 router = APIRouter()
 
@@ -101,29 +113,42 @@ async def recommended_recipe(
     recommend()'s docstring for the exact weighting. Returns an empty list,
     never a 404/500, when even the meal_type+diet_type pool is empty.
 
-    `meal_type` also accepts the two workout SLOTS — "pre_workout" and
-    "post_workout" — which are never a literal dataset meal_type; see
-    RecipeService.resolve_meal_slot()/recommend() for how each is served
-    (recovery/energy purpose-scoring, not a "closest meal type" fallback).
+    `meal_type=pre_workout`/`post_workout` are SLOTS, never a literal
+    dataset meal_type — see recipe_service.resolve_meal_slot(). They are
+    dispatched to workout_nutrition_service.recommend() ENTIRELY instead of
+    this module's recipe_service.recommend(): the 637-recipe normal-meal
+    database is never searched for these two slots, and there is no
+    "closest meal type" fallback to breakfast/lunch/dinner if the workout
+    dataset can't fully satisfy every filter.
 
     `exclude_ids` is a comma-separated list of recipe IDs already shown —
     powers "Get Another Recipe" without repeating (a single id works too,
     e.g. `exclude_ids=ZITLAS-REC-0521`)."""
-    svc = recipe_service.get_service()
     limit = max(1, min(limit, 20))
     location = {"city": city, "state": state} if (city or state) else None
     exclude_set = {x.strip() for x in exclude_ids.split(",") if x.strip()} if exclude_ids else None
+    meal_slot = recipe_service.resolve_meal_slot(meal_type)
+
+    if meal_slot is not None:
+        wsvc = workout_nutrition_service.get_service()
+        results = wsvc.recommend(
+            meal_slot=meal_slot, fitness_goal=fitness_goal, diet_type=diet_type,
+            living_situation=living_situation, hostel_friendly=hostel_friendly,
+            home_friendly=home_friendly, location=location, exclude_ids=exclude_set, limit=limit,
+        )
+        reasons_by_id = {r["id"]: wsvc.explain(r, meal_slot=meal_slot) for r in results}
+        return {"count": len(results), "recipes": results, "reasons": reasons_by_id}
+
+    svc = recipe_service.get_service()
     results = svc.recommend(
         meal_type=meal_type, fitness_goal=fitness_goal, diet_type=diet_type,
         living_situation=living_situation, hostel_friendly=hostel_friendly,
         home_friendly=home_friendly, location=location, difficulty=difficulty,
         max_calories=max_calories, exclude_ids=exclude_set, limit=limit,
     )
-    meal_slot = recipe_service.resolve_meal_slot(meal_type)
     reasons_by_id = {
         r["id"]: svc.explain_recommendation(
             r, fitness_goal=fitness_goal, living_situation=living_situation, location=location,
-            meal_slot=meal_slot,
         )
         for r in results
     }
@@ -155,6 +180,11 @@ async def discover_recipes(
 async def get_recipe(recipe_id: str) -> dict:
     svc = recipe_service.get_service()
     recipe = svc.get_by_id(recipe_id)
+    if recipe is None:
+        # Not in the normal 637-recipe dataset — try the small workout-
+        # nutrition one before giving up (its IDs use a distinct
+        # ZITLAS-FUEL-*/ZITLAS-RECOVERY-* prefix, so there's no collision).
+        recipe = workout_nutrition_service.get_service().get_by_id(recipe_id)
     if recipe is None:
         raise HTTPException(status_code=404, detail="recipe_not_found")
     return recipe

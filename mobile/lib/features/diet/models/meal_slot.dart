@@ -1,3 +1,5 @@
+import 'package:flutter/material.dart';
+
 /// The semantic purpose of a diet-plan meal slot — distinct from the
 /// LLM-generated `DietMeal.mealName` free text ("Breakfast", "Pre-Workout
 /// Snack", "Post-Workout", ... — see routes/assessment.py's prompt schema),
@@ -5,6 +7,14 @@
 /// classifies a meal name into a slot; nothing else should re-derive it with
 /// its own ad hoc string checks (diet_meal_card.dart and recipe_screen.dart
 /// both reuse [mealSlotFromName]/[mealSlotFromApiValue]).
+///
+/// PRE_WORKOUT/POST_WORKOUT are NOT "a normal recipe with a fitness tag" —
+/// the backend serves them from a completely separate, dedicated
+/// workout-nutrition dataset (see backend/services/workout_nutrition_service.py),
+/// never the 637-recipe database breakfast/lunch/dinner/snack use. Every
+/// getter below exists to keep that distinction visible in the UI too —
+/// "Workout Fuel"/"Workout Recovery" must never read like just another
+/// "ZITLAS Recipe".
 enum MealSlot { breakfast, lunch, dinner, snack, preWorkout, postWorkout }
 
 extension MealSlotX on MealSlot {
@@ -23,12 +33,12 @@ extension MealSlotX on MealSlot {
 
   bool get isWorkoutSlot => this == MealSlot.preWorkout || this == MealSlot.postWorkout;
 
-  /// Recipe screen heading (item 16) — never the generic "ZITLAS Recipe"
-  /// wording for a workout slot, so the athlete can tell at a glance this
-  /// isn't just another breakfast/lunch/dinner pick.
+  /// Recipe screen heading — never the generic "ZITLAS Recipe" wording for
+  /// a workout slot, so the athlete can tell at a glance this isn't just
+  /// another breakfast/lunch/dinner pick, and never reads as "a recipe".
   String get recipeKicker => switch (this) {
-        MealSlot.preWorkout => '⚡ Pre-Workout',
-        MealSlot.postWorkout => '💪 Post-Workout',
+        MealSlot.preWorkout => '⚡ Workout Fuel',
+        MealSlot.postWorkout => '💪 Workout Recovery',
         _ => '🍳 ZITLAS Recipe',
       };
 
@@ -36,6 +46,29 @@ extension MealSlotX on MealSlot {
         MealSlot.preWorkout => 'Quick energy before your workout',
         MealSlot.postWorkout => 'Recovery-focused nutrition after training',
         _ => '',
+      };
+
+  /// The Diet meal card's action-button wording — deliberately distinct
+  /// per slot ("Do NOT use the same generic 'Get Easy Recipe' wording for
+  /// all three").
+  String get actionButtonLabel => switch (this) {
+        MealSlot.preWorkout => 'Get Workout Fuel',
+        MealSlot.postWorkout => 'Get Recovery Recipe',
+        _ => 'Get Easy Recipe',
+      };
+
+  IconData get actionButtonIcon => switch (this) {
+        MealSlot.preWorkout => Icons.bolt,
+        MealSlot.postWorkout => Icons.fitness_center,
+        _ => Icons.egg_alt_outlined,
+      };
+
+  /// The loading screen's "Finding ___ for you…" phrase — kept slot-aware
+  /// so even the loading state never implies a workout slot is "a recipe".
+  String get findingLabel => switch (this) {
+        MealSlot.preWorkout => 'workout fuel',
+        MealSlot.postWorkout => 'a recovery option',
+        _ => 'the best ZITLAS recipe',
       };
 }
 

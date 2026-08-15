@@ -197,118 +197,33 @@ def test_recommended_recipe_never_violates_diet_type_even_when_relaxing(client):
         assert recipe["diet_type"] == "Vegan"
 
 
-# ── Pre-workout / Post-workout slots ─────────────────────────────────────
+# ── Pre-workout / Post-workout are NEVER served from this dataset ───────
+# See tests/test_workout_nutrition.py for the actual pre/post-workout
+# recommendation coverage — services/workout_nutrition_service.py's own
+# dedicated dataset/tests, per the architecture split this feature requires.
 
-def test_pre_workout_recommendation_is_quick_and_light():
-    """No recipe in the dataset carries a "Pre-Workout" meal_type/tag at
-    all — the slot must still return something, and it must actually be
-    quick + light + carbohydrate-forward, not just whatever generic
-    breakfast happened to sort first on easy-score alone."""
+def test_recipe_service_recommend_does_not_understand_workout_slots():
+    """RecipeService.recommend() must have ZERO special-casing for
+    pre_workout/post_workout — no recipe in the 637-recipe dataset carries
+    those literal meal_type strings, so passing them straight through
+    correctly yields nothing here. Both slots are served exclusively by
+    workout_nutrition_service, dispatched at the routes.py layer BEFORE
+    ever reaching this service — this test guards against that separation
+    ever regressing back into a "search the normal recipes" fallback."""
     svc = recipe_service.get_service()
-    results = svc.recommend(meal_type="pre_workout", limit=5)
-    assert len(results) > 0
-    top = results[0]
-    nutrition = top["nutrition_estimated"]
-    total_time = top["prep_time_min"] + top["cook_time_min"]
-    assert total_time <= 15, f"{top['name']!r} takes {total_time} min — too slow for pre-workout"
-    assert nutrition["fat_g"] <= 15, f"{top['name']!r} has {nutrition['fat_g']}g fat — too heavy for pre-workout"
+    assert svc.recommend(meal_type="pre_workout") == []
+    assert svc.recommend(meal_type="post_workout") == []
 
 
-def test_pre_workout_does_not_fall_back_to_a_random_generic_meal_type(client):
-    """The literal meal name a diet plan uses ("Pre-Workout Snack") must
-    resolve through the dedicated pre_workout slot, not get treated as an
-    unrecognized string that silently returns an unrelated dish."""
-    r = client.get("/api/recipes/recommended?meal_type=pre_workout&diet_type=vegetarian&limit=5")
-    assert r.status_code == 200
-    body = r.json()
-    assert body["count"] > 0
-    for recipe in body["recipes"]:
-        assert recipe["diet_type"] == "Vegetarian"
-        assert recipe["meal_type"][0] in ("Breakfast", "Beverage", "Evening Snack")
-
-
-def test_post_workout_recommendation_uses_only_the_real_post_workout_recipes():
-    """Post-Workout DOES have real dataset recipes (7, one per diet type) —
-    the slot must be a hard filter to exactly those, never a normal
-    lunch/dinner recommendation."""
-    svc = recipe_service.get_service()
-    results = svc.recommend(meal_type="post_workout", limit=10)
-    assert len(results) > 0
-    for r in results:
-        assert "Post-Workout" in r["meal_type"]
-
-
-def test_post_workout_prioritizes_protein_for_recovery():
-    """Given a choice, the recovery slot should rank the higher-protein
-    option first — e.g. the Soya Amti Bowl (49.9g protein) over the
-    Chocolate Banana Milk (7.9g protein), both Vegan/Vegetarian-adjacent
-    post-workout options."""
-    svc = recipe_service.get_service()
-    results = svc.recommend(meal_type="post_workout", diet_type="vegan", limit=5)
-    assert len(results) > 0
-    top = results[0]
-    assert top["nutrition_estimated"]["protein_g"] >= 40
-
-
-def test_post_workout_hyphenated_and_underscored_forms_agree(client):
-    a = client.get("/api/recipes/recommended?meal_type=post-workout").json()
-    b = client.get("/api/recipes/recommended?meal_type=post_workout").json()
-    assert a["count"] > 0 and b["count"] > 0
-    assert a["recipes"][0]["id"] == b["recipes"][0]["id"]
-
-
-def test_pre_workout_respects_diet_type_and_goal_together(client):
-    r = client.get(
-        "/api/recipes/recommended?meal_type=pre_workout&diet_type=vegetarian&fitness_goal=weight_loss&limit=5"
-    )
-    assert r.status_code == 200
-    body = r.json()
-    assert body["count"] > 0
-    for recipe in body["recipes"]:
-        assert recipe["diet_type"] == "Vegetarian"
-
-
-def test_pre_workout_reason_leads_with_the_slot_purpose(client):
-    r = client.get("/api/recipes/recommended?meal_type=pre_workout&limit=1")
-    body = r.json()
-    top_id = body["recipes"][0]["id"]
-    assert body["reasons"][top_id][0] == "Quick energy before training"
-
-
-def test_post_workout_reason_leads_with_the_slot_purpose(client):
-    r = client.get("/api/recipes/recommended?meal_type=post_workout&limit=1")
-    body = r.json()
-    top_id = body["recipes"][0]["id"]
-    assert body["reasons"][top_id][0] == "Recovery-focused nutrition after training"
-
-
-def test_normal_meal_reason_does_not_mention_workout_purpose(client):
-    r = client.get("/api/recipes/recommended?meal_type=breakfast&limit=1")
-    body = r.json()
-    top_id = body["recipes"][0]["id"]
-    assert body["reasons"][top_id][0] not in (
-        "Quick energy before training", "Recovery-focused nutrition after training",
-    )
-
-
-def test_get_another_pre_workout_recipe_excludes_the_previous_one(client):
-    first = client.get("/api/recipes/recommended?meal_type=pre_workout&diet_type=vegetarian").json()
-    first_id = first["recipes"][0]["id"]
-    second = client.get(
-        f"/api/recipes/recommended?meal_type=pre_workout&diet_type=vegetarian&exclude_ids={first_id}"
-    ).json()
-    assert second["count"] > 0
-    assert second["recipes"][0]["id"] != first_id
-
-
-def test_get_another_post_workout_recipe_excludes_the_previous_one(client):
-    first = client.get("/api/recipes/recommended?meal_type=post_workout&diet_type=vegan").json()
-    first_id = first["recipes"][0]["id"]
-    second = client.get(
-        f"/api/recipes/recommended?meal_type=post_workout&diet_type=vegan&exclude_ids={first_id}"
-    ).json()
-    assert second["count"] > 0
-    assert second["recipes"][0]["id"] != first_id
+def test_recommended_endpoint_dispatches_workout_slots_away_from_the_637_dataset(client):
+    """The /recommended endpoint itself must route pre_workout/post_workout
+    to the dedicated workout-nutrition dataset — its IDs use a distinct
+    ZITLAS-FUEL-*/ZITLAS-RECOVERY-* prefix, never ZITLAS-REC-*."""
+    pre = client.get("/api/recipes/recommended?meal_type=pre_workout").json()
+    post = client.get("/api/recipes/recommended?meal_type=post_workout").json()
+    assert pre["count"] > 0 and post["count"] > 0
+    assert pre["recipes"][0]["id"].startswith("ZITLAS-FUEL-")
+    assert post["recipes"][0]["id"].startswith("ZITLAS-RECOVERY-")
 
 
 # ── 11. Easy-recipe preference ────────────────────────────────────────────

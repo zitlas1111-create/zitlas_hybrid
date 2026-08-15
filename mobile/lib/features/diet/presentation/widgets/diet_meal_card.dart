@@ -132,13 +132,14 @@ class DietMealCard extends StatelessWidget {
               children: [
                 // "Get Easy ZITLAS Recipe" BEFORE "Swap" — build order here
                 // is also left-to-right visual order, satisfying the spec's
-                // placement requirement.
+                // placement requirement. Label/icon/color vary by slot so a
+                // workout-fuel/recovery action never reads as "a recipe".
                 if (onGetRecipe != null)
                   Expanded(
                     child: _MealActionButton(
-                      icon: Icons.egg_alt_outlined,
-                      label: 'Easy Recipe',
-                      color: ZitlasTokens.primary,
+                      icon: slot.actionButtonIcon,
+                      label: slot.actionButtonLabel,
+                      color: slot == MealSlot.postWorkout ? ZitlasTokens.primaryDark : ZitlasTokens.primary,
                       onPressed: onGetRecipe,
                     ),
                   ),

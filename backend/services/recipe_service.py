@@ -55,6 +55,15 @@ _DIET_TYPE_ALIASES: dict[str, str] = {
 }
 
 # `?meal_type=` aliases — the dataset's own values are on the right.
+#
+# Deliberately NO "post_workout"/"pre_workout" entries here, even though 7
+# recipes in the dataset carry a literal "Post-Workout" meal_type tag: this
+# service must have ZERO path back to recommending from the normal-meal
+# database for either workout slot (see resolve_meal_slot() and
+# services/workout_nutrition_service.py). Those 7 tagged recipes are
+# untouched data, still reachable via the exact-case `/api/recipes?
+# meal_type=Post-Workout` raw browse, but never through this alias table or
+# through recommend().
 _MEAL_TYPE_ALIASES: dict[str, str] = {
     "breakfast": "Breakfast",
     "lunch": "Lunch",
@@ -67,37 +76,28 @@ _MEAL_TYPE_ALIASES: dict[str, str] = {
     "beverage": "Beverage",
     "drink": "Beverage",
     "drinks": "Beverage",
-    "post_workout": "Post-Workout",
-    "post-workout": "Post-Workout",
 }
 
-# PRE_WORKOUT/POST_WORKOUT are meal SLOTS, not literal dataset `meal_type`
-# values — resolve_meal_slot() below is the one place that recognizes them
-# (recommend() and routes/recipes.py both call it, so they can never
-# disagree on what counts as a workout slot). The dataset has NO
-# "Pre-Workout" meal_type or tag at all (enumerated directly: only
-# "Post-Workout" exists, on 7 recipes) — see _pre_workout_pool()/
-# _pre_workout_purpose_score() for how that slot is served without one.
+# PRE_WORKOUT/POST_WORKOUT are meal SLOTS, never literal dataset `meal_type`
+# values, and — critically — this service NEVER serves them. Scoring a
+# "fitness-friendly" recipe out of the 637-recipe normal-meal dataset kept
+# surfacing results that were healthy but wrong for the purpose (a full
+# paneer dish scored well on fitness_goals/difficulty despite being far too
+# heavy to eat before training). Both workout slots are served exclusively
+# by services/workout_nutrition_service.py's small, purpose-built dataset —
+# resolve_meal_slot() exists only so routes/recipes.py can recognize a
+# workout slot BEFORE ever reaching this module, and dispatch there instead.
 _PRE_WORKOUT_SLOT_KEYS = {"pre_workout", "preworkout"}
 _POST_WORKOUT_SLOT_KEYS = {"post_workout", "postworkout"}
-
-# The meal types a genuinely quick/light/carb-forward pre-workout item can
-# plausibly come from — Lunch/Dinner/Dessert are excluded because "closest
-# generic meal type" is exactly the wrong-answer fallback item 10 forbids.
-_PRE_WORKOUT_CANDIDATE_MEAL_TYPES = ("Breakfast", "Beverage", "Evening Snack")
-
-# Soft keyword bonus only (never a hard requirement) — mirrors the product
-# spec's own named pre-workout examples (banana, dates, coconut water,
-# energy, smoothie, fruit, light poha).
-_PRE_WORKOUT_KEYWORDS = ("banana", "date", "coconut water", "energy", "smoothie", "fruit", "poha")
 
 
 def resolve_meal_slot(meal_type: str | None) -> str | None:
     """"pre_workout" / "post_workout" when `meal_type` names one of those
     special slots (any of pre_workout/pre-workout/preworkout and the post-
-    equivalents), else None. Shared by recommend() and
-    routes/recipes.py's reason-building so both agree on what "the workout
-    slots" means from a single place, never two ad hoc string checks."""
+    equivalents), else None. The ONE place that recognizes a workout slot —
+    routes/recipes.py calls this before deciding whether to route to this
+    module's normal-meal recommend() or to
+    workout_nutrition_service.recommend() instead."""
     if not meal_type:
         return None
     key = _norm(meal_type).replace("-", "_").replace(" ", "_")
@@ -325,72 +325,6 @@ class RecipeService:
                 score += 2.5
         return score
 
-    def _pre_workout_pool(
-        self, *, diet_type: str | None, difficulty: str | None,
-    ) -> list[dict[str, Any]]:
-        """The PRE_WORKOUT candidate pool — built from meal types that can
-        plausibly serve the slot's purpose (quick energy), since no recipe
-        carries an explicit Pre-Workout meal_type/tag (see module-level
-        comment above _PRE_WORKOUT_SLOT_KEYS). _pre_workout_purpose_score()
-        is what actually picks the quick/light/carb-forward ones out of this
-        pool; this method only establishes which meal types are even
-        eligible to be considered. diet_type stays a hard filter, same as
-        every other slot; difficulty is a soft preference, relaxed before
-        the candidate pool itself ever would be."""
-        pool = [
-            r for r in self.recipes
-            if any(mt in _PRE_WORKOUT_CANDIDATE_MEAL_TYPES for mt in (r.get("meal_type") or []))
-        ]
-        if diet_type:
-            wanted_diet = _resolve_diet_type(diet_type)
-            pool = [r for r in pool if _norm(r.get("diet_type")) == _norm(wanted_diet)]
-        if difficulty:
-            wanted_diff = _norm(difficulty)
-            narrowed = [r for r in pool if _norm(r.get("difficulty")) == wanted_diff]
-            if narrowed:
-                pool = narrowed
-        return pool
-
-    def _pre_workout_purpose_score(self, r: dict[str, Any]) -> float:
-        """PRE_WORKOUT's actual purpose — quick energy before training —
-        scored from nutrition/prep-time fields that already exist on every
-        recipe. Never applied to a normal meal recommendation, since a
-        filling breakfast/lunch/dinner should never be penalized for being
-        filling."""
-        nutrition = r.get("nutrition_estimated") or {}
-        carbs = nutrition.get("carbs_g") or 0
-        fat = nutrition.get("fat_g") or 0
-        calories = nutrition.get("calories_kcal") or 0
-        total_time = (r.get("prep_time_min") or 0) + (r.get("cook_time_min") or 0)
-        score = 0.0
-        if total_time <= 5:
-            score += 2.0
-        elif total_time <= 15:
-            score += 1.0
-        if fat <= 8:
-            score += 1.5
-        elif fat <= 15:
-            score += 0.75
-        if carbs >= 15:
-            score += 1.0
-        if calories <= 250:
-            score += 1.0
-        elif calories <= 350:
-            score += 0.5
-        haystack = _norm(r.get("name")) + " " + " ".join(_norm(t) for t in (r.get("tags") or []))
-        if any(kw in haystack for kw in _PRE_WORKOUT_KEYWORDS):
-            score += 1.5
-        return score
-
-    def _post_workout_purpose_score(self, r: dict[str, Any]) -> float:
-        """POST_WORKOUT's actual purpose — recovery — weighted toward
-        protein ahead of the generic easy/fitness-goal scoring every other
-        slot uses. Unlike pre-workout, the dataset DOES carry a real
-        "Post-Workout" meal_type (7 recipes), so this only re-ranks within
-        that already-correct pool rather than building a new one."""
-        protein = (r.get("nutrition_estimated") or {}).get("protein_g") or 0
-        return min(protein / 10.0, 3.0)
-
     def recommend(
         self,
         meal_type: str | None = None,
@@ -436,27 +370,16 @@ class RecipeService:
         excluding would empty the meal_type+diet_type pool, e.g. a user who
         has cycled through every match for a narrow combination.
 
-        `meal_type="pre_workout"`/`"post_workout"` (see resolve_meal_slot())
-        are SLOTS, not literal dataset values — PRE_WORKOUT never falls back
-        to "closest generic meal type" (item 10); its own pool/scoring
-        prioritizes quick, low-fat, carbohydrate-forward, light options
-        instead (_pre_workout_pool/_pre_workout_purpose_score). POST_WORKOUT
-        uses the dataset's real "Post-Workout" meal_type as a hard filter,
-        same as any other slot, then re-ranks toward higher protein
-        (_post_workout_purpose_score) — recovery comes first, ahead of the
-        generic easy/fitness-goal scoring every other slot uses.
+        This method serves NORMAL MEALS ONLY (breakfast/lunch/dinner/snack/
+        dessert/beverage). PRE_WORKOUT/POST_WORKOUT are never routed here —
+        see resolve_meal_slot() and services/workout_nutrition_service.py.
         """
-        slot = resolve_meal_slot(meal_type)
-
-        if slot == "pre_workout":
-            pool = self._pre_workout_pool(diet_type=diet_type, difficulty=difficulty)
-        else:
-            pool = self.filter(meal_type=meal_type, diet_type=diet_type, difficulty=difficulty)
-            if not pool and difficulty:
-                # "Easy" is a preference, not a promise the dataset can always
-                # keep for every meal_type+diet_type combination — relax it
-                # before ever relaxing meal_type or diet_type.
-                pool = self.filter(meal_type=meal_type, diet_type=diet_type)
+        pool = self.filter(meal_type=meal_type, diet_type=diet_type, difficulty=difficulty)
+        if not pool and difficulty:
+            # "Easy" is a preference, not a promise the dataset can always
+            # keep for every meal_type+diet_type combination — relax it
+            # before ever relaxing meal_type or diet_type.
+            pool = self.filter(meal_type=meal_type, diet_type=diet_type)
         if not pool:
             return []
 
@@ -485,15 +408,10 @@ class RecipeService:
         _state, region_keywords = region_keywords_for_location(location) if location else (None, [])
 
         def _final_score(r: dict[str, Any]) -> float:
-            score = self._easy_score(r) + self._context_score(
+            return self._easy_score(r) + self._context_score(
                 r, fitness_goal_display=fitness_goal_display,
                 recipe_preference=recipe_preference, region_keywords=region_keywords,
             )
-            if slot == "pre_workout":
-                score += self._pre_workout_purpose_score(r)
-            elif slot == "post_workout":
-                score += self._post_workout_purpose_score(r)
-            return score
 
         ranked = sorted(pool, key=lambda r: (-_final_score(r), r["id"]))
         return ranked[:limit]
@@ -501,21 +419,12 @@ class RecipeService:
     def explain_recommendation(
         self, recipe: dict[str, Any], *,
         fitness_goal: str | None = None, living_situation: str | None = None,
-        location: dict | None = None, meal_slot: str | None = None,
+        location: dict | None = None,
     ) -> list[str]:
         """Short, honest, data-backed reasons — the same signals recommend()
         actually scored on, never a fabricated claim. Powers the recipe
-        page's "why this was recommended" section (item 4/13).
-
-        `meal_slot` ("pre_workout"/"post_workout", see resolve_meal_slot())
-        leads with the slot's actual purpose so the UI never presents a
-        pre/post-workout pick with the same generic reasoning as a normal
-        meal (item 16/21)."""
+        page's "why this was recommended" section (item 4/13)."""
         reasons: list[str] = []
-        if meal_slot == "pre_workout":
-            reasons.append("Quick energy before training")
-        elif meal_slot == "post_workout":
-            reasons.append("Recovery-focused nutrition after training")
         if recipe.get("difficulty") == "Easy":
             reasons.append("Easy difficulty")
         total_time = (recipe.get("prep_time_min") or 0) + (recipe.get("cook_time_min") or 0)
