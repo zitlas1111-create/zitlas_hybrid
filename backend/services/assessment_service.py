@@ -61,6 +61,12 @@ class AssessmentInput(BaseModel):
     supplement_types:   list = Field(default_factory=list, description="e.g. ['Whey Protein', 'Creatine'] when uses_supplements='yes'")
     disliked_exercises: list = Field(default_factory=list, description="exercise names the user repeatedly skips — never recommend")
     disliked_foods:     list = Field(default_factory=list, description="foods the user dislikes — never recommend")
+    # A PREFERENCE, never a restriction: the food engine already treats
+    # `favorite_foods` as a ranking bonus (food_engine._region_component /
+    # _preference_component), so this biases the plan toward foods the
+    # athlete enjoys without ever forcing every meal to become one of them.
+    # Also personalises Creator Recipe search (routes/creator_recipes.py).
+    favorite_foods:     list = Field(default_factory=list, description="stable food ids the user enjoys, e.g. ['pizza','burger'] — a preference, not a filter")
     workout_intensity_preference: str = Field(default="", description="light | moderate | intense | '' ")
     preferred_workout_time:       str = Field(default="", description="morning | evening | flexible | ''")
 

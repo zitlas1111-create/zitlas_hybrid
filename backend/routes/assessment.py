@@ -96,6 +96,10 @@ def _engine_grounded_diet_plan(data: "AssessmentInput", calc: dict, fitness_goal
         "diet_type":         data.diet_preference,
         "daily_budget":      data.budget,
         "disliked_foods":    data.disliked_foods,
+        # `_engine_query_context` has always read this key; nothing was
+        # populating it until the Assessment started asking. Purely
+        # additive — an empty list behaves exactly as before.
+        "favorite_foods":    data.favorite_foods,
     }
     ctx = groq_service._engine_query_context(player_profile, lifestyle_data)
     week = food_engine.get_engine().build_week_plan(
