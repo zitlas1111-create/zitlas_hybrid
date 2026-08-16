@@ -17,6 +17,8 @@ import '../features/chat/presentation/screens/chat_screen.dart';
 import '../features/coaching_webview/coaching_webview_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/diet/presentation/screens/diet_screen.dart';
+import '../features/diet/presentation/screens/creator_profile_screen.dart';
+import '../features/diet/presentation/screens/creator_recipe_screen.dart';
 import '../features/diet/presentation/screens/recipe_screen.dart';
 // NOTE: ExpertDashboardScreen (native coach dashboard) is intentionally NOT
 // imported — /expert-dashboard now renders CoachingWebViewScreen. The native
@@ -185,6 +187,21 @@ GoRouter buildRouter(AuthState authState) {
         builder: (context, state) => RecipeScreen(
           mealType: state.uri.queryParameters['meal_type'] ?? 'snack',
         ),
+      ),
+      // 🎥 Creator Recipe — a YouTube creator's video. A SEPARATE source
+      // from /recipe (ZITLAS's own curated recipes); the two are never
+      // conflated in the UI or the routing.
+      GoRoute(
+        path: '/creator-recipe',
+        builder: (context, state) => CreatorRecipeScreen(
+          food: state.uri.queryParameters['food'] ?? '',
+          mealType: state.uri.queryParameters['meal_type'] ?? 'snack',
+        ),
+      ),
+      GoRoute(
+        path: '/creator/:channelId',
+        builder: (context, state) =>
+            CreatorProfileScreen(channelId: state.pathParameters['channelId']!),
       ),
       GoRoute(
         path: '/chat/:roomId',

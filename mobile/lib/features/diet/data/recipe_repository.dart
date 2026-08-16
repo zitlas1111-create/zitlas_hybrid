@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/network/api_client.dart';
+import '../models/creator_recipe.dart';
 import '../models/recipe.dart';
 
 /// The athlete's existing context, resolved from the SAME `users/{uid}`
@@ -17,11 +18,17 @@ class AthleteRecipeContext {
     this.dietType,
     this.livingSituation,
     this.state,
+    this.favoriteFoods = const [],
   });
 
   final String? fitnessGoal;
   final String? dietType;
   final String? livingSituation;
+
+  /// Stable food ids from the Assessment's "What foods do you enjoy?"
+  /// question. A PREFERENCE: used to break ties between equally-relevant
+  /// creator videos, never to override the food actually on the meal card.
+  final List<String> favoriteFoods;
 
   /// The athlete's confirmed region (`preferredDietRegion` — never live GPS;
   /// same field the diet-generation and swap paths already use, so a
@@ -37,6 +44,12 @@ class AthleteRecipeContext {
       dietType: assessment['diet_preference'] as String?,
       livingSituation: assessment['living_situation'] as String?,
       state: data['preferredDietRegion'] as String?,
+      // Written by the Assessment's food-preferences question. Absent for
+      // athletes who completed the assessment before it existed — an empty
+      // list simply means "no preference signal", never an error.
+      favoriteFoods: ((assessment['favorite_foods'] as List?) ?? const [])
+          .map((e) => '$e')
+          .toList(),
     );
   }
 }
@@ -85,6 +98,7 @@ class RecipeRepository {
     String? state,
     String? difficulty,
     Set<String>? excludeIds,
+    int? minutesUntilWorkout,
     int limit = 1,
   }) async {
     final res = await _api.get('/api/recipes/recommended', query: {
@@ -95,9 +109,68 @@ class RecipeRepository {
       'state': ?state,
       'difficulty': ?difficulty,
       if (excludeIds != null && excludeIds.isNotEmpty) 'exclude_ids': excludeIds.join(','),
+      // Pre-workout only, and only when the athlete actually picked a
+      // window. Omitted means "no workout time known" — the backend then
+      // applies its own stated default rather than ZITLAS pretending to
+      // know when training starts (there is no workout start-time field
+      // anywhere in the app).
+      'minutes_until_workout': ?minutesUntilWorkout,
       'limit': limit,
     });
     if (res is! Map) return const RecipeRecommendation(recipes: [], reasons: {});
     return RecipeRecommendation.fromMap(res.cast<String, dynamic>());
+  }
+
+  // ── Creator Recipes (YouTube) ─────────────────────────────────────────
+  // A SEPARATE content source from the ZITLAS recipe database above, served
+  // by /api/creator-recipes. Deliberately methods on THIS repository rather
+  // than a second one: they need the same ApiClient and the same
+  // AthleteRecipeContext, and a parallel HTTP layer would be exactly the
+  // duplication to avoid. No YouTube key is ever present client-side — the
+  // backend holds it and this class only ever sees normalized results.
+
+  /// Ranked creator videos for [food]. Returns a LIST so "See Another
+  /// Recipe" can walk it locally without another backend round trip (which
+  /// in turn avoids another YouTube search against a limited daily quota).
+  ///
+  /// The backend REFUSES pre/post-workout meal types outright — those slots
+  /// have their own purpose-built nutrition system and must not be answered
+  /// with a generic recipe video.
+  Future<List<CreatorRecipe>> getCreatorRecipes({
+    required String food,
+    String? mealType,
+    String? fitnessGoal,
+    String? dietType,
+    String? livingSituation,
+    String? region,
+    List<String> favoriteFoods = const [],
+    Set<String>? excludeIds,
+    int limit = 5,
+  }) async {
+    final res = await _api.get('/api/creator-recipes/recommended', query: {
+      'food': food,
+      'meal_type': ?mealType,
+      'fitness_goal': ?fitnessGoal,
+      'diet_type': ?dietType,
+      'living_situation': ?livingSituation,
+      'region': ?region,
+      // Tie-breaker only — the meal's own food still drives the search.
+      if (favoriteFoods.isNotEmpty) 'favorite_foods': favoriteFoods.join(','),
+      if (excludeIds != null && excludeIds.isNotEmpty) 'exclude_ids': excludeIds.join(','),
+      'limit': limit,
+    });
+    if (res is! Map) return const [];
+    final raw = (res['videos'] as List?) ?? const [];
+    return [
+      for (final v in raw)
+        if (v is Map) ?CreatorRecipe.fromMap(v.cast<String, dynamic>()),
+    ];
+  }
+
+  /// Public channel info for the Creator Profile screen.
+  Future<CreatorChannel?> getCreatorChannel(String channelId) async {
+    final res = await _api.get('/api/creator-recipes/channel/$channelId');
+    if (res is! Map) return null;
+    return CreatorChannel.fromMap(res.cast<String, dynamic>());
   }
 }

@@ -57,6 +57,64 @@ class _AppShellState extends State<AppShell> {
   ZinoTourController? _tour;
   String? _tourUid;
 
+  /// Tabs the athlete visited before the current one, most recent last.
+  ///
+  /// `StatefulShellRoute` gives each branch its own navigator, but switching
+  /// BETWEEN branches records nothing — neither `goBranch()` (bottom nav) nor
+  /// a cross-tab `context.go('/training')` (the Training card, the Profile
+  /// avatar, the Experts promo) leaves anything to pop. So a back press on
+  /// any tab other than the one you launched into had no route to return to
+  /// and fell straight through to the exit confirmation, which is the
+  /// reported "back jumps to the warning" bug.
+  ///
+  /// This is the missing history. Back now walks it one tab at a time, and
+  /// the exit confirmation is reached only once it is empty — i.e. the
+  /// athlete really is back where they started.
+  final List<int> _tabHistory = [];
+
+  /// Set while [_goBackToPreviousTab] drives the change, so the branch we are
+  /// returning TO is not re-recorded as somewhere we came FROM (which would
+  /// bounce between two tabs forever).
+  bool _navigatingBack = false;
+
+  late int _branchIndex = widget.navigationShell.currentIndex;
+
+  /// Deep enough for any realistic session, bounded so a long browse cannot
+  /// grow it without limit.
+  static const _maxTabHistory = 20;
+
+  @override
+  void didUpdateWidget(AppShell oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _recordBranchChange();
+  }
+
+  /// Records a tab change however it was triggered — bottom nav, a
+  /// cross-tab `context.go(...)`, or a notification deep link. Watching the
+  /// shell's own `currentIndex` catches all of them; hooking only the
+  /// bottom-nav `onTap` would miss the `context.go` callers entirely.
+  void _recordBranchChange() {
+    final current = widget.navigationShell.currentIndex;
+    if (current == _branchIndex) return;
+
+    if (!_navigatingBack) {
+      _tabHistory.add(_branchIndex);
+      if (_tabHistory.length > _maxTabHistory) _tabHistory.removeAt(0);
+    }
+    _branchIndex = current;
+    _navigatingBack = false;
+  }
+
+  /// True when back had somewhere to go. Never touches the exit dialog.
+  bool _goBackToPreviousTab() {
+    if (_tabHistory.isEmpty) return false;
+    final previous = _tabHistory.removeLast();
+    _navigatingBack = true;
+    _branchIndex = previous;
+    widget.navigationShell.goBranch(previous);
+    return true;
+  }
+
   /// In-session latch. Both the "no tour" and "tour finished" paths can fire,
   /// and an account switch re-runs [_initTourFor] — without this the sheet
   /// could be pushed twice.
@@ -189,6 +247,12 @@ class _AppShellState extends State<AppShell> {
       canPop: false,
       onPopInvokedWithResult: (bool didPop, Object? _) async {
         if (didPop) return;
+        // Reaching here means the active tab's own navigator had nothing
+        // left to pop. Before treating that as "leaving the app", walk back
+        // through the tabs the athlete actually visited — that history is
+        // what the branch navigators cannot represent.
+        if (_goBackToPreviousTab()) return;
+        // Genuinely at the start: no page to pop, no earlier tab.
         await _confirmExitApp();
       },
       child: ZinoTourHost(
