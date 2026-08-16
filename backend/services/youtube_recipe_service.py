@@ -50,8 +50,33 @@ _CACHE_TTL = 60 * 60 * 6  # 6 hours
 _CACHE_MAX = 400
 
 # Enough candidates to rank meaningfully and to serve several "See Another"
-# taps from one search, without inflating the response.
-_SEARCH_RESULTS = 15
+# taps from one search, without inflating the response. Raised from 15
+# because the Shorts duration gate below discards most long-form results.
+_SEARCH_RESULTS = 25
+
+# CREATOR RECIPE = SHORT-FORM. Hard ceiling, enforced on the video's real
+# `contentDetails.duration`, never on the search filter alone: YouTube's
+# `videoDuration=short` means "under 4 minutes", which is far longer than
+# the Shorts experience this feature is for. A video over this is REJECTED,
+# never merely down-ranked — returning fewer results is correct, filling the
+# gap with a 10-minute tutorial is not.
+_MAX_SHORT_SECONDS = 180
+
+_ISO8601_DURATION = re.compile(
+    r"^P(?:(?P<days>\d+)D)?T(?:(?P<hours>\d+)H)?(?:(?P<minutes>\d+)M)?(?:(?P<seconds>\d+)S)?$"
+)
+
+
+def parse_iso8601_duration(value: str | None) -> int | None:
+    """`PT1M30S` -> 90. None when unparseable — treated as ineligible by
+    the caller rather than optimistically allowed through."""
+    if not value:
+        return None
+    m = _ISO8601_DURATION.match(value.strip())
+    if not m:
+        return None
+    parts = {k: int(v) for k, v in m.groupdict(default="0").items()}
+    return parts["days"] * 86400 + parts["hours"] * 3600 + parts["minutes"] * 60 + parts["seconds"]
 
 _cache: dict[str, tuple[float, list[dict[str, Any]]]] = {}
 
@@ -237,14 +262,22 @@ def _rank(video: dict[str, Any], *, food: str, diet_type: str | None,
     if any(sig in title for sig in _JUNK_SIGNALS):
         score -= 5.0
 
-    # 3b. Shorts. Found by a REAL API call during verification: a plain
-    #     search returns mostly Shorts, and a 30-second vertical clip is a
-    #     poor "watch a creator make it" experience next to a full
-    #     demonstration. A PENALTY rather than an exclusion — a Short that
-    #     genuinely demonstrates the recipe is still a valid answer, it just
-    #     shouldn't outrank a full video.
+    # 3b. SHORT-FORM IS THE PRODUCT. Creator Recipe means a short recipe
+    #     video, so shortness is rewarded rather than penalised — this
+    #     reverses an earlier heuristic that preferred full tutorials.
+    #     Everything reaching this function is already <= 180s (see
+    #     `_hydrate`); this only orders the survivors.
+    #
+    #     A 45-second relevant protein-pizza Short must beat a 179-second
+    #     one, and an explicit Shorts marker beats an unmarked clip.
+    duration = video.get("duration_seconds")
+    if isinstance(duration, int) and duration > 0:
+        # Full bonus at ~0s, none left at the 180s ceiling.
+        score += max(0.0, (_MAX_SHORT_SECONDS - duration) / _MAX_SHORT_SECONDS) * 3.0
+    if video.get("is_short"):
+        score += 2.0
     if any(tag in title for tag in ("#shorts", "#short", "#recipeshorts", "#ytshorts")):
-        score -= 2.5
+        score += 1.0
 
     # 4. Fitness relevance, only where the goal asks for it.
     goal = _norm(fitness_goal)
@@ -329,6 +362,11 @@ def _search(query: str) -> list[str]:
         # API-level embeddability filter: cheaper and more reliable than
         # discovering un-embeddable videos after the fact.
         "videoEmbeddable": "true",
+        # "under 4 minutes" — a PRE-filter that improves the candidate mix
+        # for free. It is NOT the Shorts rule: `_hydrate` still enforces the
+        # real 180s ceiling on contentDetails.duration, because 4 minutes is
+        # well beyond the short-form experience this feature is for.
+        "videoDuration": "short",
         "maxResults": _SEARCH_RESULTS,
         "safeSearch": "moderate",
         "relevanceLanguage": "en",
@@ -342,23 +380,46 @@ def _search(query: str) -> list[str]:
 
 
 def _hydrate(video_ids: list[str]) -> list[dict[str, Any]]:
-    """`videos.list` — 1 quota unit for the whole batch. Confirms
-    embeddability and supplies the snippet used for attribution."""
+    """`videos.list` — 1 quota unit for the whole batch, and the ONLY place
+    that can prove a video is genuinely short-form.
+
+    `contentDetails.duration` is the real length; `search.list` cannot tell
+    us this at all. Everything ineligible is dropped HERE rather than
+    down-ranked, so nothing downstream can accidentally surface a long-form
+    video, a livestream or a non-embeddable one.
+    """
     if not video_ids:
         return []
     data = _get(_VIDEOS_URL, {
-        "part": "snippet,status",
+        "part": "snippet,status,contentDetails,liveStreamingDetails",
         "id": ",".join(video_ids[:50]),
     })
     out = []
     for item in data.get("items", []):
         snippet = item.get("snippet") or {}
         status = item.get("status") or {}
-        thumbs = snippet.get("thumbnails") or {}
-        thumb = (thumbs.get("high") or thumbs.get("medium") or thumbs.get("default") or {})
+        content = item.get("contentDetails") or {}
         vid = item.get("id")
         if not vid:
             continue
+
+        # ── Eligibility gates. All hard rejections. ──
+        if not bool(status.get("embeddable", True)):
+            continue
+        # Live / upcoming / archived-live. `liveBroadcastContent` covers
+        # live+upcoming; `liveStreamingDetails` also catches a finished
+        # stream still sitting on the channel as a very long VOD.
+        if (snippet.get("liveBroadcastContent") or "none") != "none":
+            continue
+        if item.get("liveStreamingDetails"):
+            continue
+        duration = parse_iso8601_duration(content.get("duration"))
+        if duration is None or duration <= 0 or duration > _MAX_SHORT_SECONDS:
+            continue
+
+        thumbs = snippet.get("thumbnails") or {}
+        thumb = (thumbs.get("high") or thumbs.get("medium") or thumbs.get("default") or {})
+        text = f"{snippet.get('title') or ''} {snippet.get('description') or ''}".lower()
         out.append({
             "video_id": vid,
             "title": snippet.get("title") or "",
@@ -369,7 +430,13 @@ def _hydrate(video_ids: list[str]) -> list[dict[str, Any]]:
             "published_at": snippet.get("publishedAt"),
             "video_url": f"https://www.youtube.com/watch?v={vid}",
             "platform": "youtube",
-            "embeddable": bool(status.get("embeddable", True)),
+            "embeddable": True,
+            "duration_seconds": duration,
+            # A best-effort "is this really a Short" signal for ranking.
+            # Never a gate — creators frequently omit #shorts, so gating on
+            # it would discard perfectly good short-form recipes. Duration
+            # is what actually decides eligibility.
+            "is_short": ("#shorts" in text or "#short" in text or duration <= 60),
         })
     return out
 

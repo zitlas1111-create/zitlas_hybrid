@@ -49,8 +49,12 @@ def _search_payload(*video_ids):
 
 
 def _videos_payload(*videos):
-    return {"items": [
-        {
+    """Mirrors the REAL videos.list shape, including the contentDetails the
+    Shorts gate depends on. `duration` defaults to a genuine Short so tests
+    that aren't about duration stay readable."""
+    items = []
+    for v in videos:
+        item = {
             "id": v["id"],
             "snippet": {
                 "title": v.get("title", "Recipe"),
@@ -59,11 +63,15 @@ def _videos_payload(*videos):
                 "channelTitle": v.get("channel", "Test Kitchen"),
                 "thumbnails": {"high": {"url": f"https://i.ytimg.com/{v['id']}.jpg"}},
                 "publishedAt": "2026-01-01T00:00:00Z",
+                "liveBroadcastContent": v.get("live", "none"),
             },
             "status": {"embeddable": v.get("embeddable", True)},
+            "contentDetails": {"duration": v.get("duration", "PT45S")},
         }
-        for v in videos
-    ]}
+        if v.get("live_details"):
+            item["liveStreamingDetails"] = {"actualStartTime": "2026-01-01T00:00:00Z"}
+        items.append(item)
+    return {"items": items}
 
 
 @pytest.fixture(autouse=True)
@@ -414,3 +422,140 @@ def test_build_queries_is_capped_to_a_few_variants():
 def test_region_never_displaces_the_food_from_the_primary_query():
     qs = yt.build_queries(food="Pizza", region="Maharashtra", fitness_goal="weight_loss")
     assert "pizza" in qs[0].lower()
+
+
+# ── SHORT-FORM ONLY ──────────────────────────────────────────────────────
+# Creator Recipe means a SHORT recipe video. Long-form is rejected outright,
+# never down-ranked — filling a thin result set with a 10-minute tutorial is
+# explicitly not acceptable.
+
+def test_duration_parser_handles_every_iso8601_shape():
+    assert yt.parse_iso8601_duration("PT45S") == 45
+    assert yt.parse_iso8601_duration("PT1M30S") == 90
+    assert yt.parse_iso8601_duration("PT3M") == 180
+    assert yt.parse_iso8601_duration("PT10M15S") == 615
+    assert yt.parse_iso8601_duration("PT1H2M3S") == 3723
+    # Unparseable/absent is NOT optimistically allowed through.
+    assert yt.parse_iso8601_duration(None) is None
+    assert yt.parse_iso8601_duration("garbage") is None
+
+
+@pytest.mark.parametrize("duration,seconds", [
+    ("PT15S", 15), ("PT59S", 59), ("PT1M", 60), ("PT2M59S", 179), ("PT3M", 180),
+])
+def test_videos_at_or_under_180s_are_accepted(monkeypatch, configured, client, duration, seconds):
+    _stub(monkeypatch, ["v1"], [{"id": "v1", "title": "Pizza Recipe", "duration": duration}])
+    body = client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch").json()
+    assert body["count"] == 1
+    assert body["videos"][0]["duration_seconds"] == seconds
+
+
+@pytest.mark.parametrize("duration", ["PT3M1S", "PT5M", "PT8M30S", "PT10M", "PT15M", "PT22M", "PT1H"])
+def test_long_form_videos_are_rejected_outright(monkeypatch, configured, client, duration):
+    _stub(monkeypatch, ["v1"], [{"id": "v1", "title": "High Protein Pizza Recipe", "duration": duration}])
+    body = client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch").json()
+    assert body["count"] == 0, f"{duration} is long-form and must never be returned"
+
+
+def test_a_highly_relevant_long_video_is_still_rejected(monkeypatch, configured, client):
+    """Relevance must NEVER buy a long-form video its way in — the only
+    survivor here is the shorter, less keyword-dense clip."""
+    _stub(monkeypatch, ["long", "short"], [
+        {"id": "long", "title": "High Protein Vegetarian Pizza Recipe healthy homemade", "duration": "PT12M"},
+        {"id": "short", "title": "Pizza recipe", "duration": "PT30S"},
+    ])
+    body = client.get(
+        "/api/creator-recipes/recommended?food=Pizza&meal_type=lunch&fitness_goal=muscle_gain").json()
+    ids = [v["video_id"] for v in body["videos"]]
+    assert ids == ["short"]
+
+
+def test_fewer_results_rather_than_padding_with_long_form(monkeypatch, configured, client):
+    """If only one Short exists, return one — never top up with long-form."""
+    _stub(monkeypatch, ["a", "b", "c"], [
+        {"id": "a", "title": "Pizza Recipe", "duration": "PT40S"},
+        {"id": "b", "title": "Pizza Recipe full tutorial", "duration": "PT9M"},
+        {"id": "c", "title": "Pizza Recipe masterclass", "duration": "PT20M"},
+    ])
+    body = client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch&limit=10").json()
+    assert body["count"] == 1
+    assert body["videos"][0]["video_id"] == "a"
+
+
+def test_a_video_with_no_duration_is_rejected(monkeypatch, configured, client):
+    """Unknown length can't be proven short, so it is not eligible."""
+    _stub(monkeypatch, ["v1"], [{"id": "v1", "title": "Pizza Recipe", "duration": None}])
+    assert client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch").json()["count"] == 0
+
+
+def test_livestreams_are_rejected(monkeypatch, configured, client):
+    for marker in ({"live": "live"}, {"live": "upcoming"}, {"live_details": True}):
+        _stub(monkeypatch, ["v1"], [{"id": "v1", "title": "Pizza Recipe", "duration": "PT45S", **marker}])
+        yt._cache.clear()
+        body = client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch").json()
+        assert body["count"] == 0, f"livestream marker {marker} must be rejected"
+
+
+def test_search_asks_youtube_for_short_videos_only(monkeypatch, configured, client):
+    """A pre-filter that improves the candidate mix for free. Not the rule —
+    `videoDuration=short` means under FOUR minutes, so the real 180s gate
+    still runs on contentDetails."""
+    seen = []
+    _stub(monkeypatch, ["v1"], [{"id": "v1", "title": "Pizza Recipe"}], capture=seen)
+    client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch")
+    params = next(p for u, p in seen if u == yt._SEARCH_URL)
+    assert params["videoDuration"] == "short"
+    assert params["type"] == "video", "type=video also excludes playlists and channels"
+
+
+def test_duration_is_requested_from_the_videos_endpoint(monkeypatch, configured, client):
+    seen = []
+    _stub(monkeypatch, ["v1"], [{"id": "v1", "title": "Pizza Recipe"}], capture=seen)
+    client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch")
+    params = next(p for u, p in seen if u == yt._VIDEOS_URL)
+    assert "contentDetails" in params["part"]
+    assert "liveStreamingDetails" in params["part"]
+
+
+# ── Shorts ranking ───────────────────────────────────────────────────────
+
+def test_a_shorter_video_outranks_a_longer_one_all_else_equal(monkeypatch, configured, client):
+    _stub(monkeypatch, ["longer", "shorter"], [
+        {"id": "longer", "title": "Pizza Recipe", "duration": "PT2M50S"},
+        {"id": "shorter", "title": "Pizza Recipe", "duration": "PT25S"},
+    ])
+    body = client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch").json()
+    assert body["videos"][0]["video_id"] == "shorter"
+
+
+def test_an_explicit_shorts_marker_is_rewarded_not_penalised(monkeypatch, configured, client):
+    """Reverses the earlier heuristic that preferred full tutorials."""
+    _stub(monkeypatch, ["plain", "tagged"], [
+        {"id": "plain", "title": "Pizza Recipe", "duration": "PT90S"},
+        {"id": "tagged", "title": "Pizza Recipe #shorts", "duration": "PT90S"},
+    ])
+    body = client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch").json()
+    assert body["videos"][0]["video_id"] == "tagged"
+
+
+def test_shorts_marker_is_not_required_to_be_eligible(monkeypatch, configured, client):
+    """Creators often omit #shorts — duration decides eligibility, not tags."""
+    _stub(monkeypatch, ["v1"], [{"id": "v1", "title": "Protein Pizza Recipe", "duration": "PT35S"}])
+    body = client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch").json()
+    assert body["count"] == 1
+
+
+def test_every_returned_video_satisfies_all_eligibility_rules(monkeypatch, configured, client):
+    """The contract the Flutter client relies on, asserted as a whole."""
+    _stub(monkeypatch, ["a", "b", "c", "d"], [
+        {"id": "a", "title": "Protein Pizza Recipe #shorts", "duration": "PT30S"},
+        {"id": "b", "title": "Pizza Recipe long", "duration": "PT11M"},
+        {"id": "c", "title": "Pizza Recipe blocked", "duration": "PT40S", "embeddable": False},
+        {"id": "d", "title": "Pizza Recipe live", "duration": "PT50S", "live": "live"},
+    ])
+    body = client.get("/api/creator-recipes/recommended?food=Pizza&meal_type=lunch&limit=10").json()
+    assert body["count"] == 1
+    for v in body["videos"]:
+        assert v["duration_seconds"] <= 180
+        assert v["embeddable"] is True
+        assert v["platform"] == "youtube"
