@@ -70,14 +70,18 @@ def _set_dotted(obj, dotted_key, value):
 
 
 class FakeQuery:
-    def __init__(self, store, collection, filters):
+    def __init__(self, store, collection, filters, limit=None):
         self._store = store
         self._collection = collection
         self._filters = filters  # list of (field_path, op_string, value)
+        self._limit = limit
 
     def where(self, filter=None):
         f = (filter.field_path, filter.op_string, filter.value)
-        return FakeQuery(self._store, self._collection, self._filters + [f])
+        return FakeQuery(self._store, self._collection, self._filters + [f], self._limit)
+
+    def limit(self, count):
+        return FakeQuery(self._store, self._collection, self._filters, count)
 
     def _matches(self, data) -> bool:
         for field, op, value in self._filters:
@@ -94,8 +98,12 @@ class FakeQuery:
 
     def stream(self):
         prefix = self._collection + "/"
+        emitted = 0
         for path, data in list(self._store.items()):
+            if self._limit is not None and emitted >= self._limit:
+                return
             if path.startswith(prefix) and data is not None and self._matches(data):
+                emitted += 1
                 yield FakeSnapshot(path, data, reference=FakeDocRef(self._store, path))
 
     def get(self, transaction=None):
@@ -112,6 +120,9 @@ class FakeCollection:
 
     def where(self, filter=None):
         return FakeQuery(self._store, self._name, []).where(filter=filter)
+
+    def limit(self, count):
+        return FakeQuery(self._store, self._name, [], count)
 
 
 class FakeTransaction:

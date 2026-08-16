@@ -21,7 +21,12 @@ from typing import Any
 from fastapi import APIRouter
 from pydantic import BaseModel, Field
 
-from services import food_engine, groq_service, location_food_engine
+from services import (
+    food_engine,
+    groq_service,
+    location_food_engine,
+    workout_nutrition_service,
+)
 
 router = APIRouter()
 
@@ -39,6 +44,10 @@ class SwapRequest(BaseModel):
     # Foods already eaten today — never offered again in the same day.
     todays_foods: list[str] = Field(default_factory=list)
     options: int = Field(default=5, ge=1, le=10)
+    # Pre-workout only, and only when the athlete actually told us. ZITLAS
+    # stores no workout start time, so this is never inferred — omitted
+    # means "use the service's stated default assumption".
+    minutes_until_workout: int | None = Field(default=None, ge=0, le=360)
 
 
 def _budget_label(food: dict) -> str:
@@ -59,6 +68,72 @@ def _availability_label(food: dict, user_state: str | None) -> str:
         return "Available across India"
     region = food.get("region")
     return f"Common in {region} India" if region else "Availability varies"
+
+
+def _workout_swap_options(
+    *, slot: str, diet_tags: list[str], living_tag: str | None,
+    user_state: str | None, exclude_names: list[str],
+    minutes_until_workout: int | None, limit: int,
+) -> list[dict[str, Any]]:
+    """Swap alternatives for a Pre-/Post-Workout meal, drawn ONLY from the
+    workout-nutrition dataset.
+
+    Same response shape as the engine path below, built directly from the
+    dataset rather than through `_combo_macros`/`format_food_line`/
+    `describe_swap` — those read food-engine field names this dataset
+    deliberately does not carry."""
+    svc = workout_nutrition_service.get_service()
+    # Swap history is by NAME; the service excludes by id. Map across so
+    # "give me another" genuinely advances instead of repeating.
+    seen = {n.strip().lower() for n in exclude_names if n}
+    exclude_ids = {
+        i["id"] for i in svc.items
+        if i["name"].strip().lower() in seen
+        or any(i["name"].strip().lower() in n for n in seen)
+    }
+    results = svc.recommend(
+        meal_slot=slot,
+        diet_type=diet_tags[0] if diet_tags else None,
+        living_situation=living_tag,
+        location={"state": user_state} if user_state else None,
+        exclude_ids=exclude_ids or None,
+        minutes_until_workout=minutes_until_workout,
+        limit=limit,
+    )
+
+    options: list[dict[str, Any]] = []
+    for item in results:
+        n = item.get("nutrition_estimated") or {}
+        options.append({
+            "name": item["name"],
+            "foods": list(item.get("ingredients") or []),
+            "food_ids": [item["id"]],
+            "calories": round(n.get("calories_kcal") or 0),
+            "protein_g": round(n.get("protein_g") or 0, 1),
+            "carbs_g": round(n.get("carbs_g") or 0, 1),
+            "fat_g": round(n.get("fat_g") or 0, 1),
+            "reason": ". ".join(
+                svc.explain(item, meal_slot=slot, minutes_until_workout=minutes_until_workout)
+            ) + ".",
+            "availability": (
+                f"Common in {user_state}"
+                if user_state and item.get("regional_tag")
+                else "Available across India"
+            ),
+            "budget_level": {"Budget": "Economy", "Moderate": "Standard"}.get(
+                item.get("cost_level", "Budget"), "Standard"
+            ),
+            "high_protein": (n.get("protein_g") or 0) >= 15,
+            "high_fiber": (n.get("fiber_g") or 0) >= 5,
+            "quality_labels": [
+                label for label in (
+                    "Quick energy" if slot == "pre_workout" else "Recovery focused",
+                    "Very easy to digest" if item.get("digestibility") == "very_easy" else None,
+                    "No cooking" if (item.get("total_time_min") or 0) == 0 else None,
+                ) if label
+            ],
+        })
+    return options
 
 
 @router.post("/swap")
@@ -90,6 +165,41 @@ async def deterministic_swap(body: SwapRequest) -> dict[str, Any]:
             + list(body.todays_foods or [])
         )
     )
+
+    # ── WORKOUT SLOTS NEVER REACH THE FOOD ENGINE ──────────────────────
+    # A Pre-/Post-Workout meal is not a normal meal and the engine has no
+    # slot for one: `_meal_slot_from_name` falls through to
+    # `evening_snack`, whose pool is full of normal meals — which is
+    # exactly why swapping a Pre-Workout meal returned "Moong Dal Chilla"
+    # and "Grilled Paneer Salad". Served from the dedicated
+    # workout-nutrition dataset instead, matching what
+    # GET /api/recipes/recommended already does for the same two slots.
+    workout_slot = groq_service.workout_slot_from_name(body.meal_name)
+    if workout_slot is not None:
+        options = _workout_swap_options(
+            slot=workout_slot,
+            diet_tags=diet_tags,
+            living_tag=ctx.get("living_tag"),
+            user_state=ctx.get("user_state"),
+            exclude_names=exclude_names,
+            minutes_until_workout=body.minutes_until_workout,
+            limit=body.options,
+        )
+        elapsed_ms = (time.perf_counter() - started) * 1000
+        print(f"[SWAP] workout-nutrition ({workout_slot}): {len(options)} options "
+              f"in {elapsed_ms:.1f}ms")
+        return {
+            "module": "workout_nutrition_swap",
+            "options": options,
+            "current": None,
+            "relaxed_match": False,
+            "match_note": (
+                "Quick energy before training" if workout_slot == "pre_workout"
+                else "Recovery-focused nutrition after training"
+            ),
+            "elapsed_ms": round(elapsed_ms, 1),
+            "llm_used": False,
+        }
 
     # FAMILY-level history. Exclusion by name alone never stopped khichdi
     # following khichdi, because each variant is a different name.

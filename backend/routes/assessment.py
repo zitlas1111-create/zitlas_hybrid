@@ -548,9 +548,24 @@ STRICT RULES:
    - Hostel users: canteen-compatible options (eggs, dal, paneer, curd, sprouts, roti).
    - Home users: simple home-cooked high-protein Indian meals.
 6. Vegetarian/vegan users: absolutely no meat or fish.
-7. Every meal must serve the transformation goal: high protein, moderate carbs, healthy fats.
+7. Every NORMAL meal (Breakfast, Lunch, Dinner) must serve the transformation
+   goal: high protein, moderate carbs, healthy fats.
 8. Keep meal preparation simple — no recipe requiring more than 10 minutes.
-9. Output ONLY valid JSON. No markdown, no preamble.
+9. THE PRE-WORKOUT MEAL IS NOT A NORMAL MEAL. Rule 7 does NOT apply to it.
+   Its only job is quick, easily digestible energy that will not sit heavy
+   during training. Use small, simple, fast-digesting carbohydrate foods:
+   banana, dates, banana + dates, coconut water, a light banana smoothie, a
+   small portion of poha, toast with banana, or a simple sattu drink.
+   NEVER put these in the Pre-Workout meal, however healthy they are:
+   salads of any kind, beetroot, avocado or avocado toast, paneer dishes,
+   cheela, paratha, dal-based meals, high-fibre dishes, or any full meal.
+   A single banana is a complete and correct Pre-Workout entry — do not pad
+   it out to look like a meal.
+10. THE POST-WORKOUT MEAL is for RECOVERY: protein plus carbohydrate, and
+    rehydration. A banana smoothie, curd with fruit, a sattu drink, eggs
+    with toast, or chicken/soya with rice are all appropriate. It may be
+    more substantial than the pre-workout entry.
+11. Output ONLY valid JSON. No markdown, no preamble.
 
 GOAL: Body transformation — six pack abs, lean physique, body recomposition.
 Focus on: high protein, mild calorie deficit, nutrient timing, progressive fat loss while building muscle.

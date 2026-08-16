@@ -137,6 +137,48 @@ const supplementQuestion = AssessmentQuestion(
   ],
 );
 
+/// Food preferences — a PREFERENCE, never a restriction.
+///
+/// Shared by all three flows, exactly like [supplementQuestion]. The stored
+/// values are stable snake_case ids, never the emoji labels: the label is
+/// display text that can be reworded freely, the id is what reaches
+/// `favorite_foods` in the backend's `lifestyle_data` (which the food
+/// engine has always read) and what personalises Creator Recipe search.
+///
+/// Deliberately short. A 100-option list would make the Assessment worse to
+/// complete, and the engine only needs a preference signal, not an
+/// inventory.
+const foodPreferencesQuestion = AssessmentQuestion(
+  field: 'favorite_foods',
+  prompt: '❤️ What foods do you enjoy?',
+  hint: 'Select all that apply. ZITLAS will use your preferences to personalize '
+      'recipe and creator recommendations.',
+  type: AssessmentQuestionType.multiselect,
+  options: [
+    // Fast food & favourites
+    AssessmentOption(icon: '🍕', label: 'Pizza', value: 'pizza'),
+    AssessmentOption(icon: '🍔', label: 'Burger', value: 'burger'),
+    AssessmentOption(icon: '🥪', label: 'Sandwich', value: 'sandwich'),
+    AssessmentOption(icon: '🌯', label: 'Wrap / Roll', value: 'wrap'),
+    AssessmentOption(icon: '🍝', label: 'Pasta', value: 'pasta'),
+    AssessmentOption(icon: '🍜', label: 'Noodles', value: 'noodles'),
+    AssessmentOption(icon: '🌮', label: 'Tacos', value: 'tacos'),
+    // Sweet
+    AssessmentOption(icon: '🍰', label: 'Cake', value: 'cake'),
+    AssessmentOption(icon: '🥞', label: 'Pancakes', value: 'pancakes'),
+    AssessmentOption(icon: '🍫', label: 'Chocolate Desserts', value: 'chocolate_desserts'),
+    AssessmentOption(icon: '🍨', label: 'Ice Cream', value: 'ice_cream'),
+    // Indian / regional — the vocabulary the food engine's own regional
+    // tagging already uses.
+    AssessmentOption(icon: '🥘', label: 'Maharashtrian Food', value: 'maharashtrian'),
+    AssessmentOption(icon: '🍛', label: 'North Indian', value: 'north_indian'),
+    AssessmentOption(icon: '🥣', label: 'South Indian', value: 'south_indian'),
+    AssessmentOption(icon: '🍲', label: 'Bengali / East Indian', value: 'bengali'),
+    AssessmentOption(icon: '🍢', label: 'Indian Street Food', value: 'street_food'),
+    AssessmentOption(icon: '➕', label: 'Other', value: 'other'),
+  ],
+);
+
 /// `QUESTIONS` (15) — default flow, used for `lose_weight` AND `muscle_gain`
 /// (`getActiveQuestions()` only branches on general_fitness/transformation).
 final List<AssessmentQuestion> defaultQuestions = [
@@ -285,6 +327,7 @@ final List<AssessmentQuestion> defaultQuestions = [
       AssessmentOption(icon: '💰', label: '₹200+', value: '₹250/day'),
     ],
   ),
+  foodPreferencesQuestion,
   supplementQuestion,
   _medicalConditionsQuestion,
 ];
@@ -445,6 +488,7 @@ final List<AssessmentQuestion> generalFitnessQuestions = [
     max: 10,
     defaultVal: 5,
   ),
+  foodPreferencesQuestion,
   supplementQuestion,
 ];
 
@@ -621,6 +665,7 @@ final List<AssessmentQuestion> transformationQuestions = [
       AssessmentOption(icon: '💰', label: '₹200+', value: '₹250/day'),
     ],
   ),
+  foodPreferencesQuestion,
   supplementQuestion,
   _medicalConditionsQuestion,
 ];

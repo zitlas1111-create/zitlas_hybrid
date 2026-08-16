@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../core/notifications/fcm_service.dart';
+import '../../core/presence/presence_service.dart';
 import '../../core/storage/account_guard.dart';
 import '../coaching_webview/coaching_webview_session.dart';
 import '../../models/user_model.dart';
@@ -144,6 +145,16 @@ class AuthState extends ChangeNotifier {
         await FcmService().unregisterDevice(outgoingUid);
       } catch (e) {
         if (kDebugMode) debugPrint('[AUTH] FCM unregister failed (non-fatal): $e');
+      }
+      // Same window, same reason: marking this device offline is an
+      // owner-only Firestore write, so it has to happen while the outgoing
+      // uid still holds a valid auth context. Skipping it would leave the
+      // account looking online for up to a TTL on a phone somebody else may
+      // now be signing into.
+      try {
+        await PresenceService.instance.stop();
+      } catch (e) {
+        if (kDebugMode) debugPrint('[AUTH] presence stop failed (non-fatal): $e');
       }
     }
     // Ends the WEBVIEW's own Firebase session too. The Firebase JS SDK inside

@@ -323,6 +323,37 @@ void main() {
       expect(capturedUri.queryParameters['meal_type'], 'post_workout');
       expect(capturedUri.queryParameters['exclude_ids'], 'ZITLAS-REC-0489');
     });
+
+    // ── Workout timing — stated by the athlete, never inferred ──
+    test('minutes_until_workout is sent when the athlete picked a window', () async {
+      final repo = repoWith(_recommendedResponse());
+      await repo.getRecommended(mealType: 'pre_workout', minutesUntilWorkout: 25);
+      expect(capturedUri.queryParameters['minutes_until_workout'], '25');
+    });
+
+    test('minutes_until_workout is NOT sent when the athlete did not state one', () async {
+      // ZITLAS has no workout start time to fall back on, so omitting the
+      // param is how the client says "unknown" — it must never invent one.
+      final repo = repoWith(_recommendedResponse());
+      await repo.getRecommended(mealType: 'pre_workout');
+      expect(capturedUri.queryParameters.containsKey('minutes_until_workout'), isFalse);
+    });
+
+    test('a stated window survives alongside every other filter', () async {
+      final repo = repoWith(_recommendedResponse());
+      await repo.getRecommended(
+        mealType: 'pre_workout',
+        dietType: 'vegetarian',
+        livingSituation: 'hostel',
+        state: 'Maharashtra',
+        minutesUntilWorkout: 10,
+      );
+      expect(capturedUri.queryParameters['meal_type'], 'pre_workout');
+      expect(capturedUri.queryParameters['minutes_until_workout'], '10');
+      expect(capturedUri.queryParameters['diet_type'], 'vegetarian');
+      expect(capturedUri.queryParameters['living_situation'], 'hostel');
+      expect(capturedUri.queryParameters['state'], 'Maharashtra');
+    });
   });
 
   // ── 14. API failure ──────────────────────────────────────────────────────

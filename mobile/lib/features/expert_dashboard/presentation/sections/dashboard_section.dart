@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/presence/presence_dot.dart';
 import '../../../../core/theme/zitlas_tokens.dart';
 import '../../expert_dashboard_controller.dart';
 import '../../models/expert_models.dart';
@@ -101,14 +102,10 @@ class _ProfileCard extends StatelessWidget {
                   Positioned(
                     right: 0,
                     bottom: 0,
-                    child: Container(
-                      width: 14,
-                      height: 14,
-                      decoration: BoxDecoration(
-                        color: p.isOnline ? ZitlasTokens.success : ZitlasTokens.textMuted,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.white, width: 2.5),
-                      ),
+                    child: PresenceDot(
+                      uid: p.uid,
+                      size: 14,
+                      borderColor: Colors.white,
                     ),
                   ),
                 ],

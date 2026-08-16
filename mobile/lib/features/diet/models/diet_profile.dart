@@ -173,7 +173,15 @@ class DietProfile {
         if (dietPreference != null) 'diet_type': dietPreference!.id,
         if (budget != null) 'daily_budget': _budgetToDailyRupees(budget!),
         if (preparer != null) 'living_situation': _preparerToLivingSituation(preparer!),
-        'favorite_foods': lovedFoods,
+        // ONLY when actually set — this map is spread LAST over the
+        // assessment's own values (see DietController.swapMeal), so an
+        // unconditional empty list here silently erased the athlete's
+        // Assessment food preferences on every swap. Nothing collects
+        // `lovedFoods` yet, so that was every athlete, always.
+        // Conditional emission matches the other fields above and preserves
+        // the documented precedence: the permanent profile wins when it has
+        // an answer, the assessment is the fallback when it doesn't.
+        if (lovedFoods.isNotEmpty) 'favorite_foods': lovedFoods,
         // Never-eaten foods behave exactly like dislikes at selection time.
         'disliked_foods': [...dislikedFoods, ...neverEaten],
         'allergies': allergies,

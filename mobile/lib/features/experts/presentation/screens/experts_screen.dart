@@ -7,8 +7,10 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../../core/utils/safe_image.dart';
 import '../../data/experts_repository.dart';
+import '../../data/pending_rating_prompt.dart';
 import '../../experts_controller.dart';
 import '../../models/expert_listing.dart';
+import '../widgets/rate_expert_sheet.dart';
 
 const _specialties = ['All', 'Weight Loss', 'Muscle Gain', 'PCOS', 'Diabetes', 'General Fitness'];
 
@@ -31,8 +33,46 @@ class ExpertsScreen extends StatelessWidget {
   }
 }
 
-class _ExpertsBody extends StatelessWidget {
+class _ExpertsBody extends StatefulWidget {
   const _ExpertsBody();
+
+  @override
+  State<_ExpertsBody> createState() => _ExpertsBodyState();
+}
+
+class _ExpertsBodyState extends State<_ExpertsBody> {
+  /// The rating prompt lives HERE rather than on the dashboard or at app
+  /// launch, deliberately. This is the screen an athlete lands on after a
+  /// coaching engagement ends (to find a new coach), so the ask is
+  /// contextual — and it is the one surface where being asked about a coach
+  /// you just finished with does not feel like an interruption of something
+  /// else. `PendingRatingPrompt` still owns whether to ask at all.
+  final _prompt = PendingRatingPrompt();
+
+  /// Once per mount. Without this, popping back to this tab would re-run
+  /// the check and could re-open a sheet the athlete just dismissed.
+  bool _checked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybePromptForRating());
+  }
+
+  Future<void> _maybePromptForRating() async {
+    if (_checked || !mounted) return;
+    _checked = true;
+
+    final pending = await _prompt.check();
+    if (pending == null || !mounted) return;
+
+    final submitted = await showRateExpertSheet(context, pending: pending);
+    if (submitted != true) {
+      // Dismissed without rating — no review is created, and the engagement
+      // stays pending server-side. Snooze only delays the next ask.
+      await _prompt.snooze(pending.engagementId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {

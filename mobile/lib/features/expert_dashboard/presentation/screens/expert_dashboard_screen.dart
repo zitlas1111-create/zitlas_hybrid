@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/presence/presence_dot.dart';
 import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
 import '../../data/expert_repository.dart';
@@ -261,23 +262,37 @@ class _ExpertHeader extends StatelessWidget {
               ],
             ),
           ),
-          Container(
-            width: 8,
-            height: 8,
-            margin: const EdgeInsets.only(right: 5),
-            decoration: BoxDecoration(
-              color: (p?.isOnline ?? true) ? ZitlasTokens.success : ZitlasTokens.textMuted,
-              shape: BoxShape.circle,
+          // Derived from a live heartbeat, not from the stored flag. The
+          // previous `p?.isOnline ?? true` painted this green even with no
+          // profile loaded at all — it could not report anything else.
+          if (p != null)
+            PresenceBuilder(
+              uid: p.uid,
+              builder: (context, presence) => Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(right: 5),
+                    decoration: BoxDecoration(
+                      color: presence.isOnline
+                          ? ZitlasTokens.success
+                          : ZitlasTokens.textMuted,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  Text(
+                    presence.isOnline ? 'Online' : 'Offline',
+                    style: const TextStyle(
+                      color: ZitlasTokens.textSecondary,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          Text(
-            (p?.isOnline ?? true) ? 'Online' : 'Offline',
-            style: const TextStyle(
-              color: ZitlasTokens.textSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
           const SizedBox(width: 4),
           _HeaderIconButton(
             icon: Icons.notifications_none_rounded,

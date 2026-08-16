@@ -49,6 +49,7 @@ from routes import review_apply
 from routes import voice
 from routes import swap
 from routes import recipes
+from routes import expert_ratings
 from routes import creator_recipes
 from services import rag_service
 
@@ -224,6 +225,7 @@ app.include_router(system.router,     prefix="/api/system",     tags=["System"])
 app.include_router(chat.router,       prefix="/api/chat",       tags=["Chat"])
 app.include_router(certificates.router, prefix="/api/certificates", tags=["Certificates"])
 app.include_router(coaching.router,     prefix="/api/coaching",    tags=["Coaching"])
+app.include_router(expert_ratings.router, prefix="/api/expert-ratings", tags=["Expert Ratings"])
 app.include_router(creator_recipes.router, prefix="/api/creator-recipes", tags=["Creator Recipes"])
 app.include_router(meal_ai.router,      prefix="/api/meal",        tags=["Meal AI"])
 app.include_router(payment.router,      prefix="/api/payment",     tags=["Payment"])

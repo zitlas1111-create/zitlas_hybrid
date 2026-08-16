@@ -384,6 +384,14 @@ class AssessmentController extends ChangeNotifier {
       // before this payload is built.
       'disliked_exercises': const <String>[],
       'disliked_foods': const <String>[],
+      // Stable food ids from `foodPreferencesQuestion` (never the emoji
+      // labels). A PREFERENCE: the backend feeds these to the food engine's
+      // existing `favorite_foods` ranking bonus and to Creator Recipe
+      // search — neither of which filters the plan down to only these foods.
+      // An empty list is a valid answer and behaves exactly as before.
+      'favorite_foods': a['favorite_foods'] is List
+          ? (a['favorite_foods'] as List).map((e) => '$e').toList()
+          : <String>[],
       'location': _locationPayload,
     };
   }

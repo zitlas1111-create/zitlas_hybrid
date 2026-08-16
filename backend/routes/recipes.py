@@ -101,6 +101,7 @@ async def recommended_recipe(
     difficulty: str | None = None,
     max_calories: float | None = None,
     exclude_ids: str | None = None,
+    minutes_until_workout: int | None = None,
     limit: int = 1,
 ) -> dict:
     """"Get Easy ZITLAS Recipe" — deterministic filtering/scoring (per spec:
@@ -134,9 +135,15 @@ async def recommended_recipe(
         results = wsvc.recommend(
             meal_slot=meal_slot, fitness_goal=fitness_goal, diet_type=diet_type,
             living_situation=living_situation, hostel_friendly=hostel_friendly,
-            home_friendly=home_friendly, location=location, exclude_ids=exclude_set, limit=limit,
+            home_friendly=home_friendly, location=location, exclude_ids=exclude_set,
+            minutes_until_workout=minutes_until_workout, limit=limit,
         )
-        reasons_by_id = {r["id"]: wsvc.explain(r, meal_slot=meal_slot) for r in results}
+        reasons_by_id = {
+            r["id"]: wsvc.explain(
+                r, meal_slot=meal_slot, minutes_until_workout=minutes_until_workout,
+            )
+            for r in results
+        }
         return {"count": len(results), "recipes": results, "reasons": reasons_by_id}
 
     svc = recipe_service.get_service()

@@ -564,6 +564,10 @@ class DietController extends ChangeNotifier {
           'living_situation': assessment['living_situation'],
           'daily_budget': assessment['budget'],
           'disliked_foods': assessment['disliked_foods'],
+          // The Assessment's food preferences — the fallback the comment
+          // above describes. `toLifestyleData()` overrides this only when
+          // the permanent profile actually has its own answer.
+          'favorite_foods': assessment['favorite_foods'],
           ...dietProfile.toLifestyleData(),
         },
         rejectedFoods: rejectedFoods,

@@ -57,7 +57,15 @@ class ExpertProfile {
   final int fee;
   final int sessionDuration;
 
-  /// `'online' | 'offline'`
+  /// `'online' | 'offline'` — the WEBSITE's manual availability flag.
+  ///
+  /// NOT presence, and deliberately no longer readable as such: the
+  /// `isOnline => status != 'offline'` getter that used to sit below was
+  /// removed because nothing ever wrote `'offline'` automatically, so it
+  /// reported every expert green forever. Live presence comes from
+  /// `core/presence/` (`PresenceDot` / `PresenceBuilder`). This field is
+  /// round-tripped untouched purely so saving a profile from Flutter does
+  /// not clear something `expert-dashboard.js` still renders.
   final String status;
   final String? photo;
   final String rating;
@@ -66,8 +74,6 @@ class ExpertProfile {
   /// Backend-only trust fields — never written by the client.
   final bool verified;
   final bool approved;
-
-  bool get isOnline => status != 'offline';
 
   String get initials {
     final parts = name.trim().split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();

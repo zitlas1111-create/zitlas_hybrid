@@ -95,10 +95,11 @@ def test_get_another_post_workout_never_degrades_into_breakfast_lunch_or_dinner(
     assert len(set(seen_ids)) <= 8
 
 
-def test_get_another_pre_workout_never_degrades_into_breakfast_lunch_or_dinner(client):
+def test_get_another_pre_workout_never_degrades_into_breakfast_lunch_or_dinner(client, service):
+    pool_size = sum(1 for i in service.items if "Pre-Workout" in (i.get("meal_type") or []))
     seen_ids: list[str] = []
     exclude = ""
-    for _ in range(12):
+    for _ in range(pool_size + 4):
         url = f"/api/recipes/recommended?meal_type=pre_workout&limit=1"
         if exclude:
             url += f"&exclude_ids={exclude}"
@@ -107,7 +108,180 @@ def test_get_another_pre_workout_never_degrades_into_breakfast_lunch_or_dinner(c
         assert recipe["category"] == "Workout Fuel"
         seen_ids.append(recipe["id"])
         exclude = ",".join(seen_ids)
-    assert len(set(seen_ids)) <= 8
+    # Drawing more times than the pool holds must cycle back within the
+    # slot, never widen into another category to find something new.
+    assert len(set(seen_ids)) <= pool_size
+
+
+# ── PRACTICALITY: healthy food != pre-workout fuel ───────────────────────
+# The reported bug: Pre-Workout recommended beetroot salad / avocado toast.
+# Root cause was two-fold — (a) the food dataset's macro-only rule
+# (`carbs>=20 and fat<=5 and calories<=200` -> "Pre Workout") happily tags
+# high-fibre salads as fuel, and (b) a Pre-Workout SWAP fell through
+# `_meal_slot_from_name` to `evening_snack`, a pool full of normal meals.
+
+_IMPRACTICAL_FOR_SHORT_WINDOW = (
+    "salad", "beetroot", "avocado", "paneer", "cheela", "chilla",
+    "paratha", "dal ", "khichdi", "rice bowl", "sabzi", "roti",
+)
+
+
+def test_pre_workout_pool_contains_no_normal_meal_dishes(service):
+    """No item in the pre-workout pool is a normal meal, by construction —
+    the dataset is hand-curated, so this can never regress the way a
+    macro-derived tag can."""
+    pre = [i for i in service.items if "Pre-Workout" in (i.get("meal_type") or [])]
+    assert pre
+    for item in pre:
+        lowered = item["name"].lower()
+        assert not any(bad in lowered for bad in ("salad", "beetroot", "avocado", "paneer", "cheela")), \
+            f"{item['name']!r} is a normal meal, not pre-workout fuel"
+
+
+@pytest.mark.parametrize("minutes", [0, 10, 15, 25, 30])
+def test_short_window_returns_only_quick_practical_fuel(service, minutes):
+    """0-30 minutes out: nothing that needs chewing through a salad, and
+    nothing that needs cooking."""
+    results = service.recommend(meal_slot="pre_workout", minutes_until_workout=minutes, limit=3)
+    assert results
+    for item in results:
+        assert item["digestibility"] in ("very_easy", "easy")
+        assert (item.get("total_time_min") or 0) <= 5, \
+            f"{item['name']!r} takes too long to be {minutes}-minute fuel"
+        assert not any(bad in item["name"].lower() for bad in _IMPRACTICAL_FOR_SHORT_WINDOW)
+
+
+def test_short_window_top_pick_is_a_very_easy_quick_carb_or_hydration(service):
+    top = service.recommend(meal_slot="pre_workout", minutes_until_workout=20, limit=1)[0]
+    assert top["digestibility"] == "very_easy"
+    assert top["fuel_type"] in ("quick_carbohydrate", "hydration")
+
+
+def test_banana_dates_and_coconut_water_are_all_reachable_short_window(service):
+    """The three options the product spec names explicitly for a short
+    window must actually be recommendable, not merely present in the file."""
+    names = {i["name"] for i in service.recommend(
+        meal_slot="pre_workout", minutes_until_workout=15, limit=5)}
+    assert "Banana" in names
+    assert "Dates" in names
+    assert "Coconut Water" in names
+
+
+def test_longer_window_allows_more_substantial_options(service):
+    """60-120 minutes out, slightly bigger options become appropriate —
+    the timing logic must actually widen, not just always return a banana."""
+    results = service.recommend(meal_slot="pre_workout", minutes_until_workout=90, limit=4)
+    names = {i["name"] for i in results}
+    assert names & {"Banana Smoothie", "Light Toast + Banana", "Small Light Poha"}, \
+        f"90-minute window still only offered {names}"
+
+
+def test_heavier_slower_options_are_not_offered_first_close_to_training(service):
+    """The same items that are correct at 90 minutes must NOT lead at 10."""
+    short_top = service.recommend(meal_slot="pre_workout", minutes_until_workout=10, limit=1)[0]
+    assert short_top["name"] not in ("Small Light Poha", "Light Toast + Banana")
+    assert (short_top.get("total_time_min") or 0) == 0
+
+
+def test_digestive_burden_is_penalised_only_close_to_training(service):
+    """Digestive burden is scored from the item's OWN nutrition (never a
+    hand-set flag) and only counts when there is no time to digest.
+
+    Isolated by scoring one real item against a copy of itself with the
+    burden removed — comparing two different items would conflate the
+    penalty with their different timing windows and fuel types."""
+    import copy
+    fibrous = next(i for i in service.items
+                   if "Pre-Workout" in i["meal_type"]
+                   and (i["nutrition_estimated"].get("fiber_g") or 0) >= 5)
+    light = copy.deepcopy(fibrous)
+    light["nutrition_estimated"]["fiber_g"] = 1.0
+
+    # Close to training the extra fibre costs it real score...
+    assert service._pre_workout_suitability(fibrous, 20) < \
+        service._pre_workout_suitability(light, 20)
+    # ...and far enough out it costs nothing at all.
+    assert service._pre_workout_suitability(fibrous, 100) == \
+        service._pre_workout_suitability(light, 100)
+
+
+def test_a_hypothetical_heavy_high_fat_item_would_lose_to_a_banana(service):
+    """The engine's own defence, proved directly: inject a beetroot-salad-
+    shaped item (healthy macros, high fibre, slow prep) into the scorer and
+    confirm it cannot beat a banana close to training. This is the exact
+    profile the old macro-only rule mis-tagged as "Pre Workout"."""
+    beetroot_salad_shaped = {
+        "name": "Beetroot Salad", "fuel_type": "slow_carbohydrate",
+        "digestibility": "moderate", "prep_time_min": 20, "cook_time_min": 0,
+        "min_before_workout_min": 60, "max_before_workout_min": 180,
+        "nutrition_estimated": {"calories_kcal": 109, "protein_g": 3.0,
+                                "carbs_g": 22.0, "fat_g": 3.2, "fiber_g": 9.3},
+    }
+    banana = next(i for i in service.items if i["name"] == "Banana")
+    assert service._pre_workout_suitability(beetroot_salad_shaped, 20) < \
+        service._pre_workout_suitability(banana, 20)
+
+
+def test_no_timing_supplied_defaults_to_practical_short_window_fuel(service):
+    """ZITLAS has no workout start time, so the default must be the SAFE
+    assumption (close to training), never a heavy 2-hours-out option."""
+    results = service.recommend(meal_slot="pre_workout", limit=3)
+    for item in results:
+        assert item["digestibility"] in ("very_easy", "easy")
+        assert (item.get("total_time_min") or 0) <= 5
+
+
+def test_muscle_gain_goal_does_not_force_a_heavy_pre_workout(service):
+    """Fitness goal is a SECONDARY filter — it must never override fuel
+    suitability (the spec's explicit rule)."""
+    top = service.recommend(
+        meal_slot="pre_workout", fitness_goal="muscle_gain",
+        minutes_until_workout=15, limit=1)[0]
+    assert top["digestibility"] == "very_easy"
+    assert (top["nutrition_estimated"].get("fat_g") or 0) < 10
+
+
+def test_region_never_overrides_pre_workout_suitability(service):
+    """A Maharashtra athlete must not be handed the regional poha 15
+    minutes before training just because it is regional."""
+    top = service.recommend(
+        meal_slot="pre_workout", location={"state": "Maharashtra"},
+        minutes_until_workout=15, limit=1)[0]
+    assert top["name"] != "Small Light Poha"
+    assert top["digestibility"] == "very_easy"
+
+
+def test_hostel_context_prefers_zero_equipment_fuel(service):
+    top = service.recommend(
+        meal_slot="pre_workout", living_situation="Hostel",
+        minutes_until_workout=20, limit=1)[0]
+    assert top["hostel_friendly"] is True
+    assert (top.get("total_time_min") or 0) <= 2
+
+
+def test_diet_type_is_still_respected_for_pre_workout(service):
+    """Universal items (banana, dates, coconut water) pass every diet;
+    anything explicitly typed must match."""
+    for diet in ("vegan", "vegetarian", "non-vegetarian"):
+        results = service.recommend(
+            meal_slot="pre_workout", diet_type=diet, minutes_until_workout=20, limit=5)
+        assert results
+        for item in results:
+            assert item["diet_type"] in ("Universal", _resolve(diet))
+
+
+def _resolve(diet: str) -> str:
+    return {"vegan": "Vegan", "vegetarian": "Vegetarian",
+            "non-vegetarian": "Non-Vegetarian"}[diet]
+
+
+def test_timing_reason_is_only_claimed_when_timing_was_actually_supplied(service):
+    """ZITLAS must never claim to know when the workout starts."""
+    item = service.recommend(meal_slot="pre_workout", limit=1)[0]
+    without = service.explain(item, meal_slot="pre_workout")
+    with_timing = service.explain(item, meal_slot="pre_workout", minutes_until_workout=25)
+    assert not any("window before training" in r for r in without)
+    assert any("~25 minute window" in r for r in with_timing)
 
 
 # ── 1-3. Normal meals are unaffected (breakfast/lunch/dinner -> 637 dataset) ─

@@ -43,7 +43,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   late final _sessions = TextEditingController(text: widget.profile.sessions);
   late final _fee = TextEditingController(text: '${widget.profile.fee}');
   late final _duration = TextEditingController(text: '${widget.profile.sessionDuration}');
-  late String _status = widget.profile.status;
+  /// Round-tripped untouched. The Flutter dot no longer reads it, but the
+  /// website still renders `experts/{uid}.status`, so saving the profile
+  /// must not silently clear a field another client depends on.
+  late final String _status = widget.profile.status;
 
   bool _saving = false;
   String? _nameError;
@@ -265,37 +268,23 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                         ),
                       ],
                     ),
+                    // The manual Online/Offline pair that used to live here
+                    // is gone. It was the only thing that ever changed the
+                    // dot, so an expert who never opened this sheet showed
+                    // as online permanently — including months after their
+                    // last sign-in. Presence is now derived from a live
+                    // heartbeat (`core/presence/`) and needs no input.
                     const Padding(
-                      padding: EdgeInsets.only(top: 4, bottom: 6),
+                      padding: EdgeInsets.only(top: 4),
                       child: Text(
-                        'Availability Status',
+                        'Your Online status updates automatically while you '
+                        'have ZITLAS open.',
                         style: TextStyle(
-                          color: ZitlasTokens.textSecondary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                          color: ZitlasTokens.textMuted,
+                          fontSize: 11,
+                          height: 1.4,
                         ),
                       ),
-                    ),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _StatusButton(
-                            label: 'Online',
-                            color: ZitlasTokens.success,
-                            selected: _status == 'online',
-                            onTap: () => setState(() => _status = 'online'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: _StatusButton(
-                            label: 'Offline',
-                            color: ZitlasTokens.textMuted,
-                            selected: _status == 'offline',
-                            onTap: () => setState(() => _status = 'offline'),
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
@@ -449,54 +438,6 @@ class _Field extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatusButton extends StatelessWidget {
-  const _StatusButton({
-    required this.label,
-    required this.color,
-    required this.selected,
-    required this.onTap,
-  });
-
-  final String label;
-  final Color color;
-  final bool selected;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 160),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: selected ? color.withValues(alpha: 0.12) : ZitlasTokens.bgCard,
-          borderRadius: BorderRadius.circular(kZitlasRadiusSm),
-          border: Border.all(
-            color: selected ? color : ZitlasTokens.border,
-            width: selected ? 2 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(width: 8, height: 8, decoration: BoxDecoration(color: color, shape: BoxShape.circle)),
-            const SizedBox(width: 8),
-            Text(
-              label,
-              style: TextStyle(
-                color: selected ? color : ZitlasTokens.textSecondary,
-                fontSize: 13,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -5,6 +5,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
+import '../storage/device_identity.dart';
 import '../storage/local_storage_service.dart';
 import 'notification_payload.dart';
 
@@ -39,7 +40,6 @@ class FcmService {
   final FlutterLocalNotificationsPlugin _plugin;
 
   static const _stateKey = 'zitlas_push_state'; // mirrors web's STATE_KEY
-  static const _deviceIdKey = 'zitlas_device_id';
   static const _snoozeDays = 7;
 
   /// Channel IDs — these MUST match `push_service.py`'s constants exactly.
@@ -131,14 +131,10 @@ class FcmService {
 
   /// Stable per-install id, so a device's registration is recognisable across
   /// token rotations (FCM tokens change; this does not).
-  Future<String> _deviceId() async {
-    final existing = LocalStorageService.instance.getString(_deviceIdKey);
-    if (existing != null && existing.isNotEmpty) return existing;
-    final id = 'dev_${DateTime.now().millisecondsSinceEpoch}_'
-        '${identityHashCode(this).toRadixString(36)}';
-    await LocalStorageService.instance.setString(_deviceIdKey, id);
-    return id;
-  }
+  ///
+  /// Shared with presence via [DeviceIdentity] — both subsystems must agree
+  /// on what "this device" means.
+  Future<String> _deviceId() => DeviceIdentity.get();
 
   /// Creates the Android channels and wires the local-notification tap
   /// handler. Safe to call repeatedly.

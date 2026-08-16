@@ -9,7 +9,9 @@ import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
 import '../../data/diet_repository.dart';
 import '../../diet_controller.dart';
+import '../../models/diet_meal.dart';
 import '../../models/meal_slot.dart';
+import '../widgets/recipe_source_sheet.dart';
 import '../widgets/coach_diet_card.dart';
 import '../widgets/diet_day_focus_card.dart';
 import '../widgets/diet_day_selector.dart';
@@ -219,11 +221,48 @@ class _DietContent extends StatelessWidget {
             // direction, is ever acceptable.
             onGetRecipe: slot == MealSlot.unknown
                 ? null
-                : () => context.push('/recipe?meal_type=${Uri.encodeComponent(slot.apiValue)}'),
+                : () => _openRecipe(context, slot: slot, meal: meal),
           );
         }),
       ],
     );
+  }
+}
+
+/// Opens a recipe for [meal], asking WHICH source first.
+///
+/// PRE/POST-WORKOUT NEVER SEE THE CHOICE. Those slots are served by the
+/// purpose-built workout-nutrition system, which exists precisely because
+/// generic recipe content is the wrong answer around training — offering a
+/// YouTube search there would undo it. They go straight to the fuel/recovery
+/// screen, exactly as before this feature existed.
+Future<void> _openRecipe(
+  BuildContext context, {
+  required MealSlot slot,
+  required DietMeal meal,
+}) async {
+  final zitlasRoute = '/recipe?meal_type=${Uri.encodeComponent(slot.apiValue)}';
+
+  if (slot.isWorkoutSlot) {
+    context.push(zitlasRoute);
+    return;
+  }
+
+  final source = await showRecipeSourceSheet(context);
+  if (source == null || !context.mounted) return;
+
+  switch (source) {
+    case RecipeSource.zitlas:
+      context.push(zitlasRoute);
+    case RecipeSource.creator:
+      // Relevance is judged on the FOOD, not the slot name — "Lunch" is not
+      // something a creator makes a video about. Falls back to the meal name
+      // only when the plan listed no foods.
+      final food = meal.foods.isNotEmpty ? meal.foods.first : meal.mealName;
+      context.push(
+        '/creator-recipe?food=${Uri.encodeComponent(food)}'
+        '&meal_type=${Uri.encodeComponent(slot.apiValue)}',
+      );
   }
 }
 

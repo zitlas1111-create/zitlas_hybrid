@@ -9,6 +9,7 @@ import 'package:provider/provider.dart';
 import '../core/notifications/fcm_service.dart';
 import '../core/notifications/notification_payload.dart';
 import '../core/notifications/notification_router.dart';
+import '../core/presence/presence_service.dart';
 import '../features/auth/auth_state.dart';
 import '../features/auth/data/auth_repository.dart';
 import 'router.dart';
@@ -36,7 +37,10 @@ class ZitlasApp extends StatelessWidget {
       create: (_) => AuthState(repository),
       child: Consumer<AuthState>(
         builder: (context, authState, _) {
-          if (firebaseReady) _FcmBootstrap.maybeInit(authState);
+          if (firebaseReady) {
+            _FcmBootstrap.maybeInit(authState);
+            _PresenceBootstrap.sync(authState);
+          }
           return MaterialApp.router(
             title: 'ZITLAS',
             debugShowCheckedModeBanner: false,
@@ -48,6 +52,35 @@ class ZitlasApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// Keeps [PresenceService] following the session, for BOTH athletes and
+/// experts — one implementation, keyed only on uid, because "is this person
+/// reachable right now" means the same thing whichever role they hold.
+///
+/// Mirrors [_FcmBootstrap]'s latch so the `Consumer` rebuilding on every
+/// [AuthState] change doesn't restart the heartbeat. Sign-out is handled in
+/// [AuthState.signOut] rather than here: the offline write needs a live auth
+/// context, which is already gone by the time this rebuilds.
+abstract final class _PresenceBootstrap {
+  static String? _startedForUid;
+
+  static void sync(AuthState authState) {
+    final uid = authState.status == AuthStatus.authenticated
+        ? authState.profile?.uid
+        : null;
+    if (uid == _startedForUid) return;
+    _startedForUid = uid;
+    if (uid == null) {
+      PresenceService.instance.stop().catchError((Object e) {
+        if (kDebugMode) debugPrint('[PRESENCE] stop failed: $e');
+      });
+      return;
+    }
+    PresenceService.instance.start(uid).catchError((Object e) {
+      if (kDebugMode) debugPrint('[PRESENCE] start failed: $e');
+    });
   }
 }
 

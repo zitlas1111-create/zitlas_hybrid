@@ -117,6 +117,8 @@ class _ExpertProfileBodyState extends State<_ExpertProfileBody> {
             if (e.expertise.isNotEmpty) SliverToBoxAdapter(child: _ExpertiseSection(expert: e)),
             if (e.stats.isNotEmpty) SliverToBoxAdapter(child: _StatsSection(expert: e)),
             SliverToBoxAdapter(child: _PricingSection(expert: e)),
+            if (controller.expertRatings.isNotEmpty)
+              SliverToBoxAdapter(child: _CoachingRatingsSection(controller: controller)),
             if (e.reviews.isNotEmpty) SliverToBoxAdapter(child: _ReviewsSection(expert: e)),
             SliverToBoxAdapter(child: _PreviousReviewsSection(controller: controller)),
             const SliverToBoxAdapter(child: SizedBox(height: 40)),
@@ -602,6 +604,129 @@ class _PricingSection extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Verified coaching ratings — 1-5 stars left by athletes who genuinely
+/// completed a Personal Coaching engagement with this expert.
+///
+/// Distinct from `_ReviewsSection` below, which renders the legacy inline
+/// `experts/{id}.reviews` array (free-form entries with no engagement
+/// behind them). Only these carry the "Verified Coaching" badge, because
+/// only these were validated against a real, finished engagement by the
+/// backend.
+class _CoachingRatingsSection extends StatelessWidget {
+  const _CoachingRatingsSection({required this.controller});
+  final ExpertProfileController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    return _Section(
+      title: 'Verified Coaching Reviews',
+      child: Column(
+        children: controller.expertRatings.take(8).map((r) {
+          return Container(
+            margin: const EdgeInsets.only(bottom: 8),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: ZitlasTokens.bgCard,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: ZitlasTokens.borderSub),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Semantics(
+                      label: '${r.rating} out of 5 stars',
+                      child: Row(
+                        children: [
+                          for (var i = 1; i <= 5; i++)
+                            Icon(
+                              i <= r.rating ? Icons.star_rounded : Icons.star_outline_rounded,
+                              size: 14,
+                              color: i <= r.rating ? const Color(0xFFF5A623) : ZitlasTokens.border,
+                            ),
+                        ],
+                      ),
+                    ),
+                    const Spacer(),
+                    if (r.verifiedCoaching)
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: const Color(0x1F3A8F8B),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Text(
+                          '✓ Verified Coaching',
+                          style: TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: ZitlasTokens.hydrationTeal),
+                        ),
+                      ),
+                  ],
+                ),
+                // An empty review is normal — the text was always optional,
+                // and a rating with no words must still render cleanly.
+                if ((r.reviewText ?? '').isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Text(r.reviewText!, style: const TextStyle(fontSize: 12.5, color: ZitlasTokens.textSecondary, height: 1.4)),
+                ],
+                // Shown ONLY when the athlete explicitly consented — the
+                // backend omits these URLs entirely otherwise, so a
+                // non-consented photo never even reaches this device.
+                if (r.hasPublicPhotos) ...[
+                  const SizedBox(height: 8),
+                  _TransformationPhotos(before: r.beforePhotoUrl, after: r.afterPhotoUrl),
+                ],
+                const SizedBox(height: 6),
+                Text('— ${r.athleteName}', style: const TextStyle(fontSize: 11, color: ZitlasTokens.textMuted)),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+class _TransformationPhotos extends StatelessWidget {
+  const _TransformationPhotos({this.before, this.after});
+  final String? before;
+  final String? after;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        if (before != null) Expanded(child: _photo(before!, 'Before')),
+        if (before != null && after != null) const SizedBox(width: 8),
+        if (after != null) Expanded(child: _photo(after!, 'After')),
+      ],
+    );
+  }
+
+  Widget _photo(String url, String label) => Column(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: Container(
+              height: 120,
+              width: double.infinity,
+              color: ZitlasTokens.bgCardLight,
+              child: Image(
+                image: safeImageProvider(url) ?? const AssetImage('assets/images/logo.png'),
+                fit: BoxFit.cover,
+                errorBuilder: (_, e, s) => const Icon(
+                  Icons.image_not_supported_outlined,
+                  color: ZitlasTokens.textMuted,
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 3),
+          Text(label, style: const TextStyle(fontSize: 10.5, fontWeight: FontWeight.w700, color: ZitlasTokens.textMuted)),
+        ],
+      );
 }
 
 class _ReviewsSection extends StatelessWidget {

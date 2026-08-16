@@ -26,6 +26,12 @@ class AccountGuard {
   /// that is personal data, it is purged on an account switch, and it is
   /// re-hydrated from Firestore for whoever signs in.
   static const _deviceKeys = {
+    // Describes the hardware, not the person. Was previously purged on
+    // every logout, which silently defeated its own "stable per-install"
+    // contract: push registration minted a fresh id each time (leaving the
+    // old device_tokens row orphaned), and presence would do the same with
+    // its session documents.
+    'zitlas_device_id',
     'zitlas_theme',
     'zitlas_language',
     'zitlas_trial_mode',

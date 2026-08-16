@@ -25,7 +25,7 @@ const {
   assertSucceeds,
   assertFails,
 } = require('@firebase/rules-unit-testing');
-const { deleteField } = require('firebase/firestore');
+const { deleteField, serverTimestamp } = require('firebase/firestore');
 
 const PROJECT_ID = 'zitlas-b8677';
 const A = 'athleteA';
@@ -387,6 +387,75 @@ describe('notifications — recipient access', () => {
   });
   it('recipient CANNOT rewrite arbitrary fields', async () => {
     await assertFails(asA().doc(`notifications/n1`).update({ title: 'changed' }));
+  });
+});
+
+describe('presence_sessions — own session only', () => {
+  const sess = (uid, dev) => `presence_sessions/${uid}/sessions/${dev}`;
+  const beat = (state = 'online') => ({ state, lastSeen: serverTimestamp() });
+
+  it('a user CAN publish their own heartbeat', async () => {
+    await assertSucceeds(asA().doc(sess(A, 'devA1')).set(beat()));
+  });
+  it('a user CAN publish from a SECOND device (multi-device)', async () => {
+    await assertSucceeds(asA().doc(sess(A, 'devA2')).set(beat()));
+  });
+  it('a user CAN mark themselves offline', async () => {
+    await assertSucceeds(asA().doc(sess(A, 'devA1')).set(beat('offline')));
+  });
+  it('a user CAN delete their own session', async () => {
+    await assertSucceeds(asA().doc(sess(A, 'devA2')).delete());
+  });
+
+  // The whole point of the collection: a green dot has to be unforgeable.
+  it('user B CANNOT mark user A online', async () => {
+    await assertFails(asB().doc(sess(A, 'evil')).set(beat()));
+  });
+  it('user B CANNOT mark user A offline', async () => {
+    await assertFails(asB().doc(sess(A, 'devA1')).set(beat('offline')));
+  });
+  it('user B CANNOT delete user A session', async () => {
+    await assertFails(asB().doc(sess(A, 'devA1')).delete());
+  });
+  it('an expert CANNOT forge presence for their own athlete', async () => {
+    await assertFails(asC().doc(sess(A, 'evil')).set(beat()));
+  });
+  it('an unauthenticated caller CANNOT write presence', async () => {
+    await assertFails(anon().doc(sess(A, 'anon')).set(beat()));
+  });
+
+  // Freshness is judged against a clock the client does not control; a
+  // client-supplied timestamp would let anyone pin themselves green forever.
+  it('a client-supplied lastSeen is REJECTED — serverTimestamp is mandatory', async () => {
+    await assertFails(asA().doc(sess(A, 'devA1')).set({ state: 'online', lastSeen: future }));
+  });
+  it('a far-future lastSeen is REJECTED', async () => {
+    await assertFails(asA().doc(sess(A, 'devA1')).set({
+      state: 'online',
+      lastSeen: new Date(Date.now() + 365 * 24 * 3600 * 1000),
+    }));
+  });
+  it('a missing lastSeen is REJECTED', async () => {
+    await assertFails(asA().doc(sess(A, 'devA1')).set({ state: 'online' }));
+  });
+  it('an unexpected state value is REJECTED', async () => {
+    await assertFails(asA().doc(sess(A, 'devA1')).set(beat('available')));
+  });
+  it('smuggling extra fields is REJECTED', async () => {
+    await assertFails(asA().doc(sess(A, 'devA1')).set({ ...beat(), role: 'admin' }));
+  });
+
+  // Reads are intentionally open to any signed-in user — the payload is
+  // only state + lastSeen, and gating it on a relationship would cost a
+  // get() per session doc on every render.
+  it('a signed-in user CAN read another user presence', async () => {
+    await assertSucceeds(asB().doc(sess(A, 'devA1')).get());
+  });
+  it('a signed-in user CAN list another user sessions (multi-device derivation)', async () => {
+    await assertSucceeds(asB().collection(`presence_sessions/${A}/sessions`).get());
+  });
+  it('an unauthenticated caller CANNOT read presence', async () => {
+    await assertFails(anon().doc(sess(A, 'devA1')).get());
   });
 });
 

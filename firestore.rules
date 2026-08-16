@@ -154,6 +154,36 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ── expert_ratings — the ATHLETE's 1-5 star rating OF an expert ──
+    //
+    // Not to be confused with `expert_reviews` above, which is the opposite
+    // direction (the expert reviewing an athlete's diet plan).
+    //
+    // WRITES ARE BACKEND-ONLY. Every guarantee this data needs is a
+    // cross-document, transactional one that rules cannot express: the
+    // engagement must have actually ended, this athlete must have been in
+    // it, no rating may already exist for it, and the expert's rating
+    // aggregate must move atomically with the new row. All of that lives in
+    // backend/routes/expert_ratings.py, which writes with the admin SDK.
+    // Same posture as `users/{uid}.wallet`.
+    //
+    // READS ARE RESTRICTED TO THE TWO PARTIES, deliberately — even though
+    // a published rating is public profile content. The document carries
+    // `beforePhotoUrl`/`afterPhotoUrl` whether or not the athlete consented
+    // to public display (they are stored either way, so the athlete keeps
+    // their own record), so a signed-in-anyone read rule would hand a
+    // non-consented transformation photo to any client willing to query the
+    // collection directly — consent enforced only in the UI is not consent
+    // enforced. Public profile display therefore goes through
+    // GET /api/expert-ratings/expert/{id}, which omits non-consented photo
+    // URLs from the response entirely.
+    match /expert_ratings/{engagementId} {
+      allow read: if signedIn()
+        && (request.auth.uid == resource.data.athleteId
+            || request.auth.uid == resource.data.expertId);
+      allow write: if false;
+    }
+
     // ── review_requests — athlete owner + assigned expert ──
     match /review_requests/{id} {
       allow read: if signedIn()
@@ -353,6 +383,33 @@ service cloud.firestore {
         && request.resource.data.enabled is bool;
       // Logout cleanup — only the current owner may detach the device.
       allow delete: if signedIn() && resource.data.uid == request.auth.uid;
+    }
+
+    // ── Live presence ───────────────────────────────────────
+    // One document per DEVICE INSTALL, for athletes and experts alike, so
+    // a user signed in on two phones is online while EITHER is in the
+    // foreground and closing one does not black out the other.
+    //
+    // Read is open to any signed-in user. The payload is only
+    // state + lastSeen — the same thing every chat app exposes — and
+    // gating it behind a relationship lookup would cost a get() per
+    // session document on every render.
+    //
+    // Write is hard-scoped to the owner: {uid} MUST be the caller, so
+    // user A can never mark user B online. That, plus the serverTimestamp
+    // requirement below, is what makes a green dot mean something.
+    //
+    // `lastSeen == request.time` forces FieldValue.serverTimestamp(). A
+    // tampered client cannot post a far-future heartbeat and pin itself
+    // green forever, because freshness is judged against a clock it does
+    // not control.
+    match /presence_sessions/{uid}/sessions/{deviceId} {
+      allow read: if signedIn();
+      allow create, update: if isUser(uid)
+        && request.resource.data.keys().hasOnly(['state', 'lastSeen'])
+        && request.resource.data.state in ['online', 'offline']
+        && request.resource.data.lastSeen == request.time;
+      allow delete: if isUser(uid);
     }
 
     match /notifications/{id} {

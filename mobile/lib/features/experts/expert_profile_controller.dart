@@ -6,8 +6,10 @@ import 'package:flutter/foundation.dart';
 import '../diet/models/diet_plan_content.dart';
 import '../expert_dashboard/models/expert_models.dart';
 import '../workout/models/workout_plan_content.dart';
+import 'data/expert_rating_repository.dart';
 import 'data/experts_repository.dart';
 import 'models/expert_listing.dart';
+import 'models/expert_rating.dart';
 
 /// `_VP_ACTIVE_STATUSES` / `_VP_TERMINAL_RENDERED` (cprofile.js:2380-2384) —
 /// a fail-closed WHITELIST, not a blocklist. Anything not explicitly listed
@@ -99,8 +101,10 @@ class ExpertProfileController extends ChangeNotifier {
     required this.userName,
     required ExpertsRepository repository,
     required FirebaseFirestore firestore,
+    ExpertRatingRepository? ratings,
   }) : _repository = repository,
-       _db = firestore {
+       _db = firestore,
+       _ratings = ratings ?? ExpertRatingRepository() {
     _init();
   }
 
@@ -109,7 +113,14 @@ class ExpertProfileController extends ChangeNotifier {
   final String userName;
   final ExpertsRepository _repository;
   final FirebaseFirestore _db;
+  final ExpertRatingRepository _ratings;
   bool _disposed = false;
+
+  /// Athlete star ratings of THIS expert, read through the backend (not
+  /// Firestore) because that is where non-consented transformation photos
+  /// are stripped — `firestore.rules` deliberately denies a third party any
+  /// direct read of `expert_ratings`.
+  List<ExpertRating> expertRatings = const [];
 
   bool loading = true;
   bool notFound = false;
@@ -200,7 +211,24 @@ class ExpertProfileController extends ChangeNotifier {
       _userDoc = snap.data();
       _safeNotify();
     });
+    unawaited(_loadExpertRatings());
   }
+
+  Future<void> _loadExpertRatings() async {
+    try {
+      expertRatings = await _ratings.fetchForExpert(expertId);
+      _safeNotify();
+    } catch (e) {
+      // The profile's existing rating summary and legacy inline reviews are
+      // unaffected — a failed ratings fetch costs this one section, never
+      // the screen.
+      if (kDebugMode) debugPrint('[EXPERT PROFILE] ratings unavailable: $e');
+    }
+  }
+
+  /// Re-reads after the athlete submits, so their own review appears without
+  /// leaving the screen.
+  Future<void> refreshRatings() => _loadExpertRatings();
 
   /// `_getMyLatestPlanReview(coach)` (cprofile.js:2437-2452) — prefers an
   /// ACTIVE-status doc over a terminal one, newest first within each group.

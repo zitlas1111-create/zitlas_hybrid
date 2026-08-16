@@ -2096,7 +2096,38 @@ def _swap_target_calories(current_foods, engine) -> float | None:
     return total if total > 0 else None
 
 
+def workout_slot_from_name(meal_name: str) -> str | None:
+    """"pre_workout" / "post_workout" when this meal name IS a workout
+    slot, else None.
+
+    Strict `startswith` on the letters-only name, deliberately identical to
+    the Flutter client's `mealSlotFromName` (mobile/lib/features/diet/
+    models/meal_slot.dart) so both ends classify a meal the same way. A
+    loose "contains" check would let a corrupted/verbose name match the
+    wrong slot.
+
+    Callers MUST check this before `_meal_slot_from_name` — see the note
+    on that function for why."""
+    compact = re.sub(r"[^a-z]", "", (meal_name or "").lower())
+    if compact.startswith("preworkout"):
+        return "pre_workout"
+    if compact.startswith("postworkout"):
+        return "post_workout"
+    return None
+
+
 def _meal_slot_from_name(meal_name: str, meal_time: str = "") -> str:
+    """Maps a meal name onto one of the FOOD ENGINE's five slots
+    (`_MEAL_SLOTS` in services/food_engine.py).
+
+    The engine has no pre/post-workout slot and its snack pool is full of
+    normal meals — salads, cheelas, paneer bowls. "Pre-Workout Snack"
+    therefore used to fall through this function's final `return` to
+    `evening_snack`, which is precisely why swapping a Pre-Workout meal
+    returned "Moong Dal Chilla" and "Grilled Paneer Salad". Workout slots
+    are now intercepted by `workout_slot_from_name()` at every call site
+    and served from services/workout_nutrition_service.py instead, so they
+    never reach this mapping at all."""
     name_lc = f"{meal_name} {meal_time}".lower()
     if "breakfast" in name_lc:
         return "breakfast"

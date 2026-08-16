@@ -51,6 +51,15 @@ class _RecipeScreenState extends State<RecipeScreen> {
   String? _dietOverride;
   String? _goalOverride;
 
+  /// How long until training, in minutes — pre-workout only, and ONLY ever
+  /// set by the athlete tapping a chip on this screen. ZITLAS stores no
+  /// workout start time anywhere (`WorkoutDay` carries `duration_minutes`
+  /// but no clock time, and a diet meal's `time` is free text with no link
+  /// to a training session), so asking is the only honest way to get it.
+  /// Null = not stated; the backend then applies its own documented default
+  /// rather than either side inventing a time.
+  int? _minutesUntilWorkout;
+
   /// Drives the AppBar title, preview kicker and detail-view "why this was
   /// recommended" framing (item 16/21) — recomputed from `_mealType` (not
   /// cached from `initState`) since a filter-sheet override can change it.
@@ -85,6 +94,10 @@ class _RecipeScreenState extends State<RecipeScreen> {
         livingSituation: _cookingOverride ?? _context.livingSituation,
         state: _context.state,
         excludeIds: excludeShown ? _shownIds : null,
+        // Only ever sent for pre-workout, and only when the athlete stated
+        // it — never inferred.
+        minutesUntilWorkout:
+            _slot == MealSlot.preWorkout ? _minutesUntilWorkout : null,
         limit: 1,
       );
       if (!mounted) return false;
@@ -233,6 +246,20 @@ class _RecipeScreenState extends State<RecipeScreen> {
                 reasons: _reasons,
                 slot: _slot,
                 onViewRecipe: () => setState(() => _viewingDetail = true),
+                minutesUntilWorkout: _minutesUntilWorkout,
+                onTimingChanged: _slot == MealSlot.preWorkout
+                    ? (minutes) {
+                        setState(() {
+                          _minutesUntilWorkout = minutes;
+                          // A different window is a different question, not
+                          // "another of the same" — start the exclusion set
+                          // over so the best fuel for the new window can be
+                          // offered even if it was already shown.
+                          _shownIds.clear();
+                        });
+                        _fetch(excludeShown: false);
+                      }
+                    : null,
               );
     }
   }
@@ -251,11 +278,22 @@ class _CenteredMessage extends StatelessWidget {
 /// Item 4 of the spec — the short recommendation preview shown before the
 /// athlete commits to viewing the full recipe.
 class _RecipePreviewCard extends StatelessWidget {
-  const _RecipePreviewCard({required this.recipe, required this.reasons, required this.onViewRecipe, this.slot});
+  const _RecipePreviewCard({
+    required this.recipe,
+    required this.reasons,
+    required this.onViewRecipe,
+    this.slot,
+    this.minutesUntilWorkout,
+    this.onTimingChanged,
+  });
   final Recipe recipe;
   final List<String> reasons;
   final VoidCallback onViewRecipe;
   final MealSlot? slot;
+
+  /// Non-null only for the pre-workout slot — see `_minutesUntilWorkout`.
+  final int? minutesUntilWorkout;
+  final ValueChanged<int?>? onTimingChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -274,6 +312,13 @@ class _RecipePreviewCard extends StatelessWidget {
             if (slot?.isWorkoutSlot == true) ...[
               const SizedBox(height: 6),
               Text(slot!.recipeSubtitle, style: const TextStyle(fontSize: 12, color: ZitlasTokens.textMuted)),
+            ],
+            if (onTimingChanged != null) ...[
+              const SizedBox(height: 12),
+              _WorkoutTimingPicker(
+                selected: minutesUntilWorkout,
+                onChanged: onTimingChanged!,
+              ),
             ],
             const SizedBox(height: 10),
             Text(
@@ -548,6 +593,58 @@ class _NumberedList extends StatelessWidget {
               ],
             ),
           ),
+      ],
+    );
+  }
+}
+
+/// "When is your workout?" — the ONLY source of workout timing in ZITLAS.
+///
+/// The app stores no workout start time (checked: `WorkoutDay` has
+/// `duration_minutes` and no clock field; a diet meal's `time` is free text
+/// with no link to a training session), so rather than infer a gap from
+/// data that doesn't exist, the athlete states it. "Not sure" is a real
+/// option and the default: it sends nothing and lets the backend apply its
+/// own documented short-window assumption.
+class _WorkoutTimingPicker extends StatelessWidget {
+  const _WorkoutTimingPicker({required this.selected, required this.onChanged});
+
+  final int? selected;
+  final ValueChanged<int?> onChanged;
+
+  static const _options = <(int?, String)>[
+    (null, 'Not sure'),
+    (10, 'In ~10 min'),
+    (25, 'In ~25 min'),
+    (45, 'In ~45 min'),
+    (90, 'In ~90 min'),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Text(
+          'When is your workout?',
+          style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w700, color: ZitlasTokens.textMuted),
+        ),
+        const SizedBox(height: 8),
+        Wrap(
+          alignment: WrapAlignment.center,
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final (minutes, label) in _options)
+              ChoiceChip(
+                label: Text(label, style: const TextStyle(fontSize: 11.5)),
+                selected: selected == minutes,
+                onSelected: (_) => onChanged(minutes),
+                selectedColor: ZitlasTokens.primary.withValues(alpha: 0.15),
+                visualDensity: VisualDensity.compact,
+                materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+          ],
+        ),
       ],
     );
   }

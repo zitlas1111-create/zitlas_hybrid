@@ -255,3 +255,91 @@ def test_transformation_swap_works_for_lunch_and_dinner_too(engine):
             meal_slot=slot, location={"state": "Maharashtra"},
         )
         assert combos, f"{slot} transformation swap returned nothing"
+
+
+# ── Workout-slot swap routing ────────────────────────────────────────────
+# Reported defect: swapping a "Pre-Workout Snack" meal returned normal
+# meals — "Moong Dal Chilla", "Grilled Paneer Salad", "Brown Rice Vegetable
+# Bowl". Root cause: `_meal_slot_from_name` has no workout slot and fell
+# through its final `return` to "evening_snack", whose pool is exactly
+# those dishes. Workout slots are now intercepted before the engine.
+
+from fastapi import FastAPI  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+from routes import swap as swap_route  # noqa: E402
+
+
+@pytest.fixture(scope="module")
+def swap_client():
+    app = FastAPI()
+    app.include_router(swap_route.router, prefix="/api/diet")
+    return TestClient(app)
+
+
+def _post(client, meal_name, **extra):
+    return client.post("/api/diet/swap", json={
+        "meal_name": meal_name,
+        "current_foods": ["Poha (Home Style)"],
+        "user_profile": {},
+        "fitness_goal": "transformation",
+        "options": 4,
+        **extra,
+    }).json()
+
+
+@pytest.mark.parametrize("meal_name", ["Pre-Workout Snack", "Pre-Workout", "pre workout"])
+def test_pre_workout_swap_is_served_from_workout_nutrition(swap_client, meal_name):
+    body = _post(swap_client, meal_name)
+    assert body["module"] == "workout_nutrition_swap"
+    assert body["options"]
+    for opt in body["options"]:
+        assert opt["food_ids"][0].startswith("ZITLAS-FUEL-")
+
+
+def test_pre_workout_swap_never_returns_the_reported_normal_meals(swap_client):
+    body = _post(swap_client, "Pre-Workout Snack")
+    names = " ".join(o["name"].lower() for o in body["options"])
+    for bad in ("chilla", "cheela", "paneer", "salad", "beetroot", "avocado", "brown rice"):
+        assert bad not in names, f"pre-workout swap offered {bad!r}"
+
+
+def test_post_workout_swap_is_served_from_workout_nutrition(swap_client):
+    body = _post(swap_client, "Post-Workout")
+    assert body["module"] == "workout_nutrition_swap"
+    for opt in body["options"]:
+        assert opt["food_ids"][0].startswith("ZITLAS-RECOVERY-")
+
+
+@pytest.mark.parametrize("meal_name", ["Breakfast", "Lunch", "Dinner", "Evening Snack"])
+def test_normal_meal_swaps_still_use_the_food_engine(swap_client, meal_name):
+    body = _post(swap_client, meal_name)
+    assert body["module"] == "deterministic_swap"
+    assert body["options"]
+    for opt in body["options"]:
+        # Engine foods carry the food dataset's own integer ids; the
+        # workout-nutrition dataset uses "ZITLAS-FUEL-*"/"ZITLAS-RECOVERY-*"
+        # strings. A normal meal must never surface one of those.
+        assert not str(opt["food_ids"][0]).startswith(("ZITLAS-FUEL-", "ZITLAS-RECOVERY-"))
+
+
+def test_pre_workout_swap_respects_the_supplied_workout_timing(swap_client):
+    close = _post(swap_client, "Pre-Workout", minutes_until_workout=10)
+    far = _post(swap_client, "Pre-Workout", minutes_until_workout=100)
+    assert close["options"][0]["name"] != far["options"][0]["name"]
+
+
+def test_pre_workout_swap_excludes_what_the_athlete_already_rejected(swap_client):
+    first = _post(swap_client, "Pre-Workout")
+    top = first["options"][0]["name"]
+    again = _post(swap_client, "Pre-Workout", rejected_foods=[top])
+    assert again["options"][0]["name"] != top
+
+
+def test_workout_slot_from_name_is_strict_and_never_guesses():
+    assert gs.workout_slot_from_name("Pre-Workout Snack") == "pre_workout"
+    assert gs.workout_slot_from_name("Post-Workout") == "post_workout"
+    assert gs.workout_slot_from_name("Breakfast") is None
+    assert gs.workout_slot_from_name("Evening Snack") is None
+    # A name that merely MENTIONS a workout later must not be captured.
+    assert gs.workout_slot_from_name("Breakfast before pre-workout") is None
