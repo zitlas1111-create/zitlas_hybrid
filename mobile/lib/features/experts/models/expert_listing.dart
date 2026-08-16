@@ -53,6 +53,7 @@ class ExpertPricing {
 class ExpertListing {
   const ExpertListing({
     required this.id,
+    this.approved,
     this.name = 'Expert',
     this.role = 'Nutrition Expert',
     this.image,
@@ -113,11 +114,38 @@ class ExpertListing {
 
   double get ratingValue => double.tryParse(rating) ?? 5.0;
 
+  /// `experts/{uid}.approved` as stored: `true`, `false`, or ABSENT.
+  ///
+  /// Kept as a nullable bool rather than collapsed to a bool, because the
+  /// three states mean different things and [listedInMarketplace] has to tell
+  /// them apart — see that getter.
+  final bool? approved;
+
+  /// Whether this profile belongs in the public marketplace.
+  ///
+  /// Signup writes `approved: false` and tells the applicant "Your
+  /// application is under review" (login.js:337), and the admin API flips it
+  /// via `POST /api/admin/experts/approve`. So the contract has always been
+  /// that an unapproved profile is NOT public — the marketplace simply never
+  /// checked, listing every document in `experts` including brand-new
+  /// self-signups and test accounts.
+  ///
+  /// Deliberately `approved != false`, NOT `approved == true`: a document
+  /// that predates the field has no `approved` key at all, and excluding
+  /// those would delist established real experts. Only an EXPLICIT
+  /// `approved: false` — which is exactly what signup writes — is hidden.
+  ///
+  /// This is also why the filter is client-side rather than a Firestore
+  /// `where`: an inequality query silently drops documents missing the
+  /// field, which is the failure mode this getter exists to avoid.
+  bool get listedInMarketplace => approved != false;
+
   factory ExpertListing.fromMap(String id, Map<String, dynamic> m) {
     final availability = asMap(m['availability']);
     final verification = asMap(m['verification']);
     return ExpertListing(
       id: id,
+      approved: m['approved'] is bool ? m['approved'] as bool : null,
       name: asText(m['name']) ?? 'Expert',
       role: asText(m['specialization']) ?? asText(m['speciality']) ?? asText(m['role']) ?? 'Nutrition Expert',
       image: asText(m['profilePhoto']) ?? asText(m['photo']) ?? asText(m['image']),

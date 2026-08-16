@@ -444,6 +444,18 @@ service cloud.firestore {
     }
 
     // ── MONEY — client deny-all (backend Admin SDK bypasses) ──
+    // ── Admin audit trail ───────────────────────────────────────
+    // Server-only, in BOTH directions, deliberately including admins.
+    //
+    // Written exclusively by the Admin SDK (which bypasses these rules) and
+    // read exclusively through GET /api/admin/audit-logs behind
+    // require_admin. Granting an admin direct client access would let them
+    // rewrite or delete their own history, which would defeat the only
+    // purpose the collection has. There is no update/delete path anywhere in
+    // the API either — the trail is append-only by construction, not by
+    // convention.
+    match /admin_audit_logs/{id} { allow read, write: if false; }
+
     match /wallet_transactions/{id} { allow read, write: if false; }
     match /razorpay_orders/{id}     { allow read, write: if false; }
 

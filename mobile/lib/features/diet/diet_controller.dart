@@ -190,6 +190,13 @@ class DietController extends ChangeNotifier {
     );
 
     unawaited(_loadHealthToday());
+
+    // Live wellness propagation. Both controllers are created inside
+    // `StatefulShellRoute.indexedStack`, which keeps every tab alive, so a
+    // "Sick Today" / "Injured Today" check-in made on the Dashboard tab
+    // would otherwise never reach this already-constructed controller and
+    // today's plan would keep rendering as if nothing had happened.
+    HealthStatusStore.revision.addListener(_onHealthRevision);
   }
 
   /// One-shot read (not a stream — `HealthStatusStore` is SharedPreferences,
@@ -209,6 +216,9 @@ class DietController extends ChangeNotifier {
   /// controller is already alive wouldn't otherwise be picked up (this is a
   /// one-shot local read, not a live stream).
   Future<void> refreshHealthToday() => _loadHealthToday();
+
+  void _onHealthRevision() => unawaited(_loadHealthToday());
+
 
   /// Health Status recovery override — swaps ONLY today's meals with the
   /// deterministic recovery template chosen on the Dashboard's "How are you
@@ -831,6 +841,7 @@ class DietController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    HealthStatusStore.revision.removeListener(_onHealthRevision);
     _userDocSub?.cancel();
     _reviewsSub?.cancel();
     _coachPlanSub?.cancel();

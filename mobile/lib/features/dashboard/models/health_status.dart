@@ -36,6 +36,24 @@ const healthBodyParts = <String>[
   'Wrist', 'Hip', 'Knee', 'Ankle', 'Foot',
 ];
 
+/// The idempotency key for a wellness check-in.
+///
+/// One wellness action = one coach notification. Every document the alert
+/// writes (`health_alerts`, `coaching_notifications`, the coaching chat
+/// message) is keyed off this, so a re-tap, a screen rebuild, a listener
+/// restart or a retry all overwrite the same three documents instead of
+/// spamming the coach.
+///
+/// Status is part of the key on purpose: `sick -> sick` on the same day is
+/// the same fact and must not notify twice, but `sick -> injured` is
+/// genuinely new information the coach needs.
+String wellnessEventId({
+  required String uid,
+  required String date,
+  required String status,
+}) =>
+    'wellness_plan_adjusted_${uid}_${date}_$status';
+
 String healthStatusLabel(String key) =>
     healthStatuses.firstWhere((s) => s.key == key, orElse: () => HealthStatusOption(key, key)).label;
 

@@ -1365,7 +1365,7 @@ async def generate_plan(body: AssessmentInput) -> dict[str, Any]:
       2. RAG retrieval            — top-5 diet chunks + top-5 workout chunks from PDFs
       3. LLM diet plan            — 7-day meal plan grounded in PDF research
       4. LLM workout plan         — 7-day exercise plan grounded in PDF research
-      (Steps 3 and 4 run in parallel.)
+      (Steps 3 and 4 genuinely run concurrently — see the gather() below.)
 
     Response: {assessment, calculations, swot, diet_plan, workout_plan, sources}
     """
@@ -1468,42 +1468,49 @@ async def generate_plan(body: AssessmentInput) -> dict[str, Any]:
     print(f"[ASSESS] RAG done ({time.time()-_t_rag:.1f}s) — "
           f"total_unique={len(all_sources)}")
 
-    # ── Step 3: Generate diet plan ───────────────────────────────────────────
+    # ── Steps 3 & 4: Generate diet and workout plans CONCURRENTLY ────────────
+    #
+    # These two were sequential until now (despite this endpoint's docstring
+    # having claimed otherwise), which made the athlete wait for the sum of
+    # two LLM round trips instead of the slower one. They are genuinely
+    # independent: each reads `body`, `calc` and its OWN rag_context, and
+    # neither mutates `calc` or any module-level state — verified before
+    # this change, and the reason it is safe to overlap them.
+    #
+    # RAG retrieval above stays sequential on purpose (one FAISS index in
+    # RAM at a time); what runs in parallel here is two network-bound HTTP
+    # calls holding only small context STRINGS, so peak RAM is essentially
+    # unchanged. gather() with return_exceptions preserves the previous
+    # per-plan isolation exactly: one plan failing still returns the other.
     _t_llm = time.time()
-    print(f"[ASSESS] Diet LLM start ({time.time()-_t0:.1f}s)")
+    print(f"[ASSESS] Diet + Workout LLM start ({time.time()-_t0:.1f}s) — concurrent")
     _empty_llm: dict = {"tokens_used": 0, "model": None, "reply": ""}
+
+    diet_outcome, workout_outcome = await asyncio.gather(
+        _generate_diet_plan(body, calc, diet_context, fitness_goal),
+        _generate_workout_plan(body, calc, workout_context, fitness_goal),
+        return_exceptions=True,
+    )
 
     diet_structured = None
     diet_llm_result = _empty_llm
-    try:
-        diet_structured, diet_llm_result = await _generate_diet_plan(
-            body, calc, diet_context, fitness_goal
-        )
-    except Exception as _diet_exc:
-        _tb.print_exception(type(_diet_exc), _diet_exc, _diet_exc.__traceback__)
-        print(f"[ASSESS] Diet LLM FAILED: {type(_diet_exc).__name__}: {_diet_exc}")
-
-    del diet_context
-    gc.collect()
-    print(f"[ASSESS] After diet LLM ({time.time()-_t_llm:.1f}s) — RAM: {_ram()}")
-
-    # ── Step 4: Generate workout plan ────────────────────────────────────────
-    _t_workout = time.time()
-    print(f"[ASSESS] Workout LLM start ({time.time()-_t0:.1f}s)")
+    if isinstance(diet_outcome, BaseException):
+        _tb.print_exception(type(diet_outcome), diet_outcome, diet_outcome.__traceback__)
+        print(f"[ASSESS] Diet LLM FAILED: {type(diet_outcome).__name__}: {diet_outcome}")
+    else:
+        diet_structured, diet_llm_result = diet_outcome
 
     workout_structured = None
     workout_llm_result = _empty_llm
-    try:
-        workout_structured, workout_llm_result = await _generate_workout_plan(
-            body, calc, workout_context, fitness_goal
-        )
-    except Exception as _wo_exc:
-        _tb.print_exception(type(_wo_exc), _wo_exc, _wo_exc.__traceback__)
-        print(f"[ASSESS] Workout LLM FAILED: {type(_wo_exc).__name__}: {_wo_exc}")
+    if isinstance(workout_outcome, BaseException):
+        _tb.print_exception(type(workout_outcome), workout_outcome, workout_outcome.__traceback__)
+        print(f"[ASSESS] Workout LLM FAILED: {type(workout_outcome).__name__}: {workout_outcome}")
+    else:
+        workout_structured, workout_llm_result = workout_outcome
 
-    del workout_context
+    del diet_context, workout_context
     gc.collect()
-    print(f"[ASSESS] After workout LLM ({time.time()-_t_workout:.1f}s) — RAM: {_ram()}")
+    print(f"[ASSESS] After diet+workout LLM ({time.time()-_t_llm:.1f}s) — RAM: {_ram()}")
 
     # ── Build response ───────────────────────────────────────────────────────
     diet_tokens    = diet_llm_result.get("tokens_used", 0)

@@ -58,6 +58,25 @@ class ExpertsRepository {
   /// live listener; Firestore is the single source of truth for the expert
   /// list, no localStorage fallback (that cache only exists for the
   /// website's offline path and would just be empty here).
+  /// Returns EVERY document in `experts` — including unapproved ones.
+  ///
+  /// This is the defect that puts test accounts in the production
+  /// marketplace: signup writes `experts/{uid}` with `approved: false` and
+  /// tells the applicant "your application is under review", the admin API
+  /// flips the flag via `POST /api/admin/experts/approve`, and this read
+  /// honours none of it.
+  ///
+  /// The gate is BUILT and TESTED — [ExpertListing.listedInMarketplace] —
+  /// but deliberately NOT wired in here yet. Enabling it is a one-line
+  /// change:
+  ///
+  ///     .where((e) => e.listedInMarketplace)
+  ///
+  /// It is held back because signup writes `approved: false` for every
+  /// expert, so if the live experts were never run through the approve
+  /// endpoint the filter would empty the marketplace rather than clean it.
+  /// That has to be confirmed against production first — see the report
+  /// accompanying this change.
   Future<List<ExpertListing>> fetchExperts() async {
     final snap = await _db.collection('experts').get();
     return snap.docs.map((d) => ExpertListing.fromMap(d.id, d.data())).toList();

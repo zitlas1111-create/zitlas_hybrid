@@ -153,13 +153,6 @@ class _ZinoBodyState extends State<_ZinoBody> {
           ],
         ),
         actions: [
-          // Voice mode. Sits beside the chat rather than replacing it — the
-          // existing text conversation is untouched.
-          IconButton(
-            tooltip: 'Talk with Zino',
-            icon: const Icon(Icons.graphic_eq_rounded, color: ZitlasTokens.primary),
-            onPressed: () => context.push('/zino/call'),
-          ),
           if (!controller.isEmpty)
             IconButton(
               tooltip: 'Clear chat',

@@ -41,8 +41,12 @@ class AccountGuard {
     'zitlas_step_permission_denied',
     'zitlas_step_baseline',
     'zitlas_step_last_read_at',
-    'zitlas_notification_prompted',
-    'zitlas_notification_prefs',
+    // NOTE: 'zitlas_notification_prompted' and 'zitlas_notification_prefs'
+    // used to be listed here and were WRONG to be. They describe a PERSON's
+    // choices, not the device: an athlete who muted meal reminders handed
+    // that mute to the next account signed in on the same phone, and an
+    // expert's (irrelevant) athlete-category settings persisted back to an
+    // athlete. They are now purged with the rest of the account cache.
   };
 
   LocalStorageService get _storage => LocalStorageService.instance;

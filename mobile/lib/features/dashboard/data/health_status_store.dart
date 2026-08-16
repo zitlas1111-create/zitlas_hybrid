@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/health_status.dart';
@@ -20,6 +21,30 @@ class HealthStatusStore {
   static const _todayKey = 'zitlas_health_today';
   static const _historyKey = 'zitlas_health_history';
   static const _maxHistory = 60;
+
+  /// Bumped on every write, so controllers that are ALREADY ALIVE re-read.
+  ///
+  /// This is the fix for the reported bug. Diet and Training each read this
+  /// store exactly once, when their controller is constructed — and both
+  /// controllers live inside `StatefulShellRoute.indexedStack`, which keeps
+  /// every tab alive. So the real sequence was:
+  ///
+  ///   1. athlete opens Diet once   -> controller reads wellness = none
+  ///   2. athlete taps "Sick Today" -> SharedPreferences updated
+  ///   3. athlete opens Diet again  -> SAME live controller, still `none`
+  ///
+  /// The plan therefore only ever picked up the check-in after a full app
+  /// restart, which is exactly why it looked intermittent rather than
+  /// broken. `refreshHealthToday()` already existed on both controllers for
+  /// this purpose and its own doc comment said the screen would call it —
+  /// nothing ever did.
+  ///
+  /// A revision counter rather than the value itself: the payload is read
+  /// asynchronously from disk, and every listener needs the SAME answer,
+  /// so they re-read the store rather than trusting a broadcast copy.
+  static final ValueNotifier<int> revision = ValueNotifier<int>(0);
+
+  static void _bump() => revision.value++;
 
   static String dateKey([DateTime? now]) {
     final d = now ?? DateTime.now();
@@ -55,6 +80,7 @@ class HealthStatusStore {
         safety: adj.safety,
       ),
     );
+    _bump();
   }
 
   /// `clearToday()` — removes ONLY today's override. Never touches the
@@ -62,6 +88,7 @@ class HealthStatusStore {
   Future<void> clearToday() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_todayKey);
+    _bump();
   }
 
   /// "Feeling great" clears the override but still records the day, so the
@@ -73,6 +100,7 @@ class HealthStatusStore {
       prefs,
       HealthHistoryEntry(date: dateKey(now), status: 'great'),
     );
+    _bump();
   }
 
   Future<List<HealthHistoryEntry>> loadHistory() async {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 
 import '../../core/location/diet_region_repository.dart';
@@ -5,21 +7,9 @@ import '../../core/network/api_exception.dart';
 import '../../core/util/json_coerce.dart';
 import 'data/assessment_repository.dart';
 import 'models/assessment_question.dart';
+import 'models/plan_generation_progress.dart';
 
 enum AssessmentScreen { welcome, goal, assess, processing, snapshot, swot, diet, workout, done }
-
-/// `PROC_STEPS` — the fixed 8-step progress list shown on the Processing
-/// screen while the real backend call runs in parallel.
-const List<({String icon, String label})> kProcessingSteps = [
-  (icon: '📋', label: 'Analyzing your profile…'),
-  (icon: '⚖️', label: 'Calculating BMI & BMR…'),
-  (icon: '🔥', label: 'Computing calorie targets…'),
-  (icon: '🧠', label: 'Building SWOT profile…'),
-  (icon: '📚', label: 'Searching research database…'),
-  (icon: '🥗', label: 'Generating your diet plan…'),
-  (icon: '💪', label: 'Creating workout program…'),
-  (icon: '✨', label: 'Finalizing recommendations…'),
-];
 
 /// Drives the 9-screen Assessment wizard. Mirrors `ai-coach.js`'s `state` +
 /// `showScreen()`/`advanceQuestion()`/`callGeneratePlan()`/
@@ -52,6 +42,7 @@ class AssessmentController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    _slowTimer?.cancel();
     super.dispose();
   }
 
@@ -111,6 +102,11 @@ class AssessmentController extends ChangeNotifier {
 
   AssessmentResult? apiResult;
   String? planId;
+
+  /// Real generation progress — see [PlanGenerationProgress]. Never advanced
+  /// by a timer.
+  PlanGenerationProgress progress = PlanGenerationProgress.idle;
+  Timer? _slowTimer;
 
   /// Honest, specific failure text — never a generic "check your connection"
   /// for what was actually a validation or server error. Distinguishes
@@ -235,10 +231,29 @@ class AssessmentController extends ChangeNotifier {
 
   // ── S4: Processing + real API call ──
   Future<void> _startProcessing() async {
+    // Idempotence. Re-entering the screen (a rebuild, a back-navigation, a
+    // second tap on Retry) must not fire a second generation and bill a
+    // second pair of LLM calls for a plan the athlete already has.
+    if (submitting) return;
+    if (apiResult != null) {
+      _go(AssessmentScreen.snapshot);
+      return;
+    }
+
     _go(AssessmentScreen.processing);
     submitting = true;
     submitError = null;
     persistError = null;
+    progress = PlanGenerationProgress.generating;
+
+    // The ONLY timer in the flow, and it claims nothing about the backend:
+    // it just decides when a long wait deserves an explanation.
+    _slowTimer?.cancel();
+    _slowTimer = Timer(kPlanGenerationSlowAfter, () {
+      if (!submitting) return;
+      progress = progress.copyWith(isSlow: true);
+      notifyListeners();
+    });
 
     // `_locationPayload` was already populated from the persisted
     // `preferredDietRegion` by `_loadPreferredRegion()`/`setPreferredRegion()`
@@ -246,7 +261,11 @@ class AssessmentController extends ChangeNotifier {
     // interactive consent flow the Assessment screen drives.
     if (kDebugMode) debugPrint('[DIET] generating with region = ${preferredRegion ?? '(none)'}');
 
-    final minWait = Future<void>.delayed(Duration(milliseconds: kProcessingSteps.length * 800 + 600));
+    // NOTE: there used to be a `minWait` here that held the athlete on this
+    // screen for a fixed 7s (8 fake steps x 800ms + 600ms) even when the
+    // backend answered in one — an artificial delay padding an already
+    // impatient moment. Removed: the screen now leaves as soon as there is
+    // something real to show.
 
     // Generation and persistence are settled SEPARATELY on purpose. A
     // Firestore write failure must not discard a plan the backend already
@@ -260,23 +279,47 @@ class AssessmentController extends ChangeNotifier {
       submitError = e;
     }
 
-    if (result != null) {
-      apiResult = result;
-      try {
-        planId = await _repository.saveAssessmentResult(
-          uid: uid,
-          answers: Map<String, dynamic>.from(answers),
-          goal: _buildGoalMap(),
-          result: result,
-          location: _locationPayload,
-        );
-      } catch (e, st) {
-        _logFailure('saveAssessmentResult', e, st);
-        persistError = e;
-      }
+    _slowTimer?.cancel();
+
+    if (result == null) {
+      // Straight on to the snapshot screen, which already owns the retry UI
+      // (`SnapshotView` renders `submitErrorMessage` + `retryGeneration`).
+      // The answers are still in memory, so retrying never costs the athlete
+      // the questionnaire.
+      progress = progress.allFailed;
+      submitting = false;
+      _go(AssessmentScreen.snapshot);
+      return;
     }
 
-    await minWait;
+    // Honest settlement: each stage reflects what the response ACTUALLY
+    // carried. The backend returns diet_plan and workout_plan independently
+    // and either can be null, so a missing plan is reported as failed rather
+    // than ticked off.
+    progress = progress.settledFrom(
+      hasProfile: true,
+      hasDiet: result.dietPlan != null,
+      hasWorkout: result.workoutPlan != null,
+    );
+    apiResult = result;
+    progress = progress.copyWith(saving: PlanStageStatus.inProgress);
+    notifyListeners();
+
+    try {
+      planId = await _repository.saveAssessmentResult(
+        uid: uid,
+        answers: Map<String, dynamic>.from(answers),
+        goal: _buildGoalMap(),
+        result: result,
+        location: _locationPayload,
+      );
+      progress = progress.copyWith(saving: PlanStageStatus.completed);
+    } catch (e, st) {
+      _logFailure('saveAssessmentResult', e, st);
+      persistError = e;
+      progress = progress.copyWith(saving: PlanStageStatus.failed);
+    }
+
     submitting = false;
     _go(AssessmentScreen.snapshot);
   }

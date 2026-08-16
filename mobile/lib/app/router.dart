@@ -37,7 +37,6 @@ import '../features/reviews/presentation/screens/reviews_screen.dart';
 import '../features/workout/presentation/screens/workout_screen.dart';
 import '../features/zino/data/zino_context_builder.dart';
 import '../features/zino/presentation/screens/zino_screen.dart';
-import '../features/zino/voice/presentation/zino_call_screen.dart';
 import 'splash_gate.dart';
 
 /// Routing foundation. The 5 bottom-nav tabs (matching `components/navbar.js`
@@ -232,7 +231,6 @@ GoRouter buildRouter(AuthState authState) {
       // Full-screen voice call. A top-level route (not nested in the shell)
       // so the bottom nav and the Zino FAB don't sit on top of a call.
       // Declared BEFORE '/zino' so the more specific path matches first.
-      GoRoute(path: '/zino/call', builder: (context, state) => const ZinoCallScreen()),
       // `?from=diet` tells Zino which screen the athlete opened it from, so
       // an ambiguous question ("replace this") anchors to what they were just
       // looking at — the mobile equivalent of zino.js's `current_page`.

@@ -10,9 +10,6 @@ import 'package:share_plus/share_plus.dart';
 
 import '../../../../core/steps/presentation/step_consent_sheet.dart';
 import '../../../../core/widgets/app_shell.dart';
-import '../../../../core/voice/voice_language.dart';
-import '../../../../core/voice/voice_language_store.dart';
-import '../../../zino/voice/presentation/voice_language_sheet.dart';
 import '../../../zino/tour/zino_tour_stops.dart';
 import '../../../../core/steps/step_tracking_service.dart';
 import '../../../../core/theme/zitlas_tokens.dart';
@@ -101,7 +98,6 @@ class _ProfileBody extends StatelessWidget {
                       // dismiss, and someone who tapped "Not Now" needs a way
                       // back that isn't a nag.
                       const _StepTrackingRow(),
-                      const _VoiceLanguageRow(),
                       _SettingsRow(
                         icon: Icons.notifications_none_rounded,
                         label: 'Notifications',
@@ -372,63 +368,6 @@ class _SectionCard extends StatelessWidget {
           child: Column(children: children),
         ),
       ],
-    );
-  }
-}
-
-/// Profile → Zino Voice Language. Lets an athlete change the language they
-/// picked on first run, without ever re-prompting them for it.
-class _VoiceLanguageRow extends StatefulWidget {
-  const _VoiceLanguageRow();
-
-  @override
-  State<_VoiceLanguageRow> createState() => _VoiceLanguageRowState();
-}
-
-class _VoiceLanguageRowState extends State<_VoiceLanguageRow> {
-  VoiceLanguage? _language;
-  bool _loading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    final uid = FirebaseAuth.instance.currentUser?.uid;
-    if (uid == null) {
-      if (mounted) setState(() => _loading = false);
-      return;
-    }
-    final result = await VoiceLanguageStore(firestore: FirebaseFirestore.instance).load(uid);
-    if (!mounted) return;
-    setState(() {
-      _language = result.language;
-      _loading = false;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _SettingsRow(
-      icon: Icons.record_voice_over_outlined,
-      label: "Zino's Voice Language",
-      subtitle: _loading
-          ? 'Loading…'
-          : (_language == null ? 'Not set yet' : '${_language!.flag} ${_language!.label}'),
-      onTap: _loading
-          ? null
-          : () async {
-              final picked = await showVoiceLanguageSheet(context, current: _language);
-              if (picked == null) return;
-              final uid = FirebaseAuth.instance.currentUser?.uid;
-              if (uid != null) {
-                await VoiceLanguageStore(firestore: FirebaseFirestore.instance)
-                    .save(uid, picked);
-              }
-              if (mounted) setState(() => _language = picked);
-            },
     );
   }
 }

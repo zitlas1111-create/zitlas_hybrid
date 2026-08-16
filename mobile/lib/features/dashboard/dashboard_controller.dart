@@ -420,25 +420,53 @@ class DashboardController extends ChangeNotifier {
     return buf.toString();
   }
 
+  /// Notifies the active Personal Coach that their client reported a wellness
+  /// event — WITHOUT having touched the coach's plan.
+  ///
+  /// A coach-authored plan is never auto-overridden: `DietController`'s
+  /// `isExpertPlan` guard and `WorkoutController`'s `_coachOverrideActive`
+  /// guard both refuse the wellness override, deliberately, because deciding
+  /// whether a sick client should still train is the coach's judgement call,
+  /// not the app's.
+  ///
+  /// The wording below has to say so explicitly. It previously read
+  /// "Today's workout: <title>. Diet: <title>." — which described the
+  /// adjustment the app COMPUTED, not what it applied, and so told a coach
+  /// their plan had been changed when it demonstrably had not.
+  ///
+  /// This runs independently of those two rendering guards: the coach is
+  /// notified whether or not any override was applied, which is the whole
+  /// point for a coached athlete.
   Future<void> _alertCoach(HealthAdjustment adj) async {
     try {
       final summary = _healthSummary(adj);
       final name = displayName ?? 'Athlete';
-      final body = adj.safety
-          ? '⚠ Advised to seek medical attention before exercising.'
-          : "Today's workout: ${adj.workout?.title ?? 'unchanged'}. "
-                'Diet: ${adj.diet?.title ?? 'unchanged'}. '
-                'Steps: ${adj.oldStepsGoal} → ${adj.stepsGoalLabel}.';
-      final chatText =
-          '🩺 Health update — $summary.\n$body${adj.note.isEmpty ? '' : '\nNote: ${adj.note}'}';
+      final label = healthStatusLabel(adj.status);
+
+      // Sick affects both plans; an injury is a training concern.
+      final untouched = adj.status == 'injured'
+          ? 'Their current training plan has NOT been automatically changed.'
+          : 'Their current diet and training plan have NOT been automatically '
+              'changed.';
+      final body = '$name marked today as $label. $untouched '
+          'Please review if any adjustment is required.';
+      final safetyLine = adj.safety
+          ? '\n⚠ Advised to seek medical attention before exercising.'
+          : '';
+      final chatText = '🩺 Wellness update — $summary.\n$body$safetyLine'
+          '${adj.note.isEmpty ? '' : '\nNote: ${adj.note}'}';
 
       await _repository.sendHealthAlert(
         uid: uid,
         athleteName: name,
         summary: summary,
+        title: 'Client Wellness Update',
+        message: body,
         chatText: chatText,
+        eventId: wellnessEventId(uid: uid, date: adj.date, status: adj.status),
         alert: {
           'status': adj.status,
+          'date': adj.date,
           'symptoms': adj.symptoms,
           'severity': adj.severity,
           'bodyParts': adj.bodyParts,
@@ -447,6 +475,13 @@ class DashboardController extends ChangeNotifier {
           'stressLevel': adj.stressLevel,
           'notes': adj.note,
           'safety': adj.safety,
+          // Records that the coach's plan was left alone, so nothing reading
+          // this document can mistake the advisory block below for an
+          // applied change.
+          'planModified': false,
+          // Kept under the website's own field names (health-status.js:315)
+          // for schema parity. ADVISORY only for a coached athlete — what
+          // the deterministic rules would have suggested, never applied.
           'newWorkout': adj.workout?.toMap(),
           'newDiet': adj.diet == null
               ? null
@@ -460,18 +495,34 @@ class DashboardController extends ChangeNotifier {
     }
   }
 
+  /// The athlete's own confirmation.
+  ///
+  /// Says something DIFFERENT depending on whether a coach owns the plan,
+  /// because only one of the two outcomes actually happened. Telling a
+  /// coached athlete "today's plan adjusted" would be a straight
+  /// contradiction of the `isExpertPlan`/`_coachOverrideActive` guards, which
+  /// deliberately leave a coach-authored plan exactly as the coach wrote it.
   Future<void> _notifySelf(HealthAdjustment adj) async {
     try {
+      final coached = hasActiveCoaching;
       final parts = [
         if (adj.workout != null) 'Workout: ${adj.workout!.title}',
         if (adj.diet != null) 'Diet: ${adj.diet!.title}',
       ];
+      final title = adj.safety
+          ? '⚠ Seek medical attention before exercising'
+          : coached
+              ? '${healthStatusLabel(adj.status)} — your coach has been notified'
+              : "${healthStatusLabel(adj.status)} — today's plan adjusted";
+      final message = coached
+          ? 'Your coach will review whether your plan needs any change. '
+              'Until then it stays exactly as they set it.'
+          : parts.join(' · ');
+
       await _repository.sendSelfNotification(
         uid: uid,
-        title: adj.safety
-            ? '⚠ Seek medical attention before exercising'
-            : "${healthStatusLabel(adj.status)} — today's plan adjusted",
-        message: parts.join(' · '),
+        title: title,
+        message: message,
         type: 'health_status_${adj.status}',
         priority: adj.safety ? 'critical' : 'medium',
       );

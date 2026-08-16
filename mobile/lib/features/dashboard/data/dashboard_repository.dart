@@ -320,6 +320,9 @@ class DashboardRepository {
     required Map<String, dynamic> alert,
     required String summary,
     required String chatText,
+    required String eventId,
+    required String title,
+    required String message,
   }) async {
     final relSnap = await _firestore.collection('personal_coaching').doc(uid).get();
     final rel = relSnap.data();
@@ -329,32 +332,57 @@ class DashboardRepository {
 
     final now = DateTime.now();
     final nowIso = now.toIso8601String();
-    final stamp = now.millisecondsSinceEpoch;
 
-    final alertId = 'HA_$stamp';
+    // DETERMINISTIC ids, derived from athlete + date + status.
+    //
+    // These were `millisecondsSinceEpoch`, so every re-tap, screen rebuild
+    // or retry created a brand-new alert, a brand-new coach notification
+    // and a brand-new chat message. Tapping "Sick Today" twice spammed the
+    // coach twice for one piece of information.
+    //
+    // Same athlete + same day + same status now resolves to the same three
+    // document ids, so a repeat is an idempotent overwrite. Changing status
+    // (sick -> injured) genuinely IS new information and produces a new id,
+    // which is the behaviour we want.
+    final alertId = 'HA_$eventId';
     await _firestore.collection('health_alerts').doc(alertId).set({
       'alertId': alertId,
       'athleteId': uid,
       'athleteName': athleteName,
       'coachId': coachId,
+      'eventId': eventId,
       ...alert,
       'createdAt': nowIso,
+      'timestamp': nowIso,
     });
 
-    final nid = 'CN_${stamp}_hs';
+    final nid = 'CN_$eventId';
     await _firestore.collection('coaching_notifications').doc(nid).set({
       'id': nid,
       'toId': coachId,
       'fromId': uid,
       'fromName': athleteName,
-      'text': '🚨 Health alert: $athleteName reported $summary.',
-      'type': 'health_alert',
+      'title': title,
+      'text': message,
+      'type': 'wellness_plan_adjusted',
+      // Enough for the expert dashboard to identify the athlete and open the
+      // right coaching context without a second lookup.
+      'athleteId': uid,
+      'athleteName': athleteName,
+      'coachId': coachId,
+      'status': alert['status'],
+      'date': alert['date'],
+      'eventId': eventId,
+      'alertId': alertId,
+      'action': 'coaching_workspace',
+      'actionId': uid,
       'createdAt': nowIso,
+      'timestamp': nowIso,
       'read': false,
     });
 
     final chatId = 'chat_${uid}_$coachId';
-    final msgId = 'msg_${stamp}_hs';
+    final msgId = 'msg_$eventId';
     final room = _firestore.collection('chat_rooms').doc(chatId);
     await room.set({
       'participants': [uid, coachId],

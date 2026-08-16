@@ -31,6 +31,22 @@ class FakeSnapshot:
         return dict(self._data) if self._data is not None else None
 
 
+def _as_filter(field=None, op=None, value=None, filter=None):
+    """Accepts BOTH `where(filter=FieldFilter(f, op, v))` and the older
+    positional `where(f, op, v)`.
+
+    The real SDK still supports the positional form (deprecated, not removed)
+    and production code uses both — routes/admin.py's _recompute_verified is
+    positional while newer callers pass FieldFilter. A double that only
+    understood one form failed tests for code that works fine in production.
+    """
+    if filter is not None:
+        return (filter.field_path, filter.op_string, filter.value)
+    if field is None or op is None:
+        raise TypeError("where() requires either filter= or (field, op, value)")
+    return (field, op, value)
+
+
 class FakeDocRef:
     def __init__(self, store, path):
         self._store = store
@@ -52,6 +68,12 @@ class FakeDocRef:
         cur = self._store[self._path]
         for k, v in data.items():
             _set_dotted(cur, k, v)
+
+    def delete(self):
+        # Firestore's delete is idempotent — removing an absent document is a
+        # no-op, not an error. Modelled faithfully so a caller that deletes
+        # defensively behaves the same here as in production.
+        self._store.pop(self._path, None)
 
 
 def _deep_merge(dst, patch):
@@ -76,8 +98,8 @@ class FakeQuery:
         self._filters = filters  # list of (field_path, op_string, value)
         self._limit = limit
 
-    def where(self, filter=None):
-        f = (filter.field_path, filter.op_string, filter.value)
+    def where(self, field=None, op=None, value=None, filter=None):
+        f = _as_filter(field, op, value, filter)
         return FakeQuery(self._store, self._collection, self._filters + [f], self._limit)
 
     def limit(self, count):
@@ -118,8 +140,8 @@ class FakeCollection:
     def document(self, doc_id):
         return FakeDocRef(self._store, f"{self._name}/{doc_id}")
 
-    def where(self, filter=None):
-        return FakeQuery(self._store, self._name, []).where(filter=filter)
+    def where(self, field=None, op=None, value=None, filter=None):
+        return FakeQuery(self._store, self._name, []).where(field, op, value, filter=filter)
 
     def limit(self, count):
         return FakeQuery(self._store, self._name, [], count)

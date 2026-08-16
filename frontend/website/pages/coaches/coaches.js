@@ -251,6 +251,18 @@ function loadExpertsFromFirebase() {
       _expertsData = [];
       snapshot.forEach(function(doc) {
         var d = doc.data();
+        // MISSING marketplace visibility gate. Signup writes
+        // `approved: false` and tells the applicant "your application is
+        // under review" (login.js), and /api/admin/experts/approve flips it —
+        // but this read lists every document regardless, which is how
+        // unapproved self-signups and test accounts appear publicly.
+        //
+        // The one-line fix is `if (d.approved === false) return;` — held
+        // back until it is confirmed that the live experts actually carry
+        // approved:true, since otherwise it would empty the marketplace
+        // instead of cleaning it. Note `=== false`, never `!== true`: a
+        // document predating the field has no `approved` key and must stay
+        // listed.
         _expertsData.push({
           id:         doc.id,
           name:       d.name             || 'Expert',

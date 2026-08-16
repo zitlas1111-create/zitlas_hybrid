@@ -157,6 +157,13 @@ class WorkoutController extends ChangeNotifier {
     );
 
     unawaited(_loadHealthToday());
+
+    // Live wellness propagation. Both controllers are created inside
+    // `StatefulShellRoute.indexedStack`, which keeps every tab alive, so a
+    // "Sick Today" / "Injured Today" check-in made on the Dashboard tab
+    // would otherwise never reach this already-constructed controller and
+    // today's plan would keep rendering as if nothing had happened.
+    HealthStatusStore.revision.addListener(_onHealthRevision);
   }
 
   Future<void> _loadHealthToday() async {
@@ -173,6 +180,9 @@ class WorkoutController extends ChangeNotifier {
   /// be picked up by this controller's one-shot local read.
   Future<void> refreshHealthToday() => _loadHealthToday();
 
+  void _onHealthRevision() => unawaited(_loadHealthToday());
+
+
   /// Health Status recovery override for Training — mirrors
   /// `DietController.healthOverrideAppliesTo` exactly (today's weekday,
   /// never over an active coach-managed plan, only when the check-in
@@ -182,8 +192,24 @@ class WorkoutController extends ChangeNotifier {
   /// own precedence rule.
   bool healthOverrideAppliesTo(WorkoutDay day) {
     final adj = healthToday;
-    if (adj?.workout == null || adj!.workout!.meals.isEmpty) return false;
+    final block = adj?.workout;
+    if (block == null) return false;
+
+    // A full rest day is the one case where an EMPTY exercise list IS the
+    // content: `_recoveryExercises('rest')`/`('none')` deliberately return
+    // nothing, because the instruction is "do not train today".
+    //
+    // Requiring a non-empty list here meant a feverish athlete's sick-day
+    // override was silently discarded and `workout_day_screen` fell back to
+    // `day.isRest` — rendering their ORIGINAL heavy session. Exactly the
+    // unsafe outcome the recovery rules exist to prevent.
+    final restsToday = block.mode == 'rest' || block.mode == 'none';
+    if (!restsToday && block.meals.isEmpty) return false;
+
     if (day.day.toLowerCase() != _weekdayNames[(DateTime.now().weekday - 1) % 7]) return false;
+    // A coach-authored plan is NEVER auto-overridden — deciding whether a
+    // sick client should train is the coach's call. They are notified
+    // instead, independently of this guard.
     if (_coachOverrideActive) return false;
     return true;
   }
@@ -338,6 +364,7 @@ class WorkoutController extends ChangeNotifier {
   @override
   void dispose() {
     _disposed = true;
+    HealthStatusStore.revision.removeListener(_onHealthRevision);
     _userDocSub?.cancel();
     _reviewsSub?.cancel();
     _coachingRelSub?.cancel();

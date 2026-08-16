@@ -7,8 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
 import '../core/notifications/fcm_service.dart';
+import '../core/notifications/notification_audience.dart';
 import '../core/notifications/notification_payload.dart';
 import '../core/notifications/notification_router.dart';
+import '../core/notifications/notification_preferences.dart';
+import '../core/notifications/zino_notification_scheduler.dart';
 import '../core/presence/presence_service.dart';
 import '../features/auth/auth_state.dart';
 import '../features/auth/data/auth_repository.dart';
@@ -41,6 +44,8 @@ class ZitlasApp extends StatelessWidget {
             _FcmBootstrap.maybeInit(authState);
             _PresenceBootstrap.sync(authState);
           }
+          // Role-gated, so it runs with or without Firebase.
+          _ReminderBootstrap.sync(authState);
           return MaterialApp.router(
             title: 'ZITLAS',
             debugShowCheckedModeBanner: false,
@@ -52,6 +57,41 @@ class ZitlasApp extends StatelessWidget {
         },
       ),
     );
+  }
+}
+
+/// Schedules Zino's daily reminders ONLY for a signed-in athlete.
+///
+/// This used to run from `main()`, before any session resolved, so all eight
+/// athlete slots — breakfast, lunch, snack, dinner, steps, workout, morning
+/// motivation, wind-down — were also delivered to experts. Every slot is
+/// athlete-only, so for an expert the correct schedule is no schedule.
+///
+/// Cancelling on expert/logout matters as much as scheduling on athlete:
+/// `flutter_local_notifications` alarms outlive the process, so a device
+/// that once held an athlete session would keep firing meal reminders long
+/// after that account signed out unless they are explicitly cancelled.
+abstract final class _ReminderBootstrap {
+  static String? _appliedFor;
+
+  static void sync(AuthState authState) {
+    final role = authState.status == AuthStatus.authenticated
+        ? authState.profile?.resolvedRole
+        : null;
+    // Key on uid+role so an account switch always re-applies, even between
+    // two accounts that happen to share a role.
+    final key = role == null ? null : '${authState.profile?.uid}:$role';
+    if (key == _appliedFor) return;
+    _appliedFor = key;
+
+    final scheduler = ZinoNotificationScheduler();
+    final Future<void> work = role == 'athlete'
+        ? scheduler.scheduleAll(preferences: NotificationPreferences.load())
+        : scheduler.cancelAll();
+
+    work.catchError((Object e) {
+      if (kDebugMode) debugPrint('[NOTIF] reminder sync failed: $e');
+    });
   }
 }
 
@@ -100,12 +140,22 @@ abstract final class _PresenceBootstrap {
 ///     authentication resolves.
 abstract final class _FcmBootstrap {
   static String? _initializedForUid;
+
+  /// The signed-in role, kept current so the ONE foreground listener can
+  /// drop a mis-targeted push. Client-side containment: the server should
+  /// already target the right token, and this makes a mistake invisible
+  /// rather than merely rare.
+  static String? _role;
   static bool _listenersAttached = false;
   static final FcmService _service = FcmService(firestore: FirebaseFirestore.instance);
 
   static void maybeInit(AuthState authState) {
     _attachListeners();
-    if (authState.status != AuthStatus.authenticated) return;
+    if (authState.status != AuthStatus.authenticated) {
+      _role = null;
+      return;
+    }
+    _role = authState.profile?.resolvedRole;
     final uid = authState.profile?.uid;
     if (uid == null || uid == _initializedForUid) return;
     _initializedForUid = uid;
@@ -148,8 +198,18 @@ abstract final class _FcmBootstrap {
     _service.initLocalNotifications(onTap: NotificationRouter.route);
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      if (kDebugMode) debugPrint('[FCM] foreground ${message.data['type']}');
-      _service.showForeground(message, suppress: _isViewingChat(message));
+      final type = message.data['type']?.toString();
+      if (kDebugMode) debugPrint('[FCM] foreground $type');
+      // Role isolation, second layer. An expert must never see a breakfast
+      // reminder surface over their dashboard.
+      final wrongRole = !isForRole(type, _role);
+      if (wrongRole && kDebugMode) {
+        debugPrint('[FCM] dropped $type - not for role $_role');
+      }
+      _service.showForeground(
+        message,
+        suppress: wrongRole || _isViewingChat(message),
+      );
     });
 
     FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {

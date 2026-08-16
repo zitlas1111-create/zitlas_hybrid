@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>ZITLAS — Admin Portal</title>
+  <link rel="stylesheet" href="admin-portal.css?v=20260816" />
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="../../assets/js/firebase-config.js?v=20260718a"></script>
+</head>
+<body>
+
+<!-- Gate. Everything else stays hidden until the ID token's `admin` custom
+     claim is confirmed. This is UX only — the real boundary is require_admin
+     on every /api/admin endpoint, which re-verifies the token server-side. -->
+<div class="ap-gate" id="apGate">
+  <div class="ap-gate-card">
+    <img src="/assets/logo.png" alt="ZITLAS" class="ap-gate-logo" />
+    <div class="ap-spinner" id="apGateSpinner"></div>
+    <h1 class="ap-gate-title" id="apGateTitle">Checking admin access…</h1>
+    <p class="ap-gate-sub" id="apGateSub">Verifying your ZITLAS administrator credentials.</p>
+    <div class="ap-gate-actions" id="apGateActions"></div>
+  </div>
+</div>
+
+<div class="ap-shell" id="apShell" hidden>
+
+  <aside class="ap-sidebar" id="apSidebar">
+    <div class="ap-brand">
+      <img src="/assets/logo.png" alt="ZITLAS" class="ap-brand-logo" />
+      <div>
+        <div class="ap-brand-name">ZITLAS</div>
+        <div class="ap-brand-sub">Admin Portal</div>
+      </div>
+    </div>
+
+    <nav class="ap-nav" id="apNav" aria-label="Admin sections">
+      <button class="ap-nav-item is-active" data-view="dashboard"><span>📊</span>Dashboard</button>
+      <button class="ap-nav-item" data-view="users"><span>👥</span>Users</button>
+      <button class="ap-nav-item" data-view="experts"><span>🧑‍⚕️</span>Experts</button>
+      <button class="ap-nav-item" data-view="verification"><span>🎓</span>Verification</button>
+      <button class="ap-nav-item" data-view="coaching"><span>🤝</span>Coaching</button>
+      <button class="ap-nav-item" data-view="reviews"><span>📝</span>Plans &amp; Reviews</button>
+      <button class="ap-nav-item" data-view="diet"><span>🥗</span>Diet</button>
+      <button class="ap-nav-item" data-view="training"><span>💪</span>Training</button>
+      <button class="ap-nav-item" data-view="recipes"><span>🍳</span>Recipes</button>
+      <button class="ap-nav-item" data-view="notifications"><span>🔔</span>Notifications</button>
+      <button class="ap-nav-item" data-view="payments"><span>💳</span>Payments</button>
+      <button class="ap-nav-item" data-view="wallet"><span>👛</span>Wallet</button>
+      <button class="ap-nav-item" data-view="support"><span>🛟</span>Support</button>
+      <button class="ap-nav-item" data-view="ai"><span>🧠</span>AI / Knowledge Base</button>
+      <button class="ap-nav-item" data-view="system"><span>❤️</span>System Health</button>
+      <button class="ap-nav-item" data-view="audit"><span>🗒️</span>Audit Logs</button>
+    </nav>
+  </aside>
+
+  <div class="ap-main">
+    <header class="ap-header">
+      <button class="ap-burger" id="apBurger" aria-label="Toggle navigation">☰</button>
+      <h1 class="ap-view-title" id="apViewTitle">Dashboard</h1>
+
+      <!-- Persistent environment badge. An admin portal that looks identical
+           against production and a laptop is how someone suspends a real
+           account while "just testing". -->
+      <span class="ap-env" id="apEnv" title="Connected environment">…</span>
+
+      <span class="ap-health-dot" id="apHealthDot" title="System health"></span>
+
+      <div class="ap-user">
+        <span class="ap-avatar" id="apAvatar">A</span>
+        <span class="ap-user-name" id="apUserName">Admin</span>
+      </div>
+      <button class="ap-logout" id="apLogout">Sign out</button>
+    </header>
+
+    <main class="ap-content" id="apContent"><!-- rendered by admin-portal.js --></main>
+  </div>
+</div>
+
+<div class="ap-toasts" id="apToasts" aria-live="polite"></div>
+
+<script src="admin-portal.js?v=20260816"></script>
+</body>
+</html>

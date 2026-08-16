@@ -103,10 +103,74 @@ abstract final class NotificationRouter {
         return '/diet';
 
       // ── Plans ───────────────────────────────────────────────────────────
+      // `_modified` and `_updated` are the same event under two names: the
+      // backend has written `_updated` since before push existed, and
+      // `_modified` is the name the expert-modification system uses. Both
+      // land on the screen the athlete needs to look at.
       case 'diet_updated':
+      case 'diet_modified':
         return '/diet';
       case 'workout_updated':
+      case 'workout_modified':
         return '/training';
+
+      // ── Athlete: their OWN wellness check-in confirmation ───────────────
+      // The Dashboard is where the Recovery Mode card summarises BOTH the
+      // adjusted diet and the adjusted training, so it is the one screen
+      // that shows the whole effect of the check-in. Matches the `action:
+      // 'dashboard'` the self-notification already carries.
+      case 'health_status_sick':
+      case 'health_status_injured':
+      case 'health_status_unwell':
+      case 'health_status_poor_sleep':
+      case 'health_status_stress':
+      case 'health_status_other':
+        return '/dashboard';
+
+      // ── Athlete: expert activity ────────────────────────────────────────
+      case 'review_completed':
+        return '/diet';
+      case 'expert_accepted':
+        final coach = p.counterpartId ?? p.senderId ?? p.coachId;
+        return coach != null ? '/coach-profile/$coach' : '/experts';
+
+      // ── Athlete: reminders land where the athlete can ACT on them ───────
+      case 'meal_reminder':
+      case 'breakfast_reminder':
+      case 'lunch_reminder':
+      case 'dinner_reminder':
+      case 'snack_reminder':
+      case 'pre_workout_meal':
+      case 'post_workout_meal':
+      case 'water_reminder':
+        return '/diet';
+      case 'workout_reminder':
+      case 'workout_completed':
+        return '/training';
+      case 'step_goal':
+      case 'step_goal_achieved':
+      case 'streak':
+      case 'milestone':
+      case 'motivation':
+        return '/dashboard';
+
+      // ── Expert: inbound work, straight to the queue ─────────────────────
+      case 'expert_request':
+      case 'coaching_request':
+      case 'review_pending':
+      case 'diet_review_pending':
+      case 'workout_review_pending':
+      case 'wellness_plan_adjusted': // coach: a client reported sick/injured
+      case 'client_unwell':
+      case 'client_needs_attention':
+      case 'consultation_reminder':
+      case 'consultation_requested':
+      case 'rating_received':
+      case 'rating_updated':
+      case 'expert_verification':
+      case 'expert_approved':
+      case 'expert_rejected':
+        return '/expert-dashboard';
 
       // ── Zino / AI ───────────────────────────────────────────────────────
       case 'zino_message':

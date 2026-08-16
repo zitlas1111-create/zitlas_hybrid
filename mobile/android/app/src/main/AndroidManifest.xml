@@ -29,11 +29,10 @@
          background capture possible without a foreground service. -->
     <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
 
-    <!-- Talk with Zino: microphone capture for speech-to-text. Recorded audio
-         is uploaded for transcription and the temp file deleted immediately —
-         ZITLAS never retains a copy of the athlete's speech. Also grants the
-         mic for coach voice/video calls inside the Personal Coaching WebView
-         (webrtc-call.js getUserMedia). -->
+    <!-- Microphone for coach voice/video calls inside the Personal Coaching
+         WebView (webrtc-call.js getUserMedia). Zino's own voice mode used to
+         share this permission and has been removed; the WebView still needs
+         it, so the line stays. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 
     <!-- Camera for coach voice/video calls inside the Personal Coaching WebView

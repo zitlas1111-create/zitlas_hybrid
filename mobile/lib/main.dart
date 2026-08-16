@@ -7,7 +7,6 @@ import 'package:flutter/services.dart';
 import 'app/app.dart';
 import 'app/splash_gate.dart';
 import 'core/config/firebase_bootstrap.dart';
-import 'core/notifications/zino_notification_scheduler.dart';
 import 'core/steps/step_background_worker.dart';
 import 'core/storage/local_storage_service.dart';
 import 'features/rest_timer/rest_timer_controller.dart';
@@ -95,10 +94,13 @@ Future<void> main() async {
   // is explicitly subject to.
   unawaited(StepBackgroundWorker.register());
 
-  // (Re)schedule Zino's daily reminders on every launch. Idempotent — each
-  // slot has a stable id, so this replaces rather than stacking duplicates,
-  // and it repairs the schedule if Android ever dropped it.
-  unawaited(ZinoNotificationScheduler().scheduleAll());
+  // Zino's daily reminders are NOT scheduled here any more. Every slot
+  // (breakfast, lunch, snack, dinner, steps, workout, motivation, wind-down)
+  // is athlete-only, and at this point in startup no session has resolved
+  // yet — so scheduling from main() sent meal reminders to experts, every
+  // day, whether or not they had ever opened the athlete side.
+  // `_ReminderBootstrap` in app/app.dart now schedules them once the
+  // signed-in role is actually known, and cancels them for experts.
 
   runApp(ZitlasApp(firebaseReady: firebaseReady));
 }

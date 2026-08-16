@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
+import '../../../../core/notifications/notification_audience.dart';
 import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
 import '../../data/notifications_repository.dart';
@@ -19,18 +20,29 @@ class NotificationsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final uid = context.watch<AuthState>().profile?.uid;
+    final profile = context.watch<AuthState>().profile;
+    final uid = profile?.uid;
     if (uid == null) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     final repo = NotificationsRepository(firestore: FirebaseFirestore.instance);
-    return _NotificationsBody(uid: uid, repository: repo);
+    return _NotificationsBody(uid: uid, role: profile!.resolvedRole, repository: repo);
   }
 }
 
 class _NotificationsBody extends StatelessWidget {
-  const _NotificationsBody({required this.uid, required this.repository});
+  const _NotificationsBody({
+    required this.uid,
+    required this.role,
+    required this.repository,
+  });
   final String uid;
+
+  /// `'athlete' | 'expert'` — the second half of role isolation. Documents
+  /// are already scoped per-uid in Firestore, but a mis-targeted server push
+  /// (or an event written for the wrong role) is contained here too rather
+  /// than merely being unlikely.
+  final String role;
   final NotificationsRepository repository;
 
   @override
@@ -56,7 +68,11 @@ class _NotificationsBody extends StatelessWidget {
             if (!snap.hasData) {
               return const Center(child: CircularProgressIndicator(color: ZitlasTokens.primary));
             }
-            final items = snap.data!;
+            // An expert must never be shown a breakfast reminder, and an
+            // athlete must never be shown "a client is waiting for a review".
+            final items = snap.data!
+                .where((n) => isForRole(n.type, role))
+                .toList(growable: false);
             if (items.isEmpty) {
               return const Center(
                 child: Padding(
