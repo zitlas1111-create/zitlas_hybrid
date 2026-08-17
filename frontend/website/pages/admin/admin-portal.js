@@ -123,7 +123,11 @@
   }
 
   function toLogin() {
-    window.location.href = '../login/login.html?redirect=' +
+    // ABSOLUTE, not relative. This page is reachable at two depths — /admin/
+    // (its own StaticFiles mount) and /pages/admin/index.html (the catch-all
+    // frontend mount) — and a relative '../login/login.html' resolves to the
+    // non-existent /login/login.html from the first of those.
+    window.location.href = '/pages/login/login.html?redirect=' +
       encodeURIComponent(window.location.pathname);
   }
 

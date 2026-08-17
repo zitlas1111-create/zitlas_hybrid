@@ -242,5 +242,42 @@ _UPLOADS_DIR = BASE_DIR / "uploads"
 _UPLOADS_DIR.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(_UPLOADS_DIR)), name="uploads")
 
+# ── Admin Portal at /admin/ ──────────────────────────────────────────────────
+#
+# The portal's files live at frontend/website/pages/admin/, which the catch-all
+# mount below already serves at /pages/admin/index.html. https://zitlas.com/admin/
+# returned FastAPI's {"detail":"Not Found"} because that URL resolved to
+# frontend/website/admin/ — a directory that does not exist.
+#
+# This is a second StaticFiles mount rather than a route handler so the portal's
+# CSS and JS resolve as siblings: /admin/admin-portal.css and
+# /admin/admin-portal.js are served straight from the same directory, with no
+# rewriting and no duplicated asset paths. `html=True` is what makes the
+# directory URL /admin/ serve index.html — the catch-all below deliberately
+# omits it, which is why every other page is linked as an explicit .html file
+# (see the root redirect to /pages/login/login.html).
+#
+# Scope is exactly one directory. It exposes nothing that /pages/admin/ did not
+# already expose, and serving the HTML grants no privilege: every /api/admin
+# endpoint independently re-verifies the caller's Firebase ID token through
+# require_admin, so an unauthenticated visitor who loads this page gets a 403
+# from every request it makes.
+#
+# MUST be registered BEFORE the catch-all — Starlette matches mounts in
+# registration order and "/" matches everything.
+_ADMIN_DIR = FRONTEND_DIR / "pages" / "admin"
+if _ADMIN_DIR.is_dir():
+    # Bare /admin (no trailing slash) would otherwise fall through to the
+    # catch-all mount and 404 — the exact URL a person types by hand.
+    @app.get("/admin", include_in_schema=False)
+    def _admin_slash():
+        return RedirectResponse(url="/admin/")
+
+    app.mount("/admin", StaticFiles(directory=str(_ADMIN_DIR), html=True), name="admin_portal")
+else:
+    # Never fail app startup over the admin console: the API and the whole
+    # website matter more than one internal tool being reachable.
+    print(f"[STARTUP] admin portal directory missing, /admin/ not mounted: {_ADMIN_DIR}")
+
 # ── Serve frontend (must be last — catches everything else) ───────────────────
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")
