@@ -105,30 +105,185 @@
     });
   }
 
-  // ── Access gate ────────────────────────────────────────────────────────
+  // ── Admin login ────────────────────────────────────────────────────────
+  //
+  // The server is the authority on WHO may administer ZITLAS. This file never
+  // hardcodes the authorised address: after sign-in it asks
+  // GET /api/admin/session, which reads the email from the cryptographically
+  // verified ID token and compares it against ZITLAS_ADMIN_EMAILS server-side.
+  //
+  // So there is no email in this bundle to edit — and editing anything here
+  // still changes nothing, because every privileged endpoint independently
+  // enforces require_admin.
 
-  function gateMessage(title, sub, actions) {
-    var spinner = $('apGateSpinner');
-    if (spinner) spinner.style.display = 'none';
+  function gateBusy(title, sub) {
+    $('apGateSpinner').style.display = '';
+    $('apGateTitle').textContent = title;
+    $('apGateSub').textContent = sub || '';
+    $('apGateActions').innerHTML = '';
+    $('apGateAccount').textContent = '';
+  }
+
+  function gateMessage(title, sub, actions, accountLine) {
+    $('apGateSpinner').style.display = 'none';
     $('apGateTitle').textContent = title;
     $('apGateSub').textContent = sub;
+    $('apGateAccount').textContent = accountLine || '';
 
     var box = $('apGateActions');
     box.innerHTML = '';
     (actions || []).forEach(function (a) {
-      var b = el('button', 'ap-btn' + (a.primary ? ' is-primary' : ''), a.label);
+      var b = el('button', a.google ? 'ap-google-btn' : ('ap-btn' + (a.primary ? ' is-primary' : '')));
+      if (a.google) {
+        // Inline SVG: Google's mark without an external request.
+        b.innerHTML =
+          '<svg viewBox="0 0 18 18" width="18" height="18" aria-hidden="true">' +
+          '<path fill="#4285F4" d="M17.64 9.2c0-.64-.06-1.25-.16-1.84H9v3.48h4.84a4.14 4.14 0 0 1-1.8 2.72v2.26h2.92c1.71-1.57 2.68-3.89 2.68-6.62z"/>' +
+          '<path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.18l-2.92-2.26c-.81.54-1.84.86-3.04.86-2.34 0-4.32-1.58-5.03-3.7H.96v2.34A9 9 0 0 0 9 18z"/>' +
+          '<path fill="#FBBC05" d="M3.97 10.72a5.41 5.41 0 0 1 0-3.44V4.94H.96a9 9 0 0 0 0 8.12l3.01-2.34z"/>' +
+          '<path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35l2.58-2.58C13.46.89 11.43 0 9 0A9 9 0 0 0 .96 4.94l3.01 2.34C4.68 5.16 6.66 3.58 9 3.58z"/>' +
+          '</svg><span>' + a.label + '</span>';
+      } else {
+        b.textContent = a.label;
+      }
       b.addEventListener('click', a.onClick);
       box.appendChild(b);
     });
   }
 
-  function toLogin() {
-    // ABSOLUTE, not relative. This page is reachable at two depths — /admin/
-    // (its own StaticFiles mount) and /pages/admin/index.html (the catch-all
-    // frontend mount) — and a relative '../login/login.html' resolves to the
-    // non-existent /login/login.html from the first of those.
-    window.location.href = '/pages/login/login.html?redirect=' +
-      encodeURIComponent(window.location.pathname);
+  /* STATE 1 — signed out, or signed in as somebody who is not the admin.
+     Deliberately does NOT sign an existing session out: an athlete or expert
+     who wanders onto /admin/ keeps their normal ZITLAS session intact and
+     simply has to choose an account explicitly. */
+  function showSignIn(existingEmail) {
+    gateMessage(
+      'Administrator Sign In',
+      'Sign in with the ZITLAS administrator Google account to continue.',
+      [{ label: 'Continue with Google', google: true, onClick: startGoogleSignIn }],
+      existingEmail
+        ? 'Currently signed in as ' + existingEmail + ' — choose an account to continue.'
+        : ''
+    );
+  }
+
+  /* STATE 3 — an explicit admin sign-in attempt with the wrong account. This
+     path DOES sign out: the user just deliberately authenticated for admin
+     access, so leaving that session attached would be misleading. */
+  function showUnauthorized(email) {
+    gateMessage(
+      'Access denied',
+      'This Google account is not authorized to access the ZITLAS Admin Portal.',
+      [{ label: 'Sign in with another account', primary: true, onClick: startGoogleSignIn }],
+      email ? 'Rejected: ' + email : ''
+    );
+  }
+
+  /* STATE 4 — the authorised address, but the claim has never been written. */
+  function showSetupRequired(email) {
+    gateMessage(
+      'Administrator setup required',
+      'Your account is authorized, but the administrator role has not been ' +
+      'activated yet. Activate it now, then sign in again.',
+      [
+        { label: 'Activate administrator role', primary: true, onClick: runBootstrap },
+        { label: 'Sign out', onClick: signOut }
+      ],
+      email ? 'Authorized account: ' + email : ''
+    );
+  }
+
+  function startGoogleSignIn() {
+    if (typeof firebase === 'undefined' || !firebase.auth) {
+      gateMessage('Authentication unavailable',
+        'Firebase could not be initialised, so admin sign-in cannot proceed.', []);
+      return;
+    }
+    gateBusy('Signing you in securely…', 'Complete the Google sign-in window.');
+
+    var provider = new firebase.auth.GoogleAuthProvider();
+    // Always offer the account chooser. Without this Google silently reuses
+    // whichever account the browser last used — exactly how you end up staring
+    // at "Access denied" for an athlete account with no way to pick the admin
+    // one.
+    provider.setCustomParameters({ prompt: 'select_account' });
+
+    ZitlasAuth.signInWithPopup(provider).then(function (result) {
+      return resolveSession(result.user, { explicitAttempt: true });
+    }).catch(function (e) {
+      var code = (e && e.code) || '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        showSignIn();
+        return;
+      }
+      console.error('[ADMIN] google sign-in failed', e);
+      gateMessage('Sign-in failed',
+        'Google sign-in could not be completed. Please try again.',
+        [{ label: 'Try again', primary: true, onClick: startGoogleSignIn }]);
+    });
+  }
+
+  /* The single decision point. Every branch is driven by the SERVER's answer,
+     never by inspecting the email in this file. */
+  function resolveSession(user, opts) {
+    opts = opts || {};
+    if (!user) { showSignIn(); return Promise.resolve(); }
+
+    gateBusy('Verifying administrator access…', 'Checking your credentials with ZITLAS.');
+
+    return user.getIdToken().then(function (token) {
+      state.user = user;
+      state.token = token;
+      return api('/session');
+    }).then(function (session) {
+      setEnvBadge(session.environment);
+
+      if (session.isAdmin) {
+        enterPortal(user, session);          // STATE 5
+        return;
+      }
+      if (session.bootstrapEligible) {
+        showSetupRequired(session.email);    // STATE 4
+        return;
+      }
+
+      // STATE 3 — not authorised.
+      state.user = null;
+      state.token = null;
+      if (opts.explicitAttempt) {
+        var rejected = user.email;
+        ZitlasAuth.signOut()
+          .then(function () { showUnauthorized(rejected); })
+          .catch(function () { showUnauthorized(rejected); });
+      } else {
+        // Page load carrying somebody else's session — leave it alone.
+        showSignIn(user.email);
+      }
+    }).catch(function (e) {
+      console.error('[ADMIN] session check failed', e);
+      state.token = null;
+      gateMessage('Could not verify access',
+        (e && e.message) ? e.message : 'Your administrator status could not be confirmed.',
+        [{ label: 'Retry', primary: true, onClick: function () { resolveSession(user, opts); } },
+         { label: 'Sign out', onClick: signOut }]);
+    });
+  }
+
+  function runBootstrap() {
+    gateBusy('Activating administrator role…', 'Writing your administrator claim.');
+    // No request body at all: the server uses the uid from the verified token,
+    // so there is nothing here for anyone to tamper with.
+    api('/bootstrap', { method: 'POST' }).then(function (res) {
+      if (!res.claimSet) throw new Error('The administrator claim could not be written.');
+      gateMessage('Administrator role activated',
+        'Sign in again so your session picks up the new administrator role — ' +
+        'Firebase bakes claims into the token when the token is issued.',
+        [{ label: 'Sign out and continue', primary: true, onClick: signOut }]);
+    }).catch(function (e) {
+      gateMessage('Activation failed',
+        (e && e.message) ? e.message : 'The administrator role could not be activated.',
+        [{ label: 'Try again', primary: true, onClick: runBootstrap },
+         { label: 'Sign out', onClick: signOut }]);
+    });
   }
 
   function startGate() {
@@ -137,50 +292,30 @@
         'Firebase could not be initialised, so admin access cannot be verified.', []);
       return;
     }
-
     ZitlasAuth.onAuthStateChanged(function (user) {
-      if (!user) {
-        gateMessage('Sign in required',
-          'The ZITLAS Admin Portal requires an administrator account.',
-          [{ label: 'Go to sign in', primary: true, onClick: toLogin }]);
-        return;
-      }
-
-      /* The AUTHORITATIVE signal is the `admin` custom claim baked into the
-         verified ID token. A users/{uid}.role == 'admin' fallback is
-         deliberately NOT accepted: that field is client-writable, so
-         honouring it would be a pure spoof surface that the backend's
-         require_admin would reject anyway. */
-      user.getIdTokenResult().then(function (res) {
-        var isAdmin = !!(res && res.claims && res.claims.admin);
-        if (!isAdmin) {
-          gateMessage('Access denied',
-            'This account does not hold ZITLAS administrator privileges. If you were ' +
-            'just granted admin, sign out and back in so your session picks up the change.',
-            [{ label: 'Sign out', onClick: signOut }]);
-          return;
-        }
-        state.user = user;
-        state.token = res.token;
-        enterPortal(user);
-      }).catch(function (e) {
-        console.error('[ADMIN] claim check failed', e);
-        gateMessage('Could not verify access',
-          'Your administrator status could not be confirmed. Try again shortly.',
-          [{ label: 'Retry', primary: true, onClick: function () { window.location.reload(); } }]);
-      });
+      // Not an explicit attempt: a pre-existing athlete/expert session must be
+      // neither silently adopted nor destroyed.
+      resolveSession(user, { explicitAttempt: false });
     });
   }
 
   function signOut() {
+    state.user = null;
+    state.token = null;
+    var done = function () {
+      $('apShell').hidden = true;
+      $('apGate').style.display = '';
+      $('apGate').hidden = false;
+      showSignIn();
+    };
     if (typeof ZitlasAuth !== 'undefined' && ZitlasAuth.signOut) {
-      ZitlasAuth.signOut().then(toLogin).catch(toLogin);
+      ZitlasAuth.signOut().then(done).catch(done);
     } else {
-      toLogin();
+      done();
     }
   }
 
-  function enterPortal(user) {
+  function enterPortal(user, session) {
     $('apGate').hidden = true;
     $('apGate').style.display = 'none';
     $('apShell').hidden = false;
@@ -188,6 +323,9 @@
     var name = user.displayName || user.email || 'Admin';
     $('apUserName').textContent = name;
     $('apAvatar').textContent = name.charAt(0).toUpperCase();
+    // The email shown is the one the SERVER verified, not a browser profile
+    // field.
+    $('apUserEmail').textContent = (session && session.email) || user.email || '';
 
     // Firebase ID tokens expire after an hour; refresh well inside that so a
     // long admin session never fails a request it could have completed.

@@ -12,16 +12,22 @@
 </head>
 <body>
 
-<!-- Gate. Everything else stays hidden until the ID token's `admin` custom
-     claim is confirmed. This is UX only — the real boundary is require_admin
-     on every /api/admin endpoint, which re-verifies the token server-side. -->
+<!-- Admin login. Everything else stays hidden until the ID token's `admin`
+     custom claim is confirmed BY THE SERVER (GET /api/admin/session).
+     This screen is UX only — the real boundary is require_admin on every
+     privileged /api/admin endpoint, which re-verifies the token server-side. -->
 <div class="ap-gate" id="apGate">
   <div class="ap-gate-card">
     <img src="/assets/logo.png" alt="ZITLAS" class="ap-gate-logo" />
+    <div class="ap-gate-brand">ZITLAS Admin Portal</div>
+    <div class="ap-gate-eyebrow" id="apGateEyebrow">Administrator access only</div>
+
     <div class="ap-spinner" id="apGateSpinner"></div>
-    <h1 class="ap-gate-title" id="apGateTitle">Checking admin access…</h1>
-    <p class="ap-gate-sub" id="apGateSub">Verifying your ZITLAS administrator credentials.</p>
+    <h1 class="ap-gate-title" id="apGateTitle">Checking your session…</h1>
+    <p class="ap-gate-sub" id="apGateSub">One moment.</p>
+
     <div class="ap-gate-actions" id="apGateActions"></div>
+    <div class="ap-gate-account" id="apGateAccount"></div>
   </div>
 </div>
 
@@ -71,6 +77,7 @@
       <div class="ap-user">
         <span class="ap-avatar" id="apAvatar">A</span>
         <span class="ap-user-name" id="apUserName">Admin</span>
+        <span class="ap-user-email" id="apUserEmail"></span>
       </div>
       <button class="ap-logout" id="apLogout">Sign out</button>
     </header>

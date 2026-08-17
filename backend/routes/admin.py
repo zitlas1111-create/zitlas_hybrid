@@ -29,7 +29,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from google.cloud.firestore_v1.base_query import FieldFilter
 from pydantic import BaseModel
 
-from services import admin_service, firestore_service, identity_service
+from services import admin_service, auth_service, firestore_service, identity_service
 from services.auth_service import require_admin, verify_firebase_token
 
 router = APIRouter()
@@ -462,3 +462,97 @@ async def admin_system_health(admin: dict = Depends(require_admin)) -> dict:
             "rag": rag,
         },
     }
+
+
+# ═════════════════════════════════════════════════════════════════════════════
+# ADMIN LOGIN + FIRST-ADMIN BOOTSTRAP
+#
+# The only two endpoints under /api/admin that are NOT behind require_admin —
+# necessarily so, because a brand-new owner account has no admin claim yet and
+# could otherwise never obtain one. Both still require a cryptographically
+# VERIFIED Firebase ID token, and both are strictly scoped to the CALLER:
+#
+#   GET  /session    reports facts about the caller and nobody else.
+#   POST /bootstrap  grants admin to the caller's OWN verified uid, and only
+#                    when their VERIFIED email is in the server-side allowlist.
+#
+# No uid, email, role or admin flag is ever read from the request. Every fact
+# comes from the verified token. `require_admin` itself is untouched and still
+# guards every privileged endpoint above.
+# ═════════════════════════════════════════════════════════════════════════════
+
+
+@router.get("/session")
+async def admin_session(caller: dict = Depends(verify_firebase_token)) -> dict:
+    """What the signed-in caller is allowed to do, from the server's point of view.
+
+    This exists so the login screen never has to hardcode the authorised
+    address: the browser asks the server "am I the admin?" instead of deciding
+    for itself. It reports ONLY about the caller — it cannot be used to probe
+    whether some other email is privileged.
+
+    `bootstrapEligible` says the caller may call POST /bootstrap; it does NOT
+    mean they are an admin. `isAdmin` is the real authorisation state.
+    """
+    return {
+        "uid": caller["uid"],
+        "email": caller.get("email"),
+        "emailVerified": bool(caller.get("email_verified")),
+        "isAdmin": auth_service.is_admin(caller),
+        "bootstrapEligible": auth_service.is_bootstrap_email(caller),
+        "environment": admin_service.environment_label(),
+    }
+
+
+@router.post("/bootstrap")
+async def bootstrap_admin(request: Request, caller: dict = Depends(verify_firebase_token)) -> dict:
+    """Grants the `admin` custom claim to the CALLER'S OWN verified uid.
+
+    Authorisation is the caller's VERIFIED email matching ZITLAS_ADMIN_EMAILS.
+    There is no request body at all — deliberately, so there is no uid or email
+    field for a client to tamper with. The target is always
+    `caller["uid"]` as decoded from the signed token.
+
+    Idempotent: an account that already holds the claim gets a no-op success,
+    so a double-click cannot produce a confusing failure.
+
+    Unlike the older /grant-admin, this returns 503 when the claim could not
+    actually be written. `identity_service.set_claims()` never raises and
+    returns False when the Admin SDK is unconfigured, and reporting that as
+    success would leave the owner signing in and out forever wondering why
+    nothing changed.
+    """
+    if not auth_service.is_bootstrap_email(caller):
+        # One message for every rejection reason (wrong email, unverified
+        # email, allowlist unset) so the response cannot be used to enumerate
+        # which addresses are configured.
+        print(f"[ADMIN BOOTSTRAP] denied uid={caller['uid']} email={caller.get('email')!r} "
+              f"verified={caller.get('email_verified')}")
+        raise HTTPException(status_code=403, detail="not_authorized_for_bootstrap")
+
+    uid = caller["uid"]
+
+    if auth_service.is_admin(caller):
+        return {"success": True, "claimSet": True, "alreadyAdmin": True,
+                "note": "this account already holds the admin claim"}
+
+    ok = identity_service.grant_admin(uid)
+    admin_service.record_audit(
+        admin_uid=uid, action=admin_service.ADMIN_GRANTED,
+        target_uid=uid, target_type="admin_claim",
+        old_value={"admin": False}, new_value={"admin": True},
+        reason="first-admin bootstrap via ZITLAS_ADMIN_EMAILS",
+        request=request,
+        extra={"selfBootstrap": True, "email": caller.get("email"), "claimSet": ok},
+    )
+    print(f"[ADMIN BOOTSTRAP] uid={uid} email={caller.get('email')} claim_set={ok}")
+
+    if not ok:
+        raise HTTPException(
+            status_code=503,
+            detail="claim_write_failed: Firebase Admin SDK is not configured "
+                   "(set FIREBASE_SERVICE_ACCOUNT_JSON)",
+        )
+
+    return {"success": True, "claimSet": True, "alreadyAdmin": False,
+            "note": "sign out and back in — the claim is baked into the ID token at issue time"}

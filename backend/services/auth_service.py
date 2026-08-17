@@ -38,6 +38,22 @@ _ADMIN_UIDS = {
     u.strip() for u in (os.getenv("ZITLAS_ADMIN_UIDS") or "").split(",") if u.strip()
 }
 
+# Bootstrap EMAIL allowlist — comma-separated, case-normalised.
+#
+# Deliberately NOT an admin grant. Being on this list does not make anyone an
+# admin and is never consulted by `is_admin()` / `require_admin`; it only makes
+# an account ELIGIBLE to bootstrap itself once, via
+# POST /api/admin/bootstrap, which then writes the real `admin` custom claim.
+#
+# Keeping the two separate matters: an email is a routable, guessable, and
+# (via provider changes) mutable identifier, so treating it as a standing
+# authorisation would mean every /api/admin request trusted whatever address
+# the identity provider happened to attach to the token. The claim is the
+# authorisation; this list is only a one-time door to obtaining it.
+_ADMIN_EMAILS = {
+    e.strip().lower() for e in (os.getenv("ZITLAS_ADMIN_EMAILS") or "").split(",") if e.strip()
+}
+
 
 async def verify_firebase_token(authorization: str | None = Header(default=None)) -> dict:
     """Raises 401 on a missing/invalid/expired token. On success returns
@@ -65,6 +81,8 @@ async def verify_firebase_token(authorization: str | None = Header(default=None)
     return {
         "uid": uid,
         "email": claims.get("email"),
+        # Straight from the verified token, never from a client-sent profile.
+        "email_verified": bool(claims.get("email_verified")),
         "name": claims.get("name"),
         # Custom claims (may be absent → default False). Admin is also granted
         # via the bootstrap env allowlist above.
@@ -74,7 +92,34 @@ async def verify_firebase_token(authorization: str | None = Header(default=None)
 
 
 def is_admin(caller: dict) -> bool:
+    """The ONLY authorisation signal. Reads the verified `admin` custom claim
+    (or the ZITLAS_ADMIN_UIDS bootstrap allowlist). Deliberately does NOT
+    consult ZITLAS_ADMIN_EMAILS — see that constant."""
     return bool(caller.get("admin"))
+
+
+def is_bootstrap_email(caller: dict) -> bool:
+    """Whether this VERIFIED caller may bootstrap themselves to admin.
+
+    Requires all three of:
+      * a non-empty email on the verified ID token,
+      * an exact case-normalised match against ZITLAS_ADMIN_EMAILS,
+      * Firebase having verified that email.
+
+    The email comes from the cryptographically verified token, never from a
+    request body, header, query parameter or browser profile field. An empty
+    allowlist means nobody is eligible — the feature is off by default rather
+    than open by default.
+    """
+    if not _ADMIN_EMAILS:
+        return False
+    email = (caller.get("email") or "").strip().lower()
+    if not email or email not in _ADMIN_EMAILS:
+        return False
+    # A Google-federated sign-in always carries email_verified=true; requiring
+    # it stops an unverified password account registered at the same address
+    # from qualifying.
+    return bool(caller.get("email_verified"))
 
 
 async def require_admin(caller: dict = Depends(verify_firebase_token)) -> dict:
