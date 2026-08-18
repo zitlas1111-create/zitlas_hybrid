@@ -2737,7 +2737,7 @@
      These lines identify WHICH precondition was unmet, instead of guessing.
 
      Remove this block (and the _vdbg calls) once the cause is confirmed. */
-  var VERIFY_BUILD = '2026-08-18-review-hydrate-fix-2';
+  var VERIFY_BUILD = '2026-08-18-webview-auth-fix-3';
 
   function _vdbg(label, data) {
     try {
@@ -2777,6 +2777,8 @@
     var reviewTypeBtns = [optDiet, optWorkout, optBoth];
     var svcBtns = [svcVerify, svcChat, svcBoth];
 
+    /* One-shot latch for the WebView auth re-entry above. */
+    var _authRetried     = false;
     var _selectedType    = null;  // 'diet' | 'workout' | 'both'
     var _selectedService = null;  // 'verification' | 'chat' | 'verification_chat'
 
@@ -2819,30 +2821,95 @@
     function _hasDietPlan()    { return !!_resolveAthletePlans().diet; }
     function _hasWorkoutPlan() { return !!_resolveAthletePlans().workout; }
 
+    /* ── WHY THIS WAITS FOR AUTH: the desktop-vs-WebView difference ───────
+       Firebase Auth is SYNCHRONOUSLY available on desktop Chrome and
+       ASYNCHRONOUSLY available inside the Flutter WebView, and that single
+       difference is why the identical Expert Review code worked in one and
+       not the other.
+
+         Desktop  : the JS SDK restores its own persisted session before
+                    cprofile.js runs — ZitlasAuth.currentUser is already set.
+
+         WebView  : the native app and the WebView keep SEPARATE Firebase
+                    stores, so the page opens with NO web session at all.
+                    webview-bridge.js posts 'need-token', Flutter mints a
+                    custom token via POST /api/auth/webview-token, injects
+                    window.__zitlasWebviewSignIn(token), and only when
+                    signInWithCustomToken resolves does currentUser exist.
+                    Until then it is null.
+
+       So every synchronous `ZitlasAuth.currentUser` read on this page is a
+       race the WebView loses. This waits on the real auth EVENT with a
+       bounded fallback — a lifecycle synchronisation, not an arbitrary
+       delay — and on desktop it resolves immediately, so behaviour there is
+       byte-for-byte unchanged. */
+    var _AUTH_WAIT_MS = 8000;
+    function _awaitAuthUser() {
+      if (typeof ZitlasAuth === 'undefined') return Promise.resolve(null);
+      if (ZitlasAuth.currentUser) return Promise.resolve(ZitlasAuth.currentUser);
+      return new Promise(function (resolve) {
+        var settled = false;
+        var unsub = null;
+        function finish(u) {
+          if (settled) return;
+          settled = true;
+          if (typeof unsub === 'function') { try { unsub(); } catch (_) {} }
+          resolve(u || null);
+        }
+        try {
+          /* Resolve on the first NON-null user. The WebView's very first
+             onAuthStateChanged fires with null (that is what triggers
+             need-token), so "first callback" is not good enough here. */
+          unsub = ZitlasAuth.onAuthStateChanged(function (u) { if (u) finish(u); });
+        } catch (e) {
+          finish(null);
+          return;
+        }
+        setTimeout(function () { finish(ZitlasAuth.currentUser); }, _AUTH_WAIT_MS);
+      });
+    }
+
     /* Pulls `users/{uid}.dietPlan` / `.workoutPlan` into localStorage via the
-       EXISTING cloud-sync module. Memoised, never rejects: a hydrate failure
-       must leave the athlete with whatever local cache they have rather than
-       blocking the sheet. */
+       EXISTING cloud-sync module. Never rejects: a hydrate failure must leave
+       the athlete with whatever local cache they have rather than blocking the
+       sheet.
+
+       Memoises ONLY an attempt that actually reached Firestore. The previous
+       version cached `Promise.resolve(false)` when there was no uid yet — so
+       one sheet-open during the WebView's sign-in window poisoned every later
+       attempt for the life of the page, and the gate could never open. That
+       was a real defect in the first fix, not a theoretical one. */
     var _planHydration = null;
     function _ensurePlansHydrated() {
       if (_planHydration) return _planHydration;
-      var uid = _getMyUserId();
-      if (!uid || typeof ZitlasCloudSync === 'undefined' ||
-          typeof ZitlasCloudSync.hydrateOnLoad !== 'function') {
-        _vdbg('hydrate skipped', { uid: !!uid, cloudSync: typeof ZitlasCloudSync });
-        _planHydration = Promise.resolve(false);
-        return _planHydration;
-      }
-      _vdbg('hydrating plans from Firestore users/' + uid);
-      _planHydration = ZitlasCloudSync.hydrateOnLoad(uid).then(function (ok) {
-        _vdbg('hydrate done', {
-          cloudDocFound: ok,
-          hasDietAfter: _hasDietPlan(),
-          hasWorkoutAfter: _hasWorkoutPlan()
+      _planHydration = _awaitAuthUser().then(function (user) {
+        var uid = (user && user.uid) || _getMyUserId();
+        if (!uid || typeof ZitlasCloudSync === 'undefined' ||
+            typeof ZitlasCloudSync.hydrateOnLoad !== 'function') {
+          _vdbg('hydrate NOT ATTEMPTED — will retry on next open', {
+            uid: !!uid, cloudSync: typeof ZitlasCloudSync
+          });
+          return { attempted: false, ok: false };
+        }
+        _vdbg('hydrating plans from Firestore users/' + uid);
+        return ZitlasCloudSync.hydrateOnLoad(uid).then(function (ok) {
+          _vdbg('hydrate done', {
+            cloudDocFound: ok,
+            hasDietAfter: _hasDietPlan(),
+            hasWorkoutAfter: _hasWorkoutPlan()
+          });
+          return { attempted: true, ok: ok };
+        }).catch(function (e) {
+          _vdbg('hydrate FAILED — continuing with local cache', String(e));
+          return { attempted: false, ok: false };
         });
-        return ok;
-      }).catch(function (e) {
-        _vdbg('hydrate FAILED — continuing with local cache', String(e));
+      }).then(function (r) {
+        /* Only a real Firestore round trip is worth remembering. Anything
+           else clears the memo so the next tap tries again. */
+        if (!r.attempted) _planHydration = null;
+        return r.ok;
+      }, function () {
+        _planHydration = null;
         return false;
       });
       return _planHydration;
@@ -3204,15 +3271,40 @@
            before that resolves had no live session at all. Fail loudly here
            instead of writing a document that cannot pass the rules. */
         var _live = (typeof ZitlasAuth !== 'undefined') ? ZitlasAuth.currentUser : null;
-        console.log('[REVIEW AUTH] uid =', _live && _live.uid,
-                    '| email =', _live && _live.email,
-                    '| cachedUid =', _getMyUserId());
+
+        /* WEBVIEW: sign-in may still be in flight (see _awaitAuthUser). A tap
+           landing in that window must WAIT for the custom-token sign-in, not
+           fail — failing here is exactly what made this look broken on
+           Android while desktop, where currentUser is already set, worked.
+           `_authRetried` bounds this to a single re-entry so it can never
+           loop. */
         if (!_live || !_live.uid) {
-          _vdbg('submit BLOCKED — no live Firebase session; the write would be ' +
-                'rejected by rules (userId != request.auth.uid)');
-          showToast('You are signed out. Please sign in again to send this request.');
+          if (_authRetried) {
+            _vdbg('submit BLOCKED — still no live session after waiting');
+            showToast('You are signed out. Please sign in again to send this request.');
+            return;
+          }
+          _authRetried = true;
+          _vdbg('submit WAITING for auth — WebView custom-token sign-in in flight');
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Signing in…';
+          _awaitAuthUser().then(function (u) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Send Request →';
+            console.log('[REVIEW AUTH] resolved after wait: uid =', u && u.uid);
+            if (u && u.uid) {
+              submitBtn.click();          // re-enter, now authenticated
+            } else {
+              showToast('You are signed out. Please sign in again to send this request.');
+            }
+          });
           return;
         }
+        _authRetried = false;
+
+        console.log('[REVIEW AUTH] uid =', _live.uid,
+                    '| email =', _live.email,
+                    '| cachedUid =', _getMyUserId());
         if (_getMyUserId() !== _live.uid) {
           /* A cached uid that disagrees with the live session would be written
              into userId and denied. Trust the live session. */
