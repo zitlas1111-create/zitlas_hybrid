@@ -97,6 +97,60 @@ async def _prewarm_kb(goal: str) -> None:
 # no cron/worker slot; sweeps simply pause while the dyno is asleep on
 # inactivity and catch up on the next wake, which is an accepted tradeoff
 # for this deployment. See services/coaching_sweep.py.
+
+
+# ── Scheduled background jobs ────────────────────────────────────────────────
+#
+# These MUST be `async def`, and that is the whole fix for a production error
+# that fired on EVERY tick:
+#
+#   File "/app/backend/main.py", line 173, in <lambda>
+#     lambda: asyncio.create_task(asyncio.to_thread(support_service.ingest_replies))
+#   RuntimeError: no running event loop
+#   RuntimeWarning: coroutine 'to_thread' was never awaited
+#
+# AsyncIOScheduler inspects each job callable. A COROUTINE function is awaited
+# on the event loop; a PLAIN function is handed to a worker thread instead —
+# and a worker thread has no running loop, so `asyncio.create_task()` raised
+# RuntimeError immediately. The `asyncio.to_thread(...)` coroutine had already
+# been constructed by then and was therefore never awaited, which is the second
+# warning. Net effect: the job body NEVER RAN, once per interval, silently.
+#
+# All THREE jobs shared the broken lambda. The support poll merely surfaced it
+# first because it runs every 60s while the coaching sweeps run every 15 min —
+# meaning the 48h request expiry and 30d relationship expiry sweeps had also
+# never executed in production.
+#
+# `await asyncio.to_thread(fn)` is the correct boundary: the scheduler awaits
+# the job on the loop, and the blocking IMAP/Firestore work runs off it.
+#
+# Deliberately named module-level functions rather than lambdas or
+# functools.partial — `iscoroutinefunction()` must be unambiguously True for
+# APScheduler to take the await path, and these are also importable by
+# tests/test_scheduler_jobs.py.
+
+
+async def job_sweep_expired_requests() -> None:
+    """48h coaching-request expiry sweep."""
+    from services.coaching_sweep import sweep_expired_requests
+    await asyncio.to_thread(sweep_expired_requests)
+
+
+async def job_sweep_expired_relationships() -> None:
+    """30d coaching-relationship expiry sweep."""
+    from services.coaching_sweep import sweep_expired_relationships
+    await asyncio.to_thread(sweep_expired_relationships)
+
+
+async def job_support_reply_ingest() -> None:
+    """Pulls replies typed in the ZITLAS Gmail back into the athlete's in-app
+    Help Center conversation. Idempotency (no double-import) is owned by
+    support_service.ingest_replies itself, which marks each message
+    processed — this wrapper only fixes where the code runs."""
+    from services import support_service
+    await asyncio.to_thread(support_service.ingest_replies)
+
+
 _coaching_scheduler = None
 
 
@@ -148,18 +202,17 @@ async def lifespan(app: FastAPI):
 
     try:
         from apscheduler.schedulers.asyncio import AsyncIOScheduler
-        from services.coaching_sweep import sweep_expired_relationships, sweep_expired_requests
 
         _coaching_scheduler = AsyncIOScheduler()
         _coaching_scheduler.add_job(
-            lambda: asyncio.create_task(asyncio.to_thread(sweep_expired_requests)),
+            job_sweep_expired_requests,
             "interval", minutes=15, id="coaching_sweep",
         )
         # Separate job, same interval — a 30-day expiry window doesn't need
         # finer granularity than the 48h one, and reusing the interval
         # avoids standing up a second scheduler for it.
         _coaching_scheduler.add_job(
-            lambda: asyncio.create_task(asyncio.to_thread(sweep_expired_relationships)),
+            job_sweep_expired_relationships,
             "interval", minutes=15, id="coaching_relationship_sweep",
         )
         # Support Help Center: pull replies typed in the ZITLAS Gmail back
@@ -170,11 +223,18 @@ async def lifespan(app: FastAPI):
 
             if support_service.is_configured():
                 _coaching_scheduler.add_job(
-                    lambda: asyncio.create_task(
-                        asyncio.to_thread(support_service.ingest_replies)),
+                    job_support_reply_ingest,
                     "interval",
                     seconds=int(os.environ.get("SUPPORT_IMAP_POLL_SECONDS", "60")),
                     id="support_reply_ingest",
+                    # An IMAP round trip can outlast the 60s interval. Both
+                    # values are APScheduler defaults, stated explicitly
+                    # because they matter here: max_instances=1 stops two
+                    # ingests racing the same mailbox (a real duplicate-import
+                    # risk), and coalesce collapses a backlog after a stall
+                    # into one run instead of replaying every missed tick.
+                    max_instances=1,
+                    coalesce=True,
                 )
                 print("[STARTUP] support reply ingestion scheduled (IMAP poll)")
             else:
