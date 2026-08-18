@@ -2737,7 +2737,7 @@
      These lines identify WHICH precondition was unmet, instead of guessing.
 
      Remove this block (and the _vdbg calls) once the cause is confirmed. */
-  var VERIFY_BUILD = '2026-08-18-review-debug-1';
+  var VERIFY_BUILD = '2026-08-18-review-hydrate-fix-2';
 
   function _vdbg(label, data) {
     try {
@@ -2780,13 +2780,72 @@
     var _selectedType    = null;  // 'diet' | 'workout' | 'both'
     var _selectedService = null;  // 'verification' | 'chat' | 'verification_chat'
 
-    function _hasDietPlan() {
-      return !!(
-        localStorage.getItem('zitlas_diet_plan') ||
-        localStorage.getItem('zitlas_current_diet') ||
-        localStorage.getItem('zitlas_generated_diet') ||
-        localStorage.getItem('zitlas_meal_plan')
-      );
+    /* ── Plan availability: ONE resolver for the gate AND the submit ──────
+       ROOT CAUSE OF "review request never reaches the expert":
+
+       The gate below used to test `localStorage.getItem('zitlas_diet_plan')`
+       directly while the submit handler consumed `buildContextPackage()`.
+       Two different sources for the same question, so the gate could be
+       STRICTER than the consumer — and when it was, tapping "Diet Review"
+       or "Both" hit a bare `return`, `_selectedType` was never assigned,
+       `_refreshSubmitState()` never ran, and vpSubmitBtn stayed disabled.
+       A disabled <button> emits no click event, so the Firestore write was
+       never even attempted. Nothing failed loudly; the flow just stopped.
+
+       On Flutter Android this was guaranteed, not occasional. The plan is
+       generated NATIVELY and written to Firestore `users/{uid}`; the WebView
+       is a separate browser context whose localStorage
+       `coaching_webview_session.dart` explicitly CLEARS. cloud-sync.js is
+       loaded by cprofile.html (see the comment there) but nothing on this
+       page ever called `hydrateOnLoad()` — so localStorage stayed empty
+       forever and the gate could never open.
+
+       Both problems are fixed by deriving availability from the SAME
+       resolver the submit path uses, and by actually hydrating first. */
+    function _resolveAthletePlans() {
+      var ctx = buildContextPackage() || {};
+      var diet = ctx.diet_plan;
+      if (!diet) {
+        // Legacy keys the submit handler also falls back to — kept so the
+        // gate and the consumer stay in exact agreement.
+        var raw = localStorage.getItem('zitlas_current_diet') ||
+                  localStorage.getItem('zitlas_generated_diet') ||
+                  localStorage.getItem('zitlas_meal_plan');
+        try { diet = raw ? JSON.parse(raw) : null; } catch (_) { diet = null; }
+      }
+      return { diet: diet || null, workout: ctx.workout_plan || null };
+    }
+
+    function _hasDietPlan()    { return !!_resolveAthletePlans().diet; }
+    function _hasWorkoutPlan() { return !!_resolveAthletePlans().workout; }
+
+    /* Pulls `users/{uid}.dietPlan` / `.workoutPlan` into localStorage via the
+       EXISTING cloud-sync module. Memoised, never rejects: a hydrate failure
+       must leave the athlete with whatever local cache they have rather than
+       blocking the sheet. */
+    var _planHydration = null;
+    function _ensurePlansHydrated() {
+      if (_planHydration) return _planHydration;
+      var uid = _getMyUserId();
+      if (!uid || typeof ZitlasCloudSync === 'undefined' ||
+          typeof ZitlasCloudSync.hydrateOnLoad !== 'function') {
+        _vdbg('hydrate skipped', { uid: !!uid, cloudSync: typeof ZitlasCloudSync });
+        _planHydration = Promise.resolve(false);
+        return _planHydration;
+      }
+      _vdbg('hydrating plans from Firestore users/' + uid);
+      _planHydration = ZitlasCloudSync.hydrateOnLoad(uid).then(function (ok) {
+        _vdbg('hydrate done', {
+          cloudDocFound: ok,
+          hasDietAfter: _hasDietPlan(),
+          hasWorkoutAfter: _hasWorkoutPlan()
+        });
+        return ok;
+      }).catch(function (e) {
+        _vdbg('hydrate FAILED — continuing with local cache', String(e));
+        return false;
+      });
+      return _planHydration;
     }
 
     function _needsReviewType() {
@@ -2835,8 +2894,33 @@
       if (totalPriceEl) totalPriceEl.textContent = '₹' + (ready ? _computeTotalPrice() : 0);
     }
 
+    function _refreshPlanAvailability() {
+      var hasDiet = _hasDietPlan();
+      var hasWorkout = _hasWorkoutPlan();
+      if (optDiet) {
+        optDiet.classList.toggle('vp-option--unavailable', !hasDiet);
+        var sd = optDiet.querySelector('.vp-opt-sub');
+        if (sd) {
+          sd.textContent = hasDiet
+            ? 'Expert reviews your 7-day meal plan'
+            : 'Your AI-generated Diet Plan is not ready yet.';
+        }
+      }
+      if (optWorkout) {
+        optWorkout.classList.toggle('vp-option--unavailable', !hasWorkout);
+        var sw = optWorkout.querySelector('.vp-opt-sub');
+        if (sw && !hasWorkout) sw.textContent = 'Your AI-generated Training Plan is not ready yet.';
+      }
+      if (optBoth) {
+        optBoth.classList.toggle('vp-option--unavailable', !(hasDiet && hasWorkout));
+      }
+    }
+
     function openSheet() {
       var pricing = _getPricing(coach);
+      /* Start the Firestore pull the moment the sheet opens so it is usually
+         settled before the athlete has finished choosing. */
+      _ensurePlansHydrated();
       _vdbg('sheet opened', {
         hasDietPlan: _hasDietPlan(),
         submitHandlerAttached: !!submitBtn,
@@ -2867,17 +2951,13 @@
       if (subChat)   subChat.textContent   = 'Unlimited chat until the expert closes it · ₹' + pricing.chatPrice;
       if (subBoth)   subBoth.textContent   = 'Review, then unlimited chat';
 
-      /* Disable diet option and show message when no plan exists */
-      if (optDiet) {
-        var hasDiet = _hasDietPlan();
-        optDiet.classList.toggle('vp-option--unavailable', !hasDiet);
-        var subEl = optDiet.querySelector('.vp-opt-sub');
-        if (subEl) {
-          subEl.textContent = hasDiet
-            ? 'Expert reviews your 7-day meal plan'
-            : 'No diet plan found. Generate your AI diet plan first.';
-        }
-      }
+      /* Option availability is painted twice: once synchronously from
+         whatever cache exists, then again when hydration settles. Without
+         the second pass the sheet keeps telling a Flutter-WebView athlete
+         "No diet plan found" even after their real plan has arrived from
+         Firestore. */
+      _refreshPlanAvailability();
+      _ensurePlansHydrated().then(_refreshPlanAvailability);
 
       var navbar = document.getElementById('zitlas-navbar');
       if (navbar) {
@@ -3057,17 +3137,34 @@
           id: btn.id, dataType: btn.dataset.type,
           serviceSelectedFirst: _selectedService
         });
-        if ((btn === optDiet || btn === optBoth) && !_hasDietPlan()) {
-          // THE SILENT FAILURE: selection discarded, submit stays disabled.
-          _vdbg('review type REJECTED — no diet plan in localStorage; ' +
-                'selection discarded and submit stays disabled', { id: btn.id });
-          showToast('No diet plan found. Generate your AI diet plan first.');
-          return;
-        }
-        _selectedType = btn.dataset.type;
+        /* Select FIRST, validate after. The old order did the opposite and
+           bailed with a bare `return`, so a tap on Diet/Both while
+           localStorage was cold was discarded outright — leaving the submit
+           button permanently disabled with no way for the athlete to tell
+           why. Never silently swallow the tap. */
+        var _type = btn.dataset.type;
+        _selectedType = _type;
         reviewTypeBtns.forEach(function(b) { if (b) b.classList.remove('selected'); });
         btn.classList.add('selected');
         _refreshSubmitState();
+
+        _ensurePlansHydrated().then(function() {
+          var missing = [];
+          if ((_type === 'diet' || _type === 'both') && !_hasDietPlan())    missing.push('Diet');
+          if ((_type === 'workout' || _type === 'both') && !_hasWorkoutPlan()) missing.push('Training');
+          _refreshPlanAvailability();
+          if (!missing.length) { _refreshSubmitState(); return; }
+
+          _vdbg('review type unavailable AFTER hydration', { id: btn.id, missing: missing });
+          /* Only retract if this is still the athlete's active choice — they
+             may have tapped something else while hydration was in flight. */
+          if (_selectedType === _type) {
+            _selectedType = null;
+            btn.classList.remove('selected');
+            _refreshSubmitState();
+          }
+          showToast('Your AI-generated ' + missing.join(' and ') + ' Plan is not ready yet.');
+        });
       });
     });
 
@@ -3095,6 +3192,35 @@
         _vdbg('submit handler ENTERED');
         if (!_selectedService || (_needsReviewType() && !_selectedType)) return;
 
+        /* ── LIVE AUTH GUARD ──────────────────────────────────────────────
+           firestore.rules requires review_requests.userId == request.auth.uid.
+           `_getMyUserId()` falls back to a CACHED uid when there is no live
+           session, so a stale or absent session produced a document the rules
+           rejected with permission-denied — invisibly, because the old code
+           printed "Sent ✓" regardless.
+
+           This matters most in the Flutter WebView: it signs in
+           asynchronously via window.__zitlasWebviewSignIn, so a tap landing
+           before that resolves had no live session at all. Fail loudly here
+           instead of writing a document that cannot pass the rules. */
+        var _live = (typeof ZitlasAuth !== 'undefined') ? ZitlasAuth.currentUser : null;
+        console.log('[REVIEW AUTH] uid =', _live && _live.uid,
+                    '| email =', _live && _live.email,
+                    '| cachedUid =', _getMyUserId());
+        if (!_live || !_live.uid) {
+          _vdbg('submit BLOCKED — no live Firebase session; the write would be ' +
+                'rejected by rules (userId != request.auth.uid)');
+          showToast('You are signed out. Please sign in again to send this request.');
+          return;
+        }
+        if (_getMyUserId() !== _live.uid) {
+          /* A cached uid that disagrees with the live session would be written
+             into userId and denied. Trust the live session. */
+          _vdbg('cached uid disagrees with live session — using live uid', {
+            cached: _getMyUserId(), live: _live.uid
+          });
+        }
+
         /* ── Lifecycle guard: only ONE active review per athlete↔expert ──
            Rules: pending → block; in_progress/expert_reviewing/accepted →
            block; completed/rejected → allowed. Without this, the sheet
@@ -3120,7 +3246,9 @@
         }
 
         var ctx        = buildContextPackage();
-        var userId     = _getMyUserId();
+        /* Live session wins: this value goes into review_requests.userId and
+           MUST equal request.auth.uid or the rules reject the create. */
+        var userId     = _live.uid;
         var totalPrice = _computeTotalPrice();
         var a          = ctx.assessment || ctx.survey || {};
         var isChatOnly = _selectedService === 'chat';
@@ -3327,6 +3455,7 @@
             .then(function() {
               console.log('[VERIFY] review document(s) created', reviewDocs.map(function(r) { return r.id; }));
               _vdbg('[REVIEW FIRESTORE] success', reviewDocs.map(function(r) { return r.id; }));
+              _submitSucceeded();
             })
             .catch(function(e) {
               console.error('[FIRESTORE] review_requests write FAILED', e);
@@ -3335,24 +3464,53 @@
               // unavailable/failed-precondition means it never reached them.
               console.error('[REVIEW FIRESTORE] failure code=' + (e && e.code));
               console.error('[REVIEW FIRESTORE] failure message=' + (e && e.message));
-              showToast('Could not send request — please check your connection and try again.');
+              _submitFailed(reviewDocs,
+                'Could not send request — please check your connection and try again.');
             });
         } else {
-          console.warn('[FIRESTORE] ZitlasDB not available — request saved to localStorage only');
-          _vdbg('[REVIEW FIRESTORE] SKIPPED — ZitlasDB undefined; the request ' +
-                'exists ONLY in localStorage and no expert will ever see it');
+          /* No Firestore client means no expert will EVER see this request.
+             It used to fall through to "Sent ✓" anyway, which is the single
+             most misleading outcome in the whole flow. */
+          console.warn('[FIRESTORE] ZitlasDB not available — request cannot be delivered');
+          _vdbg('[REVIEW FIRESTORE] SKIPPED — ZitlasDB undefined; no expert can receive this');
+          _submitFailed(reviewDocs, 'Could not send request — you appear to be offline.');
         }
 
-        submitBtn.textContent = 'Sent ✓';
-        submitBtn.disabled    = true;
+        /* ── Success/failure UI ────────────────────────────────────────────
+           "Sent ✓" used to be assigned SYNCHRONOUSLY here, outside the
+           promise — so the athlete saw success even when the write was
+           rejected by Security Rules. That is why this bug looked like
+           "the request sends but never arrives": it genuinely never arrived,
+           and the UI lied about it. Success is now reported only from the
+           resolved write. */
+        function _submitSucceeded() {
+          submitBtn.textContent = 'Sent ✓';
+          submitBtn.disabled    = true;
+          setTimeout(function() {
+            closeSheet();
+            showToast(totalPrice > 0
+              ? 'Request sent — ₹' + totalPrice + ' will be deducted from your wallet once the expert accepts.'
+              : 'Your request has been sent.');
+            updateVerifyBtnState(coach);
+          }, 700);
+        }
 
-        setTimeout(function() {
-          closeSheet();
-          showToast(totalPrice > 0
-            ? 'Request sent — ₹' + totalPrice + ' will be deducted from your wallet once the expert accepts.'
-            : 'Your request has been sent.');
+        function _submitFailed(docs, message) {
+          /* Roll the optimistic local echo back. Leaving it behind would make
+             updateVerifyBtnState() render a "pending" request that exists
+             nowhere on the server, blocking any retry — a dead end the
+             athlete could not escape. */
+          try {
+            var ids = (docs || []).map(function(r) { return r.id; });
+            var all = JSON.parse(localStorage.getItem('expert_plan_reviews') || '[]');
+            var kept = all.filter(function(r) { return ids.indexOf(r.id) === -1; });
+            localStorage.setItem('expert_plan_reviews', JSON.stringify(kept));
+          } catch (_) {}
+          submitBtn.disabled    = false;
+          submitBtn.textContent = 'Send Request →';
+          showToast(message);
           updateVerifyBtnState(coach);
-        }, 700);
+        }
       });
     }
 
