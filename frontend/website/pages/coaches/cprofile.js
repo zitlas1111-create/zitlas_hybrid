@@ -2729,7 +2729,25 @@
     }
   }
 
+  /* ── TEMPORARY REVIEW-FLOW DIAGNOSTICS ────────────────────────────────
+     Every transition between "Expert Review tapped" and the Firestore write
+     logs a [VERIFY DEBUG] line. The device log showed the open-button log
+     firing but `[VERIFY] button clicked` never appearing, which means the
+     submit handler was never entered — i.e. vpSubmitBtn was still disabled.
+     These lines identify WHICH precondition was unmet, instead of guessing.
+
+     Remove this block (and the _vdbg calls) once the cause is confirmed. */
+  var VERIFY_BUILD = '2026-08-18-review-debug-1';
+
+  function _vdbg(label, data) {
+    try {
+      if (data === undefined) console.log('[VERIFY DEBUG] ' + label);
+      else console.log('[VERIFY DEBUG] ' + label, data);
+    } catch (_) {}
+  }
+
   function initVerifyPlanBtn(coach) {
+    console.log('[ZITLAS REVIEW BUILD] ' + VERIFY_BUILD);
     var openBtn      = document.getElementById('verifyPlanBtn');
     var verifyAgain  = document.getElementById('verifyAgainBtn');
     var sheet        = document.getElementById('vpSheet');
@@ -2745,7 +2763,16 @@
     var reviewTypeLabel = document.getElementById('vpReviewTypeLabel');
     var priceRow     = document.getElementById('vpPriceRow');
     var totalPriceEl = document.getElementById('vpTotalPrice');
-    if (!sheet || !openBtn) return;
+    _vdbg('elements resolved', {
+      sheet: !!sheet, openBtn: !!openBtn, submitBtn: !!submitBtn,
+      optDiet: !!optDiet, optWorkout: !!optWorkout, optBoth: !!optBoth,
+      svcVerify: !!svcVerify, svcChat: !!svcChat, svcBoth: !!svcBoth,
+      reviewTypeWrap: !!reviewTypeWrap
+    });
+    if (!sheet || !openBtn) {
+      _vdbg('ABORT — sheet or openBtn missing, no handlers will be attached');
+      return;
+    }
 
     var reviewTypeBtns = [optDiet, optWorkout, optBoth];
     var svcBtns = [svcVerify, svcChat, svcBoth];
@@ -2797,12 +2824,32 @@
 
     function _refreshSubmitState() {
       var ready = !!_selectedService && (!_needsReviewType() || !!_selectedType);
+      _vdbg('refreshSubmitState', {
+        selectedService: _selectedService,
+        selectedType: _selectedType,
+        needsReviewType: _needsReviewType(),
+        ready: ready,
+        submitDisabledNow: submitBtn ? !ready : '(no submit button)'
+      });
       if (submitBtn) submitBtn.disabled = !ready;
       if (totalPriceEl) totalPriceEl.textContent = '₹' + (ready ? _computeTotalPrice() : 0);
     }
 
     function openSheet() {
       var pricing = _getPricing(coach);
+      _vdbg('sheet opened', {
+        hasDietPlan: _hasDietPlan(),
+        submitHandlerAttached: !!submitBtn,
+        // If hasDietPlan is false, tapping "Diet Review" or "Both" only
+        // shows a toast and returns — the selection is silently discarded
+        // and the submit button can never enable.
+        dietKeys: {
+          zitlas_diet_plan: !!localStorage.getItem('zitlas_diet_plan'),
+          zitlas_current_diet: !!localStorage.getItem('zitlas_current_diet'),
+          zitlas_generated_diet: !!localStorage.getItem('zitlas_generated_diet'),
+          zitlas_meal_plan: !!localStorage.getItem('zitlas_meal_plan')
+        }
+      });
       _selectedType    = null;
       _selectedService = null;
       reviewTypeBtns.forEach(function(b) { if (b) b.classList.remove('selected'); });
@@ -2986,6 +3033,7 @@
     svcBtns.forEach(function(btn) {
       if (!btn) return;
       btn.addEventListener('click', function() {
+        _vdbg('service tapped', { id: btn.id, dataSvc: btn.dataset.svc });
         _selectedService = btn.dataset.svc;
         svcBtns.forEach(function(b) { if (b) b.classList.remove('selected'); });
         btn.classList.add('selected');
@@ -3005,7 +3053,14 @@
     reviewTypeBtns.forEach(function(btn) {
       if (!btn) return;
       btn.addEventListener('click', function() {
+        _vdbg('review type tapped', {
+          id: btn.id, dataType: btn.dataset.type,
+          serviceSelectedFirst: _selectedService
+        });
         if ((btn === optDiet || btn === optBoth) && !_hasDietPlan()) {
+          // THE SILENT FAILURE: selection discarded, submit stays disabled.
+          _vdbg('review type REJECTED — no diet plan in localStorage; ' +
+                'selection discarded and submit stays disabled', { id: btn.id });
           showToast('No diet plan found. Generate your AI diet plan first.');
           return;
         }
@@ -3016,9 +3071,28 @@
       });
     });
 
+    if (submitBtn && submitBtn.parentNode) {
+      /* A disabled <button> fires NO click event, so the handler below stays
+         silent whether the athlete tapped it or not. This capture-phase probe
+         on the parent still sees the pointer land, which separates "never
+         tapped" from "tapped while disabled" — the whole ambiguity in the
+         reported log. */
+      submitBtn.parentNode.addEventListener('pointerdown', function(e) {
+        if (e.target === submitBtn || submitBtn.contains(e.target)) {
+          _vdbg('submit AREA tapped', {
+            disabled: submitBtn.disabled,
+            selectedService: _selectedService,
+            selectedType: _selectedType,
+            willFireHandler: !submitBtn.disabled
+          });
+        }
+      }, true);
+    }
+
     if (submitBtn) {
       submitBtn.addEventListener('click', function() {
         console.log('[VERIFY] button clicked', { service: _selectedService, type: _selectedType });
+        _vdbg('submit handler ENTERED');
         if (!_selectedService || (_needsReviewType() && !_selectedType)) return;
 
         /* ── Lifecycle guard: only ONE active review per athlete↔expert ──
@@ -3176,6 +3250,22 @@
         });
 
         console.log('[VERIFY] payload', reviewDocs);
+        try {
+          var _fbUser = (typeof ZitlasAuth !== 'undefined' && ZitlasAuth)
+            ? ZitlasAuth.currentUser : null;
+          _vdbg('identity before write', {
+            firebaseAuthUid: _fbUser ? _fbUser.uid : null,
+            reviewUserId: reviewDocs[0] && reviewDocs[0].userId,
+            reviewAthleteId: reviewDocs[0] && reviewDocs[0].athleteId,
+            reviewExpertId: reviewDocs[0] && reviewDocs[0].expertId,
+            // Rules require userId == request.auth.uid; a mismatch here is a
+            // guaranteed PERMISSION_DENIED on the write.
+            uidMatchesUserId: !!_fbUser &&
+              _fbUser.uid === (reviewDocs[0] && reviewDocs[0].userId),
+            docCount: reviewDocs.length,
+            zitlasDbPresent: (typeof ZitlasDB !== 'undefined' && !!ZitlasDB)
+          });
+        } catch (e) { _vdbg('identity probe failed', String(e)); }
 
         /* Only remove currently-pending requests to avoid duplicates.
            Completed/rejected reviews are kept as permanent history. */
@@ -3234,13 +3324,23 @@
             return ZitlasDB.collection('review_requests').doc(r.id).set(firestoreReview);
           });
           Promise.all(writes)
-            .then(function() { console.log('[VERIFY] review document(s) created', reviewDocs.map(function(r) { return r.id; })); })
+            .then(function() {
+              console.log('[VERIFY] review document(s) created', reviewDocs.map(function(r) { return r.id; }));
+              _vdbg('[REVIEW FIRESTORE] success', reviewDocs.map(function(r) { return r.id; }));
+            })
             .catch(function(e) {
               console.error('[FIRESTORE] review_requests write FAILED', e);
+              // Split out so the failure mode is unambiguous in a device log:
+              // permission-denied means the rules rejected THIS document,
+              // unavailable/failed-precondition means it never reached them.
+              console.error('[REVIEW FIRESTORE] failure code=' + (e && e.code));
+              console.error('[REVIEW FIRESTORE] failure message=' + (e && e.message));
               showToast('Could not send request — please check your connection and try again.');
             });
         } else {
           console.warn('[FIRESTORE] ZitlasDB not available — request saved to localStorage only');
+          _vdbg('[REVIEW FIRESTORE] SKIPPED — ZitlasDB undefined; the request ' +
+                'exists ONLY in localStorage and no expert will ever see it');
         }
 
         submitBtn.textContent = 'Sent ✓';
