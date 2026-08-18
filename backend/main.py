@@ -162,6 +162,27 @@ async def lifespan(app: FastAPI):
             lambda: asyncio.create_task(asyncio.to_thread(sweep_expired_relationships)),
             "interval", minutes=15, id="coaching_relationship_sweep",
         )
+        # Support Help Center: pull replies typed in the ZITLAS Gmail back
+        # into the athlete's in-app conversation. Shares the coaching
+        # scheduler rather than standing up a second one.
+        try:
+            from services import support_service
+
+            if support_service.is_configured():
+                _coaching_scheduler.add_job(
+                    lambda: asyncio.create_task(
+                        asyncio.to_thread(support_service.ingest_replies)),
+                    "interval",
+                    seconds=int(os.environ.get("SUPPORT_IMAP_POLL_SECONDS", "60")),
+                    id="support_reply_ingest",
+                )
+                print("[STARTUP] support reply ingestion scheduled (IMAP poll)")
+            else:
+                print("[STARTUP] support reply ingestion DISABLED — "
+                      "SUPPORT_EMAIL / SUPPORT_EMAIL_PASSWORD not set")
+        except Exception as exc:
+            print(f"[STARTUP] support ingest scheduler failed (non-fatal): {exc}")
+
         _coaching_scheduler.start()
         print("[STARTUP] coaching expiry sweeps scheduled (48h requests + 30d relationships, every 15 min)")
     except Exception as exc:

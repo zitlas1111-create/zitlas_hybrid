@@ -22,7 +22,11 @@ from __future__ import annotations
 
 class FakeSnapshot:
     def __init__(self, doc_id, data, reference=None):
-        self.id = doc_id
+        # The last path segment, matching real Firestore. Production code
+        # relies on this (admin_service builds data["id"] = doc.id, and
+        # notification_service falls back to doc.id as the FCM token), so a
+        # fake that handed back "collection/docId" would silently diverge.
+        self.id = str(doc_id).rsplit("/", 1)[-1]
         self._data = data
         self.exists = data is not None
         self.reference = reference
@@ -51,6 +55,16 @@ class FakeDocRef:
     def __init__(self, store, path):
         self._store = store
         self._path = path
+
+    @property
+    def id(self):
+        return self._path.rsplit("/", 1)[-1]
+
+    def collection(self, name):
+        """Subcollection under this document — `doc.collection("messages")`.
+        Paths stay slash-joined, so a subcollection is just a deeper key in
+        the same flat store."""
+        return FakeCollection(self._store, f"{self._path}/{name}")
 
     def get(self, transaction=None):
         data = self._store.get(self._path)
@@ -124,7 +138,12 @@ class FakeQuery:
         for path, data in list(self._store.items()):
             if self._limit is not None and emitted >= self._limit:
                 return
-            if path.startswith(prefix) and data is not None and self._matches(data):
+            # Exactly one segment past the prefix. Without the depth check a
+            # query on `support_conversations` would also stream every
+            # `support_conversations/<id>/messages/<id>` doc, because a flat
+            # store makes a subcollection look like a prefix match.
+            if (path.startswith(prefix) and "/" not in path[len(prefix):]
+                    and data is not None and self._matches(data)):
                 emitted += 1
                 yield FakeSnapshot(path, data, reference=FakeDocRef(self._store, path))
 
@@ -133,12 +152,21 @@ class FakeQuery:
 
 
 class FakeCollection:
+    _auto = 0
+
     def __init__(self, store, name):
         self._store = store
         self._name = name
 
-    def document(self, doc_id):
+    def document(self, doc_id=None):
+        # Real Firestore mints a client-side id when called with no argument.
+        if doc_id is None:
+            FakeCollection._auto += 1
+            doc_id = f"auto{FakeCollection._auto:06d}"
         return FakeDocRef(self._store, f"{self._name}/{doc_id}")
+
+    def stream(self):
+        return FakeQuery(self._store, self._name, []).stream()
 
     def where(self, field=None, op=None, value=None, filter=None):
         return FakeQuery(self._store, self._name, []).where(field, op, value, filter=filter)

@@ -454,6 +454,32 @@ service cloud.firestore {
     // purpose the collection has. There is no update/delete path anywhere in
     // the API either — the trail is append-only by construction, not by
     // convention.
+    // ── support_conversations — Help Center chat ──
+    // READ is allowed for the owning athlete so both clients can hold a live
+    // onSnapshot listener and see a support reply land without polling.
+    // WRITE is denied outright to every client: messages are appended by the
+    // backend (Admin SDK, which bypasses these rules) after it has emailed
+    // the support inbox, and support replies arrive over IMAP. Letting a
+    // client write here would let an athlete forge a senderType:"support"
+    // message into their own thread, or edit what support actually said.
+    // Admin reads go through GET /api/support/admin/* behind require_admin,
+    // not through direct client access.
+    match /support_conversations/{cid} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow write: if false;
+
+      match /messages/{mid} {
+        allow read: if signedIn()
+          && get(/databases/$(database)/documents/support_conversations/$(cid))
+               .data.userId == request.auth.uid;
+        allow write: if false;
+      }
+    }
+
+    // Message-Id -> conversation map + ingestion ledger. Backend-only; a
+    // client that could read it would learn other athletes' conversation ids.
+    match /support_email_index/{id} { allow read, write: if false; }
+
     match /admin_audit_logs/{id} { allow read, write: if false; }
 
     match /wallet_transactions/{id} { allow read, write: if false; }
