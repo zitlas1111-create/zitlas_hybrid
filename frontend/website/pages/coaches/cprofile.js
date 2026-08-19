@@ -2737,7 +2737,7 @@
      These lines identify WHICH precondition was unmet, instead of guessing.
 
      Remove this block (and the _vdbg calls) once the cause is confirmed. */
-  var VERIFY_BUILD = '2026-08-18-webview-auth-fix-3';
+  var VERIFY_BUILD = '2026-08-19-tap-blocker-fix-4';
 
   function _vdbg(label, data) {
     try {
@@ -2961,11 +2961,42 @@
       if (totalPriceEl) totalPriceEl.textContent = '₹' + (ready ? _computeTotalPrice() : 0);
     }
 
+    /* ── Availability is ADVISORY ONLY — never pointer-events: none ───────
+       THE BUG THIS FIXES. `.vp-option--unavailable` carries
+       `pointer-events: none` (cprofile.css:475), so an option marked
+       unavailable becomes COMPLETELY UNTAPPABLE: no click event, therefore no
+       `[VERIFY DEBUG] review type tapped` log, no validation message, and no
+       way for the athlete or the log to explain why the sheet is dead. That is
+       exactly why the device log stopped at `hydrate done` and never produced
+       another line.
+
+       My own previous commit widened it: the original code disabled only
+       optDiet, and I added optWorkout and optBoth — so an athlete missing
+       EITHER plan lost Training and Both as well, and one missing both plans
+       got three inert buttons.
+
+       The class is now actively REMOVED and never applied. Sub-labels still
+       state availability, and the tap handler validates after hydration and
+       says precisely what is missing. Validation is NOT bypassed: the submit
+       path still refuses to send without a real plan — it just does so
+       audibly instead of by making the UI unresponsive. */
     function _refreshPlanAvailability() {
       var hasDiet = _hasDietPlan();
       var hasWorkout = _hasWorkoutPlan();
+      _vdbg('plan selection state', {
+        hasDietPlan: hasDiet,
+        hasWorkoutPlan: hasWorkout,
+        selectedService: _selectedService,
+        selectedType: _selectedType
+      });
+
+      [optDiet, optWorkout, optBoth].forEach(function (b) {
+        // Clear any stale class from an earlier open (or an older cached CSS
+        // build) so no option can ever be left unresponsive.
+        if (b) b.classList.remove('vp-option--unavailable');
+      });
+
       if (optDiet) {
-        optDiet.classList.toggle('vp-option--unavailable', !hasDiet);
         var sd = optDiet.querySelector('.vp-opt-sub');
         if (sd) {
           sd.textContent = hasDiet
@@ -2974,12 +3005,20 @@
         }
       }
       if (optWorkout) {
-        optWorkout.classList.toggle('vp-option--unavailable', !hasWorkout);
         var sw = optWorkout.querySelector('.vp-opt-sub');
-        if (sw && !hasWorkout) sw.textContent = 'Your AI-generated Training Plan is not ready yet.';
+        if (sw) {
+          sw.textContent = hasWorkout
+            ? 'Expert reviews your training week'
+            : 'Your AI-generated Training Plan is not ready yet.';
+        }
       }
       if (optBoth) {
-        optBoth.classList.toggle('vp-option--unavailable', !(hasDiet && hasWorkout));
+        var sb = optBoth.querySelector('.vp-opt-sub');
+        if (sb) {
+          sb.textContent = (hasDiet && hasWorkout)
+            ? 'Expert reviews both plans'
+            : 'Needs both AI-generated plans.';
+        }
       }
     }
 
@@ -3256,8 +3295,23 @@
     if (submitBtn) {
       submitBtn.addEventListener('click', function() {
         console.log('[VERIFY] button clicked', { service: _selectedService, type: _selectedType });
-        _vdbg('submit handler ENTERED');
-        if (!_selectedService || (_needsReviewType() && !_selectedType)) return;
+        _vdbg('submit button clicked', {
+          selectedService: _selectedService,
+          selectedType: _selectedType,
+          submitDisabled: submitBtn.disabled
+        });
+        _vdbg('selected review type', _selectedType);
+        _vdbg('diet plan available', _hasDietPlan());
+        _vdbg('workout plan available', _hasWorkoutPlan());
+
+        var _validOk = !!_selectedService && (!_needsReviewType() || !!_selectedType);
+        _vdbg('submit validation', {
+          passed: _validOk,
+          needsReviewType: _needsReviewType(),
+          reason: _validOk ? null
+            : (!_selectedService ? 'no service selected' : 'no review type selected')
+        });
+        if (!_validOk) return;
 
         /* ── LIVE AUTH GUARD ──────────────────────────────────────────────
            firestore.rules requires review_requests.userId == request.auth.uid.
@@ -3535,6 +3589,15 @@
 
         /* Write to Firestore so the expert's dashboard inbox receives it.
            Money is NEVER touched here — only on the expert's Accept. */
+        _vdbg('submitting request', {
+          docCount: reviewDocs.length,
+          ids: reviewDocs.map(function(r) { return r.id; }),
+          userId: reviewDocs[0] && reviewDocs[0].userId,
+          expertId: reviewDocs[0] && reviewDocs[0].expertId,
+          reviewTypes: reviewDocs.map(function(r) { return r.reviewType; }),
+          status: reviewDocs[0] && reviewDocs[0].status,
+          hasPlanData: reviewDocs.map(function(r) { return !!r.planData; })
+        });
         if (typeof ZitlasDB !== 'undefined') {
           var writes = reviewDocs.map(function(r) {
             var firestoreReview = Object.assign({}, r, {
@@ -3582,7 +3645,7 @@
             closeSheet();
             showToast(totalPrice > 0
               ? 'Request sent — ₹' + totalPrice + ' will be deducted from your wallet once the expert accepts.'
-              : 'Your request has been sent.');
+              : 'Review request sent successfully. Your expert will review your AI-generated plan.');
             updateVerifyBtnState(coach);
           }, 700);
         }
