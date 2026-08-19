@@ -75,7 +75,7 @@
     } catch (_) { return null; }
   }
   function _pcShowsCoachPlan() {
-    return !!(_pcRel && (_pcRel.status === 'active' || _pcRel.status === 'ended') &&
+    return !!(_pcRel && _pcRel.status === 'active' &&
       (_pcRel.planType === 'training' || _pcRel.planType === 'complete'));
   }
 

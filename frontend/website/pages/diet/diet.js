@@ -1830,8 +1830,15 @@
   }
   /* Render eligibility: active OR ended (athlete keeps the last coach plan).
      Interactive requests (Ask Expert) additionally require active. */
+  /* A coach plan is active ONLY while the coaching relationship is.
+     'ended' was previously accepted here as well, so a finished engagement
+     kept prescribing the athlete's diet indefinitely — the coach's last plan
+     stayed the active plan with no way for the athlete to get back to their
+     own AI/expert-reviewed plan. Historical data is untouched: the
+     coaching_plans document still exists for audit, it simply stops being
+     the ACTIVE plan the moment the relationship is not active. */
   function _pcShowsCoachPlan() {
-    return !!(_pcRel && (_pcRel.status === 'active' || _pcRel.status === 'ended') &&
+    return !!(_pcRel && _pcRel.status === 'active' &&
       (_pcRel.planType === 'diet' || _pcRel.planType === 'complete'));
   }
 

@@ -4187,10 +4187,45 @@ function buildWorkoutChangeHistory(origPlan, newPlan, expertName) {
 }
 
 async function savePlanEdits(reviewId, card, expert) {
+  console.log('[REVIEW COMPLETE] clicked requestId=' + reviewId);
+
   var all = [];
   try { all = JSON.parse(localStorage.getItem('expert_plan_reviews') || '[]'); } catch (_) {}
   var idx = all.findIndex(function(r) { return r.id === reviewId; });
-  if (idx === -1) return;
+
+  /* ROOT CAUSE OF "Complete Review does nothing": this used to be
+     `if (idx === -1) return;` — a bare, silent return whenever the review was
+     not in THIS device's localStorage cache. No log, no toast, no error: the
+     expert clicked Complete Review and absolutely nothing happened.
+
+     The cache is only populated by the dashboard's Firestore snapshot handler,
+     so it is empty on a fresh device or session, after a storage clear, and in
+     the Flutter WebView (which keeps its own separate storage). Firestore —
+     not localStorage — is the authority for the review, so fall back to it
+     instead of giving up. */
+  if (idx === -1) {
+    console.warn('[REVIEW COMPLETE] not in local cache — fetching from Firestore', reviewId);
+    if (typeof ZitlasDB === 'undefined') {
+      console.error('[REVIEW COMPLETE] FAILURE code=no_firestore message=review not cached and Firestore unavailable');
+      edShowToast('⚠ Could not load this review. Check your connection and try again.');
+      return;
+    }
+    try {
+      var snap = await ZitlasDB.collection('review_requests').doc(reviewId).get();
+      if (!snap.exists) {
+        console.error('[REVIEW COMPLETE] FAILURE code=not_found message=review_requests/' + reviewId + ' does not exist');
+        edShowToast('⚠ This review no longer exists.');
+        return;
+      }
+      all.push(Object.assign({ id: snap.id }, snap.data()));
+      idx = all.length - 1;
+      console.log('[REVIEW COMPLETE] recovered review from Firestore', reviewId);
+    } catch (e) {
+      console.error('[REVIEW COMPLETE] FAILURE code=' + (e && e.code) + ' message=' + (e && e.message));
+      edShowToast('⚠ Could not load this review. Check your connection and try again.');
+      return;
+    }
+  }
 
   var _rev = all[idx];
   var _origForDiff = _rev.planData;
@@ -4263,13 +4298,37 @@ async function savePlanEdits(reviewId, card, expert) {
       'requestId=' + reviewId,
       'previousStatus=' + _prevStatus,
       'newStatus=' + _fsUpdate.status);
+    console.log('[REVIEW COMPLETE] updating review status');
     try {
+      /* `.update()` (not `.set()`) on purpose: it fails loudly if the document
+         does not exist, rather than creating a partial review that no athlete
+         listener would ever match. */
       await ZitlasDB.collection('review_requests').doc(reviewId).update(_fsUpdate);
-      console.log('firestore update success');
-      console.log('[REVIEW] completed', reviewId);
+      console.log('[REVIEW COMPLETE] status update success', reviewId);
     } catch (e) {
-      console.warn('[ZITLAS] Firestore review update failed:', e);
+      /* ROOT CAUSE OF "expert changes never reach the athlete": this was
+         caught, logged as a warning, and then the success toast fired anyway
+         — so a rejected or failed write looked identical to a successful one.
+         The expert saw "✅ Review saved" while the athlete's Diet never
+         changed, because the only copy of the edit was in the expert's own
+         localStorage. Fail visibly and leave the card actionable so the
+         expert can retry. */
+      console.error('[REVIEW COMPLETE] FAILURE code=' + (e && e.code) +
+                    ' message=' + (e && e.message));
+      _rev.status = _prevStatus;   // roll the local echo back
+      try { localStorage.setItem('expert_plan_reviews', JSON.stringify(all)); } catch (_) {}
+      edShowToast('⚠ Could not send the review — the athlete has NOT received it. Please retry.');
+      if (card && card._saveChangesBtn) {
+        card._saveChangesBtn.disabled = false;
+        card._saveChangesBtn.textContent = 'Complete Review';
+      }
+      return;
     }
+  } else {
+    console.error('[REVIEW COMPLETE] FAILURE code=no_firestore ' +
+                  'message=review saved locally only; the athlete will never receive it');
+    edShowToast('⚠ Could not send the review — you appear to be offline.');
+    return;
   }
   var _updatedReview = (JSON.parse(localStorage.getItem('expert_plan_reviews') || '[]') || []).find(function(r) { return r.id === reviewId; }) || null;
   console.log("REVIEW AFTER SAVE", _updatedReview);
@@ -4289,6 +4348,18 @@ async function savePlanEdits(reviewId, card, expert) {
       card._saveChangesBtn.classList.remove('ed-save-active');
     }
   }
+}
+
+/* Completion UI for a workout review. Extracted so it can be called ONLY from
+   the resolved Firestore write — see the call site. */
+function _markWorkoutReviewSent(card) {
+  if (!card) return;
+  var badge = card.querySelector('.erc-badge');
+  if (badge) { badge.textContent = 'Completed'; badge.className = 'erc-badge status-completed'; }
+  var actions = card.querySelector('.erc-actions');
+  if (actions) actions.innerHTML = '<span class="erc-approved-stamp">✅ Review Sent to Athlete</span>';
+  card.dataset.prStatus = 'review_completed';
+  edShowToast('✅ Review saved — athlete will be notified.');
 }
 
 function buildPlanReviewCard(review, expert) {
@@ -4520,18 +4591,27 @@ function initPlanReviewCardInteractions(card, review, expert) {
             'requestId=' + prId,
             'previousStatus=' + _cPrevStatus,
             'newStatus=' + _wFsUpdate.status);
+          /* Same fix as savePlanEdits: the completion UI must not run until
+             the write actually lands. This previously fired "✅ Review Sent to
+             Athlete" while the promise was still in flight, and swallowed any
+             rejection into a console warning — so a failed workout review
+             looked identical to a successful one. */
           ZitlasDB.collection('review_requests').doc(prId).update(_wFsUpdate)
-            .then(function() { console.log('[REVIEW] Firestore workout review_completed OK', prId); })
-            .catch(function(e) { console.warn('[REVIEW] Firestore workout update failed:', e); });
+            .then(function() {
+              console.log('[REVIEW COMPLETE] status update success', prId);
+              _markWorkoutReviewSent(card);
+            })
+            .catch(function(e) {
+              console.error('[REVIEW COMPLETE] FAILURE code=' + (e && e.code) +
+                            ' message=' + (e && e.message));
+              edShowToast('⚠ Could not send the review — the athlete has NOT received it. Please retry.');
+            });
+        } else {
+          console.error('[REVIEW COMPLETE] FAILURE code=no_firestore ' +
+                        'message=workout review saved locally only; the athlete will never receive it');
+          edShowToast('⚠ Could not send the review — you appear to be offline.');
         }
       }
-
-      var _cBadge = card.querySelector('.erc-badge');
-      if (_cBadge) { _cBadge.textContent = 'Completed'; _cBadge.className = 'erc-badge status-completed'; }
-      var _cActions = card.querySelector('.erc-actions');
-      if (_cActions) _cActions.innerHTML = '<span class="erc-approved-stamp">✅ Review Sent to Athlete</span>';
-      card.dataset.prStatus = 'review_completed';
-      edShowToast('✅ Review saved — athlete will be notified.');
     }
 
     /* Reject */

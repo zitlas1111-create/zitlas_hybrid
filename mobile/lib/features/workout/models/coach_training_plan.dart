@@ -25,11 +25,18 @@ class PersonalCoachingRelationship {
   final DateTime? endDate;
 
   /// `_pcShowsCoachPlan()` — a coach's training plan overrides the AI plan
-  /// only while the relationship is active OR has just ended (ended
-  /// relationships keep showing the coach's last plan, same as the
-  /// website), and only when that relationship actually covers training.
+  /// only while the relationship is ACTIVE, and only when that relationship
+  /// actually covers training.
+  ///
+  /// 'ended' used to be accepted here too, matching the website, so a finished
+  /// engagement kept prescribing the athlete's training indefinitely with no
+  /// way back to their own AI/expert-reviewed plan. Historical data is
+  /// untouched: the coaching_plans document still exists for audit, it simply
+  /// stops being the ACTIVE plan the moment the relationship is not active.
+  /// Kept byte-identical in meaning to the website's `_pcShowsCoachPlan()` so
+  /// the two clients can never disagree about which plan an athlete is on.
   bool get showsCoachTrainingPlan =>
-      (status == 'active' || status == 'ended') &&
+      status == 'active' &&
       (planType == 'training' || planType == 'complete');
 
   /// `ZitlasCoachingGate.evaluate(rel).active` — status is 'active' AND not
