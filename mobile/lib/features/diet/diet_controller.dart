@@ -232,7 +232,30 @@ class DietController extends ChangeNotifier {
     final adj = healthToday;
     if (adj?.diet == null || adj!.diet!.meals.isEmpty) return false;
     if (day.day.toLowerCase() != _weekdayName(DateTime.now()).toLowerCase()) return false;
-    if (dietStorage?.isExpertPlan == true) return false;
+
+    /* THE COACH GUARD — and the bug it replaces.
+    
+       This used to read `dietStorage?.isExpertPlan == true`, which conflated
+       two completely different things:
+    
+         * an EXPERT-REVIEWED plan — still the athlete's OWN AI plan, verified
+           or tweaked by an expert (`planSource: 'expert_reviewed'`, set when a
+           review is accepted at line ~866). Recovery mode SHOULD apply to it.
+         * an active PERSONAL COACH plan — a live prescription from a coach who
+           is being paid to make exactly this call. Recovery mode must NOT
+           silently override it; the coach is alerted instead.
+    
+       Because `isExpertPlan` is true for the FIRST case, any athlete who had
+       ever accepted an expert review could never get a recovery-day diet
+       again — with or without a coach. The Home card said "your plan has been
+       adjusted" and Diet quietly ignored it.
+    
+       `activeCoachDiet` is the correct signal and is already
+       relationship-gated, so an ENDED engagement no longer blocks recovery
+       either. This now matches the website's `planSource !== 'coach'` exactly,
+       and mirrors the training side, which always used the coach gate
+       (`_coachOverrideActive`) rather than this proxy. */
+    if (activeCoachDiet != null) return false;
     return true;
   }
 

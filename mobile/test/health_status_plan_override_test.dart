@@ -5,6 +5,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:zitlas_mobile/features/coaching/data/coaching_plan_repository.dart';
 import 'package:zitlas_mobile/features/coaching/data/meal_checkin_repository.dart';
 import 'package:zitlas_mobile/features/coaching/data/meal_photo_uploader.dart';
+import 'package:zitlas_mobile/features/coaching/models/coach_diet_plan.dart';
+import 'package:zitlas_mobile/features/expert_dashboard/models/expert_models.dart';
 import 'package:zitlas_mobile/features/dashboard/models/health_status.dart';
 import 'package:zitlas_mobile/features/diet/data/diet_repository.dart';
 import 'package:zitlas_mobile/features/diet/diet_controller.dart';
@@ -102,11 +104,44 @@ void main() {
       expect(controller.healthOverrideAppliesTo(today), isFalse);
     });
 
-    test('never applies over an active expert/coach-authored plan', () {
+    test('never applies over an ACTIVE COACH-authored plan', () {
+      /* Split from a single test that used to assert "expert/coach-authored",
+         conflating two different things. An active COACH plan is a live
+         prescription from someone paid to make this call, so recovery mode
+         must not override it — the coach is alerted instead. */
+      controller.healthToday = adjustmentWithDietMeals();
+      controller.livePlanId = 'plan-live';
+      controller.coachRelationship = const CoachingRelationship(
+        id: 'athlete-1', status: 'active', planType: 'diet', coachId: 'coach-9',
+      );
+      controller.coachPlan = const CoachingPlanDoc(
+        exists: true,
+        coachId: 'coach-9',
+        diet: CoachDietPlan(planId: 'plan-live', days: [
+          CoachDietDay(day: 'Monday', meals: [
+            CoachMeal(id: 'b', name: 'Breakfast',
+                options: [CoachMealOption(name: 'Coach meal')]),
+          ]),
+        ]),
+      );
+      expect(controller.activeCoachDiet, isNotNull, reason: 'fixture precondition');
+      expect(controller.healthOverrideAppliesTo(dayNamed(_todayName)), isFalse);
+    });
+
+    test('DOES apply over an EXPERT-REVIEWED plan', () {
+      /* The other half of the old conflation, and the bug it hid:
+         `isExpertPlan` is true for an expert-REVIEWED plan too — the athlete's
+         own AI plan, verified by an expert. Refusing recovery mode there meant
+         anyone who had ever accepted a review could never get a recovery day
+         again, coach or no coach. */
       controller.healthToday = adjustmentWithDietMeals();
       final plan = DietPlanContent(days: [dayNamed(_todayName)]);
-      controller.dietStorage = DietStorage(originalDietPlan: plan, currentDietPlan: plan, isExpertPlan: true);
-      expect(controller.healthOverrideAppliesTo(dayNamed(_todayName)), isFalse);
+      controller.dietStorage = DietStorage(
+        originalDietPlan: plan, currentDietPlan: plan,
+        isExpertPlan: true, planSource: 'expert_reviewed',
+      );
+      expect(controller.activeCoachDiet, isNull, reason: 'no coach involved');
+      expect(controller.healthOverrideAppliesTo(dayNamed(_todayName)), isTrue);
     });
 
     test('the base stored plan itself is never mutated by the override', () {
