@@ -298,110 +298,206 @@
       window.location.href = 'expert-dashboard.html';
     });
 
-    var saveBtn     = document.getElementById('mpSave');
+    /* NOTE: this handler is kept deliberately identical in structure to
+       modify-diet.js's — same ordering, same guards, same logging — so a
+       fix to one is trivially portable to the other. Only the field names
+       and the apply-to-athlete helper differ. */
     var completeBtn = document.getElementById('mpComplete');
 
-    /* Save Changes */
-    saveBtn.addEventListener('click', function () {
-      var edited      = collectEdited();
-      var expertName  = (expert && expert.name) || 'Expert';
-      var history     = buildHistory(edited, expertName);
+    /* ── ONE canonical action: Save & Complete Review ─────────────────────
+       WHAT WAS WRONG:
 
-      patchReview(reviewId, {
+       1. TWO BUTTONS, SEQUENTIALLY GATED. Save hid itself and revealed
+          Complete (`saveBtn.style.display='none'; completeBtn.style.display=
+          'block'`). Save early-returns while the day cards are still
+          rendering, so a click during load left Complete permanently
+          invisible and the review un-completable.
+
+       2. "STILL PENDING" AFTER CLICKING. The local status was patched to
+          'review_completed' BEFORE the Firestore write, and that write's
+          failure was caught into a toast. The dashboard's snapshot handler
+          treats Firestore as authoritative and rewrites the local cache from
+          it — so a failed or skipped Firestore update silently reverted the
+          card to `pending`, however many times the expert clicked.
+
+       3. CHAT REDIRECT. On success it stashed `ed_open_chat` in
+          sessionStorage and navigated to expert-dashboard.html, which then
+          opened the chat.
+
+       NOW: one button, writes in dependency order, each awaited, and the
+       review is marked completed ONLY after the plan and the athlete's copy
+       are both safely stored. Any failure leaves the status pending and
+       re-enables the button. No navigation at all. */
+    var isCompletingReview = false;
+
+    function markCompletedUi() {
+      completeBtn.disabled = true;
+      completeBtn.textContent = 'Review Completed ✓';
+      completeBtn.classList.add('mp-btn--done');
+    }
+
+    /* STEP 10 — an already-completed review can never be resubmitted. */
+    (function () {
+      var existing = getReview(reviewId) || review || {};
+      if (existing.status === 'review_completed' || existing.status === 'completed') {
+        markCompletedUi();
+      }
+    })();
+
+    completeBtn.addEventListener('click', function () {
+      console.log('[REVIEW COMPLETE] button clicked');
+
+      /* STEP 4 — in-flight guard. A second click must never produce a second
+         set of completion writes. */
+      if (isCompletingReview) {
+        console.log('[REVIEW COMPLETE] ignored — already in flight');
+        return;
+      }
+      var current = getReview(reviewId) || review || {};
+      if (current.status === 'review_completed' || current.status === 'completed') {
+        console.log('[REVIEW COMPLETE] ignored — already completed');
+        markCompletedUi();
+        return;
+      }
+
+      var expertName = (expert && expert.name) || 'Expert';
+      var expertId   = (expert && expert.id) || review.expertId || '';
+      var nowIso     = new Date().toISOString();
+
+      console.log('[REVIEW COMPLETE] requestId=' + reviewId);
+      console.log('[REVIEW COMPLETE] expertId=' + expertId);
+      console.log('[REVIEW COMPLETE] userId=' + (review.userId || '(none)'));
+      console.log('[REVIEW COMPLETE] reviewType=' +
+        (review.reviewType || review.planReviewType || 'workout'));
+
+      console.log('[REVIEW COMPLETE] validating final plan');
+      /* renderPlan runs async (after the live-athlete fetch). Collecting
+         before the day cards exist would gather an EMPTY plan and overwrite
+         the expert's work with nothing. */
+      if (!document.querySelector('.mp-day-card')) {
+        console.error('[REVIEW COMPLETE] FAILURE operation=validate ' +
+                      'code=plan_not_loaded message=day cards not rendered yet');
+        showToast('Plan is still loading — one moment…');
+        return;
+      }
+      if (typeof ZitlasDB === 'undefined') {
+        console.error('[REVIEW COMPLETE] FAILURE operation=validate ' +
+                      'code=no_firestore message=cannot reach the server');
+        showToast('⚠️ Unable to complete the review — you appear to be offline.');
+        return;
+      }
+
+      var edited  = collectEdited();
+      var history = buildHistory(edited, expertName);
+      if (!edited || !edited.days || !edited.days.length) {
+        console.error('[REVIEW COMPLETE] FAILURE operation=validate ' +
+                      'code=empty_plan message=collected plan has no days');
+        showToast('⚠️ Nothing to save — the plan looks empty. Please reload and retry.');
+        return;
+      }
+      console.log('[REVIEW COMPLETE] validation success');
+
+      isCompletingReview = true;
+      completeBtn.disabled = true;
+      completeBtn.textContent = 'Saving & Completing…';
+
+      function fail(operation, err) {
+        console.error('[REVIEW COMPLETE] FAILURE operation=' + operation +
+                      ' code=' + (err && err.code) +
+                      ' message=' + (err && err.message));
+        /* Status stays pending: it is only ever written in the final step. */
+        isCompletingReview = false;
+        completeBtn.disabled = false;
+        completeBtn.textContent = 'Save & Complete Review';
+        showToast('⚠️ Unable to complete the review. Your changes were not ' +
+                  'fully saved. Please try again.');
+      }
+
+      var docRef = ZitlasDB.collection('review_requests').doc(reviewId);
+
+      /* 1. Expert's edited plan. */
+      console.log('[REVIEW COMPLETE] saving expert plan');
+      docRef.update({
         reviewedWorkoutPlan:  edited,
         workoutChangeHistory: history,
-        savedAt:              new Date().toISOString(),
-      });
-
-      if (typeof ZitlasDB !== 'undefined') {
-        ZitlasDB.collection('review_requests').doc(reviewId).update({
+        savedAt:           nowIso,
+      }).then(function () {
+        console.log('[REVIEW COMPLETE] expert plan save success');
+        /* Local echo only AFTER the server has it. */
+        patchReview(reviewId, {
           reviewedWorkoutPlan:  edited,
           workoutChangeHistory: history,
-          savedAt:              new Date().toISOString(),
-        }).catch(function (e) { console.warn('[MODIFY-WORKOUT] Firestore save sync failed:', e); });
-      }
+          savedAt:           nowIso,
+        });
 
-      showToast('Changes saved!');
-      saveBtn.style.display     = 'none';
-      completeBtn.style.display = 'block';
-    });
+        /* 2. Athlete's active plan. */
+        console.log('[REVIEW COMPLETE] updating athlete plan');
+        var fresh = getReview(reviewId) || review;
+        return applyReviewedWorkoutToAthlete(fresh, expertName, nowIso);
+      }).then(function (applied) {
+        console.log('[REVIEW COMPLETE] athlete plan update success applied=' + !!applied);
 
-    /* Complete Review */
-    completeBtn.addEventListener('click', function () {
-      console.log('[COMPLETE REVIEW] button clicked');
-      var expertName  = (expert && expert.name) || 'Expert';
-      var expertId    = (expert && expert.id) || review.expertId || '';
-      var convId      = (expert && expert.id) || '';
-      var athleteName = review.athleteName || review.userName || 'Athlete';
-      var nowIso      = new Date().toISOString();
+        /* 3. Status LAST — the review is not completed until the plan and the
+              athlete's copy are both stored. */
+        console.log('[REVIEW COMPLETE] updating review status');
+        return docRef.update({
+          status:          'review_completed',
+          reviewedAt:      nowIso,
+          completedAt:     nowIso,
+          expertName:      expertName,
+          expertId:        expertId,
+          autoApplied:     !!applied,
+          autoAppliedAt:   applied ? nowIso : null,
+          /* applied -> the plan is already live on the athlete's account, so
+             the Accept banner would be redundant. Not applied -> leave it
+             false so the athlete's Accept fallback still delivers it. */
+          athleteAccepted: !!applied,
+        }).then(function () { return applied; });
+      }).then(function (applied) {
+        console.log('[REVIEW COMPLETE] status update success');
+        console.log('[REVIEW COMPLETE] completedAt saved ' + nowIso);
+        patchReview(reviewId, {
+          status:          'review_completed',
+          reviewedAt:      nowIso,
+          completedAt:     nowIso,
+          expertName:      expertName,
+          expertId:        expertId,
+          autoApplied:     !!applied,
+          athleteAccepted: !!applied,
+        });
 
-      var _latest = getReview(reviewId) || review;
-
-      patchReview(reviewId, {
-        status:               'review_completed',
-        reviewedAt:           nowIso,
-        completedAt:          nowIso,
-        expertName:           expertName,
-        expertId:             expertId,
-        athleteAccepted:      false,
-      });
-
-      if (typeof ZitlasDB !== 'undefined') {
-        var _fsPayload = {
-          status:               'review_completed',
-          reviewedAt:           nowIso,
-          completedAt:          nowIso,
-          expertName:           expertName,
-          expertId:             expertId,
-          reviewedWorkoutPlan:  _latest.reviewedWorkoutPlan  || null,
-          workoutChangeHistory: _latest.workoutChangeHistory || [],
-        };
-        console.log('[COMPLETE REVIEW] reviewId', reviewId);
-        console.log('[COMPLETE REVIEW] payload', _fsPayload);
-        console.log('[COMPLETE REVIEW] before firestore update');
-        /* Auto-apply first; athleteAccepted mirrors whether it landed
-           (legacy requests without userId fall back to the athlete-side
-           accept flow) — same contract as modify-diet.js. */
-        applyReviewedWorkoutToAthlete(_latest, expertName, nowIso).then(function (applied) {
-          _fsPayload.autoApplied = !!applied;
-          if (applied) {
-            _fsPayload.athleteAccepted = true;
-            _fsPayload.autoAppliedAt   = nowIso;
-            patchReview(reviewId, { athleteAccepted: true, autoApplied: true });
+        /* System message into the coaching chat. Informational only — it does
+           NOT navigate anywhere, and a failure here cannot un-complete a
+           review that is already safely stored. */
+        try {
+          var convId = (expert && expert.id) || '';
+          var chats  = JSON.parse(localStorage.getItem('zitlas_chats') || '{}');
+          if (convId && chats[convId]) {
+            chats[convId].messages = chats[convId].messages || [];
+            chats[convId].messages.push({
+              id:         'sys_complete_' + Date.now(),
+              senderType: 'system',
+              type:       'review_complete',
+              text:       '✅ Review Completed — ' + expertName +
+                          ' has finished reviewing your training plan.',
+              timestamp:  nowIso,
+            });
+            localStorage.setItem('zitlas_chats', JSON.stringify(chats));
           }
-          return ZitlasDB.collection('review_requests').doc(reviewId).update(_fsPayload);
-        })
-          .then(function () { console.log('[COMPLETE REVIEW] firestore update success'); })
-          .catch(function (err) {
-            console.error('[COMPLETE REVIEW] firestore update failed', err);
-            showToast('⚠️ Could not sync to server — athlete may not see this update.');
-          });
-      } else {
-        console.error('[COMPLETE REVIEW] ZitlasDB unavailable — completion saved to localStorage only');
-      }
+        } catch (_) {}
 
-      /* Append system message to chat */
-      try {
-        var chats = JSON.parse(localStorage.getItem('zitlas_chats') || '{}');
-        if (convId && chats[convId]) {
-          chats[convId].messages = chats[convId].messages || [];
-          chats[convId].messages.push({
-            id:         'sys_complete_' + Date.now(),
-            senderType: 'system',
-            type:       'review_complete',
-            text:       '✅ Review Completed — ' + expertName + ' has finished reviewing your workout plan. Open your plan to accept the changes.',
-            timestamp:  new Date().toISOString(),
-          });
-          localStorage.setItem('zitlas_chats', JSON.stringify(chats));
-        }
-      } catch (_) {}
-
-      try {
-        sessionStorage.setItem('ed_open_chat', JSON.stringify({ convId: convId, athleteName: athleteName }));
-      } catch (_) {}
-
-      showToast('✅ Review sent to athlete!');
-      setTimeout(function () { window.location.href = 'expert-dashboard.html'; }, 1200);
+        console.log('[REVIEW COMPLETE] SUCCESS');
+        markCompletedUi();
+        showToast('✓ Review completed successfully.');
+        /* STEP 8 — deliberately NO navigation. The expert stays on this review
+           and leaves under their own steam. The old flow stashed
+           `ed_open_chat` and redirected to the dashboard, which then opened
+           the chat. */
+      }).catch(function (err) {
+        /* One handler for every stage: whichever write rejected, the status
+           has not been touched, so the review is still pending and retryable. */
+        fail('save_and_complete', err);
+      });
     });
   }
 

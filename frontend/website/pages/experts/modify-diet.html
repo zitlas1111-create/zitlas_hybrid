@@ -182,6 +182,10 @@
     .mp-btn:active { opacity: 0.85; transform: scale(0.98); }
     .mp-btn--save     { background: var(--accent); color: var(--bg-primary); }
     .mp-btn--complete { background: var(--success); color: var(--bg-primary); }
+    /* Completed / in-flight: visibly inert so a second submission never
+       looks available. */
+    .mp-btn--complete:disabled { opacity: .6; cursor: not-allowed; }
+    .mp-btn--done { background: var(--border); color: var(--text-sec); }
 
     .mp-toast {
       position: fixed;
@@ -296,8 +300,10 @@
   <div class="mp-body" id="mpBody"></div>
 
   <div class="mp-footer">
-    <button class="mp-btn mp-btn--save" id="mpSave">Save Changes</button>
-    <button class="mp-btn mp-btn--complete" id="mpComplete" style="display:none">✅ Complete Review</button>
+    <!-- ONE primary action. The separate Save button was removed: it gated
+         Complete behind itself (Save hid itself and revealed Complete), so a
+         Save that early-returned left Complete permanently invisible. -->
+    <button class="mp-btn mp-btn--complete" id="mpComplete">Save &amp; Complete Review</button>
   </div>
 
   <div class="mp-toast" id="mpToast"></div>
