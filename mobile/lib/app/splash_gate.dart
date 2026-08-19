@@ -2,18 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
-/// Holds the app on the branded splash for a short MINIMUM, so a fast startup
-/// doesn't flash the logo for two frames and cut away.
+/// Releases the startup holding frame as soon as the first frame is up.
 ///
-/// The router keeps the app on `/splash` while EITHER this gate is not ready
-/// OR authentication is still resolving — whichever finishes last wins. So:
-///   * fast init  -> splash stays for [minimumDuration], then routes;
-///   * slow init  -> splash stays until auth resolves (longer than the gate).
+/// WAS: a 1200ms MINIMUM hold, so a branded logo screen could be read as
+/// intentional. That is exactly the custom startup screen that has now been
+/// removed — there is no logo left to give time to, so holding the app back
+/// for it was pure waiting. [minimumDuration] is now zero: the gate opens on
+/// the next event-loop turn and the router leaves `/splash` the moment auth
+/// resolves.
 ///
-/// This is deliberately NOT an artificial delay bolted on after startup: the
-/// timer runs CONCURRENTLY with Firebase init and the session check, which are
-/// what actually gate the app. It only prevents the splash being shown for an
-/// imperceptible flicker.
+/// The class is kept rather than deleted because two things still depend on
+/// "has the app finished starting up": the router's redirect, and
+/// `app.dart`'s deferral of a cold-start notification deep link until the
+/// router exists. Both still work; neither now costs the user a second.
 ///
 /// A [ChangeNotifier] because GoRouter's redirect is not re-evaluated on a bare
 /// timer — the router merges this with `AuthState` as its `refreshListenable`,
@@ -24,9 +25,12 @@ class SplashGate extends ChangeNotifier {
 
   static final SplashGate instance = SplashGate._();
 
-  /// Long enough for the logo/tagline animation to read as intentional, short
-  /// enough that it never feels like waiting.
-  static const minimumDuration = Duration(milliseconds: 1200);
+  /// ZERO. There is no branded splash to hold for any more; the only thing the
+  /// app legitimately waits on is the auth check, which the router gates on
+  /// separately. A zero-duration timer still defers to the next event-loop
+  /// turn, so the gate opens AFTER the first frame — which is what
+  /// `app.dart`'s notification deferral relies on.
+  static const minimumDuration = Duration.zero;
 
   bool _ready = false;
   Timer? _timer;
@@ -44,7 +48,7 @@ class SplashGate extends ChangeNotifier {
     return _ready;
   }
 
-  /// Starts the minimum-duration clock. Called once from `main()` BEFORE
+  /// Opens the gate on the next event-loop turn. Called once from `main()` BEFORE
   /// `runApp`, so the clock runs alongside initialization rather than after it.
   /// Idempotent — a second call is ignored, so a hot restart cannot stack
   /// timers or re-hold the splash.
@@ -53,7 +57,7 @@ class SplashGate extends ChangeNotifier {
     _timer = Timer(minimumDuration, () {
       _timer = null;
       _ready = true;
-      if (kDebugMode) debugPrint('[SPLASH] minimum duration elapsed — routing unblocked');
+      if (kDebugMode) debugPrint('[SPLASH] startup gate open — routing unblocked');
       notifyListeners();
     });
   }
