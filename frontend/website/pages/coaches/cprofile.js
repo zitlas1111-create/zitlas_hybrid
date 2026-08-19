@@ -2399,6 +2399,48 @@
     fileDoc: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
   };
 
+  /* ── Bottom-sheet inset above the site's bottom nav ───────────────────
+     THE ANDROID WEBVIEW BUG. Both bottom sheets on this page inset
+     themselves above the shared bottom nav via `--sheet-nav-offset`:
+
+         navOffset = window.innerHeight - navbar.getBoundingClientRect().top
+
+     That is correct while the nav is a VISIBLE bottom bar, which it always is
+     on desktop. But webview-bridge.js:58 applies
+
+         html.webview-mode #zitlas-navbar { display: none !important; }
+
+     and a display:none element's getBoundingClientRect() is ALL ZEROS. So
+     `innerHeight - 0` evaluated to the FULL VIEWPORT HEIGHT, giving:
+
+         .vp-sheet-overlay { top: 0; bottom: <innerHeight> }   -> height 0
+         .vp-sheet-card { max-height: calc(100dvh - <innerHeight> - 60px) }
+                                                              -> negative -> 0
+
+     The sheet was therefore "open" (opacity 1, pointer-events all) with ZERO
+     height: invisible and untappable, so taps passed straight through to the
+     Expert Review button behind it. That is exactly why the device log showed
+     "Expert Review button clicked" a second time and never a single
+     "review type tapped".
+
+     The old guard tested whether the navbar EXISTED. It does exist in the
+     WebView — it is merely not displayed. This tests VISIBILITY, requires a
+     real rect, and clamps to an inset a bottom nav could plausibly occupy, so
+     no future styling change can collapse a sheet again. Desktop is
+     unaffected: a visible bottom nav yields ~84px, well inside the clamp. */
+  function _bottomNavInset() {
+    var navbar = document.getElementById('zitlas-navbar');
+    if (!navbar) return 0;
+    var rect = navbar.getBoundingClientRect();
+    // display:none / collapsed -> all-zero rect. Not a usable measurement.
+    if (!(rect.height > 0 && rect.width > 0)) return 0;
+    var raw = window.innerHeight - rect.top;
+    // A bottom nav never occupies a third of the viewport; anything larger
+    // means the rect is not describing one.
+    if (!(raw > 0) || raw > window.innerHeight * 0.33) return 0;
+    return raw;
+  }
+
   function _getMyUserId() {
     /* Live Firebase session is authoritative — cached uid can be stale */
     if (typeof ZitlasAuth !== 'undefined' && ZitlasAuth.currentUser) {
@@ -2737,7 +2779,7 @@
      These lines identify WHICH precondition was unmet, instead of guessing.
 
      Remove this block (and the _vdbg calls) once the cause is confirmed. */
-  var VERIFY_BUILD = '2026-08-19-tap-blocker-fix-4';
+  var VERIFY_BUILD = '2026-08-19-sheet-collapse-fix-5';
 
   function _vdbg(label, data) {
     try {
@@ -3065,13 +3107,31 @@
       _refreshPlanAvailability();
       _ensurePlansHydrated().then(_refreshPlanAvailability);
 
-      var navbar = document.getElementById('zitlas-navbar');
-      if (navbar) {
-        var navOffset = window.innerHeight - navbar.getBoundingClientRect().top;
-        sheet.style.setProperty('--sheet-nav-offset', navOffset + 'px');
-      }
+      // Always SET it (never leave a stale value from a previous open).
+      var navOffset = _bottomNavInset();
+      sheet.style.setProperty('--sheet-nav-offset', navOffset + 'px');
       sheet.classList.add('open');
       document.body.style.overflow = 'hidden';
+
+      /* Geometry proof, on-device. If the sheet ever collapses again this line
+         says so immediately instead of leaving a silent dead sheet. */
+      try {
+        var _card = sheet.querySelector('.vp-sheet-card');
+        var _or = sheet.getBoundingClientRect();
+        var _cr = _card ? _card.getBoundingClientRect() : null;
+        var _mid = _cr && _cr.height > 0
+          ? document.elementFromPoint(Math.round(_cr.left + _cr.width / 2),
+                                      Math.round(_cr.top + _cr.height / 2))
+          : null;
+        _vdbg('sheet geometry', {
+          navInset: Math.round(navOffset),
+          innerHeight: window.innerHeight,
+          overlayHeight: Math.round(_or.height),
+          cardHeight: _cr ? Math.round(_cr.height) : null,
+          tappable: !!(_or.height > 0 && _cr && _cr.height > 0),
+          hitTestAtCardCentre: _mid ? (_mid.id || _mid.className || _mid.tagName) : null
+        });
+      } catch (e) { _vdbg('sheet geometry probe failed', String(e)); }
     }
     function closeSheet() {
       sheet.classList.remove('open');
@@ -4160,11 +4220,8 @@
 
     function openSheet() {
       if (!sheet) return;
-      var navbar = document.getElementById('zitlas-navbar');
-      if (navbar) {
-        var navOffset = window.innerHeight - navbar.getBoundingClientRect().top;
-        sheet.style.setProperty('--sheet-nav-offset', navOffset + 'px');
-      }
+      // Same collapse bug as the verify sheet — one shared guarded helper.
+      sheet.style.setProperty('--sheet-nav-offset', _bottomNavInset() + 'px');
       sheet.classList.add('open');
     }
     function closeSheet() {
