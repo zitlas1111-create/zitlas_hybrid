@@ -346,26 +346,72 @@ class DietController extends ChangeNotifier {
         'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
       ][d.weekday - 1];
 
+  /// Whether a coach-authored plan may own this athlete's diet AT ALL.
+  ///
+  /// Byte-for-byte the website's `_pcShowsCoachPlan()` in diet.js: the
+  /// relationship must be ACTIVE and must actually cover diet. Kept identical
+  /// so the two clients can never disagree about which plan an athlete is on.
+  bool get _coachDietRelationshipActive {
+    final rel = coachRelationship;
+    if (rel == null || !rel.isActive) return false;
+    final type = rel.planType;
+    return type == 'diet' || type == 'complete';
+  }
+
   /// The coach's diet, but ONLY when it should actually be shown.
   ///
-  /// Fails closed on two independent conditions:
+  /// Fails closed on three independent conditions:
+  ///  * the coaching relationship is not ACTIVE — see below;
   ///  * a plan authored against a DIFFERENT `planId` — the athlete reset their
   ///    goal, so that prescription is for a goal nobody has any more;
   ///  * a plan with no meals in it — a coach who has opened the editor but not
   ///    published anything must not blank out the athlete's AI plan.
   ///
-  /// When this is null the existing AI plan renders exactly as before, so
-  /// nothing about the current screen changes for an athlete without a coach.
+  /// THE RELATIONSHIP CHECK IS THE BUG FIX. This getter previously consulted
+  /// only the plan document, never the relationship, so once coaching ended the
+  /// coach's diet kept rendering forever — the athlete had no route back to
+  /// their own AI/expert-reviewed plan. The `coachPlan` listener is attached
+  /// unconditionally and the athlete can always read their OWN
+  /// `coaching_plans/{uid}` document, so nothing upstream ever stops supplying
+  /// it; this is the only place that can decide it is no longer active.
+  ///
+  /// The training side already gated on the relationship
+  /// (`_coachOverrideActive` → `showsCoachTrainingPlan`), which is exactly why
+  /// Training behaved correctly after coaching ended while Diet did not.
+  ///
+  /// Deactivation is a VISIBILITY decision only: the `coaching_plans` document
+  /// is never written or deleted here, so history stays intact for audit and a
+  /// renewed engagement can publish over it.
+  ///
+  /// When this is null the existing AI/expert-reviewed plan renders exactly as
+  /// before — that plan is never touched by this code path.
   CoachDietPlan? get activeCoachDiet {
     final doc = coachPlan;
     if (doc == null || !doc.exists) return null;
     if (!doc.diet.hasDays) return null;
+
+    if (!_coachDietRelationshipActive) {
+      if (kDebugMode) {
+        final rel = coachRelationship;
+        debugPrint('[DIET PLAN SELECT] REJECTED COACH PLAN — COACHING ENDED '
+            '(status=${rel?.status}, planType=${rel?.planType}, '
+            'isActive=${rel?.isActive})');
+        debugPrint('[DIET PLAN SELECT] FALLBACK TO AI/EXPERT PLAN');
+      }
+      return null;
+    }
+
     if (doc.isStaleFor(livePlanId)) {
       if (kDebugMode) {
         debugPrint('[DIET] coach plan retired — authored for ${doc.diet.planId}, '
             'live plan is $livePlanId');
       }
       return null;
+    }
+
+    if (kDebugMode) {
+      debugPrint('[DIET PLAN SELECT] coach plan ACTIVE '
+          '(planId=${doc.diet.planId}, coachId=${coachRelationship?.coachId})');
     }
     return doc.diet;
   }
