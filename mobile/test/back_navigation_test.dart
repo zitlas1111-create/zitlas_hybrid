@@ -47,6 +47,20 @@ class TabHistory {
     _current = previous;
     return previous;
   }
+
+  static const homeBranch = 0;
+
+  /// The shell's last resort before the exit dialog: from any non-root tab,
+  /// back goes Home. Mirrors `_AppShellState._goHomeBranch`.
+  bool goHome() {
+    if (_current == homeBranch) return false;
+    _navigatingBack = true;
+    _current = homeBranch;
+    return true;
+  }
+
+  /// The exit prompt is reachable from exactly one state.
+  bool get mayOfferExit => _history.isEmpty && _current == homeBranch;
 }
 
 void main() {
@@ -173,6 +187,69 @@ void main() {
       router.pop();
       await tester.pumpAndSettle();
       expect(find.text('RECIPE'), findsOneWidget, reason: 'Creator Recipe -> Recipe');
+    });
+  });
+
+  group('the exit prompt belongs to Home alone', () {
+    test('back from a deep-linked tab goes HOME, not to the exit prompt', () {
+      // A notification deep link lands straight on Diet, so no tab history was
+      // ever recorded. Back used to fall through to "Exit ZITLAS?" while the
+      // athlete was looking at Diet.
+      final h = TabHistory(1); // Diet
+      expect(h.back(), isNull, reason: 'nothing recorded');
+      expect(h.mayOfferExit, isFalse, reason: 'not on Home yet');
+      expect(h.goHome(), isTrue);
+      expect(h.current, 0);
+      expect(h.mayOfferExit, isTrue, reason: 'only NOW may back offer to exit');
+    });
+
+    test('every non-root tab reaches Home in one back press', () {
+      for (final tab in [1, 2, 3, 4]) {
+        final h = TabHistory(tab);
+        expect(h.goHome(), isTrue, reason: 'tab $tab must fall back to Home');
+        expect(h.current, 0);
+      }
+    });
+
+    test('Home does NOT fall back to itself — it offers to exit', () {
+      final h = TabHistory(0);
+      expect(h.goHome(), isFalse);
+      expect(h.mayOfferExit, isTrue);
+    });
+
+    test('history is walked BEFORE the Home fallback', () {
+      // Dashboard -> Diet -> Training. Back must retrace, not shortcut Home.
+      final h = TabHistory(0)..onBranchChanged(1)..onBranchChanged(2);
+      expect(h.back(), 1, reason: 'Training -> Diet, not straight Home');
+      h.onBranchChanged(1);
+      expect(h.back(), 0);
+    });
+
+    test('falling back to Home does not record a forward step', () {
+      // Otherwise back would bounce Home -> Diet forever.
+      final h = TabHistory(3);
+      h.goHome();
+      h.onBranchChanged(0); // the shell rebuild that follows goBranch
+      expect(h.history, isEmpty);
+      expect(h.back(), isNull);
+      expect(h.mayOfferExit, isTrue);
+    });
+
+    test('back from any tab terminates at Home without looping', () {
+      final h = TabHistory(0)
+        ..onBranchChanged(1)
+        ..onBranchChanged(2)
+        ..onBranchChanged(4);
+      var steps = 0;
+      while (true) {
+        final prev = h.back();
+        if (prev != null) { h.onBranchChanged(prev); }
+        else if (h.goHome()) { h.onBranchChanged(0); }
+        else { break; }
+        if (++steps > 12) fail('back never settled — navigation loop');
+      }
+      expect(h.current, 0);
+      expect(h.mayOfferExit, isTrue);
     });
   });
 }

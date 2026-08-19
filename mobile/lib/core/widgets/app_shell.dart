@@ -105,6 +105,9 @@ class _AppShellState extends State<AppShell> {
     _navigatingBack = false;
   }
 
+  /// The root tab. Back may only offer to exit from here.
+  static const _homeBranch = 0;
+
   /// True when back had somewhere to go. Never touches the exit dialog.
   bool _goBackToPreviousTab() {
     if (_tabHistory.isEmpty) return false;
@@ -112,6 +115,27 @@ class _AppShellState extends State<AppShell> {
     _navigatingBack = true;
     _branchIndex = previous;
     widget.navigationShell.goBranch(previous);
+    return true;
+  }
+
+  /// Last resort before the exit dialog: from ANY non-root tab, back goes to
+  /// Home.
+  ///
+  /// THE BUG THIS FIXES. Tab history is empty whenever the athlete did not
+  /// arrive at this tab by tapping through the bottom bar — a notification
+  /// deep link straight to /diet, a cross-tab `context.go`, or simply
+  /// exhausting the recorded history. Back then fell straight through to
+  /// "Exit ZITLAS?" while the athlete was staring at Diet or Profile, which is
+  /// the exit prompt appearing where it should not.
+  ///
+  /// With this, the exit dialog is reachable from exactly one place: Home with
+  /// nothing left to pop. Every other back press moves the athlete one step
+  /// closer to Home, which is what a modern app does.
+  bool _goHomeBranch() {
+    if (_branchIndex == _homeBranch) return false;
+    _navigatingBack = true;   // do not record Home as a forward step
+    _branchIndex = _homeBranch;
+    widget.navigationShell.goBranch(_homeBranch);
     return true;
   }
 
@@ -252,7 +276,10 @@ class _AppShellState extends State<AppShell> {
         // through the tabs the athlete actually visited — that history is
         // what the branch navigators cannot represent.
         if (_goBackToPreviousTab()) return;
-        // Genuinely at the start: no page to pop, no earlier tab.
+        // Still not Home? Go there. The exit dialog belongs to the root tab
+        // alone — see _goHomeBranch.
+        if (_goHomeBranch()) return;
+        // Genuinely at the start: Home, no page to pop, no earlier tab.
         await _confirmExitApp();
       },
       child: ZinoTourHost(
