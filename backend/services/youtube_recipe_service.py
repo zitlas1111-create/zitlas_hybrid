@@ -379,7 +379,8 @@ def _search(query: str) -> list[str]:
     ]
 
 
-def _hydrate(video_ids: list[str]) -> list[dict[str, Any]]:
+def _hydrate(video_ids: list[str], *,
+             max_seconds: int = _MAX_SHORT_SECONDS) -> list[dict[str, Any]]:
     """`videos.list` — 1 quota unit for the whole batch, and the ONLY place
     that can prove a video is genuinely short-form.
 
@@ -414,7 +415,12 @@ def _hydrate(video_ids: list[str]) -> list[dict[str, Any]]:
         if item.get("liveStreamingDetails"):
             continue
         duration = parse_iso8601_duration(content.get("duration"))
-        if duration is None or duration <= 0 or duration > _MAX_SHORT_SECONDS:
+        # `max_seconds` defaults to the Creator Recipes short-form rule, so
+        # that feature's behaviour is byte-for-byte unchanged. The Diet page's
+        # meal-recipe lookup opts into a longer ceiling: a full cooking
+        # tutorial for one specific dish is exactly what is wanted there,
+        # whereas Creator Recipes is a Shorts feed.
+        if duration is None or duration <= 0 or duration > max_seconds:
             continue
 
         thumbs = snippet.get("thumbnails") or {}

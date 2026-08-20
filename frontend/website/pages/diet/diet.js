@@ -2306,9 +2306,27 @@
      in this file, so it doubles as the recipe API's meal_type filter with
      no extra mapping needed.
   ══════════════════════════════════════════════════════════════ */
+  /* The DISH is what the athlete sees and clicked — `meal.foods.join(', ')`
+     is exactly the text rendered under the slot heading (see renderMeal's
+     `.meal-foods`). `meal.meal_name` is only the SLOT, and sending it alone
+     is what made the recipe page ask for "a breakfast recipe" and return an
+     unrelated one. Both now travel: the dish as the primary identifier, the
+     slot as secondary context. */
+  function mealDishName(meal) {
+    const foods = (meal.foods || [])
+      .map(function (f) { return String(f).trim(); })
+      .filter(Boolean);
+    return foods.length ? foods.join(', ') : (meal.meal_name || '');
+  }
+
   function buildRecipeButton(meal) {
     if (meal._recovery) return ''; // fixed recovery-day meal — no recipe swap-in
-    return '<button class="recipe-meal-btn" data-recipe-meal="' + esc(meal.meal_name || '') + '" aria-label="Get Easy ZITLAS Recipe for ' + esc(meal.meal_name || '') + '">' +
+    const dish = mealDishName(meal);
+    return '<button class="recipe-meal-btn"' +
+      ' data-recipe-meal="' + esc(meal.meal_name || '') + '"' +
+      ' data-recipe-dish="' + esc(dish) + '"' +
+      ' data-recipe-foods="' + esc((meal.foods || []).join('|')) + '"' +
+      ' aria-label="Get Easy ZITLAS Recipe for ' + esc(dish || meal.meal_name || '') + '">' +
       '🍳<span class="swap-label">Easy<br>Recipe</span>' +
       '</button>';
   }
@@ -2316,8 +2334,18 @@
   function wireRecipeButtons() {
     document.querySelectorAll('.recipe-meal-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
-        const mealType = btn.dataset.recipeMeal || '';
-        window.location.href = 'recipe.html?meal_type=' + encodeURIComponent(mealType);
+        const mealType = btn.dataset.recipeMeal || '';   // slot
+        const dish     = btn.dataset.recipeDish || '';   // the actual dish
+        const foods    = btn.dataset.recipeFoods || '';
+
+        console.log('[RECIPE] selected meal:', dish);
+        console.log('[RECIPE] meal type:', mealType);
+
+        const params = new URLSearchParams();
+        params.set('meal_type', mealType);
+        if (dish)  params.set('meal_name', dish);
+        if (foods) params.set('foods', foods);
+        window.location.href = 'recipe.html?' + params.toString();
       });
     });
   }

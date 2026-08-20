@@ -27,6 +27,13 @@ engine and routes/diet.py's /foods/search.
                                   workout-nutrition dataset and vice versa.
   GET /api/recipes/discover       a random sample, same filters as the list
                                   endpoint — NORMAL MEALS ONLY
+  GET /api/recipes/for-meal       THE recipe for one SPECIFIC dish out of the
+                                  athlete's diet plan, plus a video that is
+                                  verified to be about that dish. Unlike
+                                  /recommended (which answers "give me *a*
+                                  breakfast recipe"), the dish name is the
+                                  primary key here and the response is always
+                                  about it or explicitly empty.
   GET /api/recipes/{recipe_id}    one full recipe by ID (checks the normal
                                   dataset first, then the workout-nutrition
                                   one)
@@ -41,9 +48,14 @@ from __future__ import annotations
 
 import random
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Query
 
-from services import recipe_service, workout_nutrition_service
+from services import (
+    entitlements,
+    meal_recipe_service,
+    recipe_service,
+    workout_nutrition_service,
+)
 
 router = APIRouter()
 
@@ -181,6 +193,111 @@ async def discover_recipes(
     limit = max(1, min(limit, 50))
     sample = random.sample(pool, k=min(limit, len(pool))) if pool else []
     return {"count": len(sample), "recipes": sample}
+
+
+def _uid_from_header(authorization: str | None) -> str | None:
+    """Best-effort uid for USAGE METERING only.
+
+    Deliberately non-fatal: this endpoint stays open exactly like
+    /recommended, which the recipe page already calls without a token. A
+    missing or bad token means the request is simply not metered — it never
+    turns a working recipe into a 401.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    try:
+        from google.auth.transport import requests as _gr
+        from google.oauth2 import id_token as _idt
+        from services import auth_service
+
+        claims = _idt.verify_firebase_token(
+            authorization[7:].strip(), _gr.Request(),
+            audience=auth_service._PROJECT_ID,
+        )
+        return (claims or {}).get("sub")
+    except Exception:  # noqa: BLE001 — see docstring
+        return None
+
+
+@router.get("/for-meal")
+async def recipe_for_meal(
+    meal_name: str = Query(..., min_length=1, max_length=200,
+                           description="The DISH shown on the Diet page."),
+    meal_type: str | None = Query(None, description="Slot: Breakfast/Lunch/..."),
+    foods: str | None = Query(None, description="Pipe-separated plan components."),
+    description: str | None = Query(None, max_length=500),
+    diet_type: str | None = Query(None),
+    fitness_goal: str | None = Query(None),
+    authorization: str | None = Header(default=None),
+):
+    """The recipe for the dish the athlete actually clicked.
+
+    /recommended answers "give me a breakfast recipe" — with respect to the
+    dish that is a random draw, which is the bug this endpoint exists to fix.
+    Here `meal_name` is the primary key: it drives generation, the cache and
+    the video query, and the returned recipe is always named after it.
+
+    Determinism: the result is cached under the normalised dish name, so
+    clicking the same meal again returns the identical recipe rather than a
+    different one.
+    """
+    food_list = [f.strip() for f in (foods or "").split("|") if f.strip()]
+    dish = meal_recipe_service.dish_from_meal(meal_name, food_list)
+
+    print(f"[RECIPE] selected meal: {dish!r}")
+    print(f"[RECIPE] meal type: {meal_type!r}")
+
+    if not dish:
+        raise HTTPException(status_code=422, detail="meal_name is required")
+
+    print(f"[RECIPE] recipe query: exact-dish lookup key="
+          f"{meal_recipe_service.cache_key(dish)}")
+
+    recipe, from_cache = await meal_recipe_service.get_recipe_for_dish(
+        dish, meal_type=meal_type, foods=food_list, description=description,
+        diet_type=diet_type, fitness_goal=fitness_goal,
+    )
+
+    if recipe is None:
+        # Nothing is metered: a request that produced no recipe must not cost
+        # the athlete part of their week (entitlements.record's contract).
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "message": "Could not build a recipe for this meal right now.",
+                "code": "recipe_generation_failed",
+                "meal_name": dish,
+            },
+        )
+
+    video = meal_recipe_service.find_meal_video(
+        dish, meal_type=meal_type, diet_type=diet_type,
+        fitness_goal=fitness_goal,
+    )
+
+    # Metered AFTER success, and independently of whether a video was found —
+    # the athlete received the recipe either way.
+    uid = _uid_from_header(authorization)
+    usage = None
+    if uid:
+        try:
+            entitlements.record(uid, entitlements.RECIPE)
+            usage = entitlements.snapshot(uid)
+        except Exception as e:  # noqa: BLE001 — metering must never fail the request
+            print(f"[RECIPE] usage metering skipped: {type(e).__name__}: {e}")
+    print(f"[RECIPE] recipe entitlement: uid={uid or '(anonymous)'} "
+          f"counted={bool(uid)} usage={usage}")
+
+    return {
+        "meal_name": dish,
+        "meal_type": meal_type,
+        "recipe": recipe,
+        "video": video,
+        "video_note": None if video else
+            "No exact cooking video found for this meal.",
+        "cached": from_cache,
+        "usage": usage,
+    }
 
 
 @router.get("/{recipe_id}")

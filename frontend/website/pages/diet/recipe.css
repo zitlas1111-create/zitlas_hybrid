@@ -299,3 +299,61 @@
 @media (min-width: 1024px) {
   .recipe-page { max-width: 640px; margin: 0 auto; }
 }
+
+
+/* ── Cooking video for the selected dish ──────────────────────────────────
+   Shown inside the detail view, next to the ingredients and steps. The
+   backend returns null rather than a loosely-related video, so the "none"
+   state below is a real outcome and not an error. */
+
+.recipe-video {
+  margin: 22px 0 18px;
+}
+
+.recipe-video-title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-primary, #17221A);
+}
+
+/* 16:9 without layout shift while the iframe loads. */
+.recipe-video-frame {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+}
+
+.recipe-video-frame iframe {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.recipe-video-meta {
+  margin: 8px 2px 0;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--text-secondary, #66716A);
+}
+
+.recipe-video-none {
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px dashed var(--border, #E5EBE7);
+  background: var(--bg-card-light, #F3F0E6);
+  font-size: 13.5px;
+  color: var(--text-secondary, #66716A);
+  text-align: center;
+}
+
+/* Older/smaller browsers without aspect-ratio support. */
+@supports not (aspect-ratio: 16 / 9) {
+  .recipe-video-frame { height: 0; padding-bottom: 56.25%; }
+}

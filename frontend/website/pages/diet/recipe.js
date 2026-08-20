@@ -91,6 +91,12 @@
     current: null,    // the currently displayed recipe
     reason: [],
     overrides: {},    // filter overrides from the panel, on top of athleteContext()
+    /* The DISH from the Diet page. When present this page is answering
+       "the recipe for THIS meal", not "a recipe for this slot" — a
+       different question with a different endpoint. */
+    mealName: '',
+    mealFoods: '',
+    video: null,
   };
 
   function mealLabel(mealType) {
@@ -128,6 +134,97 @@
       var el = document.getElementById(elId);
       if (el) el.style.display = (elId === id) ? '' : 'none';
     });
+  }
+
+  /* ── THE recipe for one specific dish ──────────────────────────────────
+     Used whenever the Diet page handed us a meal_name. Hits /for-meal,
+     which keys everything off the dish rather than the slot, so the result
+     is always about the meal the athlete tapped. Falls back to the generic
+     recommender ONLY when no dish was supplied (e.g. the page opened
+     directly), never as a silent substitute for a failed lookup. */
+  async function fetchMealRecipe() {
+    showState('recipeLoading');
+    var fallbackNote = document.getElementById('recipeFallbackNote');
+    if (fallbackNote) fallbackNote.style.display = 'none';
+
+    var params = new URLSearchParams();
+    params.set('meal_name', S.mealName);
+    if (S.mealType)  params.set('meal_type', mealLabel(S.mealType));
+    if (S.mealFoods) params.set('foods', S.mealFoods);
+    var ctxDiet = S.overrides.diet_type || S.context.dietType;
+    var ctxGoal = S.overrides.fitness_goal || S.context.fitnessGoal;
+    if (ctxDiet) params.set('diet_type', ctxDiet);
+    if (ctxGoal) params.set('fitness_goal', ctxGoal);
+
+    console.log('[RECIPE] recipe query:', params.toString());
+
+    try {
+      var headers = {};
+      if (typeof getIdToken === 'function') {
+        try {
+          var token = await getIdToken();
+          if (token) headers['Authorization'] = 'Bearer ' + token;
+        } catch (_) { /* metering only — never blocks the recipe */ }
+      }
+      const resp = await fetch('/api/recipes/for-meal?' + params.toString(), { headers: headers });
+      if (!resp.ok) throw new Error('API error ' + resp.status);
+      const data = await resp.json();
+      if (!data || !data.recipe) { showState('recipeNone'); return false; }
+
+      S.current = data.recipe;
+      S.reason  = [];
+      S.video   = data.video || null;
+
+      console.log('[RECIPE] video selected:', S.video ? S.video.title : '(none)');
+      console.log('[RECIPE] video relevance:', S.video ? S.video.relevance : 'n/a');
+      console.log('[RECIPE] recipe entitlement:', data.usage || '(not metered)');
+
+      renderPreview(data.recipe);
+      renderMealVideo(S.video, data.video_note);
+      showState('recipePreview');
+      return true;
+    } catch (e) {
+      console.error('[RECIPE] meal recipe failed', e);
+      showState('recipeError');
+      return false;
+    }
+  }
+
+  /* Renders the cooking video, or an explicit note when none was relevant
+     enough. An unrelated video is worse than no video, so the backend
+     returns null rather than a loose match and this simply says so. */
+  function renderMealVideo(video, note) {
+    var host = document.getElementById('recipeVideo');
+    if (!host) return;
+    host.innerHTML = '';
+
+    if (!video || !video.video_id) {
+      host.innerHTML = '<p class="recipe-video-none">' +
+        esc(note || 'No exact cooking video found for this meal.') + '</p>';
+      host.style.display = '';
+      return;
+    }
+
+    host.innerHTML =
+      '<h3 class="recipe-video-title">How to make it</h3>' +
+      '<div class="recipe-video-frame">' +
+        '<iframe src="https://www.youtube.com/embed/' + esc(video.video_id) + '"' +
+        ' title="' + esc(video.title || 'Cooking video') + '"' +
+        ' loading="lazy" allowfullscreen' +
+        ' allow="accelerometer; clipboard-write; encrypted-media; picture-in-picture"' +
+        ' referrerpolicy="strict-origin-when-cross-origin"></iframe>' +
+      '</div>' +
+      '<p class="recipe-video-meta">' + esc(video.title || '') +
+        (video.channel_name ? ' · ' + esc(video.channel_name) : '') + '</p>';
+    host.style.display = '';
+  }
+
+  /* The single entry point every trigger goes through. A dish from the Diet
+     page means "the recipe for THIS meal"; without one we fall back to the
+     slot recommender exactly as before. */
+  function loadRecipe(excludeShown) {
+    if (S.mealName) return fetchMealRecipe();
+    return fetchRecipe(excludeShown);
   }
 
   async function fetchRecipe(excludeShown) {
@@ -284,7 +381,11 @@
 
   function init() {
     var params = new URLSearchParams(window.location.search);
-    S.mealType = (params.get('meal_type') || 'breakfast').toLowerCase();
+    S.mealType  = (params.get('meal_type') || 'breakfast').toLowerCase();
+    S.mealName  = (params.get('meal_name') || '').trim();
+    S.mealFoods = (params.get('foods') || '').trim();
+    console.log('[RECIPE] selected meal:', S.mealName || '(none — slot only)');
+    console.log('[RECIPE] meal type:', S.mealType);
     S.context  = athleteContext();
     document.getElementById('recipeMealLabel').textContent = mealLabel(S.mealType);
     document.getElementById('filterMealType').value = S.mealType;
@@ -302,14 +403,20 @@
     document.getElementById('backBtn').addEventListener('click', function () {
       window.location.href = 'diet.html';
     });
-    document.getElementById('recipeRetryBtn').addEventListener('click', function () { fetchRecipe(false); });
+    document.getElementById('recipeRetryBtn').addEventListener('click', function () { loadRecipe(false); });
     document.getElementById('viewRecipeBtn').addEventListener('click', function () {
       renderDetail(S.current);
       showState('recipeDetail');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
-    document.getElementById('getAnotherBtn').addEventListener('click', function () {
-      fetchRecipe(true).then(function (found) {
+    /* "Get Another Recipe" is meaningless once we are answering for a
+       SPECIFIC dish — there is exactly one recipe for "Masala Oats with
+       Vegetables", and swapping it for a different dish is the very bug
+       this change fixes. Hidden rather than left to contradict itself. */
+    var anotherBtn = document.getElementById('getAnotherBtn');
+    if (S.mealName && anotherBtn) anotherBtn.style.display = 'none';
+    anotherBtn.addEventListener('click', function () {
+      loadRecipe(true).then(function (found) {
         /* Only jump straight back to the detail view when a genuinely NEW
            recipe was found — otherwise fetchRecipe() has already shown the
            correct state (recipeNone/recipeError) and re-rendering the
@@ -319,7 +426,7 @@
     });
     initFilters();
 
-    fetchRecipe(false);
+    loadRecipe(false);
   }
 
   document.addEventListener('DOMContentLoaded', init);
