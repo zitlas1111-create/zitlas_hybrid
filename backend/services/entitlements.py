@@ -78,6 +78,58 @@ _DEFAULT_LIMITS: dict[str, dict[str, int | None]] = {
 }
 
 
+#: Monthly price of the paid tier, in rupees. Lives here so the comparison UI
+#: and any copy that quotes it read the SAME number the entitlement system
+#: does, instead of each hard-coding "149".
+PREMIUM_PRICE_INR = 149
+
+#: Perk keys — the non-numeric half of a tier. These are priorities and access
+#: levels, not quotas, so they sit beside the limits rather than inside them:
+#: nothing counts them and nothing can exhaust them.
+ZINO_AI = "zino_ai"
+EXPERT_ACCESS_PRIORITY = "expert_access_priority"
+PERSONAL_COACHING_PRIORITY = "personal_coaching_priority"
+FREE_COACHING_TRIAL_PRIORITY = "free_coaching_trial_priority"
+EXPERT_REVIEW_PRIORITY = "expert_review_priority"
+NEW_EXPERT_AVAILABILITY_PRIORITY = "new_expert_availability_priority"
+
+_STANDARD = "standard"
+_PRIORITY = "priority"
+
+_DEFAULT_PERKS: dict[str, dict[str, object]] = {
+    TIER_FREE: {
+        ZINO_AI: _STANDARD,
+        EXPERT_ACCESS_PRIORITY: False,
+        PERSONAL_COACHING_PRIORITY: False,
+        FREE_COACHING_TRIAL_PRIORITY: False,
+        EXPERT_REVIEW_PRIORITY: False,
+        NEW_EXPERT_AVAILABILITY_PRIORITY: False,
+    },
+    TIER_PREMIUM: {
+        ZINO_AI: _PRIORITY,
+        EXPERT_ACCESS_PRIORITY: True,
+        PERSONAL_COACHING_PRIORITY: True,
+        FREE_COACHING_TRIAL_PRIORITY: True,
+        EXPERT_REVIEW_PRIORITY: True,
+        NEW_EXPERT_AVAILABILITY_PRIORITY: True,
+    },
+}
+
+
+def perks_for(tier: str) -> dict[str, object]:
+    """The non-numeric entitlements for a tier."""
+    tier = TIER_PREMIUM if tier == TIER_PREMIUM else TIER_FREE
+    return dict(_DEFAULT_PERKS[tier])
+
+
+def has_perk(uid: str, perk: str, *, tier: str | None = None) -> bool:
+    """Whether `uid` holds a priority perk. Truthy for the "priority" Zino
+    level too, so a caller can ask about any perk uniformly."""
+    resolved = tier or tier_for_uid(uid)
+    value = perks_for(resolved).get(perk)
+    return value is True or value == _PRIORITY
+
+
 def _env_int(name: str, default: int | None) -> int | None:
     """An env override, or the default. Empty/invalid values keep the default
     rather than silently becoming zero — a zero limit would lock everybody out
@@ -295,6 +347,32 @@ def require(uid: str, feature: str, *, now: datetime | None = None,
     )
 
 
+def uid_from_authorization(authorization: str | None) -> str | None:
+    """Verified uid from a raw Authorization header, or None.
+
+    Separate from auth_service.verify_firebase_token (a FastAPI dependency
+    that 401s) because the metered endpoints are shared by two clients and a
+    token problem should surface as "unmetered", never as a hard failure that
+    breaks swapping a meal. Callers decide what an absent uid means.
+    """
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    try:
+        from google.auth.transport import requests as _gr
+        from google.oauth2 import id_token as _idt
+
+        from services import auth_service
+
+        claims = _idt.verify_firebase_token(
+            authorization[7:].strip(), _gr.Request(),
+            audience=auth_service._PROJECT_ID,
+        )
+        return (claims or {}).get("sub") or None
+    except Exception as e:  # noqa: BLE001 — see docstring
+        print(f"[ENTITLEMENTS] token not verified: {type(e).__name__}")
+        return None
+
+
 def record(uid: str, feature: str, *, now: datetime | None = None, amount: int = 1) -> None:
     """Consumes one unit of `feature`.
 
@@ -351,13 +429,27 @@ def snapshot(uid: str, *, now: datetime | None = None) -> dict:
             ).as_dict()
             for feature in tier_limits
         },
-        # Both tiers' limits, so the upgrade comparison is server-driven too.
+        # This caller's perks, and BOTH tiers' limits+perks, so the upgrade
+        # comparison is server-driven too. A client that renders from this can
+        # never disagree with what the backend actually enforces — which is the
+        # whole reason the numbers are not duplicated into the UI files.
+        "perks": perks_for(resolved),
+        "premiumPriceInr": PREMIUM_PRICE_INR,
         "plans": {
             TIER_FREE: {
-                k: ("unlimited" if v is None else v) for k, v in limits_for(TIER_FREE).items()
+                "limits": {
+                    k: ("unlimited" if v is None else v)
+                    for k, v in limits_for(TIER_FREE).items()
+                },
+                "perks": perks_for(TIER_FREE),
             },
             TIER_PREMIUM: {
-                k: ("unlimited" if v is None else v) for k, v in limits_for(TIER_PREMIUM).items()
+                "limits": {
+                    k: ("unlimited" if v is None else v)
+                    for k, v in limits_for(TIER_PREMIUM).items()
+                },
+                "perks": perks_for(TIER_PREMIUM),
+                "priceInr": PREMIUM_PRICE_INR,
             },
         },
     }

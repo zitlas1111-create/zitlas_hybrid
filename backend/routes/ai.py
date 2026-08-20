@@ -7,11 +7,11 @@ import asyncio
 import json
 import traceback as _tb
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Header
 from pydantic import BaseModel, Field
 from typing import Any
 
-from services import groq_service, location_food_engine, offline_fallback, rag_service
+from services import entitlements, groq_service, location_food_engine, offline_fallback, rag_service
 
 router = APIRouter()
 
@@ -718,12 +718,22 @@ async def nutrition_weekly_plan(body: NutritionWeeklyPlanRequest) -> dict[str, A
 # ══════════════════════════════════════════════════════════════════════════════
 
 @router.post("/swap-meal")
-async def swap_meal(body: SwapMealRequest) -> dict[str, Any]:
+async def swap_meal(
+    body: SwapMealRequest,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
     """
     Replace a single meal with a realistic lower-calorie, higher-protein alternative.
     Takes the reason for swapping and the user's lifestyle context (living situation,
     budget, available foods) to generate a practical replacement.
     """
+    # Same allowance as /api/diet/swap. BOTH swap paths must be gated or the
+    # limit is decorative: the website uses this LLM endpoint while Flutter
+    # uses the deterministic one, so leaving either open is a free bypass.
+    swap_uid = entitlements.uid_from_authorization(authorization)
+    if swap_uid:
+        entitlements.require(swap_uid, entitlements.MEAL_SWAP)
+
     fitness_goal = body.fitness_goal or "general_fitness"
 
     print("\n" + "="*60)
@@ -813,6 +823,11 @@ async def swap_meal(body: SwapMealRequest) -> dict[str, Any]:
             previous_suggestions=body.previous_suggestions,
             player_profile=body.user_profile,
         )
+
+    # Recorded only now: the athlete has a real alternative in hand. A swap
+    # that raised above this point never reaches here, so it costs nothing.
+    if swap_uid:
+        entitlements.record(swap_uid, entitlements.MEAL_SWAP)
 
     return {
         "module":      "swap_meal",

@@ -250,6 +250,13 @@ async def recipe_for_meal(
     if not dish:
         raise HTTPException(status_code=422, detail="meal_name is required")
 
+    # Allowance BEFORE any generation: free 7/week, premium 27/week. Checked
+    # here and recorded only after a recipe actually came back, so a failed
+    # generation never costs the athlete part of their week.
+    recipe_uid = _uid_from_header(authorization)
+    if recipe_uid:
+        entitlements.require(recipe_uid, entitlements.RECIPE)
+
     print(f"[RECIPE] recipe query: exact-dish lookup key="
           f"{meal_recipe_service.cache_key(dish)}")
 
@@ -277,7 +284,7 @@ async def recipe_for_meal(
 
     # Metered AFTER success, and independently of whether a video was found —
     # the athlete received the recipe either way.
-    uid = _uid_from_header(authorization)
+    uid = recipe_uid
     usage = None
     if uid:
         try:

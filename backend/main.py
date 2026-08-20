@@ -51,6 +51,7 @@ from routes import swap
 from routes import recipes
 from routes import expert_ratings
 from routes import creator_recipes
+from routes import entitlements as entitlements_routes
 from services import rag_service
 
 # ── Directory paths ──────────────────────────────────────────────────────────
@@ -297,6 +298,10 @@ app.include_router(assessment.router, prefix="/api/assessment", tags=["Assessmen
 app.include_router(ai.router,         prefix="/api/ai",         tags=["AI"])
 app.include_router(voice.router,      prefix="/api/voice",      tags=["Voice"])
 app.include_router(swap.router,       prefix="/api/diet",       tags=["Swap"])
+# One source of truth for tier, usage and both plans — the comparison UI
+# renders from this rather than hard-coding the numbers.
+app.include_router(entitlements_routes.router, prefix="/api/entitlements",
+                   tags=["Entitlements"])
 app.include_router(recipes.router,    prefix="/api/recipes",    tags=["Recipes"])
 app.include_router(rag.router,        prefix="/api/rag",        tags=["RAG"])
 app.include_router(support.router,    prefix="/api/support",    tags=["Support"])

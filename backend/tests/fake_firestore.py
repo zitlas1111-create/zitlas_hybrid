@@ -74,13 +74,19 @@ class FakeDocRef:
         if merge and self._path in self._store and self._store[self._path] is not None:
             _deep_merge(self._store[self._path], data)
         else:
-            self._store[self._path] = dict(data)
+            # A non-merge set on a fresh doc still has to resolve Increment
+            # sentinels — set(merge=True) on a document that does not exist yet
+            # lands here, and that is exactly how a usage counter starts.
+            self._store[self._path] = {k: _apply(None, v) for k, v in data.items()}
 
     def update(self, data):
         if self._path not in self._store or self._store[self._path] is None:
             raise KeyError(f"NOT_FOUND: {self._path}")
         cur = self._store[self._path]
         for k, v in data.items():
+            if _is_increment(v):
+                cur[k] = _apply(cur.get(k), v)
+                continue
             _set_dotted(cur, k, v)
 
     def delete(self):
@@ -90,8 +96,30 @@ class FakeDocRef:
         self._store.pop(self._path, None)
 
 
+def _is_increment(value):
+    """A `firestore.Increment(n)` sentinel.
+
+    Matched structurally rather than by import so this fake never depends on
+    the google-cloud package layout. Real Firestore applies these atomically;
+    a fake that stored the sentinel verbatim would turn every counter into a
+    non-integer and silently break anything that reads usage back.
+    """
+    return type(value).__name__ == "Increment" and hasattr(value, "value")
+
+
+def _apply(existing, value):
+    """Resolve a write value against what is already stored."""
+    if _is_increment(value):
+        base = existing if isinstance(existing, (int, float)) else 0
+        return base + value.value
+    return value
+
+
 def _deep_merge(dst, patch):
     for k, v in patch.items():
+        if _is_increment(v):
+            dst[k] = _apply(dst.get(k), v)
+            continue
         if isinstance(v, dict) and isinstance(dst.get(k), dict):
             _deep_merge(dst[k], v)
         else:

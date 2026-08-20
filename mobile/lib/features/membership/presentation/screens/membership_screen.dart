@@ -8,6 +8,7 @@ import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
 import '../../../profile/data/profile_repository.dart';
 import '../../../profile/models/personal_info.dart';
+import '../../data/entitlements_repository.dart';
 
 /// Native rebuild of `frontend/pages/profile/membership/membership.html` +
 /// `.js` — Membership & Billing. Plan comparison, billing toggle, and
@@ -42,6 +43,19 @@ class _MembershipBody extends StatefulWidget {
 }
 
 class _MembershipBodyState extends State<_MembershipBody> {
+  /// The plan matrix, fetched from the SAME endpoint the website reads.
+  /// Seeded with the mirrored defaults so the comparison renders immediately
+  /// and still renders if the request fails.
+  Entitlements _ent = Entitlements.fallback;
+
+  @override
+  void initState() {
+    super.initState();
+    EntitlementsRepository().fetch().then((e) {
+      if (mounted) setState(() => _ent = e);
+    });
+  }
+
   String _billing = 'monthly';
   bool _submitting = false;
 
@@ -70,7 +84,7 @@ class _MembershipBodyState extends State<_MembershipBody> {
 
   Widget _body(Membership membership) {
     final isPremium = membership.isPremium;
-    final premiumPrice = _billing == 'yearly' ? '₹999' : '₹149';
+    final premiumPrice = _billing == 'yearly' ? '₹999' : '₹${_ent.premiumPriceInr}';
     final premiumPeriod = _billing == 'yearly' ? '/year' : '/month';
 
     return ListView(
@@ -122,9 +136,11 @@ class _MembershipBodyState extends State<_MembershipBody> {
           period: '/month',
           isCurrent: !isPremium,
           description: 'Perfect for getting started with your fitness journey.',
-          features: const [
-            '3 Goal Set/Resets per week',
-            '5 Meal Swaps per week',
+          features: [
+            '${_ent.free.goalResetLabel} Goal Set/Resets per week',
+            '${_ent.free.mealSwapLabel} Meal Swaps per week',
+            '${_ent.free.recipeLabel} Recipes per week',
+            'Standard Zino AI access',
             'AI-generated Diet Plan',
             'AI-generated Workout Plan',
             'Expert services — FREE (₹0 platform charges)',
@@ -146,12 +162,16 @@ class _MembershipBodyState extends State<_MembershipBody> {
           isCurrent: isPremium,
           ribbon: 'Most Popular',
           description: 'Priority handling, higher limits, and an ad-free experience.',
-          features: const [
-            '5 Goal Set/Resets per week',
-            '25 Meal Swaps per week',
-            '⭐ Priority Expert Reviews — pinned at the top of the queue',
-            '⭐ Priority Personal Coaching requests',
-            '⭐ Priority queue placement throughout the platform',
+          features: [
+            '${_ent.premium.goalResetLabel} Goal Set/Resets per week',
+            '🔥 ${_ent.premium.mealSwapLabel} Meal Swaps',
+            '${_ent.premium.recipeLabel} Recipes per week',
+            '⭐ Much higher Zino AI access',
+            '🔥 Priority Expert Reviews — pinned at the top of the queue',
+            '🔥 Priority Personal Coaching requests',
+            '⭐ Priority Free Coaching Trial',
+            '⭐ Priority Expert access',
+            '⭐ Early access to new experts',
             'Expert services — FREE (₹0 platform charges)',
             '🚫 No Ads',
           ],
@@ -161,7 +181,7 @@ class _MembershipBodyState extends State<_MembershipBody> {
           onButtonTap: isPremium ? null : _upgrade,
         ),
         const SizedBox(height: 20),
-        _ComparisonTable(billing: _billing),
+        _ComparisonTable(billing: _billing, ent: _ent),
         const SizedBox(height: 16),
         const Text(
           'Subscriptions renew automatically. Cancel anytime from this screen. All prices are in Indian Rupees (INR). Payment integration coming soon.',
@@ -325,25 +345,31 @@ class _PlanCard extends StatelessWidget {
 }
 
 class _ComparisonTable extends StatelessWidget {
-  const _ComparisonTable({required this.billing});
+  const _ComparisonTable({required this.billing, required this.ent});
   final String billing;
+  final Entitlements ent;
 
   @override
   Widget build(BuildContext context) {
     final rows = <(String, String, String)>[
-      ('Goal Resets / week', '3', '5'),
-      ('Meal Swaps / week', '5', '25'),
+      ('Goal Set/Reset / week', ent.free.goalResetLabel, ent.premium.goalResetLabel),
+      ('Meal Swaps / week', ent.free.mealSwapLabel, '🔥 ${ent.premium.mealSwapLabel}'),
+      ('Get Recipe / week', ent.free.recipeLabel, ent.premium.recipeLabel),
+      ('Zino AI access', 'Standard', '⭐ Much higher'),
       ('Expert Services Charges', 'FREE', 'FREE'),
+      ('Expert access priority', 'Standard', '⭐ Priority'),
       ('Priority Queue Placement', '❌', '✅'),
-      ('Priority Expert Reviews', '❌', '✅'),
-      ('Priority Personal Coaching', '❌', '✅'),
+      ('Priority Expert Reviews', 'Standard', '🔥 Priority'),
+      ('Priority Personal Coaching', 'Standard', '🔥 Priority'),
+      ('Free Coaching Trial priority', 'Standard', '⭐ Priority'),
+      ('New expert availability', 'Standard', '⭐ Early access'),
       ('AI Diet Plan', '✅', '✅'),
       ('AI Workout Plan', '✅', '✅'),
       ('SWOT Report', '✅', '✅'),
       ('Step Counter', '✅', '✅'),
       ('Progress Tracking', '✅', '✅'),
       ('Ad-Free', '❌', '✅'),
-      ('Monthly Price', 'Free', '₹149/mo'),
+      ('Monthly Price', 'Free', '₹${ent.premiumPriceInr}/mo'),
       ('Yearly Price', 'Free', '₹999/yr'),
     ];
     return Column(

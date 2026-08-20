@@ -108,12 +108,19 @@
 
         <p class="mb-plan-desc">Priority handling, higher limits, and an ad-free experience.</p>
 
+        <!-- Quota figures are filled from GET /api/entitlements so they can
+             never contradict what the backend actually enforces. The text
+             here is only a placeholder for the moment before that lands. -->
         <ul class="mb-features">
-          <li><span class="mb-check">✅</span>5 Goal Set/Resets per week</li>
-          <li><span class="mb-check">✅</span>25 Meal Swaps per week</li>
-          <li><span class="mb-check">⭐</span>Priority Expert Reviews — pinned at the top of the queue</li>
-          <li><span class="mb-check">⭐</span>Priority Personal Coaching requests</li>
-          <li><span class="mb-check">⭐</span>Priority queue placement throughout the platform</li>
+          <li><span class="mb-check">✅</span><span id="mbPremGoal">Goal Set/Resets per week</span></li>
+          <li><span class="mb-check">🔥</span><span id="mbPremSwap">Unlimited Meal Swaps</span></li>
+          <li><span class="mb-check">✅</span><span id="mbPremRecipe">Recipes per week</span></li>
+          <li><span class="mb-check">⭐</span>Much higher Zino AI access</li>
+          <li><span class="mb-check">🔥</span>Priority Expert Reviews — pinned at the top of the queue</li>
+          <li><span class="mb-check">🔥</span>Priority Personal Coaching requests</li>
+          <li><span class="mb-check">⭐</span>Priority Free Coaching Trial</li>
+          <li><span class="mb-check">⭐</span>Priority Expert access</li>
+          <li><span class="mb-check">⭐</span>Early access to new experts</li>
           <li><span class="mb-check">✅</span>Expert services — FREE (₹0 platform charges)</li>
           <li class="mb-feat-pro"><span class="mb-check">🚫</span>No Ads</li>
         </ul>
@@ -136,8 +143,13 @@
             </tr>
           </thead>
           <tbody>
-            <tr><td class="mb-td mb-td--feat">Goal Resets / week</td><td class="mb-td">3</td><td class="mb-td mb-td--prem">5</td></tr>
-            <tr><td class="mb-td mb-td--feat">Meal Swaps / week</td><td class="mb-td">5</td><td class="mb-td mb-td--prem">25</td></tr>
+            <tr><td class="mb-td mb-td--feat">Goal Set/Reset / week</td><td class="mb-td" id="mbCmpGoalFree">—</td><td class="mb-td mb-td--prem" id="mbCmpGoalPrem">—</td></tr>
+            <tr><td class="mb-td mb-td--feat">Meal Swaps / week</td><td class="mb-td" id="mbCmpSwapFree">—</td><td class="mb-td mb-td--prem" id="mbCmpSwapPrem">—</td></tr>
+            <tr><td class="mb-td mb-td--feat">Get Recipe / week</td><td class="mb-td" id="mbCmpRecipeFree">—</td><td class="mb-td mb-td--prem" id="mbCmpRecipePrem">—</td></tr>
+            <tr><td class="mb-td mb-td--feat">Zino AI access</td><td class="mb-td">Standard</td><td class="mb-td mb-td--prem">⭐ Much higher</td></tr>
+            <tr><td class="mb-td mb-td--feat">Expert access priority</td><td class="mb-td">Standard</td><td class="mb-td mb-td--prem">⭐ Priority</td></tr>
+            <tr><td class="mb-td mb-td--feat">Free Coaching Trial priority</td><td class="mb-td">Standard</td><td class="mb-td mb-td--prem">⭐ Priority</td></tr>
+            <tr><td class="mb-td mb-td--feat">New expert availability</td><td class="mb-td">Standard</td><td class="mb-td mb-td--prem">⭐ Early access</td></tr>
             <tr><td class="mb-td mb-td--feat">Expert Services Charges</td><td class="mb-td">FREE</td><td class="mb-td mb-td--prem">FREE</td></tr>
             <tr><td class="mb-td mb-td--feat">Priority Queue Placement</td><td class="mb-td">❌</td><td class="mb-td mb-td--prem">✅</td></tr>
             <tr><td class="mb-td mb-td--feat">Priority Expert Reviews</td><td class="mb-td">❌</td><td class="mb-td mb-td--prem">✅</td></tr>

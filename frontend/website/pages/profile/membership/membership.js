@@ -356,4 +356,60 @@
     init();
   }
 
+  /* ── Entitlements: one source of truth ────────────────────────────────
+     Every quota shown on this page comes from GET /api/entitlements, which
+     serves the SAME numbers services/entitlements.py enforces. The page
+     deliberately keeps no copy of them: the previous hard-coded table said
+     "3 goal resets" and "25 meal swaps" while the backend matrix was 2 and
+     70/unlimited, and nothing made that contradiction visible.
+
+     Premium meal swaps render as "Unlimited" because the limit really is a
+     null sentinel server-side — not 500, not any number. */
+  function fmtLimit(value) {
+    if (value === 'unlimited' || value === null || value === undefined) return 'Unlimited';
+    return String(value);
+  }
+
+  function setText(id, text) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = text;
+  }
+
+  function applyEntitlements(data) {
+    if (!data || !data.plans) return;
+    var free = (data.plans.free && data.plans.free.limits) || {};
+    var prem = (data.plans.premium && data.plans.premium.limits) || {};
+
+    setText('mbCmpGoalFree',   fmtLimit(free.goal_reset));
+    setText('mbCmpGoalPrem',   fmtLimit(prem.goal_reset));
+    setText('mbCmpSwapFree',   fmtLimit(free.meal_swap));
+    setText('mbCmpSwapPrem',   '🔥 ' + fmtLimit(prem.meal_swap));
+    setText('mbCmpRecipeFree', fmtLimit(free.recipe));
+    setText('mbCmpRecipePrem', fmtLimit(prem.recipe));
+
+    setText('mbPremGoal',   fmtLimit(prem.goal_reset) + ' Goal Set/Resets per week');
+    setText('mbPremSwap',   fmtLimit(prem.meal_swap) + ' Meal Swaps');
+    setText('mbPremRecipe', fmtLimit(prem.recipe) + ' Recipes per week');
+
+    var price = data.plans.premium && data.plans.premium.priceInr;
+    if (price) setText('mbPremiumPrice', '₹' + price);
+  }
+
+  function loadEntitlements() {
+    if (typeof getIdToken !== 'function') return;
+    getIdToken().then(function (token) {
+      if (!token) return;
+      return fetch('/api/entitlements', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      }).then(function (r) { return r.ok ? r.json() : null; })
+        .then(applyEntitlements);
+    }).catch(function (e) {
+      // The static placeholders stay put — a failed fetch must not blank
+      // the comparison table.
+      console.warn('[MEMBERSHIP] entitlements unavailable', e);
+    });
+  }
+
+  loadEntitlements();
+
 })();

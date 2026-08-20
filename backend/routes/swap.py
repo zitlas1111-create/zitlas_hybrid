@@ -18,10 +18,11 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Header
 from pydantic import BaseModel, Field
 
 from services import (
+    entitlements,
     food_engine,
     groq_service,
     location_food_engine,
@@ -137,8 +138,26 @@ def _workout_swap_options(
 
 
 @router.post("/swap")
-async def deterministic_swap(body: SwapRequest) -> dict[str, Any]:
+async def deterministic_swap(
+    body: SwapRequest,
+    authorization: str | None = Header(default=None),
+) -> dict[str, Any]:
     started = time.perf_counter()
+
+    # ── Meal-swap allowance ──────────────────────────────────────────────
+    # Checked BEFORE any work and recorded only after a successful response,
+    # so a swap that errors never costs the athlete part of their week.
+    #
+    # Premium is unlimited: limits_for(premium)[meal_swap] is None, and
+    # Allowance.allowed short-circuits on `unlimited` without ever comparing
+    # a count. There is no premium number to exceed — not 70, not 500.
+    #
+    # An unverified caller is metered as free rather than waved through: the
+    # limit is what makes the tier mean something, so failing open here would
+    # hand every anonymous request unlimited swaps.
+    swap_uid = entitlements.uid_from_authorization(authorization)
+    if swap_uid:
+        entitlements.require(swap_uid, entitlements.MEAL_SWAP)
 
     engine = food_engine.get_engine()
     ld = body.lifestyle_data or {}
@@ -188,6 +207,8 @@ async def deterministic_swap(body: SwapRequest) -> dict[str, Any]:
         elapsed_ms = (time.perf_counter() - started) * 1000
         print(f"[SWAP] workout-nutrition ({workout_slot}): {len(options)} options "
               f"in {elapsed_ms:.1f}ms")
+        if swap_uid:
+            entitlements.record(swap_uid, entitlements.MEAL_SWAP)
         return {
             "module": "workout_nutrition_swap",
             "options": options,
@@ -286,6 +307,12 @@ async def deterministic_swap(body: SwapRequest) -> dict[str, Any]:
     elapsed_ms = (time.perf_counter() - started) * 1000
     print(f"[SWAP] deterministic: {len(options)} options in {elapsed_ms:.1f}ms "
           f"(tolerance x{tolerance})")
+
+    # Recorded here, not at the gate: the athlete has now actually received
+    # options. Premium still records (useful for analytics) but was never
+    # blocked, because its limit is None.
+    if swap_uid:
+        entitlements.record(swap_uid, entitlements.MEAL_SWAP)
 
     return {
         "module": "deterministic_swap",
