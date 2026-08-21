@@ -87,7 +87,7 @@ class ExpertDashboardController extends ChangeNotifier {
           }.contains(r.status))
       .toList();
 
-  /// "My Athletes" — active paid relationships only (ED:1327-1331).
+  /// "My Users" — active paid relationships only (ED:1327-1331).
   List<CoachingRelationship> get myAthletes =>
       relationships.where((r) => r.isActive).toList();
 

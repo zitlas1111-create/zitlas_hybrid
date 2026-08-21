@@ -866,7 +866,7 @@ class FoodRecommendationEngine:
     ) -> set[int] | None:
         """Bucket A (state_of_origin matches) + B (Pan-India) + C (same zone
         as the user) are eligible by default; bucket D (a different zone,
-        not the user's state) is excluded UNLESS the athlete's own
+        not the user's state) is excluded UNLESS the user's own
         favorite_foods/cuisine preference names the dish, its category, or
         its region explicitly — "location is a default, never a
         prohibition" (spec #5). Returns `None` (no filter — identical to
@@ -2222,7 +2222,7 @@ def load_profile_for_user(player_profile: dict, lifestyle_data: dict | None) -> 
 #                  (Vegetarian ⊆ Eggitarian, verified), so this already means
 #                  "veg + egg" and correctly excludes meat/fish.
 # ── Canonical dietary preference ──────────────────────────────────────────
-# ONE source of truth for "what may this athlete eat", shared by the food
+# ONE source of truth for "what may this user eat", shared by the food
 # engine, the assessment prompt builder and the post-generation validator, so
 # Flutter and the website can never diverge on what "Pure Vegetarian" means.
 #

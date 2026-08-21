@@ -131,7 +131,7 @@ class _CoachNotesSheetState extends State<_CoachNotesSheet> {
                 const SizedBox(height: 3),
                 const Text(
                   'Only you can see these. They are stored against your coach '
-                  'profile, not the athlete\'s — the athlete has no way to read them.',
+                  'profile, not the user\'s — the user has no way to read them.',
                   style: TextStyle(fontSize: 11.5, height: 1.45, color: ZitlasTokens.textSecondary),
                 ),
                 const SizedBox(height: 14),

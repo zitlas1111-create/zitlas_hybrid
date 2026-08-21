@@ -219,7 +219,7 @@ async def contact_support(data: ContactRequest,
     db = _db()
     uid   = caller.get("uid") or ""
     email = (caller.get("email") or data.email or "").strip()
-    name  = (data.name or caller.get("name") or "ZITLAS Athlete").strip()
+    name  = (data.name or caller.get("name") or "ZITLAS User").strip()
     print("[SUPPORT] validation complete")
 
     # Minted, not written — see the module docstring.
@@ -292,7 +292,7 @@ async def reply_in_conversation(cid: str, data: ReplyRequest,
     try:
         message_id = await _send_with_deadline(
             conversation_id=cid,
-            user_name=conv.get("userName") or "ZITLAS Athlete",
+            user_name=conv.get("userName") or "ZITLAS User",
             user_email=conv.get("userEmail") or (caller.get("email") or ""),
             uid=uid, subject=conv.get("subject") or "Support",
             category=conv.get("category") or "General",

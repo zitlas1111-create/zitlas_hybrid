@@ -76,10 +76,10 @@ class _ExpertReviewsSectionState extends State<ExpertReviewsSection> {
       final error = await c.acceptReview(r);
       if (!mounted) return;
       if (error == null) {
-        _toast('✅ Review accepted — you can now chat with the athlete.');
+        _toast('✅ Review accepted — you can now chat with the user.');
       } else if (error == 'insufficient_balance') {
         // Same handling as ED:4777 — the athlete is told to top up.
-        _toast("Athlete's wallet balance is insufficient. They've been notified.");
+        _toast("User's wallet balance is insufficient. They've been notified.");
       } else {
         _toast('Could not accept this review. Please try again.');
       }
@@ -163,7 +163,7 @@ class _ExpertReviewsSectionState extends State<ExpertReviewsSection> {
       }
 
       await c.completeReview(r);
-      if (mounted) _toast('✅ Review sent to athlete.');
+      if (mounted) _toast('✅ Review sent to user.');
     } catch (_) {
       if (mounted) _toast('Something went wrong. Please try again.');
     } finally {
@@ -180,7 +180,7 @@ class _ExpertReviewsSectionState extends State<ExpertReviewsSection> {
 
     // Empty-state copy per tab, verbatim from ED:4579-4590.
     const emptyStates = [
-      ('📋', 'No Pending Reviews', 'New athlete requests will appear here.'),
+      ('📋', 'No Pending Reviews', 'New user requests will appear here.'),
       ('💬', 'No Active Reviews', 'Accepted reviews open here for consultation.'),
       ('✅', 'No Completed Reviews', 'Finished reviews are archived here.'),
     ];
@@ -410,6 +410,6 @@ class _ReviewCard extends StatelessWidget {
       return const [EdStamp('✕ Rejected', color: ZitlasTokens.danger)];
     }
 
-    return const [EdStamp('✅ Review Sent to Athlete', color: ZitlasTokens.success)];
+    return const [EdStamp('✅ Review Sent to User', color: ZitlasTokens.success)];
   }
 }

@@ -41,7 +41,7 @@ class NotificationPayload {
   /// never guessed on the client.
   final String? recipientRole;
 
-  /// The other party's uid: an athlete's coach, or a coach's athlete.
+  /// The other party's uid: an user's coach, or a coach's athlete.
   final String? counterpartId;
 
   /// The website's own `navigateForAction()` key (`diet`, `training`,

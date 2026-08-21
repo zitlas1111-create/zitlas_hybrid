@@ -312,7 +312,7 @@ class EdActionButton extends StatelessWidget {
       );
 }
 
-/// A read-only status "stamp" (e.g. "✅ Review Sent to Athlete") shown in
+/// A read-only status "stamp" (e.g. "✅ Review Sent to User") shown in
 /// place of buttons on terminal card states.
 class EdStamp extends StatelessWidget {
   const EdStamp(this.text, {super.key, this.color});

@@ -78,13 +78,13 @@ class AthleteProfileScreen extends StatelessWidget {
               // Almost always a permission failure — the relationship ended
               // or lapsed. Say that, rather than showing a blank profile.
               return const _Message(
-                'This athlete\'s profile is no longer available to you. '
+                'This user\'s profile is no longer available to you. '
                 'That usually means the coaching relationship has ended.',
               );
             }
             final data = snap.data;
             if (data == null) {
-              return const _Message('No profile data found for this athlete.');
+              return const _Message('No profile data found for this user.');
             }
 
             final profile = DietProfile.fromMap(
@@ -177,7 +177,7 @@ class AthleteProfileScreen extends StatelessWidget {
   }
 }
 
-/// The coach's three actions on this athlete's plans.
+/// The coach's three actions on this user's plans.
 class _PlanActions extends StatelessWidget {
   const _PlanActions({
     required this.planDoc,

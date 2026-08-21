@@ -138,7 +138,7 @@ class _CoachOptionEditorSheetState extends State<_CoachOptionEditorSheet> {
                 ],
               ),
               const SizedBox(height: 10),
-              _Field(controller: _notes, label: 'Note for the athlete', maxLines: 2),
+              _Field(controller: _notes, label: 'Note for the user', maxLines: 2),
               const SizedBox(height: 6),
               const Text(
                 'Leave a macro blank if you haven\'t measured it — it stays blank '

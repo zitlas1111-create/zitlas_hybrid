@@ -109,7 +109,7 @@ class _ExpertCoachingSectionState extends State<ExpertCoachingSection> {
               icon: '👨‍🏫',
               title: 'No coaching requests',
               subtitle:
-                  'Athletes who request Personal Coaching with you will appear here.',
+                  'Users who request Personal Coaching with you will appear here.',
             ),
           )
         else
@@ -414,12 +414,12 @@ class _CoachingSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = controller;
-    // `myAthletes` counts ACTIVE relationships (personal_coaching), which is
+    // `myUsers` counts ACTIVE relationships (personal_coaching), which is
     // the real client list; `activeCoaching` counts accepted REQUESTS. They
     // usually match, and when they don't the relationship is the truth — a
     // request whose 30 days lapsed is no longer a client.
     final stats = <(String, String, int)>[
-      ('👥', 'Athletes', c.myAthletes.length),
+      ('👥', 'Users', c.myAthletes.length),
       ('🕒', 'Pending', c.pendingCoaching.length),
       ('✅', 'Accepted', c.activeCoaching.length),
       ('✕', 'Declined', c.declinedCoaching.length),

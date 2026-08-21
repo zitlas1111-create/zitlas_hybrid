@@ -57,7 +57,7 @@ void main() {
         expect(find.widgetWithText(TextField, label), findsOneWidget,
             reason: '$label must be editable');
       }
-      expect(find.text('Notes for the athlete'.toUpperCase()), findsOneWidget);
+      expect(find.text('Notes for the user'.toUpperCase()), findsOneWidget);
     });
 
     testWidgets('editing a food and saving returns the recomposed line',

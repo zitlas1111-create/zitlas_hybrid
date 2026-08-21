@@ -61,10 +61,6 @@
         </div>
 
         <div class="login-card rise" id="loginCard">
-        <div class="role-selector" id="roleSelector">
-          <button type="button" class="role-tab active" id="roleTabAthlete"><span class="role-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span><span class="role-tab-label">Athlete</span></button>
-          <button type="button" class="role-tab" id="roleTabExpert"><span class="role-tab-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5"/></svg></span><span class="role-tab-label">Expert</span></button>
-        </div>
         <div class="login-card-header"><h2 class="login-card-title" id="loginCardTitle" data-i18n="login_welcome">Welcome Back</h2><p class="login-card-sub" id="loginCardSub">Sign in to continue your AI-powered fitness journey</p></div>
         <form class="login-form" id="loginForm" novalidate>
           <div class="lf-input-group" id="nameGroup" style="display:none"><span class="lf-input-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span><input type="text" id="nameInput" class="lf-input" placeholder="Full Name" autocomplete="name" /></div>
@@ -78,26 +74,12 @@
         <div class="lf-divider"><span class="lf-divider-text" data-i18n="login_divider">or continue with</span></div>
         <button class="btn-google" id="googleBtn" type="button"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg><span data-i18n="login_google">Continue with Google</span></button>
         <div class="login-card-footer"><a href="#" class="lf-create-link" id="createLink" data-i18n="login_create">Create Account</a></div>
-        <p class="lf-expert-hint" id="expertHint">Are you a certified expert? <button type="button" class="lf-expert-link" id="expertHintBtn">Login as Expert</button></p>
         </div>
       </section>
     </section>
 
     <div class="login-overlay" id="loginOverlay" aria-hidden="true">
       <div class="overlay-inner"><div class="overlay-logo-wrap"><div class="overlay-ring overlay-ring-a"></div><div class="overlay-ring overlay-ring-b"></div><img src="/assets/logo.png" alt="ZITLAS Logo" class="overlay-logo-text"></div><div class="overlay-bars" aria-hidden="true"><div class="overlay-bar"></div><div class="overlay-bar"></div><div class="overlay-bar"></div><div class="overlay-bar"></div><div class="overlay-bar"></div></div><p class="overlay-msg">Welcome back</p></div>
-    </div>
-
-    <div class="grm-backdrop" id="grmBackdrop" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="grmTitle">
-      <div class="grm-card">
-        <div class="grm-user-strip" id="grmUserStrip"><img class="grm-photo" id="grmPhoto" src="" alt="Google profile photo" /><div class="grm-user-info"><span class="grm-user-name" id="grmUserName">User</span><span class="grm-user-email" id="grmUserEmail">user@gmail.com</span></div><span class="grm-google-badge">Google</span></div>
-        <h2 class="grm-title" id="grmTitle">Select Account Type</h2><p class="grm-sub">How will you use ZITLAS?</p>
-        <div class="grm-options">
-          <button class="grm-option" id="grmOptAthlete" data-role="athlete" type="button"><span class="grm-option-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span><div class="grm-option-text"><strong class="grm-option-name">Athlete</strong><span class="grm-option-desc">Track fitness, get AI diet plans, consult experts</span></div><span class="grm-option-check" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
-          <button class="grm-option" id="grmOptExpert" data-role="expert" type="button"><span class="grm-option-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13.5 17 22l-5-3-5 3 1.5-8.5"/></svg></span><div class="grm-option-text"><strong class="grm-option-name">Expert</strong><span class="grm-option-desc">Review plans, guide athletes, publish revisions</span></div><span class="grm-option-check" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
-        </div>
-        <button class="grm-confirm-btn" id="grmConfirm" type="button" disabled><span id="grmConfirmText">Continue</span><span class="grm-confirm-spinner" id="grmConfirmSpinner" aria-hidden="true"><svg class="spin" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg></span></button>
-        <div class="grm-under-review" id="grmUnderReview" style="display:none" aria-live="polite"><div class="grm-review-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><h2 class="grm-review-title">Application Under Review</h2><p class="grm-review-sub" id="grmReviewEmail">Your expert application has been submitted.</p><p class="grm-review-note">We will notify you via email once your account is approved. This usually takes 1-2 business days.</p><button class="grm-review-home-btn" id="grmReviewHomeBtn" type="button">Continue as Athlete</button></div>
-      </div>
     </div>
   </main>
   <script>

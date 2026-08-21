@@ -392,9 +392,9 @@ class CoachingRequest {
       case 'expired':
         return '⌛ Expired — reservation released';
       case 'ended':
-        return 'Coaching ended by athlete';
+        return 'Coaching ended by user';
       case 'withdrawn':
-        return 'Withdrawn by athlete';
+        return 'Withdrawn by user';
       default:
         return 'Completed';
     }

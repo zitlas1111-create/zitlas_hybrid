@@ -77,7 +77,7 @@ void main() {
             .buildContactBody(subject: 's', category: 'c', message: 'm');
         expect((body['name'] as String).trim(), isNotEmpty,
             reason: 'displayName was ${n == null ? 'null' : '"$n"'}');
-        expect(body['name'], 'ZITLAS Athlete');
+        expect(body['name'], 'ZITLAS User');
       }
     });
 
@@ -88,7 +88,7 @@ void main() {
           .buildContactBody(subject: 's', category: 'c', message: 'm');
       expect(body.keys.toSet(),
           {'name', 'email', 'subject', 'category', 'message'});
-      expect(body['name'], 'ZITLAS Athlete');
+      expect(body['name'], 'ZITLAS User');
       expect(body['email'], '');
     });
 

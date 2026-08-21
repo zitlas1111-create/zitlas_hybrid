@@ -361,7 +361,7 @@
     api('/contact', {
       method: 'POST',
       body: {
-        name: (signedIn && (signedIn.displayName || '').trim()) || 'ZITLAS Athlete',
+        name: (signedIn && (signedIn.displayName || '').trim()) || 'ZITLAS User',
         email: (signedIn && (signedIn.email || '').trim()) || '',
         subject: subjectField.value.trim(),
         category: categoryField.value,

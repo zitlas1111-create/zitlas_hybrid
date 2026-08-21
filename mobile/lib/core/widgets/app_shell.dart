@@ -217,7 +217,7 @@ class _AppShellState extends State<AppShell> {
 
   /// One-time notification ask, guarded by [NotificationOnboarding] so a
   /// returning athlete is never re-pitched and Android's single-shot system
-  /// dialog isn't spent before the athlete knows what it's for.
+  /// dialog isn't spent before the user knows what it's for.
   Future<void> _maybeAskAboutNotifications() async {
     if (_askedAboutNotifications) return;
     _askedAboutNotifications = true;

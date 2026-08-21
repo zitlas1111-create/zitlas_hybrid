@@ -157,7 +157,7 @@ class AthleteIdentityCard extends StatelessWidget {
 
     return _Section(
       icon: '👤',
-      title: 'Athlete',
+      title: 'User',
       children: [
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -278,7 +278,7 @@ class AthleteFoodPreferencesCard extends StatelessWidget {
       title: 'Food preferences',
       footer: profile.isComplete
           ? null
-          : 'This athlete has not finished their food profile — anything blank '
+          : 'This user has not finished their food profile — anything blank '
               'above is genuinely unknown, not hidden.',
       children: [
         _Row('Diet type', profile.dietPreference?.label, emphasis: true),

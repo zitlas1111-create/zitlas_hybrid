@@ -139,7 +139,7 @@ List<ComplianceFlag> checkFood({
   if (!_dietAllows(profile.dietPreference, dietSuitable)) {
     flags.add(flag(
       ComplianceIssue.dietType,
-      'Athlete is ${profile.dietPreference!.label}',
+      'User is ${profile.dietPreference!.label}',
     ));
   }
 
@@ -161,7 +161,7 @@ List<ComplianceFlag> checkFood({
       _rankOfTier(budgetCategory) > _rankOfBudget(profile.budget)) {
     flags.add(flag(
       ComplianceIssue.overBudget,
-      '$budgetCategory-cost food · athlete\'s budget is '
+      '$budgetCategory-cost food · user\'s budget is '
       '${profile.budget?.label ?? "not set"}',
     ));
   }
@@ -195,7 +195,7 @@ class PlanComplianceReport {
   bool get hasSevere => severe.isNotEmpty;
   bool get isClean => flags.isEmpty;
 
-  /// Share of the week's foods that sit above the athlete's budget tier.
+  /// Share of the week's foods that sit above the user's budget tier.
   double get overBudgetShare => totalFoods == 0 ? 0 : overBudgetFoods / totalFoods;
 
   /// The budget line for the coach — in tiers, because tiers are what exist.

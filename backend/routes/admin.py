@@ -291,6 +291,35 @@ async def approve_expert(body: ExpertApproveBody, request: Request,
         request=request, extra={"claimSet": claim_set},
     )
     print(f"[ADMIN] expert approve={body.approved} expert={body.expertId} claim_set={claim_set}")
+
+    # A HALF-COMPLETED GRANT IS NOT A SUCCESS.
+    #
+    # Expert access requires BOTH `experts/{uid}.approved` AND the `expert`
+    # custom claim. identity_service.set_claims() never raises — it returns
+    # False when the firebase-admin app is unavailable — so this used to
+    # answer {"success": true, "claimSet": false}: Firestore said approved,
+    # the claim was silently absent, and the expert still resolved to "user".
+    # That is exactly how all three ZITLAS experts ended up unauthorised
+    # without anyone noticing.
+    #
+    # The Firestore write above is deliberately NOT rolled back: `approved` on
+    # its own grants nothing, and leaving it set means a retry only has to
+    # redo the claim. The audit row records claimSet either way.
+    if not claim_set:
+        raise HTTPException(
+            status_code=502,
+            detail={
+                "error": "claim_not_set",
+                "message": ("Approval was recorded but the Firebase custom claim "
+                            "could not be set, so this account is NOT authorised "
+                            "as an expert. Check FIREBASE_SERVICE_ACCOUNT_JSON on "
+                            "the server, then retry."),
+                "expertId": body.expertId,
+                "approved": bool(body.approved),
+                "claimSet": False,
+            },
+        )
+
     return {"success": True, "approved": bool(body.approved), "claimSet": claim_set}
 
 

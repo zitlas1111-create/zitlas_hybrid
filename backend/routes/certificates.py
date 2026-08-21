@@ -28,10 +28,13 @@ has no Firebase Admin SDK anywhere in the backend, Firestore is
 frontend-only throughout.
 """
 
-from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 from services import certificate_verification
+
+from services import auth_service
+from services.auth_service import require_expert
 
 router = APIRouter()
 
@@ -47,7 +50,17 @@ _MAX_BYTES = 10 * 1024 * 1024  # 10 MB
 async def verify_certificate(
     expertId: str = Form(...),
     file: UploadFile = File(...),
+    caller: dict = Depends(require_expert),
 ) -> JSONResponse:
+    """Upload a credential for AI verification. EXPERT ONLY.
+
+    Previously unauthenticated with a client-supplied `expertId`, so anyone
+    could attach a certificate to any expert's profile — or burn the AI
+    verification budget anonymously. Expert onboarding is frozen, so the only
+    legitimate callers are the existing approved experts re-submitting their
+    OWN credential.
+    """
+    expertId = auth_service.assert_owns_expert_id(caller, expertId)
     print(f"[CERT VERIFY] expertId={expertId}  filename={file.filename!r}  type={file.content_type!r}")
 
     if file.content_type not in _ALLOWED_TYPES:

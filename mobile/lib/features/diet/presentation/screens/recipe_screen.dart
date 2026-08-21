@@ -35,7 +35,7 @@ class _RecipeScreenState extends State<RecipeScreen> {
   final Set<String> _shownIds = {};
   bool _viewingDetail = false;
 
-  // Filter overrides — null means "use the athlete's own profile value".
+  // Filter overrides — null means "use the user's own profile value".
   // Normalized to the filter sheet's lowercase, singular option values
   // (e.g. "Breakfast" from meal.mealName -> "breakfast", "Snacks" -> "snack")
   // — the backend's own _resolve_meal_type() already accepts any of these

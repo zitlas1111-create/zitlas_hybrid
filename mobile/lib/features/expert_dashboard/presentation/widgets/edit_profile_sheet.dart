@@ -198,7 +198,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
                     _Field(
                       label: 'Bio / Description',
                       controller: _bio,
-                      hint: 'Tell athletes about your expertise…',
+                      hint: 'Tell users about your expertise…',
                       maxLines: 3,
                     ),
                     _Field(

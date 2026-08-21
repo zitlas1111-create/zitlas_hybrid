@@ -8,7 +8,7 @@ import 'package:flutter/foundation.dart';
 
 /// `YYYY-MM-DD` for a LOCAL calendar date.
 ///
-/// The step counter's day is the athlete's local calendar day, so this is
+/// The step counter's day is the user's local calendar day, so this is
 /// built from local Y/M/D components and never from `toIso8601String()` or
 /// anything UTC-derived: at 01:00 IST the UTC date is still yesterday, which
 /// would file a morning walk under the wrong day and make "today" appear to

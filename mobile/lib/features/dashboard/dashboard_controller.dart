@@ -440,7 +440,7 @@ class DashboardController extends ChangeNotifier {
   Future<void> _alertCoach(HealthAdjustment adj) async {
     try {
       final summary = _healthSummary(adj);
-      final name = displayName ?? 'Athlete';
+      final name = displayName ?? 'User';
       final label = healthStatusLabel(adj.status);
 
       // Sick affects both plans; an injury is a training concern.

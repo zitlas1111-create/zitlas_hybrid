@@ -147,7 +147,7 @@
         var _fb   = JSON.parse(localStorage.getItem('zitlas_firebase_user') || '{}');
         var _full = (_pi.fullName || _u.name || _fb.name || _fb.displayName || '').trim();
         var _first = _full.split(/\s+/)[0] || '';
-        nameEl.textContent = _first ? _first + '! 👋' : 'Athlete! 👋';
+        nameEl.textContent = _first ? _first + '! 👋' : 'User! 👋';
       } catch (_) {}
     }
   }
@@ -1228,7 +1228,7 @@
       return;
     }
 
-    const archetype = swot.user_archetype || 'Athlete';
+    const archetype = swot.user_archetype || 'User';
     const scores    = swot.scores || {};
     const overall   = scores.overall ? Math.round(scores.overall) : null;
     const s = swot.swot;

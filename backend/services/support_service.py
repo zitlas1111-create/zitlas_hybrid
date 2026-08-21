@@ -398,7 +398,7 @@ def build_support_email(*, conversation_id: str, user_name: str, user_email: str
         f"Category:\n{category}\n\n"
         f"Message:\n{message}\n\n"
         "----------------------------------------------------------\n"
-        "Reply to this email and your reply appears in the athlete's\n"
+        "Reply to this email and your reply appears in the user's\n"
         "ZITLAS Help Center chat. Keep the subject line intact — the\n"
         f"{subject_tag(conversation_id)} tag is what routes it back.\n"
     )

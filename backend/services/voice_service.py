@@ -88,7 +88,7 @@ def language_instruction(language: str) -> str:
         "hinglish": (
             "\n\nSPEAK HINGLISH: reply in natural Hinglish — conversational "
             "Hindi written in ROMAN script, mixed with English the way Indian "
-            "athletes actually talk (e.g. \"Bhai aaj ka workout easy hai, bas "
+            "users actually talk (e.g. \"Bhai aaj ka workout easy hai, bas "
             "20 minute\"). Never use Devanagari script."
         ),
     }[language]
@@ -103,7 +103,7 @@ def voice_output_hint() -> str:
     """
     return (
         "\n\nYOU ARE BEING SPOKEN ALOUD:\n"
-        "- Keep it SHORT — 1-3 sentences. The athlete is listening, not reading.\n"
+        "- Keep it SHORT — 1-3 sentences. The user is listening, not reading.\n"
         "- NO emoji, NO markdown, NO bullet points, NO numbered lists — a "
         "speech engine reads those out as literal noise.\n"
         "- Write numbers the way you'd say them ('six thousand eight hundred' "

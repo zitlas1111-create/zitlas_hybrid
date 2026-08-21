@@ -348,7 +348,7 @@ class _CoachDietEditorScreenState extends State<CoachDietEditorScreen> {
   static String _friendly(Object e) {
     final raw = e.toString().replaceFirst('Exception: ', '');
     if (raw.toLowerCase().contains('permission')) {
-      return 'you are no longer this athlete\'s active coach.';
+      return 'you are no longer this user\'s active coach.';
     }
     return 'please check your connection and try again.';
   }

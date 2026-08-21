@@ -98,7 +98,7 @@ class ExpertApplicationReviewScreen extends StatelessWidget {
                           onTap: () => context.go('/dashboard'),
                           child: const Center(
                             child: Text(
-                              'Continue as Athlete',
+                              'Continue as User',
                               style: TextStyle(
                                 color: AuthColors.ink,
                                 fontSize: 14,

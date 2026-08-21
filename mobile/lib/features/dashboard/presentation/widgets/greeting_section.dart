@@ -6,7 +6,7 @@ import '../../dashboard_controller.dart';
 import '../dashboard_visuals.dart';
 
 /// `.greeting-section` — `initGreeting()` in dashboard.js: time-of-day line
-/// + first name (falls back to "Athlete! 👋" exactly like the website).
+/// + first name (falls back to "User! 👋" exactly like the website).
 class GreetingSection extends StatelessWidget {
   const GreetingSection({super.key});
 
@@ -23,7 +23,7 @@ class GreetingSection extends StatelessWidget {
     final authName = context.watch<AuthState>().profile?.name;
     final rawName = controller.displayName ?? authName;
     final name = rawName?.trim().split(RegExp(r'\s+')).first;
-    final greetingName = (name == null || name.isEmpty) ? 'Athlete! 👋' : '$name! 👋';
+    final greetingName = (name == null || name.isEmpty) ? 'User! 👋' : '$name! 👋';
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(4, 14, 4, 10),

@@ -260,8 +260,14 @@ class AuthRepository {
   /// not an oversight — see docs/MIGRATION_INVENTORY.md §2.
   Future<UserModel> completeGoogleRoleSelection(User user, String chosenRole) async {
     final firestore = _requireFirestore();
-    final roles = ['athlete', if (chosenRole == 'expert') 'expert_pending'];
-    final expertStatus = chosenRole == 'expert' ? 'pending' : 'none';
+    /* `chosenRole` is vestigial — the caller always passes 'user' now that
+       the role picker is gone. A brand-new account is ALWAYS a plain user:
+       nothing here can write 'expert_pending' or an 'experts/{uid}' row, and
+       these fields are not an authorisation signal anyway (GET /api/auth/role
+       is). Kept in the signature so the call sites and their tests stay
+       stable. */
+    const roles = ['user'];
+    const expertStatus = 'none';
 
     await firestore.collection('users').doc(user.uid).set({
       'uid': user.uid,
@@ -278,7 +284,7 @@ class AuthRepository {
       email: user.email ?? '',
       name: user.displayName,
       photoUrl: user.photoURL,
-      role: 'athlete',
+      role: 'user',
       roles: roles,
       expertStatus: expertStatus,
     );

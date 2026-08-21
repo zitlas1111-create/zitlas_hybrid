@@ -111,7 +111,7 @@ class _ReviewWorkoutEditorScreenState extends State<ReviewWorkoutEditorScreen> {
                   ),
                 )
               : _days.isEmpty
-                  ? const Center(child: Text('This athlete has no training plan on this request.', style: TextStyle(color: ZitlasTokens.textSecondary)))
+                  ? const Center(child: Text('This user has no training plan on this request.', style: TextStyle(color: ZitlasTokens.textSecondary)))
                   : _body(),
     );
   }
@@ -458,7 +458,7 @@ class _ReviewWorkoutEditorScreenState extends State<ReviewWorkoutEditorScreen> {
         athleteId: _raw?['userId'] as String?,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Review sent to athlete.')));
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('✅ Review sent to user.')));
       // Pop the SAME navigator this screen was pushed onto
       // (`Navigator.push` in ExpertDashboardScreen._openReviewEditor), and
       // return to the Expert Dashboard underneath. Deliberately a plain pop:

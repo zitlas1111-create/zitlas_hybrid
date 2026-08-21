@@ -129,7 +129,7 @@ class SupportRepository {
     final email = (user?.email ?? '').trim();
     return {
       // Never empty: the schema enforces min_length 1 on name.
-      'name': displayName.isNotEmpty ? displayName : 'ZITLAS Athlete',
+      'name': displayName.isNotEmpty ? displayName : 'ZITLAS User',
       'email': email,
       'subject': subject,
       'category': category,

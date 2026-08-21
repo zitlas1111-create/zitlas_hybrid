@@ -9,6 +9,7 @@ import '../../core/storage/account_guard.dart';
 import '../coaching_webview/coaching_webview_session.dart';
 import '../../models/user_model.dart';
 import 'data/auth_repository.dart';
+import 'data/role_repository.dart';
 
 enum AuthStatus {
   /// First frame, before Firebase's persisted session has been checked.
@@ -28,7 +29,8 @@ enum AuthStatus {
 /// redirect logic depends on. See docs/MIGRATION_INVENTORY.md §2/§3 for the
 /// production behavior this ports.
 class AuthState extends ChangeNotifier {
-  AuthState(this._repository) {
+  AuthState(this._repository, {RoleRepository? roleRepository})
+      : _roleRepository = roleRepository {
     if (!_repository.isAvailable) {
       _status = AuthStatus.firebaseUnavailable;
       return;
@@ -37,6 +39,9 @@ class AuthState extends ChangeNotifier {
   }
 
   final AuthRepository _repository;
+
+  /// Injectable so tests can pin the server's answer without a network.
+  final RoleRepository? _roleRepository;
   AuthRepository get repository => _repository;
 
   StreamSubscription<User?>? _sub;
@@ -76,12 +81,22 @@ class AuthState extends ChangeNotifier {
   }
 
   Future<void> _applyAuthenticated(UserModel profile) async {
+    // THE ROLE COMES FROM THE SERVER, not from `users/{uid}`.
+    //
+    // Awaited before the session is published so no frame ever renders with
+    // an unresolved role — a moment of "expert" for a normal user (or the
+    // reverse) would be a visible routing flicker at best and a leak at
+    // worst. fetchRole() fails closed to 'user' and never throws, so this
+    // cannot block login.
+    final serverRole = await (_roleRepository ?? RoleRepository()).fetchRole();
+    profile = profile.withServerRole(serverRole);
+
     // Role-resolution trace. Deliberately logs only identity/role facts — never
     // a password, ID token, refresh token or API key.
     if (kDebugMode) {
       debugPrint('[AUTH LOGIN SUCCESS] uid=${profile.uid}');
-      debugPrint('[ROLE SOURCE] users/${profile.uid} '
-          '(roles=${profile.roles} expert_status=${profile.expertStatus} role=${profile.role})');
+      debugPrint('[ROLE SOURCE] GET /api/auth/role (server-authoritative); '
+          'users/${profile.uid} fields are no longer trusted for role');
       debugPrint('[ROLE RESULT] ${profile.resolvedRole}');
     }
     // Purges any cached state belonging to a DIFFERENT account before this

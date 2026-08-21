@@ -84,7 +84,7 @@ void main() {
     testWidgets('allergies and dislikes are on screen while editing',
         (tester) async {
       await pumpEditor(tester);
-      expect(find.text('ATHLETE PREFERENCES'), findsOneWidget);
+      expect(find.text('USER PREFERENCES'), findsOneWidget);
       expect(find.text('Peanut'), findsOneWidget);
       expect(find.text('Mushroom'), findsOneWidget);
       expect(find.text('Paneer'), findsOneWidget);

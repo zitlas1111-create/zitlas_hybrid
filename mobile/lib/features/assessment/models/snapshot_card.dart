@@ -545,7 +545,7 @@ List<SnapshotCard> buildGeneralFitnessCards(
       why: 'Your starting fitness level shapes the intensity and type of training in your plan.',
       expandTitle: 'How does fitness level affect my plan?',
       expand: 'As a <strong>$levelCap</strong>, your plan is tailored to your starting point. Beginners focus on building '
-          'the movement habit and base fitness. Intermediates add variety and challenge. Advanced athletes work on '
+          'the movement habit and base fitness. Intermediates add variety and challenge. Advanced users work on '
           'functional performance. Your level is reassessed every 8–12 weeks.',
     ),
     SnapshotCard(

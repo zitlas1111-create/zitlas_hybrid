@@ -5,7 +5,7 @@ POST /api/review/apply
 
 When an expert completes a diet/workout review, the reviewed plan becomes the
 athlete's ACTIVE plan by writing users/{athleteUid}.dietPlan / .workoutPlan.
-That is a CROSS-USER write (expert's device → athlete's users doc), which
+That is a CROSS-USER write (expert's device → user's users doc), which
 production Security Rules correctly deny (users writes are owner-only —
 FIRESTORE_SECURITY_AUDIT.md). The old client code did it directly
 (modify-diet.js / modify-workout.js) and would now fail closed.
@@ -15,7 +15,7 @@ TRUSTED server-side data, that:
   * the caller is the expert ASSIGNED to the review (review_requests/{reviewId}
     .expertId == caller.uid),
   * the review belongs to this athlete (review.userId / .athleteId == athleteUid),
-  * the review's planId matches the athlete's CURRENT planId (the exact
+  * the review's planId matches the user's CURRENT planId (the exact
     "apply-gate" the client used, now enforced where it can't be bypassed) —
     so a stale/dead-goal review can never overwrite the athlete's live plan.
 
@@ -83,7 +83,7 @@ async def apply_reviewed_plan(body: ApplyBody, caller: dict = Depends(verify_fir
     if review_athlete and review_athlete != body.athleteUid:
         raise HTTPException(status_code=403, detail="athlete_mismatch")
 
-    # ── APPLY-GATE: review's planId must equal the athlete's live planId ──
+    # ── APPLY-GATE: review's planId must equal the user's live planId ──
     user_ref = db.collection("users").document(body.athleteUid)
     user_snap = user_ref.get()
     live_plan_id = (user_snap.to_dict() or {}).get("planId") if user_snap.exists else None

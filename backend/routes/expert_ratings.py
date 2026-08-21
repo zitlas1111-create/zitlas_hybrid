@@ -19,7 +19,7 @@ data shape, so athlete ratings live in `expert_ratings`.
 WHY BACKEND-WRITTEN (never a direct client write): the guarantees this
 feature needs are not expressible in Firestore rules —
   * "the engagement actually ended"  — a second document's status,
-  * "this athlete was in THAT engagement"  — a cross-document join,
+  * "this user was in THAT engagement"  — a cross-document join,
   * "no rating exists for this engagement yet"  — needs a transaction,
   * the expert's rating aggregate  — must be recomputed atomically.
 So the client posts here, this module validates, and it writes with the
@@ -155,7 +155,7 @@ async def submit_rating(body: RatingBody, caller: dict = Depends(verify_firebase
         # the client, and the distinction is not theirs to probe.
         raise HTTPException(status_code=400, detail="no_rateable_engagement")
 
-    # The client's claimed engagement/expert must match the athlete's OWN
+    # The client's claimed engagement/expert must match the user's OWN
     # relationship. This is what stops a crafted request rating a different
     # expert, or attaching a rating to someone else's engagement.
     if body.engagementId != rel["requestId"]:

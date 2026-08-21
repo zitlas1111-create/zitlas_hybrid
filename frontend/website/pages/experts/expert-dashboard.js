@@ -105,7 +105,7 @@ function _cwSetUrlParams(athleteId, tab) {
 function _cwClearUrlParams() {
   try {
     var url = new URL(window.location.href);
-    url.searchParams.delete('cwAthlete');
+    url.searchParams.delete('cwUser');
     url.searchParams.delete('cwTab');
     window.history.replaceState(window.history.state, '', url.toString());
   } catch (_) {}
@@ -298,7 +298,7 @@ function statusBadge(status) {
     expert_reviewing:       { cls: 'status-accepted',   label: 'In Review' },
     changes_suggested:      { cls: 'status-completed',  label: 'Feedback Sent' },
     approved:               { cls: 'status-completed',  label: 'Approved' },
-    revised_plan_published: { cls: 'status-published',  label: 'Synced to Athlete' },
+    revised_plan_published: { cls: 'status-published',  label: 'Synced to User' },
   };
   return map[status] || { cls: 'status-pending', label: status || 'Pending' };
 }
@@ -546,7 +546,7 @@ function buildReviewCard(req, expert) {
 
   let noteHTML = '';
   if (req.note) {
-    noteHTML = '<div class="erc-exp-section"><div class="erc-exp-label">Athlete Note</div>' +
+    noteHTML = '<div class="erc-exp-section"><div class="erc-exp-label">User Note</div>' +
       '<p class="erc-exp-note">' + esc(req.note) + '</p></div>';
   }
 
@@ -841,7 +841,7 @@ function confirmApprove() {
   }
 
   closeApproveModal();
-  edShowToast('✅ Plan approved! Athlete has been notified.');
+  edShowToast('✅ Plan approved! User has been notified.');
 }
 
 function initApproveModal() {
@@ -1246,7 +1246,7 @@ function renderExpertChatMessages(msgWrap, conversationId) {
   } else {
     var emptyEl = document.createElement('div');
     emptyEl.className = 'zc-empty';
-    emptyEl.textContent = 'No messages yet. The athlete will see your reply instantly.';
+    emptyEl.textContent = 'No messages yet. The user will see your reply instantly.';
     msgWrap.appendChild(emptyEl);
   }
 }
@@ -1365,17 +1365,17 @@ function listenForMyAthletes(expert) {
 }
 
 function renderMyAthletes(rels, expert) {
-  var wrap  = document.getElementById('myAthletesList');
-  var empty = document.getElementById('myAthletesEmpty');
+  var wrap  = document.getElementById('myUsersList');
+  var empty = document.getElementById('myUsersEmpty');
   if (!wrap) return;
 
   if (!rels.length) {
-    wrap.querySelectorAll('.ed-athlete-card').forEach(function(el) { el.remove(); });
+    wrap.querySelectorAll('.ed-user-card').forEach(function(el) { el.remove(); });
     if (empty) empty.style.display = '';
     return;
   }
   if (empty) empty.style.display = 'none';
-  wrap.querySelectorAll('.ed-athlete-card').forEach(function(el) { el.remove(); });
+  wrap.querySelectorAll('.ed-user-card').forEach(function(el) { el.remove(); });
 
   rels.forEach(function(rel) {
     var daysLeft = (typeof ZitlasCoachingGate !== 'undefined')
@@ -1389,19 +1389,19 @@ function renderMyAthletes(rels, expert) {
       ? ' <span style="background:linear-gradient(135deg,var(--ai-accent,#3B82F6),#2563EB);color:#fff;font-weight:800;border-radius:999px;padding:1px 8px;font-size:9px;letter-spacing:.04em;vertical-align:middle;">FREE TRIAL</span>'
       : '';
     var card = document.createElement('div');
-    card.className = 'ed-athlete-card';
+    card.className = 'ed-user-card';
     card.innerHTML =
-      '<div class="ed-athlete-av">' + esc(initials) + '</div>' +
-      '<div class="ed-athlete-info">' +
-        '<span class="ed-athlete-name">' + esc(name) + _trialTag + '</span>' +
-        '<span class="ed-athlete-sub' + (lowDays ? ' ed-athlete-sub--warn' : '') + '">' +
+      '<div class="ed-user-av">' + esc(initials) + '</div>' +
+      '<div class="ed-user-info">' +
+        '<span class="ed-user-name">' + esc(name) + _trialTag + '</span>' +
+        '<span class="ed-user-sub' + (lowDays ? ' ed-user-sub--warn' : '') + '">' +
           (lowDays ? '⚠ ' : '') + 'Coaching since ' +
           esc(new Date(rel.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })) +
           (daysLeft !== null ? ' · ' + daysLeft + (daysLeft === 1 ? ' day left' : ' days left') : '') + '</span>' +
       '</div>' +
-      '<button class="erc-btn erc-btn--primary ed-athlete-chat">Open</button>';
+      '<button class="erc-btn erc-btn--primary ed-user-chat">Open</button>';
 
-    card.querySelector('.ed-athlete-chat').addEventListener('click', function() {
+    card.querySelector('.ed-user-chat').addEventListener('click', function() {
       openCoachWorkspace(rel, 'overview');
     });
     wrap.appendChild(card);
@@ -1509,23 +1509,23 @@ function renderCoachingRequests() {
       req.status === 'expired'  ? (wasEverActive
                                      ? (isTrialReq ? '⌛ Free trial ended' : '⌛ Coaching term ended')
                                      : '⌛ Expired — reservation released') :
-      req.status === 'ended'    ? 'Coaching ended by athlete' :
-      req.status === 'withdrawn'? 'Withdrawn by athlete' : 'Completed';
+      req.status === 'ended'    ? 'Coaching ended by user' :
+      req.status === 'withdrawn'? 'Withdrawn by user' : 'Completed';
 
     var _pcPremBadge = req.isPremium
       ? ' <span style="background:linear-gradient(135deg,#234B35,#2E5F47);color:#101010;font-weight:800;border-radius:999px;padding:1px 8px;font-size:9px;letter-spacing:.04em;vertical-align:middle;">⭐ PRIORITY</span>'
       : '';
     var card = document.createElement('div');
-    card.className = 'ed-athlete-card pc-req-card' +
+    card.className = 'ed-user-card pc-req-card' +
       (isTrialReq && req.status === 'pending' ? ' pc-req-card--trial' : '');
     card.innerHTML =
-      '<div class="ed-athlete-av">' + esc(initials) + '</div>' +
-      '<div class="ed-athlete-info">' +
-        '<span class="ed-athlete-name">' + esc(name) + _pcPremBadge + '</span>' +
-        '<span class="ed-athlete-sub">' + icon + ' ' +
+      '<div class="ed-user-av">' + esc(initials) + '</div>' +
+      '<div class="ed-user-info">' +
+        '<span class="ed-user-name">' + esc(name) + _pcPremBadge + '</span>' +
+        '<span class="ed-user-sub">' + icon + ' ' +
           esc(isTrialReq ? 'Personal Coaching Free Trial' : (req.planLabel || req.planType)) +
           (isTrialReq ? '' : (' · ₹' + esc(String(req.price)) + '/mo')) + '</span>' +
-        '<span class="ed-athlete-sub">' + esc(statusLine) + '</span>' +
+        '<span class="ed-user-sub">' + esc(statusLine) + '</span>' +
       '</div>' +
       (req.status === 'pending'
         ? (isTrialReq
@@ -1727,7 +1727,7 @@ function startExpertIncomingCallListener(conversationId, athleteId, athleteName)
       _edPendingIncomingCall = callInfo;
       ZitlasCallUI.showIncoming({
         name:  athleteName || 'Athlete',
-        role:  'Athlete',
+        role:  'User',
         photo: null,
         onAccept: function() {
           if (_edPendingIncomingCall) _edAcceptIncomingCall(_edPendingIncomingCall);
@@ -1761,7 +1761,7 @@ function _edStartOutgoingCall(chatId, athleteId, athleteName) {
 
   ZitlasCallUI.showOutgoing({
     name:  athleteName || 'Athlete',
-    role:  'Athlete',
+    role:  'User',
     photo: null,
     onHangup: function() {
       if (_edCallSession) _edCallSession.hangup();
@@ -2222,7 +2222,7 @@ function initExpertChatOverlay() {
     });
   }
 
-  /* "View Athlete Profile" — open review request page for this athlete */
+  /* "View User Profile" — open review request page for this athlete */
   if (edViewAthBtn) {
     edViewAthBtn.addEventListener('click', function() {
       closeEdDropdown();
@@ -3943,7 +3943,7 @@ function buildEditableExerciseEl(exercise, day, plan, card) {
       '<input class="ed-form-input" data-f="reps_or_duration" value="' + esc(exercise.reps_or_duration || '') + '"></div>' +
     '</div>' +
     '<div class="ed-form-row"><label class="ed-form-label">Coaching Notes</label>' +
-    '<textarea class="ed-form-textarea" data-f="tip" placeholder="Tips for the athlete...">' + esc(exercise.tip || '') + '</textarea></div>' +
+    '<textarea class="ed-form-textarea" data-f="tip" placeholder="Tips for the user...">' + esc(exercise.tip || '') + '</textarea></div>' +
     '<div class="ed-form-btns">' +
       '<button class="ed-form-save-btn">💾 Save Exercise</button>' +
       '<button class="ed-form-cancel-btn">Cancel</button>' +
@@ -4059,7 +4059,7 @@ function buildEditableWorkoutPlanEl(review, card) {
       '<input class="ed-form-input" type="number" data-wf="duration_minutes" value="' +
         esc(String(day.duration_minutes || '')) + '"></div>' +
       '<div class="ed-form-row"><label class="ed-form-label">Expert Notes for this Day</label>' +
-      '<textarea class="ed-form-textarea" data-wf="daily_tip" placeholder="Tips for the athlete...">' +
+      '<textarea class="ed-form-textarea" data-wf="daily_tip" placeholder="Tips for the user...">' +
         esc(day.daily_tip || '') + '</textarea></div>' +
       '<div class="ed-form-btns">' +
         '<button class="ed-form-save-btn">💾 Save</button>' +
@@ -4306,7 +4306,7 @@ async function savePlanEdits(reviewId, card, expert) {
       await ZitlasDB.collection('review_requests').doc(reviewId).update(_fsUpdate);
       console.log('[REVIEW COMPLETE] status update success', reviewId);
     } catch (e) {
-      /* ROOT CAUSE OF "expert changes never reach the athlete": this was
+      /* ROOT CAUSE OF "expert changes never reach the user": this was
          caught, logged as a warning, and then the success toast fired anyway
          — so a rejected or failed write looked identical to a successful one.
          The expert saw "✅ Review saved" while the athlete's Diet never
@@ -4317,7 +4317,7 @@ async function savePlanEdits(reviewId, card, expert) {
                     ' message=' + (e && e.message));
       _rev.status = _prevStatus;   // roll the local echo back
       try { localStorage.setItem('expert_plan_reviews', JSON.stringify(all)); } catch (_) {}
-      edShowToast('⚠ Could not send the review — the athlete has NOT received it. Please retry.');
+      edShowToast('⚠ Could not send the review — the user has NOT received it. Please retry.');
       if (card && card._saveChangesBtn) {
         card._saveChangesBtn.disabled = false;
         card._saveChangesBtn.textContent = 'Complete Review';
@@ -4326,7 +4326,7 @@ async function savePlanEdits(reviewId, card, expert) {
     }
   } else {
     console.error('[REVIEW COMPLETE] FAILURE code=no_firestore ' +
-                  'message=review saved locally only; the athlete will never receive it');
+                  'message=review saved locally only; the user will never receive it');
     edShowToast('⚠ Could not send the review — you appear to be offline.');
     return;
   }
@@ -4335,7 +4335,7 @@ async function savePlanEdits(reviewId, card, expert) {
   console.log("[STORED REVIEW] reviewedWorkoutPlan present:", !!(_updatedReview && _updatedReview.reviewedWorkoutPlan));
   console.log("[STORED REVIEW] workoutChangeHistory length:", _updatedReview && _updatedReview.workoutChangeHistory ? _updatedReview.workoutChangeHistory.length : 0);
 
-  edShowToast('✅ Review saved — athlete will be notified.');
+  edShowToast('✅ Review saved — user will be notified.');
 
   if (card) {
     var badge = card.querySelector('.erc-badge');
@@ -4357,9 +4357,9 @@ function _markWorkoutReviewSent(card) {
   var badge = card.querySelector('.erc-badge');
   if (badge) { badge.textContent = 'Completed'; badge.className = 'erc-badge status-completed'; }
   var actions = card.querySelector('.erc-actions');
-  if (actions) actions.innerHTML = '<span class="erc-approved-stamp">✅ Review Sent to Athlete</span>';
+  if (actions) actions.innerHTML = '<span class="erc-approved-stamp">✅ Review Sent to User</span>';
   card.dataset.prStatus = 'review_completed';
-  edShowToast('✅ Review saved — athlete will be notified.');
+  edShowToast('✅ Review saved — user will be notified.');
 }
 
 function buildPlanReviewCard(review, expert) {
@@ -4390,7 +4390,7 @@ function buildPlanReviewCard(review, expert) {
       '<button class="erc-btn erc-btn--secondary pr-suggest-btn" data-pr-id="' + esc(review.id) + '">✏️ Send Feedback</button>' +
       '<button class="erc-btn erc-btn--reject pr-reject-btn"    data-pr-id="' + esc(review.id) + '">✕ Reject</button>';
   } else if (st === 'review_completed') {
-    actionHtml = '<span class="erc-approved-stamp">✅ Review Sent to Athlete</span>';
+    actionHtml = '<span class="erc-approved-stamp">✅ Review Sent to User</span>';
   } else if (st === 'completed') {
     actionHtml = '<span class="erc-approved-stamp">✅ Review Complete</span>';
   } else if (st === 'rejected') {
@@ -4403,7 +4403,7 @@ function buildPlanReviewCard(review, expert) {
   /* Static card shell */
   card.innerHTML =
     '<div class="erc-header">' +
-      '<div class="erc-athlete-name">Athlete Plan Request</div>' +
+      '<div class="erc-user-name">User Plan Request</div>' +
       '<span class="erc-badge ' + esc(sb.cls) + '">' + esc(sb.label) + '</span>' +
     '</div>' +
     '<div class="ed-pr-type-row">' +
@@ -4431,7 +4431,7 @@ function buildPlanReviewCard(review, expert) {
   if (p.age || p.gender || p.weight_kg || p.height_cm) {
     var statsEl = document.createElement('div');
     statsEl.className = 'erc-exp-section';
-    statsEl.innerHTML = '<div class="erc-exp-sublabel">Athlete Stats</div><div class="erc-exp-data-grid">' +
+    statsEl.innerHTML = '<div class="erc-exp-sublabel">User Stats</div><div class="erc-exp-data-grid">' +
       (p.age       ? '<span class="erc-exp-item"><b>Age</b> ' + esc(String(p.age)) + '</span>' : '') +
       (p.gender    ? '<span class="erc-exp-item"><b>Gender</b> ' + esc(String(p.gender).charAt(0).toUpperCase() + String(p.gender).slice(1)) + '</span>' : '') +
       (p.height_cm ? '<span class="erc-exp-item"><b>Height</b> ' + esc(String(p.height_cm)) + ' cm</span>' : '') +
@@ -4519,7 +4519,7 @@ function initPlanReviewCardInteractions(card, review, expert) {
           '<button class="erc-btn erc-btn--reject pr-reject-btn" data-pr-id="' + esc(prId) + '">✕ Reject</button>';
       }
       card.dataset.prStatus = 'accepted';
-      edShowToast('✅ Request accepted. Athlete can now chat with you.');
+      edShowToast('✅ Request accepted. User can now chat with you.');
     }
 
     /* Mark as Reviewed — write workout fields DIRECTLY to avoid any branching bug */
@@ -4604,11 +4604,11 @@ function initPlanReviewCardInteractions(card, review, expert) {
             .catch(function(e) {
               console.error('[REVIEW COMPLETE] FAILURE code=' + (e && e.code) +
                             ' message=' + (e && e.message));
-              edShowToast('⚠ Could not send the review — the athlete has NOT received it. Please retry.');
+              edShowToast('⚠ Could not send the review — the user has NOT received it. Please retry.');
             });
         } else {
           console.error('[REVIEW COMPLETE] FAILURE code=no_firestore ' +
-                        'message=workout review saved locally only; the athlete will never receive it');
+                        'message=workout review saved locally only; the user will never receive it');
           edShowToast('⚠ Could not send the review — you appear to be offline.');
         }
       }
@@ -4712,7 +4712,7 @@ function initPrSuggestModal() {
       }
 
       closePrModal();
-      edShowToast('✏️ Feedback sent to athlete.');
+      edShowToast('✏️ Feedback sent to user.');
     });
   }
 }
@@ -4781,7 +4781,7 @@ function renderInbox(expert, expertUid) {
 
   if (!bucket.length) {
     var emptyMsgs = {
-      pending:     ['📋', 'No Pending Reviews', 'New athlete requests will appear here.'],
+      pending:     ['📋', 'No Pending Reviews', 'New user requests will appear here.'],
       in_progress: ['💬', 'No Active Reviews', 'Accepted reviews open here for consultation.'],
       completed:   ['✅', 'No Completed Reviews', 'Finished reviews are archived here.'],
     };
@@ -4849,7 +4849,7 @@ function _prBuildInboxCard(review, expert) {
       (isChatOnly ? '' : '<button class="pr-inbox-btn pr-inbox-btn--accept" data-pr-editplan="' + esc(review.id) + '">✏️ Edit Plan</button>') +
       '<button class="pr-inbox-btn pr-inbox-btn--chat" data-pr-openchat="' + esc(review.id) + '">💬 Chat</button>';
   } else if (st === 'completed' || st === 'review_completed') {
-    actionsHtml = '<span class="pr-inbox-stamp pr-inbox-stamp--done">✅ Review Sent to Athlete</span>';
+    actionsHtml = '<span class="pr-inbox-stamp pr-inbox-stamp--done">✅ Review Sent to User</span>';
   } else if (st === 'rejected') {
     actionsHtml = '<span class="pr-inbox-stamp pr-inbox-stamp--rejected">✕ Rejected</span>';
   }
@@ -4979,7 +4979,7 @@ function _prAcceptReview(reviewId, review, expert) {
     return;
   }
 
-  edShowToast('Checking athlete wallet…');
+  edShowToast('Checking user wallet…');
   var serviceLabel = isChatOnly ? 'Expert Chat' : (rtype === 'workout' ? 'Workout Review' : 'Diet Review');
 
   /* The expert's decision (status: 'accepted') is written INSIDE
@@ -5014,7 +5014,7 @@ function _prAcceptReview(reviewId, review, expert) {
       return;
     }
     if (result.error === 'insufficient_balance') {
-      edShowToast('⏳ Awaiting athlete payment — ₹' + result.shortfall + ' short. They have been notified.');
+      edShowToast('⏳ Awaiting user payment — ₹' + result.shortfall + ' short. They have been notified.');
       if (typeof ZitlasNotify !== 'undefined') {
         ZitlasNotify.send(review.userId, {
           title: 'Insufficient wallet balance', category: 'payment', type: 'awaiting_payment',
@@ -5182,7 +5182,7 @@ function _prCompleteReviewFromChat(review, expert) {
   _edCurrentReview = null;
   _prEditCard      = null;
 
-  edShowToast('✅ Review sent to athlete.');
+  edShowToast('✅ Review sent to user.');
   renderInbox(expert);
 }
 
@@ -5225,7 +5225,7 @@ function _prOpenEditSheet(review, expert) {
     _prEditCard._saveChangesBtn.onclick = function(e) {
       if (_origClick) _origClick.call(this, e);
       overlay.style.display = 'none';
-      edShowToast('Changes saved. Click "Complete Review" to send to athlete.');
+      edShowToast('Changes saved. Click "Complete Review" to send to user.');
     };
   }
 }
@@ -5342,7 +5342,7 @@ function _restorePendingWorkspace(expert) {
     /* Fail closed on ownership OR lifecycle mismatch — mirrors
        cprofile.js's _coachingWorkspaceFor() gate on the athlete side, so a
        relationship that expired between the original open() and this
-       reload does not get a restore pathway the live "My Athletes" list
+       reload does not get a restore pathway the live "My Users" list
        (which is itself lifecycle-filtered) never offered in the first
        place. */
     if (rel.coachId !== uid || !isActive) { _cwClearUrlParams(); return; }
@@ -5427,7 +5427,11 @@ function _initInboxTabs(expert) {
            Fails CLOSED: any error routes to the user dashboard. */
         let isExpert = false;
         try {
-          const _token = await firebaseUser.getIdToken();
+          /* FORCE REFRESH. A cached ID token can be up to an hour old and
+             will not contain a custom claim granted after it was minted —
+             which is exactly how a newly-authorised expert kept landing
+             back on the user dashboard. */
+          const _token = await firebaseUser.getIdToken(true);
           const _resp  = await fetch('/api/auth/role', {
             headers: { 'Authorization': 'Bearer ' + _token }
           });

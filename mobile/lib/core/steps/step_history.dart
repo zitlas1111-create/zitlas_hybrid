@@ -11,7 +11,7 @@ import 'step_tracking_service.dart';
 /// without a device, a clock or Firestore.
 ///
 /// A day that was never recorded is ABSENT, not zero. The distinction matters:
-/// a day ZITLAS wasn't installed for, or a day the athlete's phone was off, is
+/// a day ZITLAS wasn't installed for, or a day the user's phone was off, is
 /// unknown — averaging it in as a 0 would quietly punish them for days that
 /// were never measured.
 @immutable

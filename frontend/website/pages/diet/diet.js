@@ -46,7 +46,7 @@
       name: 'Rahul Desai',
       qualification: 'B.Sc. Dietetics, Certified Sports Nutritionist (ISSN)',
       experience: '7 years',
-      specialization: 'Youth athlete nutrition, Weight management, Supplement guidance',
+      specialization: 'Youth user nutrition, Weight management, Supplement guidance',
       location: 'Mumbai, Maharashtra',
       rating: 4.7,
       reviews: 89,
@@ -139,7 +139,7 @@
     var titleEl    = document.getElementById('dietPageTitle');
     var subtitleEl = document.getElementById('dietPageSubtitle');
     if (titleEl)    titleEl.textContent    = 'Nearby Nutritionists';
-    if (subtitleEl) subtitleEl.textContent = 'Find certified sports nutritionists to support your athletes.';
+    if (subtitleEl) subtitleEl.textContent = 'Find certified sports nutritionists to support your users.';
 
     var loading     = document.getElementById('dietLoading');
     var dietContent = document.getElementById('dietContent');
@@ -1133,7 +1133,7 @@
 
     /* Invalidate old-system expert review (if active) — the plan is now athlete-modified */
     if (expertReview) {
-      clearExpertReview('meal swapped by athlete');
+      clearExpertReview('meal swapped by user');
       renderFocusCard(weeklyPlan, null);
     }
 
@@ -2077,8 +2077,8 @@
   function _pcAthleteName() {
     try {
       var fb = JSON.parse(localStorage.getItem('zitlas_firebase_user') || 'null');
-      return (fb && fb.displayName) || (fb && fb.name) || 'Athlete';
-    } catch (_) { return 'Athlete'; }
+      return (fb && fb.displayName) || (fb && fb.name) || 'User';
+    } catch (_) { return 'User'; }
   }
 
   function _pcAskExpert(c) {

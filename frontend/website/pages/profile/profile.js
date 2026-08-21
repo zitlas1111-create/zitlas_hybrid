@@ -320,11 +320,16 @@
   }
 
   /* ---- Expert Application Pending Banner ---- */
+  /* Expert onboarding is CLOSED and nothing writes `zitlas_expert_applied`
+     any more. An account that applied before the freeze would otherwise see
+     "application pending" forever, for an application that can never be
+     reviewed. The stale key is cleared and the banner stays hidden. */
   function initExpertAppliedBanner() {
-    var applied = localStorage.getItem('zitlas_expert_applied');
-    if (!applied) return;
+    if (localStorage.getItem('zitlas_expert_applied')) {
+      localStorage.removeItem('zitlas_expert_applied');
+    }
     var banner = document.getElementById('expertAppliedBanner');
-    if (banner) banner.style.display = 'flex';
+    if (banner) banner.style.display = 'none';
   }
 
   /* ---- INIT ---- */

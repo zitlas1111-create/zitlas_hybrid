@@ -103,7 +103,7 @@ class NutritionWeeklyPlanRequest(BaseModel):
 
 class ZinoChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=1000)
-    context: dict = Field(default_factory=dict, description="Athlete snapshot: goal, calculations, swot, diet/workout summaries, coaching status, medical conditions, health status, streak, meal scores")
+    context: dict = Field(default_factory=dict, description="User snapshot: goal, calculations, swot, diet/workout summaries, coaching status, medical conditions, health status, streak, meal scores")
     history: list[dict] = Field(default_factory=list, description="[{role:'user'|'zino', text}] recent turns for continuity")
 
 
@@ -206,7 +206,7 @@ async def zino_chat(body: ZinoChatRequest) -> dict[str, Any]:
     # still resolves — this is what conversation memory IS for this endpoint.
     history_lines = []
     for h in body.history[-16:]:
-        role = 'Athlete' if h.get('role') == 'user' else 'Zino'
+        role = 'User' if h.get('role') == 'user' else 'Zino'
         text = str(h.get('text', ''))[:400]
         if text:
             history_lines.append(f"{role}: {text}")
@@ -214,9 +214,9 @@ async def zino_chat(body: ZinoChatRequest) -> dict[str, Any]:
 
     ctx_str = json.dumps(body.context, indent=2, default=str) if body.context else "No profile data synced yet."
     user_message = (
-        f"ATHLETE CONTEXT:\n{ctx_str}\n\n"
+        f"USER CONTEXT:\n{ctx_str}\n\n"
         f"{history_block}"
-        f"Athlete says: {body.message}"
+        f"User says: {body.message}"
     )
 
     print(f"[ZINO CHAT] message={body.message[:120]!r}  context_keys={list(body.context.keys())}")

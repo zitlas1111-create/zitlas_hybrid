@@ -190,7 +190,7 @@ class DashboardRepository {
           if (kDebugMode) {
             debugPrint(
               data == null
-                  ? '[COACH VISIBILITY] -> assignedCoach=null — no personal_coaching doc for this athlete'
+                  ? '[COACH VISIBILITY] -> assignedCoach=null — no personal_coaching doc for this user'
                   : "[COACH VISIBILITY] -> assignedCoach=null — status is '${data['status']}', not 'active'",
             );
           }

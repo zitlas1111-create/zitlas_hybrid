@@ -9,10 +9,32 @@ class UserModel {
     required this.email,
     this.name,
     this.photoUrl,
-    this.role = 'athlete',
+    this.role = 'user',
     this.roles = const [],
     this.expertStatus = 'none',
+    this.serverRole,
   });
+
+  /// The role as decided by `GET /api/auth/role` — `'expert'` or `'user'`.
+  ///
+  /// THIS IS THE ONLY TRUSTWORTHY ROLE. The fields below come from
+  /// `users/{uid}`, which the client itself can write; the server derives
+  /// this one from the verified Firebase token's `expert` custom claim AND
+  /// `experts/{uid}.approved`, neither of which a device can forge.
+  ///
+  /// `null` means "not yet resolved" and is treated as a normal user.
+  final String? serverRole;
+
+  UserModel withServerRole(String? role) => UserModel(
+        uid: uid,
+        email: email,
+        name: name,
+        photoUrl: photoUrl,
+        role: this.role,
+        roles: roles,
+        expertStatus: expertStatus,
+        serverRole: role,
+      );
 
   final String uid;
   final String email;
@@ -27,19 +49,19 @@ class UserModel {
   /// `'none' | 'pending' | 'approved'`
   final String expertStatus;
 
-  /// Exact role-resolution algorithm from `frontend/pages/login/login.js`
-  /// (both the `onAuthStateChanged` listener and the Google existing-user
-  /// path use this identical check) — do not simplify this, it's the
-  /// production source of truth for who lands in the expert dashboard.
-  bool get isExpert =>
-      roles.contains('expert') ||
-      roles.contains('expert_pending') ||
-      expertStatus == 'approved' ||
-      expertStatus == 'pending' ||
-      role == 'expert';
+  /// Whether this account is one of the approved experts.
+  ///
+  /// SERVER-DECIDED. This used to run the old `login.js` algorithm over
+  /// `users/{uid}` — a document the client can write — and it counted
+  /// `expert_pending` and `expertStatus == 'pending'` as EXPERT, so merely
+  /// applying was enough to land in the expert dashboard. Both the website
+  /// and this app now ask `GET /api/auth/role` instead.
+  ///
+  /// Fails CLOSED: an unresolved role is a normal user, never an expert.
+  bool get isExpert => serverRole == 'expert';
 
-  /// `'expert' | 'athlete'` — what `login.js` calls `resolvedRole`.
-  String get resolvedRole => isExpert ? 'expert' : 'athlete';
+  /// `'expert' | 'user'` — the same two values `GET /api/auth/role` returns.
+  String get resolvedRole => isExpert ? 'expert' : 'user';
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
@@ -47,7 +69,10 @@ class UserModel {
       email: map['email'] as String? ?? '',
       name: map['name'] as String?,
       photoUrl: map['photo'] as String?,
-      role: map['role'] as String? ?? 'athlete',
+      // Retained verbatim: `role` is an EXISTING Firestore field on live
+      // documents. It is no longer trusted for authorisation, but renaming
+      // or dropping it would break data already written.
+      role: map['role'] as String? ?? 'user',
       roles: (map['roles'] as List?)?.cast<String>() ?? const [],
       expertStatus: map['expert_status'] as String? ?? 'none',
     );

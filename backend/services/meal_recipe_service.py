@@ -168,7 +168,7 @@ def build_prompt(dish: str, meal_type: str | None, foods: list[str] | None,
     if diet_type:
         lines.append(f"Diet preference: {diet_type}. Do not violate it.")
     if fitness_goal:
-        lines.append(f"The athlete's goal is {fitness_goal}.")
+        lines.append(f"The user's goal is {fitness_goal}.")
     lines.append(
         "Indian home kitchen, everyday ingredients, metric quantities. "
         f'The "name" field must be exactly "{dish}".'

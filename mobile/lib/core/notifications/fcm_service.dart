@@ -55,7 +55,7 @@ class FcmService {
     AndroidNotificationChannel(
       channelMessages,
       'Messages',
-      description: 'Chat messages from your coach or athletes.',
+      description: 'Chat messages from your coach or users.',
       importance: Importance.high,
     ),
     AndroidNotificationChannel(

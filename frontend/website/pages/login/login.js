@@ -24,38 +24,21 @@ if (pwToggle && pwInput && eyeIcon) {
 
 
 
-let selectedRole = 'athlete';
+/* ONE ZITLAS LOGIN. There is no role selector, no expert login mode and no
+   "Login as Expert" link — the sign-in form is identical for everybody.
+
+   WHERE AN ACCOUNT LANDS IS DECIDED AFTER AUTHENTICATION, by the server:
+   GET /api/auth/role reads the verified Firebase token's `expert` custom
+   claim AND `experts/{uid}.approved`. `landingRole` below only ever holds
+   that ANSWER — it is never an input, and nothing on this page can set it
+   to 'expert'. */
+let landingRole  = 'user';   // set from the server after sign-in
 let isSignupMode = false;
 
-const roleTabAthlete = document.getElementById('roleTabAthlete');
-const roleTabExpert  = document.getElementById('roleTabExpert');
-const expertHintBtn  = document.getElementById('expertHintBtn');
-const expertHint     = document.getElementById('expertHint');
 const loginCardTitle = document.getElementById('loginCardTitle');
 const loginCardSub   = document.getElementById('loginCardSub');
-function setRole(role) {
-  selectedRole = role;
-  if (roleTabAthlete) roleTabAthlete.classList.toggle('active', role === 'athlete');
-  if (roleTabExpert)  roleTabExpert.classList.toggle('active',  role === 'expert');
-  if (expertHint)     expertHint.style.display = (role === 'expert' || isSignupMode) ? 'none' : '';
-  if (loginCardTitle) loginCardTitle.textContent = isSignupMode
-    ? (role === 'expert' ? 'Create Expert Account' : 'Create Account')
-    : (role === 'expert' ? 'Expert Login' : 'Welcome Back');
-  if (loginCardSub)   loginCardSub.textContent = isSignupMode
-    ? 'Join ZITLAS - start your AI-powered fitness journey'
-    : (role === 'expert' ? 'Sign in to your ZITLAS Expert Portal' : 'Sign in to continue your AI-powered fitness journey');
-  if (emailInput)    emailInput.placeholder = role === 'expert' ? 'Expert Email' : 'Email or Mobile Number';
-  if (loginBtnText) loginBtnText.textContent = isSignupMode
-    ? (role === 'expert' ? 'Create Expert Account' : 'Create Account')
-    : (role === 'expert' ? 'Expert Login' : 'Sign In');
-}
 
-if (roleTabAthlete) roleTabAthlete.addEventListener('click', () => setRole('athlete'));
-if (roleTabExpert)  roleTabExpert.addEventListener('click',  () => setRole('expert'));
-if (expertHintBtn)  expertHintBtn.addEventListener('click',  () => {
-  setRole('expert');
-  document.getElementById('emailInput')?.focus();
-});
+/* No role tabs and no "Login as Expert" link. One form, one flow. */
 
 
 
@@ -69,17 +52,12 @@ function setSignupMode(on) {
   if (confirmPwGroup) confirmPwGroup.style.display = on ? '' : 'none';
   if (forgotRow)      forgotRow.style.display      = on ? 'none' : '';
 
-  if (loginCardTitle) loginCardTitle.textContent = on
-    ? (selectedRole === 'expert' ? 'Create Expert Account' : 'Create Account')
-    : (selectedRole === 'expert' ? 'Expert Login' : 'Welcome Back');
+  if (loginCardTitle) loginCardTitle.textContent = on ? 'Create Account' : 'Welcome Back';
   if (loginCardSub) loginCardSub.textContent = on
     ? 'Join ZITLAS - start your AI-powered fitness journey'
-    : (selectedRole === 'expert' ? 'Sign in to your ZITLAS Expert Portal' : 'Sign in to continue your AI-powered fitness journey');
-  if (loginBtnText) loginBtnText.textContent = on
-    ? (selectedRole === 'expert' ? 'Create Expert Account' : 'Create Account')
-    : (selectedRole === 'expert' ? 'Expert Login' : 'Sign In');
+    : 'Sign in to continue your AI-powered fitness journey';
+  if (loginBtnText) loginBtnText.textContent = on ? 'Create Account' : 'Sign In';
   if (createLink) createLink.textContent = on ? 'Already have an account? Sign In' : 'Create Account';
-  if (expertHint) expertHint.style.display = (on || selectedRole === 'expert') ? 'none' : '';
 }
 
 
@@ -138,22 +116,77 @@ async function resolveRole(user) {
   const docSnap = await ZitlasDB.collection('users').doc(user.uid).get();
   if (!docSnap.exists) return null;
 
+  const t = { email: user.email, uid: user.uid };
   try {
-    const token = await user.getIdToken();
-    const resp  = await fetch('/api/auth/role', {
-      headers: { 'Authorization': 'Bearer ' + token }
+    /* FORCE A FRESH TOKEN — getIdTokenResult(TRUE), not the cached one.
+       Firebase caches an ID token for up to an hour. A custom claim set
+       after that token was minted is simply NOT IN IT, so the backend
+       correctly sees no `expert` claim and answers "user". That is exactly
+       why the three approved experts still landed on the user dashboard
+       after being authorised: the claim was right, the token was stale.
+       Every role decision must start from a freshly minted token. */
+    const tokenResult = await user.getIdTokenResult(true);
+
+    t.provider   = (user.providerData && user.providerData[0])
+      ? user.providerData[0].providerId : 'password';
+    t.expertClaim = tokenResult.claims.expert;
+    t.issuedAt    = tokenResult.issuedAtTime;
+    t.expiresAt   = tokenResult.expirationTime;
+
+    const resp = await fetch('/api/auth/role', {
+      headers: { 'Authorization': 'Bearer ' + tokenResult.token }
     });
+    t.roleEndpointStatus = resp.status;
+
+    let role = 'user';
     if (resp.ok) {
       const data = await resp.json();
-      console.log('[AUTH] server role =', data.role, 'isExpert =', data.isExpert);
-      return data.role === 'expert' ? 'expert' : 'user';
+      t.roleEndpointResponse = data;
+      role = data.role === 'expert' ? 'expert' : 'user';
+    } else {
+      /* NOT a silent fallback: the failure is reported loudly and the role
+         still degrades to 'user', because granting expert access on an
+         unverifiable answer would be the worse bug. */
+      t.roleEndpointResponse = '(non-OK response)';
+      console.error('[AUTH] /api/auth/role FAILED with', resp.status,
+                    '— cannot establish role, treating as user');
     }
-    console.warn('[AUTH] /api/auth/role returned', resp.status, '— treating as user');
+    t.resolvedRole = role;
+    _printAuthTrace(t);
+    return role;
   } catch (e) {
-    console.warn('[AUTH] role lookup failed — treating as user', e);
+    t.error = String(e && e.message || e);
+    t.resolvedRole = 'user';
+    _printAuthTrace(t);
+    console.error('[AUTH] role lookup threw — treating as user', e);
+    return 'user';
   }
-  return 'user';
 }
+
+/* The full picture in one block, for debugging a real sign-in.
+   Deliberately never prints the ID TOKEN itself — only its claims and
+   validity window. */
+function _printAuthTrace(t) {
+  var lines = [
+    '[REAL AUTH TRACE]',
+    '  Firebase email        : ' + t.email,
+    '  Firebase UID          : ' + t.uid,
+    '  provider              : ' + (t.provider || '(unknown)'),
+    '  token expert claim    : ' + JSON.stringify(t.expertClaim),
+    '  token issuedAt        : ' + (t.issuedAt || '-'),
+    '  token expiration      : ' + (t.expiresAt || '-'),
+    '  role endpoint URL     : /api/auth/role',
+    '  role endpoint status  : ' + (t.roleEndpointStatus || '(not reached)'),
+    '  role endpoint response: ' + JSON.stringify(t.roleEndpointResponse),
+    '  resolvedRole          : ' + t.resolvedRole,
+    '  final redirect        : ' + (t.resolvedRole === 'expert'
+        ? '../experts/expert-dashboard.html'
+        : '../dashboard/dashboard.html')
+  ];
+  if (t.error) lines.push('  ERROR                 : ' + t.error);
+  console.log(lines.join('\n'));
+}
+
 
 if (typeof ZitlasAuth !== 'undefined') {
   ZitlasAuth.onAuthStateChanged(async function (user) {
@@ -197,7 +230,9 @@ if (typeof ZitlasAuth !== 'undefined') {
 
 
 function getRedirectDestination() {
-  if (selectedRole === 'expert') {
+  /* `landingRole` is whatever GET /api/auth/role replied — never a choice
+     made on this page. */
+  if (landingRole === 'expert') {
     return '../experts/expert-dashboard.html';
   }
   const params   = new URLSearchParams(window.location.search);
@@ -218,7 +253,7 @@ function showLoginOverlay() {
   if (!loginOverlay) return;
   const msgEl = loginOverlay.querySelector('.overlay-msg');
   if (msgEl) {
-    msgEl.textContent = selectedRole === 'expert'
+    msgEl.textContent = landingRole === 'expert'
       ? 'Expert Portal Loading'
       : 'Welcome back';
   }
@@ -322,17 +357,6 @@ if (loginForm) {
         }
 
         
-        if (selectedRole === 'expert') {
-          const existingExpert = await ZitlasDB.collection('experts')
-            .where('email', '==', email).limit(1).get();
-          if (!existingExpert.empty) {
-            console.log('[EXPERT FOUND] by email before signup  aborting account creation');
-            showToast('Expert account already exists. Please sign in.');
-            setLoading(false);
-            return;
-          }
-        }
-
         
         const cred = await ZitlasAuth.createUserWithEmailAndPassword(email, password);
         const user = cred.user;
@@ -342,30 +366,16 @@ if (loginForm) {
           await user.updateProfile({ displayName: name });
           const ts = firebase.firestore.FieldValue.serverTimestamp();
 
-          if (selectedRole === 'expert') {
-            console.log('[PROFILE CREATED] new expert uid=' + user.uid + ' email=' + user.email);
-            await ZitlasDB.collection('users').doc(user.uid).set({
-              uid: user.uid, email: user.email, name,
-              role: 'expert', photo: '', createdAt: ts,
-            });
-            await ZitlasDB.collection('experts').doc(user.uid).set({
-              uid: user.uid, email: user.email, name,
-              role: 'expert', speciality: '', photo: '',
-              verified: false, approved: false, rating: 0, reviews: 0, createdAt: ts,
-            });
-            syncEmailUser(user, name, 'expert');
-            setLoading(false);
-            showToast('Expert account created! Your application is under review.');
-            setTimeout(() => window.location.replace('../experts/expert-dashboard.html'), 2200);
-          } else {
-            await ZitlasDB.collection('users').doc(user.uid).set({
-              uid: user.uid, email: user.email, name,
-              role: 'athlete', photo: '', createdAt: ts,
-            });
-            syncEmailUser(user, name, 'athlete');
-            selectedRole = 'athlete';
-            showLoginOverlay();
-          }
+          /* Every new account is a USER. Expert onboarding is closed, and
+             an expert is only ever created by an admin granting the claim
+             plus `experts/{uid}.approved`. */
+          await ZitlasDB.collection('users').doc(user.uid).set({
+            uid: user.uid, email: user.email, name,
+            role: 'athlete', photo: '', createdAt: ts,
+          });
+          syncEmailUser(user, name, 'athlete');
+          landingRole = 'user';
+          showLoginOverlay();
         } catch (firestoreErr) {
           
           console.warn('[AUTH] Firestore setup failed  deleting orphan Auth account', firestoreErr);
@@ -398,7 +408,7 @@ if (loginForm) {
           });
         } catch (_) {}
         syncFirebaseUser(user, resolvedRole);
-        selectedRole = resolvedRole;
+        landingRole = resolvedRole;
         showLoginOverlay();
       }
     } catch (err) {
@@ -465,7 +475,7 @@ if (googleBtn) {
         } catch (_) {}
 
         syncFirebaseUser(user, resolvedRole);
-        selectedRole = resolvedRole;
+        landingRole = resolvedRole;
         showLoginOverlay();
       } else {
         
@@ -486,11 +496,16 @@ if (googleBtn) {
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
           }, { merge: true });
           syncFirebaseUser(user, verifiedRole || 'user');
-          selectedRole = verifiedRole || 'user';
+          landingRole = verifiedRole || 'user';
           showLoginOverlay();
         } else {
-          setGoogleLoading(false);
-          showRoleModal(user);
+          /* Brand-new Google account. Previously this opened a "Select
+             Account Type" modal offering User or Expert. There is no choice
+             to make any more: every new account is a user, and the only way
+             to become an expert is an admin granting the claim. */
+          await createUserProfile(user);
+          landingRole = 'user';
+          showLoginOverlay();
         }
       }
 
@@ -520,51 +535,9 @@ function _clearAuthLocalStorage() {
   console.log('[LOCAL STORAGE CLEARED]');
 }
 
-/* REMOVED — this used to write { role: 'expert', approved: true } into
-   localStorage.zitlas_experts at sign-up. A browser-authored approval is
-   worth nothing on the server, but the UI believed it, which is how a normal
-   account could reach expert screens.
 
-   Expert approval now lives only in `experts/{uid}.approved` plus the
-   Firebase custom claim, both written exclusively by routes/admin.py behind
-   require_admin. Kept as a no-op so no call site breaks. */
-function _addToExpertsStorage(uid, email, name) {
-  console.log('[EXPERT SIGNUP] ignored — expert onboarding is closed; ' +
-              'approval is server-side only (uid=' + uid + ')');
-}
 
-/* Shown if the expert option is somehow reached. Reuses the existing
-   "under review" panel so no new UI component is introduced. */
-function showExpertOnboardingClosed() {
-  var panel = document.getElementById('grmUnderReview');
-  var title = panel && panel.querySelector('.grm-review-title');
-  var sub   = document.getElementById('grmReviewEmail');
-  var note  = panel && panel.querySelector('.grm-review-note');
-  if (title) title.textContent = 'Expert onboarding is currently closed';
-  if (sub)   sub.textContent   = 'ZITLAS is not accepting new expert accounts at this time.';
-  if (note)  note.textContent  = 'You can continue using ZITLAS as a user.';
-  if (panel) panel.style.display = '';
-}
 
-/* Expert onboarding is frozen, so the sign-up role chooser offers only one
-   real option. Hidden rather than deleted: reopening onboarding is then a
-   one-line change, and nothing else in the modal has to move. */
-function hideExpertRoleOption() {
-  var opt = document.getElementById('grmOptExpert');
-  if (opt) {
-    opt.style.display = 'none';
-    opt.setAttribute('aria-hidden', 'true');
-    opt.disabled = true;
-  }
-  var hint = document.getElementById('expertHint');
-  if (hint) hint.style.display = 'none';
-}
-
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', hideExpertRoleOption);
-} else {
-  hideExpertRoleOption();
-}
 
 function syncFirebaseUser(user, role) {
   /* ACCOUNT GUARD — claim the local cache for this uid BEFORE writing any
@@ -597,7 +570,6 @@ function syncFirebaseUser(user, role) {
       id:    user.uid,
       name:  user.displayName    || '',
     }));
-    _addToExpertsStorage(user.uid, user.email || '', user.displayName || '');
   }
 
   localStorage.setItem('zitlas_firebase_user', JSON.stringify({
@@ -635,7 +607,6 @@ function syncEmailUser(user, name, role) {
       id:    user.uid,
       name:  userName,
     }));
-    _addToExpertsStorage(user.uid, user.email || '', userName);
   }
 
   localStorage.setItem('zitlas_firebase_user', JSON.stringify({
@@ -653,129 +624,30 @@ function syncEmailUser(user, name, role) {
 
 let _pendingGoogleUser = null;
 
-function showRoleModal(user) {
-  _pendingGoogleUser = user;
-  const backdrop = document.getElementById('grmBackdrop');
-  if (!backdrop) return;
-
-  const photoEl = document.getElementById('grmPhoto');
-  const nameEl  = document.getElementById('grmUserName');
-  const emailEl = document.getElementById('grmUserEmail');
-
-  if (photoEl) {
-    if (user.photoURL) { photoEl.src = user.photoURL; photoEl.style.display = ''; }
-    else               { photoEl.style.display = 'none'; }
+/* Creates the `users/{uid}` document for a brand-new account.
+   Always a plain user: `roles: ['user']`, `expert_status: 'none'`. Nothing
+   here can write an expert marker, and nothing reads these fields for
+   authorisation anyway — GET /api/auth/role is the only authority. */
+async function createUserProfile(user) {
+  try {
+    await ZitlasDB.collection('users').doc(user.uid).set({
+      uid:           user.uid,
+      name:          user.displayName || '',
+      email:         user.email       || '',
+      photo:         user.photoURL    || null,
+      roles:         ['user'],
+      expert_status: 'none',
+      created_at:    firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    syncFirebaseUser(user, 'user');
+  } catch (err) {
+    console.error('[ZITLAS] createUserProfile error:', err);
+    showToast('Failed to set up your account. Please try again.');
+    throw err;
   }
-  if (nameEl)  nameEl.textContent  = user.displayName || 'User';
-  if (emailEl) emailEl.textContent = user.email       || '';
-
-  backdrop.removeAttribute('aria-hidden');
-  backdrop.classList.add('active');
-  document.body.style.overflow = 'hidden';
 }
 
-function hideRoleModal() {
-  const backdrop = document.getElementById('grmBackdrop');
-  if (backdrop) {
-    backdrop.setAttribute('aria-hidden', 'true');
-    backdrop.classList.remove('active');
-  }
-  document.body.style.overflow = '';
-}
 
-(function initRoleModal() {
-  const options     = document.querySelectorAll('.grm-option');
-  const confirmBtn  = document.getElementById('grmConfirm');
-  const confirmTxt  = document.getElementById('grmConfirmText');
-  const confirmSpin = document.getElementById('grmConfirmSpinner');
-  let   chosenRole  = null;
-
-  options.forEach(function (opt) {
-    opt.addEventListener('click', function () {
-      options.forEach(function (o) { o.classList.remove('active'); });
-      opt.classList.add('active');
-      chosenRole = opt.dataset.role;
-      if (confirmBtn) confirmBtn.disabled = false;
-    });
-  });
-
-  if (!confirmBtn) return;
-
-  confirmBtn.addEventListener('click', async function () {
-    if (!chosenRole || !_pendingGoogleUser) return;
-    const user = _pendingGoogleUser;
-
-    confirmBtn.disabled = true;
-    if (confirmTxt)  confirmTxt.textContent   = 'Setting up...';
-    if (confirmSpin) confirmSpin.style.display = 'flex';
-
-    try {
-      
-      const newRoles = ['athlete'];
-      if (chosenRole === 'expert') newRoles.push('expert_pending');
-
-      await ZitlasDB.collection('users').doc(user.uid).set({
-        uid:           user.uid,
-        name:          user.displayName || '',
-        email:         user.email       || '',
-        photo:         user.photoURL    || null,
-        roles:         newRoles,
-        expert_status: chosenRole === 'expert' ? 'pending' : 'none',
-        created_at:    firebase.firestore.FieldValue.serverTimestamp(),
-      });
-
-      /* EXPERT ONBOARDING IS FROZEN. The option is hidden in the modal, so
-         this branch is only reachable by a tampered DOM — it must therefore
-         still refuse rather than record an application. */
-      if (chosenRole === 'expert') {
-        console.warn('[EXPERT SIGNUP] blocked — expert onboarding is closed');
-        showExpertOnboardingClosed();
-      } else {
-        syncFirebaseUser(user, chosenRole);
-        selectedRole = chosenRole;
-        hideRoleModal();
-        showLoginOverlay();
-      }
-
-    } catch (err) {
-      console.error('[ZITLAS] saveUserRole error:', err);
-      confirmBtn.disabled = false;
-      if (confirmTxt)  confirmTxt.textContent   = 'Continue';
-      if (confirmSpin) confirmSpin.style.display = 'none';
-      showToast('Failed to save account. Please try again.');
-    }
-  });
-
-  
-  const reviewHomeBtn = document.getElementById('grmReviewHomeBtn');
-  if (reviewHomeBtn) {
-    reviewHomeBtn.addEventListener('click', function () {
-      console.log('[ZITLAS] Under-review  continuing as athlete guest');
-      sessionStorage.setItem('zitlas_guest', '1');
-      
-      window.location.replace('../dashboard/dashboard.html');
-    });
-  }
-}());
-
-function showExpertApplicationReview(email) {
-  
-  ['grmUserStrip', 'grmTitle'].forEach(function (id) {
-    var el = document.getElementById(id);
-    if (el) el.style.display = 'none';
-  });
-  document.querySelectorAll('.grm-sub, .grm-options, .grm-confirm-btn').forEach(function (el) {
-    el.style.display = 'none';
-  });
-
-  
-  var emailEl = document.getElementById('grmReviewEmail');
-  if (emailEl && email) {
-    emailEl.textContent = 'Application submitted for ' + email;
-  }
-  var panel = document.getElementById('grmUnderReview');
-  if (panel) panel.style.display = 'flex';
-}
 
 
 

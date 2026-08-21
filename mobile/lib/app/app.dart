@@ -85,7 +85,7 @@ abstract final class _ReminderBootstrap {
     _appliedFor = key;
 
     final scheduler = ZinoNotificationScheduler();
-    final Future<void> work = role == 'athlete'
+    final Future<void> work = role == 'user'
         ? scheduler.scheduleAll(preferences: NotificationPreferences.load())
         : scheduler.cancelAll();
 

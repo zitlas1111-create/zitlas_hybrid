@@ -235,7 +235,7 @@ class _MealEditorSheetState extends State<_MealEditorSheet> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  _sectionLabel('Notes for the athlete'),
+                  _sectionLabel('Notes for the user'),
                   TextField(
                     controller: _notes,
                     maxLines: 3,

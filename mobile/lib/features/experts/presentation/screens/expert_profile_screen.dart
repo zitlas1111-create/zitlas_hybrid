@@ -47,7 +47,7 @@ class ExpertProfileScreen extends StatelessWidget {
       create: (_) => ExpertProfileController(
         expertId: expertId,
         userId: auth.uid,
-        userName: auth.name ?? 'Athlete',
+        userName: auth.name ?? 'User',
         repository: ExpertsRepository(firestore: FirebaseFirestore.instance, auth: FirebaseAuth.instance),
         firestore: FirebaseFirestore.instance,
       ),
@@ -736,7 +736,7 @@ class _ReviewsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _Section(
-      title: 'Athlete Reviews',
+      title: 'User Reviews',
       child: Column(
         children: expert.reviews.take(5).map((r) {
           return Container(

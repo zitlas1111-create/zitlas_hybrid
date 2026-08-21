@@ -9,7 +9,7 @@ import '../../models/expert_models.dart';
 import '../widgets/expert_common.dart';
 
 /// `#sectionDashboard` — expert profile card, 4-stat grid, quick actions,
-/// and the live "My Athletes" list.
+/// and the live "My Users" list.
 class ExpertDashboardSection extends StatelessWidget {
   const ExpertDashboardSection({
     super.key,
@@ -46,7 +46,7 @@ class ExpertDashboardSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 22),
-        const EdSectionLabel('My Athletes'),
+        const EdSectionLabel('My Users'),
         ZitlasCard(
           padding: EdgeInsets.zero,
           child: c.myAthletes.isEmpty
@@ -54,7 +54,7 @@ class ExpertDashboardSection extends StatelessWidget {
                   icon: '👨‍🏫',
                   title: 'No coaching clients yet',
                   subtitle:
-                      'Athletes who purchase Personal Coaching with you will appear here.',
+                      'Users who purchase Personal Coaching with you will appear here.',
                 )
               : Column(
                   children: [
@@ -404,7 +404,7 @@ class _QuickButton extends StatelessWidget {
   }
 }
 
-/// `.ed-athlete-card` — name, `Coaching since <date>`, days-left warning
+/// `.ed-user-card` — name, `Coaching since <date>`, days-left warning
 /// under 7 days (ED:1337-1376).
 class _AthleteTile extends StatelessWidget {
   const _AthleteTile({required this.rel, required this.onOpen});
@@ -459,7 +459,7 @@ class _AthleteTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          EdActionButton(label: 'View Athlete Profile', onPressed: onOpen, filled: false),
+          EdActionButton(label: 'View User Profile', onPressed: onOpen, filled: false),
         ],
       ),
     );

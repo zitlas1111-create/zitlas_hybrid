@@ -58,7 +58,7 @@ class _DietBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<DietController>();
-    final userName = context.watch<AuthState>().profile?.name ?? 'Athlete';
+    final userName = context.watch<AuthState>().profile?.name ?? 'User';
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(

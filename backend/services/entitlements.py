@@ -31,7 +31,7 @@ TIER SOURCE OF TRUTH
 `users/{uid}.membership` — exactly the document `payment-service.js`'s
 `_membershipIsPremium()` already treats as authoritative, and which
 `firestore.rules` already forbids the client from writing (see the
-"athlete CANNOT self-activate premium membership" rule). The tier is NEVER read
+"user CANNOT self-activate premium membership" rule). The tier is NEVER read
 from a request body, a header, or localStorage.
 
 Because the tier is derived from that document on every call, an EXISTING

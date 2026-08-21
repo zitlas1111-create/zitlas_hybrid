@@ -62,7 +62,7 @@
      ROOT CAUSE this closes: Complete Review used to update ONLY
      review_requests/{id} — a review inbox document. Nothing ever wrote the
      reviewed meals into the athlete's actual plan storage, so the expert
-     saw "Review Sent to Athlete" while the athlete's diet page kept
+     saw "Review Sent to User" while the athlete's diet page kept
      rendering the old plan forever (unless they manually pressed the
      Accept banner, which itself only worked when the review synced AND
      the banner was noticed).
@@ -309,7 +309,7 @@
       _ctxRow('Steps Target',   _pick(calc, ['daily_steps', 'steps_target', 'steps']));
 
     var html =
-      _ctxSection('👤 Athlete Information', userRows) +
+      _ctxSection('👤 User Information', userRows) +
       _ctxSection('🎯 Goal Summary', goalRows) +
       _ctxSection('📋 Assessment Summary', assessRows) +
       _ctxSection('🧮 Nutrition Targets', targetRows);
@@ -319,7 +319,7 @@
     panel.className = 'mp-ctx-panel';
     panel.innerHTML =
       '<div class="mp-ctx-head">' +
-        '<span>Athlete Profile &amp; Assessment</span>' +
+        '<span>User Profile &amp; Assessment</span>' +
         '<button class="mp-ctx-toggle" id="mpCtxToggle" type="button">Hide</button>' +
       '</div>' +
       '<div class="mp-ctx-body" id="mpCtxBody">' + html + '</div>';
@@ -336,9 +336,9 @@
     var wrap = document.createElement('div');
     wrap.className = 'mp-notes-panel';
     wrap.innerHTML =
-      '<p class="mp-ctx-title">📝 Review Notes for the Athlete</p>' +
+      '<p class="mp-ctx-title">📝 Review Notes for the User</p>' +
       '<textarea class="mp-notes-input" id="mpNotes" rows="3" ' +
-        'placeholder="Optional — explain your changes, add guidance (the athlete sees this with the reviewed plan)…"></textarea>';
+        'placeholder="Optional — explain your changes, add guidance (the user sees this with the reviewed plan)…"></textarea>';
     wrap.querySelector('#mpNotes').value = review.expertNotes || '';
     return wrap;
   }
@@ -498,7 +498,7 @@
 
   /* ── Live athlete data ──
      users/{uid} is the documented single source of truth for the
-     athlete's plan + assessment. The expert reviews the athlete's
+     athlete's plan + assessment. The expert reviews the user's
      CURRENT state, not the snapshot frozen into the request at submit
      time — the snapshot remains only as (a) an immutable record of what
      was submitted and (b) the fallback for legacy requests without a

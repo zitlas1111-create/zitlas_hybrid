@@ -55,7 +55,7 @@ class AthletePreferenceStrip extends StatelessWidget {
           border: Border.all(color: ZitlasTokens.borderSub),
         ),
         child: const Text(
-          "This athlete hasn't completed their food profile yet — no allergies, "
+          "This user hasn't completed their food profile yet — no allergies, "
           'preferences or budget recorded. Ask them in chat before building the week.',
           style: TextStyle(fontSize: 11.5, height: 1.45, color: ZitlasTokens.textSecondary),
         ),
@@ -73,7 +73,7 @@ class AthletePreferenceStrip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'ATHLETE PREFERENCES',
+            'USER PREFERENCES',
             style: TextStyle(
               fontSize: 9.5,
               fontWeight: FontWeight.w900,

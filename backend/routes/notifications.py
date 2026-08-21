@@ -199,7 +199,7 @@ async def notify_meal_review(body: CheckinBody, caller: dict = Depends(verify_fi
     c = snap.to_dict() or {}
 
     if c.get("coachId") != caller["uid"]:
-        raise HTTPException(status_code=403, detail="not_your_athlete")
+        raise HTTPException(status_code=403, detail="not_your_user")
     athlete_id = c.get("athleteId")
     if not athlete_id:
         return {"success": True, "sent": 0, "detail": "no_athlete_on_checkin"}
@@ -248,7 +248,7 @@ async def notify_plan_updated(body: PlanBody, caller: dict = Depends(verify_fire
     rel_snap = db.collection("personal_coaching").document(body.athleteId).get()
     rel = rel_snap.to_dict() if rel_snap.exists else None
     if not rel or rel.get("coachId") != caller["uid"] or rel.get("status") != "active":
-        raise HTTPException(status_code=403, detail="not_active_coach_of_athlete")
+        raise HTTPException(status_code=403, detail="not_active_coach_of_user")
 
     coach_name = rel.get("coachName") or _name_of(db, caller["uid"], "Your coach")
     is_diet = kind == "diet"

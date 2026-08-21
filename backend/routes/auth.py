@@ -43,8 +43,27 @@ async def my_role(caller: dict = Depends(verify_firebase_token)):
     `expertOnboardingOpen` is reported so the UI never has to hard-code the
     freeze: when onboarding reopens, the entry points come back on their own.
     """
+    uid = caller.get("uid") or ""
+    claim = bool(caller.get("expert"))
+    approved = auth_service.is_approved_expert(uid) if claim else None
     role = auth_service.resolve_role(caller)
-    print(f"[AUTH] role resolved uid={caller.get('uid')} -> {role}")
+
+    # Both halves, every time. When this answers "user" for somebody who
+    # should be an expert, the log says WHICH half failed instead of leaving
+    # it to be guessed — a missing claim means a stale ID token (the client
+    # must call getIdToken(true)), while claim-true/approved-false means the
+    # Firestore document is not approved.
+    print(f"[AUTH] role uid={uid} email={caller.get('email')} "
+          f"token_expert_claim={claim} "
+          f"firestore_approved={approved if claim else '(not checked - no claim)'} "
+          f"-> {role}")
+    if role != "expert":
+        reason = ("token carries no `expert` claim — the ID token predates the "
+                  "claim being granted; the client must force-refresh it"
+                  if not claim else
+                  "claim present but experts/{uid}.approved is not true")
+        print(f"[AUTH] not expert because: {reason}")
+
     return {
         "uid": caller.get("uid"),
         "role": role,

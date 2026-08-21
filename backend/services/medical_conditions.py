@@ -649,7 +649,7 @@ def format_prompt_block(directives: dict[str, Any], section: str) -> str:
     """
     if not directives["matched"] and not directives["is_generic_fallback"]:
         return ""
-    labels = ", ".join(directives["labels"]) or "the athlete's reported condition"
+    labels = ", ".join(directives["labels"]) or "the user's reported condition"
     lines = [
         f"\nMEDICAL CONDITION REQUIREMENTS — HIGHEST PRIORITY (detected: {labels}):",
         "These override generic guidance above wherever they conflict. In the plan's "

@@ -49,7 +49,7 @@
   }
   function myName() {
     var fb = safeJSON('zitlas_firebase_user');
-    return (fb && (fb.displayName || fb.name)) || 'Athlete';
+    return (fb && (fb.displayName || fb.name)) || 'User';
   }
 
   /* ══════════════════════════════════════════════

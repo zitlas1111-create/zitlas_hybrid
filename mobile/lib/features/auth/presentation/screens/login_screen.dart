@@ -1,5 +1,3 @@
-import 'package:go_router/go_router.dart';
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +7,6 @@ import '../../data/auth_exception.dart';
 import '../../data/auth_repository.dart';
 import '../auth_visuals.dart';
 import '../widgets/auth_icons.dart';
-import '../widgets/google_role_picker_sheet.dart';
 import '../widgets/gradient_border_card.dart';
 
 /// Native rebuild of `frontend/pages/login/login.js` + `login.html` +
@@ -38,7 +35,11 @@ class _LoginScreenState extends State<LoginScreen> {
   final _nameController = TextEditingController();
   final _confirmController = TextEditingController();
 
-  String _role = 'athlete'; // 'athlete' | 'expert'
+  /* ONE ZITLAS LOGIN. There is no role selector: the sign-in form is
+     identical for everybody, and where the account lands is decided AFTER
+     authentication by GET /api/auth/role (see RoleRepository), from the
+     verified `expert` custom claim plus `experts/{uid}.approved`. Nothing on
+     this screen can influence that. */
   bool _isSignup = false;
   bool _obscurePassword = true;
   bool _obscureConfirm = true;
@@ -67,20 +68,18 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   String get _title {
-    if (_isSignup) return _role == 'expert' ? 'Create Expert Account' : 'Create Account';
-    return _role == 'expert' ? 'Expert Login' : 'Welcome Back';
+    if (_isSignup) return 'Create Account';
+    return 'Welcome Back';
   }
 
   String get _subtitle {
     if (_isSignup) return "Join ZITLAS — start your AI-powered fitness journey";
-    return _role == 'expert'
-        ? 'Sign in to your ZITLAS Expert Portal'
-        : 'Sign in to continue your AI-powered fitness journey';
+    return 'Sign in to continue your AI-powered fitness journey';
   }
 
   String get _submitLabel {
-    if (_isSignup) return _role == 'expert' ? 'Create Expert Account' : 'Create Account';
-    return _role == 'expert' ? 'Expert Login' : 'Sign In';
+    if (_isSignup) return 'Create Account';
+    return 'Sign In';
   }
 
   bool get _validEmail =>
@@ -124,13 +123,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final authState = context.read<AuthState>();
     try {
       if (_isSignup) {
-        await authState.signUp(email: email, password: password, name: name, role: _role);
-        if (_role == 'expert' && mounted) {
-          _showMessage('Expert account created! Your application is under review.');
-        } else if (mounted) {
-          // Matches login.js's showLoginOverlay() on athlete signup.
-          setState(() => _showOverlay = true);
-        }
+        // Every new account is a user. Expert onboarding is closed, and an
+        // expert only exists once an admin grants the claim.
+        await authState.signUp(
+            email: email, password: password, name: name, role: 'user');
       } else {
         await authState.signIn(email, password);
       }
@@ -161,15 +157,10 @@ class _LoginScreenState extends State<LoginScreen> {
         // Matches login.js's showLoginOverlay() for an existing Google user.
         setState(() => _showOverlay = true);
       } else if (outcome is GoogleSignInNeedsRole && mounted) {
-        final chosen = await showGoogleRolePicker(context, outcome.firebaseUser);
-        if (chosen != null) {
-          await authState.completeGoogleRoleSelection(outcome.firebaseUser, chosen);
-          if (chosen == 'expert' && mounted) {
-            context.go('/under-review');
-          } else if (mounted) {
-            setState(() => _showOverlay = true);
-          }
-        }
+        // A brand-new Google account. This used to open a role picker
+        // offering User or Expert; there is no choice to make any more.
+        await authState.completeGoogleRoleSelection(outcome.firebaseUser, 'user');
+        if (mounted) setState(() => _showOverlay = true);
       }
     } on AuthCancelledException {
       // Silent, matches login.js's popup-closed-by-user no-op.
@@ -241,11 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 const _FirebaseUnavailableBanner(),
                                 const SizedBox(height: 16),
                               ],
-                              _RoleTabs(
-                                role: _role,
-                                onChanged: (r) => setState(() => _role = r),
-                              ),
-                              const SizedBox(height: 20),
+                              const SizedBox(height: 4),
                               Text(
                                 _title,
                                 textAlign: TextAlign.center,
@@ -279,7 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ],
                               _AuthTextField(
                                 controller: _emailController,
-                                hint: _role == 'expert' ? 'Expert Email' : 'Email or Mobile Number',
+                                hint: 'Email or Mobile Number',
                                 iconPath: AuthIconPaths.mail,
                                 hasError: _fieldErrors.contains('email'),
                                 keyboardType: TextInputType.emailAddress,
@@ -424,32 +411,6 @@ class _LoginScreenState extends State<LoginScreen> {
                                   ),
                                 ),
                               ),
-                              if (!_isSignup && _role == 'athlete') ...[
-                                const SizedBox(height: 16),
-                                Center(
-                                  child: RichText(
-                                    textAlign: TextAlign.center,
-                                    text: TextSpan(
-                                      style: const TextStyle(
-                                        color: AuthColors.muted,
-                                        fontSize: 12.5,
-                                      ),
-                                      children: [
-                                        const TextSpan(text: 'Are you a certified expert? '),
-                                        TextSpan(
-                                          text: 'Login as Expert',
-                                          style: const TextStyle(
-                                            color: AuthColors.cyan,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                          recognizer: TapGestureRecognizer()
-                                            ..onTap = () => setState(() => _role = 'expert'),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ],
                             ],
                           ),
                         ),
@@ -460,7 +421,7 @@ class _LoginScreenState extends State<LoginScreen> {
               ],
             ),
           ),
-          if (_showOverlay) _WelcomeOverlay(role: _role),
+          if (_showOverlay) const _WelcomeOverlay(),
         ],
       ),
     ),
@@ -784,75 +745,14 @@ class _GoogleButton extends StatelessWidget {
 }
 
 /// `.role-selector` — sliding-pill Athlete/Expert toggle.
-class _RoleTabs extends StatelessWidget {
-  const _RoleTabs({required this.role, required this.onChanged});
-
-  final String role;
-  final ValueChanged<String> onChanged;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(5),
-      decoration: BoxDecoration(
-        color: AuthColors.roleTrackBg,
-        borderRadius: BorderRadius.circular(999),
-      ),
-      child: Row(
-        children: [
-          Expanded(child: _tab(context, 'athlete', 'Athlete', AuthIconPaths.athlete)),
-          Expanded(child: _tab(context, 'expert', 'Expert', AuthIconPaths.expert)),
-        ],
-      ),
-    );
-  }
-
-  Widget _tab(BuildContext context, String value, String label, String iconPath) {
-    final selected = role == value;
-    return GestureDetector(
-      onTap: () => onChanged(value),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 220),
-        curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(vertical: 10),
-        decoration: BoxDecoration(
-          color: selected ? AuthColors.cardSolid : Colors.transparent,
-          borderRadius: BorderRadius.circular(999),
-          boxShadow: selected
-              ? const [BoxShadow(color: Color(0x1F101828), blurRadius: 18, offset: Offset(0, 6))]
-              : null,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AuthIcon(
-              iconPath,
-              size: 16,
-              strokeWidth: 2.4,
-              color: selected ? AuthColors.ink : AuthColors.muted,
-            ),
-            const SizedBox(width: 7),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w800,
-                color: selected ? AuthColors.ink : AuthColors.muted,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
 
 /// `.login-overlay` — full-screen post-auth transition shown while the
 /// router hands off to the resolved dashboard.
 class _WelcomeOverlay extends StatelessWidget {
-  const _WelcomeOverlay({required this.role});
-
-  final String role;
+  /* One message for everybody. This used to read "Expert Portal Loading"
+     when the login screen's role toggle said expert — but that toggle is
+     gone, and the destination is only known once the server answers. */
+  const _WelcomeOverlay();
 
   @override
   Widget build(BuildContext context) {
@@ -889,7 +789,7 @@ class _WelcomeOverlay extends StatelessWidget {
               ),
               const SizedBox(height: 22),
               Text(
-                role == 'expert' ? 'Expert Portal Loading' : 'Welcome back',
+                'Welcome back',
                 style: const TextStyle(
                   color: AuthColors.muted,
                   fontSize: 14,

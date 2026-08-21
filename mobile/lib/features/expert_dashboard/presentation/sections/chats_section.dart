@@ -34,7 +34,7 @@ class ExpertChatsSection extends StatelessWidget {
             child: EdEmptyState(
               icon: '💬',
               title: 'No Active Chats',
-              subtitle: 'Chats with athletes requesting reviews will appear here.',
+              subtitle: 'Chats with users requesting reviews will appear here.',
             ),
           )
         else

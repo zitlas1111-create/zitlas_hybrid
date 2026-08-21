@@ -1157,7 +1157,7 @@
       var fb = JSON.parse(localStorage.getItem('zitlas_firebase_user') || 'null');
       if (fb && fb.name) return fb.name;
     } catch(_) {}
-    return 'Athlete';
+    return 'User';
   }
 
   function getConversationId(coachId) {
@@ -2565,7 +2565,7 @@
       siblingRequestId: review.siblingId || null,
       onSuccessUpdate: { status: 'in_progress', chatUnlocked: chatIncluded },
       notifyUser: { title: 'Payment successful', message: 'Your ' + serviceLabel.toLowerCase() + ' has started.' },
-      notifyExpert: { title: 'Payment received', message: (review.userName || 'An athlete') + "'s payment succeeded — you may begin." },
+      notifyExpert: { title: 'Payment received', message: (review.userName || 'An user') + "'s payment succeeded — you may begin." },
     }).then(function (result) {
       if (result.success) {
         showToast('✅ Payment successful!');
@@ -3513,7 +3513,7 @@
         var now = new Date().toISOString();
         /* Athlete display name — the expert's Modify pages render
            review.athleteName/userName; without this every review showed
-           the generic "Reviewing plan for Athlete". */
+           the generic "Reviewing plan for User". */
         var _fbUsr = {};
         try { _fbUsr = JSON.parse(localStorage.getItem('zitlas_firebase_user') || '{}') || {}; } catch (_) {}
         var _athleteNm = _fbUsr.name || _fbUsr.displayName || 'Athlete';

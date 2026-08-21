@@ -734,7 +734,7 @@
       var toastParts = [];
       if (changeCount)       toastParts.push(changeCount + ' meal ' + (changeCount !== 1 ? 'changes' : 'change'));
       if (workoutChangeCount) toastParts.push(workoutChangeCount + ' workout ' + (workoutChangeCount !== 1 ? 'days' : 'day'));
-      showToast('Plan approved' + (toastParts.length ? ' — ' + toastParts.join(', ') : '') + ' · athlete will see updated plan');
+      showToast('Plan approved' + (toastParts.length ? ' — ' + toastParts.join(', ') : '') + ' · user will see updated plan');
 
       setTimeout(function() {
         btn.textContent      = 'Plan Approved ✓';

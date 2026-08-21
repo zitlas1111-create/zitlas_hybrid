@@ -69,7 +69,7 @@ class MealReviewScreen extends StatelessWidget {
           ];
           if (all.isEmpty) {
             return const _Message(
-              'No meals yet. When your athletes photograph a meal it appears '
+              'No meals yet. When your users photograph a meal it appears '
               'here for review.',
             );
           }
@@ -146,7 +146,7 @@ class _Counters extends StatelessWidget {
         children: [
           _Counter(value: pending, label: 'Pending', highlight: pending > 0),
           _Counter(value: reviewedToday, label: 'Reviewed today'),
-          _Counter(value: athletesPending, label: 'Athletes waiting'),
+          _Counter(value: athletesPending, label: 'Users waiting'),
         ],
       ),
     );

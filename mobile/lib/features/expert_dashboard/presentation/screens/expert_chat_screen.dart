@@ -184,7 +184,7 @@ class _ExpertChatScreenState extends State<ExpertChatScreen> {
                         decoration: InputDecoration(
                           filled: true,
                           fillColor: ZitlasTokens.bgCardLight,
-                          hintText: 'Reply to athlete…',
+                          hintText: 'Reply to user…',
                           hintStyle: const TextStyle(color: ZitlasTokens.textMuted),
                           contentPadding:
                               const EdgeInsets.symmetric(horizontal: 14, vertical: 11),

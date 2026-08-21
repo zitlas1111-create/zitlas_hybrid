@@ -375,7 +375,7 @@ class ExpertRepository {
   }
 
   /// `personal_coaching` where `coachId == uid` (ED:1315) — the expert's
-  /// active coaching relationships ("My Athletes").
+  /// active coaching relationships ("My Users").
   Stream<List<CoachingRelationship>> watchCoachingRelationships(String uid) {
     return _db
         .collection('personal_coaching')

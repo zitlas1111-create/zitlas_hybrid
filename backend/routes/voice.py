@@ -45,7 +45,7 @@ class TtsRequest(BaseModel):
 class VoiceChatRequest(BaseModel):
     message: str = Field(..., min_length=1, max_length=2000)
     language: str = Field(default="hinglish")
-    context: dict = Field(default_factory=dict, description="Athlete snapshot — same shape as /api/ai/zino-chat")
+    context: dict = Field(default_factory=dict, description="User snapshot — same shape as /api/ai/zino-chat")
     history: list[dict] = Field(default_factory=list, description="[{role:'user'|'zino', text}]")
 
 
@@ -136,7 +136,7 @@ async def voice_chat(body: VoiceChatRequest) -> dict[str, Any]:
 
     history_lines = []
     for h in body.history[-16:]:
-        role = "Athlete" if h.get("role") == "user" else "Zino"
+        role = "User" if h.get("role") == "user" else "Zino"
         text = str(h.get("text", ""))[:400]
         if text:
             history_lines.append(f"{role}: {text}")
@@ -145,9 +145,9 @@ async def voice_chat(body: VoiceChatRequest) -> dict[str, Any]:
     import json as _json
     ctx_str = _json.dumps(body.context, indent=2, default=str) if body.context else "No profile data synced yet."
     user_message = (
-        f"ATHLETE CONTEXT:\n{ctx_str}\n\n"
+        f"USER CONTEXT:\n{ctx_str}\n\n"
         f"{history_block}"
-        f"Athlete says: {body.message}"
+        f"User says: {body.message}"
     )
 
     print(f"[VOICE CHAT] lang={language} message={body.message[:120]!r}")
