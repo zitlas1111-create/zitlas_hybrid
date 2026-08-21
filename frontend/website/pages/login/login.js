@@ -120,20 +120,39 @@ let _explicitAuthInProgress = false;
    The ONE role-determination rule — shared by the passive listener, the
    password sign-in path, and Google sign-in, so all three agree on what
    "expert" means and none of them can drift out of sync with the others. */
+/* ── ROLE RESOLUTION IS SERVER-SIDE ────────────────────────────────────────
+   Asks GET /api/auth/role, which derives the answer from the verified
+   Firebase token's `expert` claim AND `experts/{uid}.approved`. Neither is
+   writable from the browser.
+
+   This replaces a client-side read of `users/{uid}`, which was wrong twice
+   over: that document's `role`/`roles` fields are client-writable (the
+   sign-up role modal set them), and the old logic treated `expert_pending`
+   and `expert_status === 'pending'` as EXPERT — so merely applying landed
+   you on the expert dashboard.
+
+   Fails to 'user', never to 'expert': if the role cannot be established the
+   safe answer is the one that grants nothing. Returns null only when there
+   is no profile yet, preserving the caller's "nothing to redirect to" case. */
 async function resolveRole(user) {
   const docSnap = await ZitlasDB.collection('users').doc(user.uid).get();
   if (!docSnap.exists) return null;
-  const data = docSnap.data();
-  const roles        = Array.isArray(data.roles) ? data.roles : [];
-  const expertStatus = data.expert_status || '';
-  const legacyRole   = data.role          || '';
-  const isExpert     =
-    roles.includes('expert')         ||
-    roles.includes('expert_pending') ||
-    expertStatus === 'approved'      ||
-    expertStatus === 'pending'       ||
-    legacyRole   === 'expert';
-  return isExpert ? 'expert' : 'athlete';
+
+  try {
+    const token = await user.getIdToken();
+    const resp  = await fetch('/api/auth/role', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (resp.ok) {
+      const data = await resp.json();
+      console.log('[AUTH] server role =', data.role, 'isExpert =', data.isExpert);
+      return data.role === 'expert' ? 'expert' : 'user';
+    }
+    console.warn('[AUTH] /api/auth/role returned', resp.status, '— treating as user');
+  } catch (e) {
+    console.warn('[AUTH] role lookup failed — treating as user', e);
+  }
+  return 'user';
 }
 
 if (typeof ZitlasAuth !== 'undefined') {
@@ -454,14 +473,20 @@ if (googleBtn) {
         const expertByEmail = await ZitlasDB.collection('experts')
           .where('email', '==', user.email).limit(1).get();
         if (!expertByEmail.empty) {
-          console.log('[EXPERT FOUND] by email', user.email);
+          /* An `experts` row matching this email exists. That is a HINT, not
+             an authorisation: the row is world-readable to signed-in users,
+             so matching on it client-side would let anyone who knows an
+             expert's address claim the role. Ask the server instead — it
+             checks the custom claim AND `approved`. */
+          console.log('[EXPERT MATCH] experts row found by email — verifying server-side');
+          const verifiedRole = await resolveRole(user);
           await ZitlasDB.collection('users').doc(user.uid).set({
             uid: user.uid, name: user.displayName || '', email: user.email || '',
-            photo: user.photoURL || null, role: 'expert',
+            photo: user.photoURL || null,
             created_at: firebase.firestore.FieldValue.serverTimestamp(),
           }, { merge: true });
-          syncFirebaseUser(user, 'expert');
-          selectedRole = 'expert';
+          syncFirebaseUser(user, verifiedRole || 'user');
+          selectedRole = verifiedRole || 'user';
           showLoginOverlay();
         } else {
           setGoogleLoading(false);
@@ -495,19 +520,50 @@ function _clearAuthLocalStorage() {
   console.log('[LOCAL STORAGE CLEARED]');
 }
 
+/* REMOVED — this used to write { role: 'expert', approved: true } into
+   localStorage.zitlas_experts at sign-up. A browser-authored approval is
+   worth nothing on the server, but the UI believed it, which is how a normal
+   account could reach expert screens.
+
+   Expert approval now lives only in `experts/{uid}.approved` plus the
+   Firebase custom claim, both written exclusively by routes/admin.py behind
+   require_admin. Kept as a no-op so no call site breaks. */
 function _addToExpertsStorage(uid, email, name) {
-  var list = [];
-  try {
-    var _parsed = JSON.parse(localStorage.getItem('zitlas_experts'));
-    if (Array.isArray(_parsed)) list = _parsed;
-  } catch(_) {}
-  var expertProfile = { id: uid, name: name, email: email, role: 'expert', approved: true, rating: 0, specialization: 'General Fitness' };
-  console.log('[EXPERT SIGNUP]', expertProfile);
-  if (!list.some(function(e) { return e.id === uid; })) {
-    list.push(expertProfile);
+  console.log('[EXPERT SIGNUP] ignored — expert onboarding is closed; ' +
+              'approval is server-side only (uid=' + uid + ')');
+}
+
+/* Shown if the expert option is somehow reached. Reuses the existing
+   "under review" panel so no new UI component is introduced. */
+function showExpertOnboardingClosed() {
+  var panel = document.getElementById('grmUnderReview');
+  var title = panel && panel.querySelector('.grm-review-title');
+  var sub   = document.getElementById('grmReviewEmail');
+  var note  = panel && panel.querySelector('.grm-review-note');
+  if (title) title.textContent = 'Expert onboarding is currently closed';
+  if (sub)   sub.textContent   = 'ZITLAS is not accepting new expert accounts at this time.';
+  if (note)  note.textContent  = 'You can continue using ZITLAS as a user.';
+  if (panel) panel.style.display = '';
+}
+
+/* Expert onboarding is frozen, so the sign-up role chooser offers only one
+   real option. Hidden rather than deleted: reopening onboarding is then a
+   one-line change, and nothing else in the modal has to move. */
+function hideExpertRoleOption() {
+  var opt = document.getElementById('grmOptExpert');
+  if (opt) {
+    opt.style.display = 'none';
+    opt.setAttribute('aria-hidden', 'true');
+    opt.disabled = true;
   }
-  localStorage.setItem('zitlas_experts', JSON.stringify(list));
-  console.log('[EXPERTS]', list);
+  var hint = document.getElementById('expertHint');
+  if (hint) hint.style.display = 'none';
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', hideExpertRoleOption);
+} else {
+  hideExpertRoleOption();
 }
 
 function syncFirebaseUser(user, role) {
@@ -668,11 +724,12 @@ function hideRoleModal() {
         created_at:    firebase.firestore.FieldValue.serverTimestamp(),
       });
 
+      /* EXPERT ONBOARDING IS FROZEN. The option is hidden in the modal, so
+         this branch is only reachable by a tampered DOM — it must therefore
+         still refuse rather than record an application. */
       if (chosenRole === 'expert') {
-        
-        localStorage.setItem('zitlas_expert_applied', user.email || 'true');
-        
-        showExpertApplicationReview(user.email);
+        console.warn('[EXPERT SIGNUP] blocked — expert onboarding is closed');
+        showExpertOnboardingClosed();
       } else {
         syncFirebaseUser(user, chosenRole);
         selectedRole = chosenRole;

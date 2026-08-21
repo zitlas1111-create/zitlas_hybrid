@@ -130,3 +130,82 @@ async def require_admin(caller: dict = Depends(verify_firebase_token)) -> dict:
         print(f"[AUTH] admin-only route denied for uid={caller.get('uid')}")
         raise HTTPException(status_code=403, detail="admin_required")
     return caller
+
+
+# ── Expert authorisation ─────────────────────────────────────────────────────
+#
+# EXPERT ONBOARDING IS FROZEN. There are exactly three approved expert
+# accounts and the application offers no path to create a fourth: the only
+# code that can grant the claim is identity_service.grant_expert(), reachable
+# only from routes/admin.py behind require_admin.
+#
+# Two independent signals must BOTH hold, so neither alone can be forged:
+#   1. the `expert` custom claim on the verified Firebase ID token, and
+#   2. `experts/{uid}.approved == true` in Firestore.
+# A stale claim on a revoked account fails (2); a hand-written Firestore row
+# without a claim fails (1). The client is asked for neither — both are read
+# server-side from the authenticated uid.
+
+def is_approved_expert(uid: str) -> bool:
+    """Whether `experts/{uid}` exists and is approved.
+
+    Fails CLOSED: an unreachable Firestore denies expert access rather than
+    granting it. A locked-out expert is recoverable; a wrongly-admitted one
+    can read other people's plans.
+    """
+    if not uid:
+        return False
+    try:
+        from services import firestore_service
+
+        db = firestore_service.get_client()
+        if db is None:
+            print("[AUTH] expert check: Firestore unavailable — denying")
+            return False
+        snap = db.collection("experts").document(uid).get()
+        if not snap or not getattr(snap, "exists", False):
+            return False
+        return bool((snap.to_dict() or {}).get("approved"))
+    except Exception as e:  # noqa: BLE001 — see docstring
+        print(f"[AUTH] expert lookup failed for {uid}: {type(e).__name__}: {e}")
+        return False
+
+
+def is_expert(caller: dict) -> bool:
+    """Claim AND approval row. Never a client-supplied role."""
+    if not bool(caller.get("expert")):
+        return False
+    return is_approved_expert(caller.get("uid") or "")
+
+
+def resolve_role(caller: dict) -> str:
+    """The role the app should land this account on: 'expert' or 'user'.
+
+    Admin is deliberately NOT a landing role — an admin who is not also an
+    approved expert is a normal user in the app and reaches the admin portal
+    by its own route.
+    """
+    return "expert" if is_expert(caller) else "user"
+
+
+async def require_expert(caller: dict = Depends(verify_firebase_token)) -> dict:
+    """FastAPI dependency for expert-only routes. 401 unauthenticated,
+    403 for everybody who is not one of the approved experts."""
+    if not is_expert(caller):
+        print(f"[AUTH] expert-only route denied for uid={caller.get('uid')}")
+        raise HTTPException(status_code=403, detail="expert_required")
+    return caller
+
+
+def assert_owns_expert_id(caller: dict, expert_id: str | None) -> str:
+    """A client-supplied expertId must be the caller's own.
+
+    Expert endpoints take an expertId in the body or path; without this an
+    approved expert could pass a COLLEAGUE's id and act as them. Returns the
+    verified uid so callers can use it instead of the supplied value.
+    """
+    uid = caller.get("uid") or ""
+    if expert_id and expert_id != uid:
+        print(f"[AUTH] expertId mismatch: caller={uid} claimed={expert_id}")
+        raise HTTPException(status_code=403, detail="expert_id_mismatch")
+    return uid

@@ -105,7 +105,10 @@ function renderCards(list) {
       if (subEl)   subEl.textContent   = 'Experts will appear here once approved by the ZITLAS team.';
       var notifyBtn = dtNotifyBanner.querySelector('.dt-notify-btn');
       if (notifyBtn) {
-        notifyBtn.textContent = 'Become an Expert';
+        /* Expert onboarding is frozen — the CTA must not invite an
+           application it cannot accept. */
+        notifyBtn.textContent = 'Expert onboarding is closed';
+        notifyBtn.disabled = true;
         notifyBtn.onclick = function() { window.location.href = '../login/login.html'; };
       }
     } else {

@@ -5392,14 +5392,13 @@ function _initInboxTabs(expert) {
     ZitlasAuth.onAuthStateChanged(async function (firebaseUser) {
 
       if (!firebaseUser) {
-        /* No Firebase session — check localStorage fallback (email/pw demo login) */
-        const token = localStorage.getItem('zitlas_token');
-        const role  = localStorage.getItem('zitlas_user_role');
-        if (token && role === 'expert') {
-          renderAll(getExpert());
-        } else {
-          window.location.href = '../login/login.html';
-        }
+        /* No Firebase session -> login. The previous localStorage fallback
+           rendered the whole dashboard when `zitlas_token` was present and
+           `zitlas_user_role` read 'expert' — two keys any visitor can set
+           from devtools, with no authentication involved at all. There is no
+           legitimate signed-out path into an expert screen. */
+        console.log('[AUTH] no Firebase session — expert dashboard denied');
+        window.location.href = '../login/login.html';
         return;
       }
 
@@ -5419,19 +5418,33 @@ function _initInboxTabs(expert) {
         const data = doc.data();
         console.log('[USER DOC]', data);
 
-        const _roles       = Array.isArray(data.roles) ? data.roles : [];
-        const _expertStatus = data.expert_status || '';
-        const _legacyRole   = data.role || '';
-        const isExpert =
-          _roles.includes('expert')         ||
-          _roles.includes('expert_pending') ||
-          _expertStatus === 'approved'      ||
-          _expertStatus === 'pending'       ||
-          _legacyRole   === 'expert';
-        console.log('[AUTH STATE] Firebase UID:', uid, ' Detected role:', isExpert ? 'expert' : 'athlete');
+        /* SERVER-AUTHORITATIVE. `users/{uid}`'s role/roles/expert_status are
+           client-writable, and the old test also accepted 'expert_pending'
+           and 'pending' — so applying was enough to get in. GET /api/auth/role
+           checks the verified token's custom claim AND `experts/{uid}.approved`,
+           neither of which a browser can write.
+
+           Fails CLOSED: any error routes to the user dashboard. */
+        let isExpert = false;
+        try {
+          const _token = await firebaseUser.getIdToken();
+          const _resp  = await fetch('/api/auth/role', {
+            headers: { 'Authorization': 'Bearer ' + _token }
+          });
+          if (_resp.ok) {
+            const _role = await _resp.json();
+            isExpert = _role.isExpert === true;
+          } else {
+            console.warn('[AUTH] /api/auth/role returned', _resp.status);
+          }
+        } catch (e) {
+          console.warn('[AUTH] role verification failed — denying', e);
+        }
+        console.log('[AUTH STATE] Firebase UID:', uid, ' Verified role:', isExpert ? 'expert' : 'user');
         if (!isExpert) {
-          /* Athlete tried to access expert dashboard — same symmetric guard
-             as dashboard.js's own check for an expert landing there. */
+          /* A normal user tried to open the expert dashboard — same
+             symmetric guard as dashboard.js's check for an expert landing
+             on the user dashboard. */
           console.log('[AUTH STATE] Redirect destination: ../dashboard/dashboard.html');
           window.location.href = '../dashboard/dashboard.html';
           return;
@@ -5499,15 +5512,13 @@ function _initInboxTabs(expert) {
         renderAll(expert);
 
       } catch (e) {
-        console.error('[ZITLAS] Expert Firestore auth error:', e);
-        /* Degrade gracefully — use localStorage data if available */
-        const token = localStorage.getItem('zitlas_token');
-        const role  = localStorage.getItem('zitlas_user_role');
-        if (token && role === 'expert') {
-          renderAll(getExpert());
-        } else {
-          window.location.href = '../login/login.html';
-        }
+        console.error('[ZITLAS] Expert auth error:', e);
+        /* FAIL CLOSED. This used to "degrade gracefully" onto
+           localStorage.zitlas_user_role — which meant any error at all
+           handed the dashboard to whoever had set that key. An expert who
+           has to sign in again is recoverable; a stranger reading other
+           people's plans is not. */
+        window.location.href = '../login/login.html';
       }
     });
 

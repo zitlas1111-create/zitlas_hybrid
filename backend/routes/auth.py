@@ -3,6 +3,8 @@ ZITLAS — Auth Routes
 
 Endpoints:
   GET  /api/auth/health        Liveness probe
+  GET  /api/auth/role          The role this account lands on — the ONLY
+                               authority for expert-vs-user routing.
   POST /api/auth/webview-token Mint a Firebase custom token for the embedded
                                Personal Coaching WebView (auth bridge).
 
@@ -16,8 +18,8 @@ Future endpoints:
 
 from fastapi import APIRouter, Depends, HTTPException
 
+from services import auth_service, identity_service
 from services.auth_service import verify_firebase_token
-from services import identity_service
 
 router = APIRouter()
 
@@ -25,6 +27,33 @@ router = APIRouter()
 @router.get("/health")
 async def auth_health():
     return {"module": "auth", "status": "ready"}
+
+
+@router.get("/role")
+async def my_role(caller: dict = Depends(verify_firebase_token)):
+    """Where this account belongs: the expert dashboard, or the user one.
+
+    THE CLIENT MUST NOT DECIDE THIS. Before this endpoint existed the website
+    kept the answer in `localStorage.zitlas_user_role`, and
+    expert-dashboard.js set that key to 'expert' itself — so anybody who
+    could open devtools was an expert. The role is now derived from the
+    verified token's claim AND `experts/{uid}.approved`, neither of which the
+    browser can write.
+
+    `expertOnboardingOpen` is reported so the UI never has to hard-code the
+    freeze: when onboarding reopens, the entry points come back on their own.
+    """
+    role = auth_service.resolve_role(caller)
+    print(f"[AUTH] role resolved uid={caller.get('uid')} -> {role}")
+    return {
+        "uid": caller.get("uid"),
+        "role": role,
+        "isExpert": role == "expert",
+        "isAdmin": auth_service.is_admin(caller),
+        # Frozen: exactly three approved experts, and the application offers
+        # no path to create a fourth.
+        "expertOnboardingOpen": False,
+    }
 
 
 @router.post("/webview-token")

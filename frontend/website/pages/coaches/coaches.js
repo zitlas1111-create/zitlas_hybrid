@@ -132,10 +132,7 @@ function renderNoExpertsState() {
   <div class="empty-icon">🧑‍⚕️</div>
   <h3 class="empty-heading">No Experts Available</h3>
   <p class="empty-desc">Experts will appear here once approved by the ZITLAS team.</p>
-  ${isExpert ? '' : `<a href="../login/login.html" class="ask-btn" style="display:inline-flex;align-items:center;gap:6px;margin-top:12px;text-decoration:none;">
-    Become an Expert
-    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-  </a>`}
+  ${isExpert ? '' : `<p class="empty-desc" style="margin-top:12px;opacity:0.85;">Expert onboarding is currently closed.</p>`}
 </div>`;
 }
 
