@@ -122,6 +122,39 @@
       ],
     },
     {
+      field: 'workout_experience',
+      prompt: 'How much workout experience do you have?',
+      type: 'options',
+      opts: [
+        { icon: '🌱', label: "I'm completely new",   value: 'beginner' },
+        { icon: '🙂', label: "I've tried a few times", value: 'novice' },
+        { icon: '💪', label: 'I work out sometimes',  value: 'intermediate' },
+        { icon: '🔥', label: 'I work out regularly',  value: 'advanced' },
+      ],
+    },
+    {
+      field: 'stair_ability',
+      prompt: 'Can you climb 3 floors without stopping?',
+      type: 'options',
+      opts: [
+        { icon: '😄', label: 'Yes, easily',                  value: 'easy' },
+        { icon: '🙂', label: 'Yes, but I get a little tired', value: 'okay' },
+        { icon: '😐', label: 'I need a short break',          value: 'tired' },
+        { icon: '😓', label: "It's difficult for me",         value: 'difficult' },
+      ],
+    },
+    {
+      field: 'walk_ability',
+      prompt: 'Can you walk for about 30 minutes comfortably?',
+      type: 'options',
+      opts: [
+        { icon: '😄', label: 'Yes, easily',      value: 'easy' },
+        { icon: '🙂', label: 'Yes',              value: 'okay' },
+        { icon: '😐', label: 'I get tired',      value: 'tired' },
+        { icon: '😓', label: "It's difficult",   value: 'difficult' },
+      ],
+    },
+    {
       field: 'diet_preference',
       prompt: 'What type of food do you eat?',
       type: 'options',
@@ -262,6 +295,17 @@
         { icon: '🚶', label: 'Lightly Active (walks, chores)',    value: 'light' },
         { icon: '🏃', label: 'Moderately Active (3–4x/week)',     value: 'moderate' },
         { icon: '💪', label: 'Very Active (daily exercise)',       value: 'active' },
+      ],
+    },
+    {
+      field: 'stair_ability',
+      prompt: 'Can you climb 3 floors without stopping?',
+      type: 'options',
+      opts: [
+        { icon: '😄', label: 'Yes, easily',                  value: 'easy' },
+        { icon: '🙂', label: 'Yes, but I get a little tired', value: 'okay' },
+        { icon: '😐', label: 'I need a short break',          value: 'tired' },
+        { icon: '😓', label: "It's difficult for me",         value: 'difficult' },
       ],
     },
     {
@@ -485,6 +529,39 @@
         { icon: '🚶', label: 'Light movement (walks, chores)', value: 'light' },
         { icon: '🏃', label: 'Moderately active (3–4x/week)', value: 'moderate' },
         { icon: '💪', label: 'Very active (daily exercise)',   value: 'active' },
+      ],
+    },
+    {
+      field: 'workout_experience',
+      prompt: 'How much workout experience do you have?',
+      type: 'options',
+      opts: [
+        { icon: '🌱', label: "I'm completely new",   value: 'beginner' },
+        { icon: '🙂', label: "I've tried a few times", value: 'novice' },
+        { icon: '💪', label: 'I work out sometimes',  value: 'intermediate' },
+        { icon: '🔥', label: 'I work out regularly',  value: 'advanced' },
+      ],
+    },
+    {
+      field: 'stair_ability',
+      prompt: 'Can you climb 3 floors without stopping?',
+      type: 'options',
+      opts: [
+        { icon: '😄', label: 'Yes, easily',                  value: 'easy' },
+        { icon: '🙂', label: 'Yes, but I get a little tired', value: 'okay' },
+        { icon: '😐', label: 'I need a short break',          value: 'tired' },
+        { icon: '😓', label: "It's difficult for me",         value: 'difficult' },
+      ],
+    },
+    {
+      field: 'squat_ability',
+      prompt: 'Can you do a few bodyweight squats?',
+      type: 'options',
+      opts: [
+        { icon: '😄', label: 'Easily',            value: 'easy' },
+        { icon: '🙂', label: 'I can do some',     value: 'okay' },
+        { icon: '😐', label: 'Only a few',        value: 'tired' },
+        { icon: '😓', label: "They're difficult", value: 'difficult' },
       ],
     },
     {
@@ -1321,6 +1398,14 @@
       budget:            a.budget            || '',
       medical_conditions:a.medical_conditions|| 'none',
       fitness_goal:      fitnessGoal,
+      /* Fitness readiness — how CAPABLE the user is, not just how active.
+         Each is '' when the goal's question set didn't ask it; the backend
+         treats '' as "no signal" rather than guessing, so a goal that asks
+         two of them resolves from two rather than defaulting the third. */
+      workout_experience: a.workout_experience || '',
+      stair_ability:      a.stair_ability      || '',
+      walk_ability:       a.walk_ability       || '',
+      squat_ability:      a.squat_ability      || '',
       // General fitness specific fields
       health_goals:      Array.isArray(a.health_goals) ? a.health_goals : [],
       fitness_level:     a.fitness_level     || 'beginner',

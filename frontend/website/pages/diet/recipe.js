@@ -198,9 +198,13 @@
     if (!host) return;
     host.innerHTML = '';
 
-    if (!video || !video.video_id) {
+    /* Only a VERIFIED preparation video is rendered. The backend refuses to
+       send anything else, so this is a second gate rather than the decision:
+       a clip that merely shows the finished dish being poured misleads about
+       what the athlete is meant to do, and no video is better than that. */
+    if (!video || !video.video_id || video.verified === false) {
       host.innerHTML = '<p class="recipe-video-none">' +
-        esc(note || 'No exact cooking video found for this meal.') + '</p>';
+        esc(note || 'Recipe video coming soon.') + '</p>';
       host.style.display = '';
       return;
     }

@@ -24,6 +24,7 @@ class RecipeScreen extends StatefulWidget {
     required this.mealType,
     this.mealName,
     this.foods = const [],
+    this.repository,
   });
 
   /// One of breakfast/lunch/dinner/snack — always set from the meal card
@@ -42,12 +43,17 @@ class RecipeScreen extends StatefulWidget {
   /// generation; they never replace [mealName] as the identifier.
   final List<String> foods;
 
+  /// Injected only by tests, which drive this screen with the real API
+  /// payloads (see test/recipe_video_ui_test.dart) rather than reaching the
+  /// network. Null in the app — the screen builds its own, exactly as before.
+  final RecipeRepository? repository;
+
   @override
   State<RecipeScreen> createState() => _RecipeScreenState();
 }
 
 class _RecipeScreenState extends State<RecipeScreen> {
-  final _repo = RecipeRepository();
+  late final RecipeRepository _repo = widget.repository ?? RecipeRepository();
   _Phase _phase = _Phase.loading;
   AthleteRecipeContext _context = const AthleteRecipeContext();
   Recipe? _current;
@@ -600,12 +606,19 @@ class _RecipeDetailView extends StatelessWidget {
             const SizedBox(height: 18),
             Wrap(spacing: 6, runSpacing: 6, children: [for (final t in recipe.tags) _Tag(t)]),
           ],
-          if (video != null) ...[
+          // Only a VERIFIED preparation video is ever rendered. The backend
+          // already refuses to send anything else, so this is a second gate
+          // rather than the decision — a clip that merely shows the finished
+          // dish misleads about what the athlete is meant to do, and no video
+          // is strictly better than that.
+          if (video != null && video!.verified) ...[
             const _SectionTitle('Watch how to make it'),
             _MealVideoCard(video: video!),
-          ] else if (videoNote != null) ...[
+          ] else ...[
+            // Always say something. An unverified video reaching here with no
+            // note would otherwise render as a silently missing section.
             const _SectionTitle('Watch how to make it'),
-            Text(videoNote!,
+            Text(videoNote ?? 'Recipe video coming soon.',
                 style: const TextStyle(
                     fontSize: 12.5, color: ZitlasTokens.textMuted, height: 1.5)),
           ],

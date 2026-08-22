@@ -192,8 +192,13 @@ class TestDeterminism:
 # ── Video relevance validation ───────────────────────────────────────────────
 
 class TestVideoRelevance:
-    def _video(self, title, desc=""):
-        return {"title": title, "description": desc, "video_id": "abc123"}
+    def _video(self, title, desc="", seconds=60):
+        # An in-window duration by default: these tests are about TITLE
+        # relevance, and a video with no duration is now rejected outright
+        # (fail closed). The 20-90s window has its own suite in
+        # tests/test_recipe_video_matching.py.
+        return {"title": title, "description": desc, "video_id": "abc123",
+                "duration_seconds": seconds}
 
     def test_an_on_topic_title_scores_high(self):
         score = mrs.video_relevance(
@@ -223,7 +228,10 @@ class TestVideoRelevance:
         res = app_client.get("/api/recipes/for-meal",
                              params={"meal_name": DISH}).json()
         assert res["video"] is None
-        assert res["video_note"] == "No exact cooking video found for this meal."
+        # Copy is deliberate: "coming soon" reads as a gap ZITLAS will fill,
+        # not as a lookup that failed. No video is a first-class outcome —
+        # a clip that only shows the finished dish is worse than none.
+        assert res["video_note"] == "Recipe video coming soon."
 
     def test_a_relevant_video_is_returned_with_its_score(self, monkeypatch):
         monkeypatch.setattr(mrs, "cache_get", lambda dish: None)

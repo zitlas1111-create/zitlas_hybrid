@@ -18,6 +18,8 @@ class MealRecipeVideo {
     this.thumbnailUrl,
     this.durationSeconds,
     this.relevance,
+    this.verified = false,
+    this.matchType,
   });
 
   final String videoId;
@@ -27,6 +29,15 @@ class MealRecipeVideo {
   final String? thumbnailUrl;
   final int? durationSeconds;
   final num? relevance;
+
+  /// True only when the backend confirmed the video NAMES this dish AND
+  /// shows it being prepared. A clip that merely shows the finished dish is
+  /// never verified — and is never sent at all, which is why the app can
+  /// treat an absent video as "coming soon" rather than "lookup failed".
+  final bool verified;
+
+  /// `recipe_specific` — the only kind the backend will send.
+  final String? matchType;
 
   static MealRecipeVideo? fromMap(Map<String, dynamic>? m) {
     if (m == null) return null;
@@ -40,6 +51,8 @@ class MealRecipeVideo {
       thumbnailUrl: asText(m['thumbnail_url']),
       durationSeconds: asInt(m['duration_seconds']),
       relevance: asNum(m['relevance']),
+      verified: m['verified'] == true,
+      matchType: asText(m['match_type']),
     );
   }
 }

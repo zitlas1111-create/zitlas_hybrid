@@ -413,6 +413,14 @@ class AssessmentController extends ChangeNotifier {
       'budget': a['budget'] ?? '',
       'medical_conditions': a['medical_conditions'] ?? 'none',
       'fitness_goal': fitnessGoal,
+      // Fitness readiness — how CAPABLE the athlete is, not just how active.
+      // '' when this goal's question set didn't ask it; the backend treats
+      // '' as "no signal" rather than guessing. Matches the website's
+      // buildPayload() field for field (test/assessment_parity_test.dart).
+      'workout_experience': a['workout_experience'] ?? '',
+      'stair_ability': a['stair_ability'] ?? '',
+      'walk_ability': a['walk_ability'] ?? '',
+      'squat_ability': a['squat_ability'] ?? '',
       'health_goals': a['health_goals'] is List ? a['health_goals'] : <String>[],
       'fitness_level': a['fitness_level'] ?? 'beginner',
       'goal_duration_months': a['goal_duration_months'] != null

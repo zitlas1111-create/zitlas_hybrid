@@ -62,14 +62,20 @@ class AthleteRecipeContext {
 /// backend remains the single source of truth for all 637 recipes.
 class RecipeRepository {
   // `auth` stays genuinely nullable (no `?? FirebaseAuth.instance` default)
-  // — the recipe endpoints don't require authentication at all, so nothing
-  // here should force Firebase Auth to be initialized just to construct
-  // this repository (a real cost in tests, and an unnecessary one in
-  // production too). When absent, requests simply carry no bearer token,
-  // exactly like an unauthenticated caller.
+  // so constructing this repository never forces Firebase Auth to
+  // initialize — a real cost in tests and unnecessary in production. When
+  // absent, requests carry no bearer token.
+  //
+  // NOTE: `/api/recipes/for-meal` DOES require authentication (it is the
+  // metered "Get Recipe" action — free 7/week, premium 27/week), so the app
+  // always passes a real `auth` there. The browse endpoints (`/recipes`,
+  // `/recommended`, `/discover`) remain open and work without one.
   RecipeRepository({ApiClient? apiClient, FirebaseFirestore? firestore, FirebaseAuth? auth})
     : _api = apiClient ?? ApiClient(),
       _db = firestore ?? FirebaseFirestore.instance,
+      // Dart forbids a private named parameter, so an initializing formal
+      // (`this._auth`) is not available here.
+      // ignore: prefer_initializing_formals
       _auth = auth {
     _api.authTokenProvider = () async => _auth?.currentUser?.getIdToken();
   }

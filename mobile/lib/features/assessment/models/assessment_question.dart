@@ -244,6 +244,39 @@ final List<AssessmentQuestion> defaultQuestions = [
     ],
   ),
   const AssessmentQuestion(
+    field: 'workout_experience',
+    prompt: 'How much workout experience do you have?',
+    type: AssessmentQuestionType.options,
+    options: [
+      AssessmentOption(icon: '🌱', label: "I'm completely new", value: 'beginner'),
+      AssessmentOption(icon: '🙂', label: "I've tried a few times", value: 'novice'),
+      AssessmentOption(icon: '💪', label: 'I work out sometimes', value: 'intermediate'),
+      AssessmentOption(icon: '🔥', label: 'I work out regularly', value: 'advanced'),
+    ],
+  ),
+  const AssessmentQuestion(
+    field: 'stair_ability',
+    prompt: 'Can you climb 3 floors without stopping?',
+    type: AssessmentQuestionType.options,
+    options: [
+      AssessmentOption(icon: '😄', label: 'Yes, easily', value: 'easy'),
+      AssessmentOption(icon: '🙂', label: 'Yes, but I get a little tired', value: 'okay'),
+      AssessmentOption(icon: '😐', label: 'I need a short break', value: 'tired'),
+      AssessmentOption(icon: '😓', label: "It's difficult for me", value: 'difficult'),
+    ],
+  ),
+  const AssessmentQuestion(
+    field: 'walk_ability',
+    prompt: 'Can you walk for about 30 minutes comfortably?',
+    type: AssessmentQuestionType.options,
+    options: [
+      AssessmentOption(icon: '😄', label: 'Yes, easily', value: 'easy'),
+      AssessmentOption(icon: '🙂', label: 'Yes', value: 'okay'),
+      AssessmentOption(icon: '😐', label: 'I get tired', value: 'tired'),
+      AssessmentOption(icon: '😓', label: "It's difficult", value: 'difficult'),
+    ],
+  ),
+  const AssessmentQuestion(
     field: 'diet_preference',
     prompt: 'What type of food do you eat?',
     type: AssessmentQuestionType.options,
@@ -383,6 +416,17 @@ final List<AssessmentQuestion> generalFitnessQuestions = [
       AssessmentOption(icon: '🚶', label: 'Lightly Active (walks, chores)', value: 'light'),
       AssessmentOption(icon: '🏃', label: 'Moderately Active (3–4x/week)', value: 'moderate'),
       AssessmentOption(icon: '💪', label: 'Very Active (daily exercise)', value: 'active'),
+    ],
+  ),
+  const AssessmentQuestion(
+    field: 'stair_ability',
+    prompt: 'Can you climb 3 floors without stopping?',
+    type: AssessmentQuestionType.options,
+    options: [
+      AssessmentOption(icon: '😄', label: 'Yes, easily', value: 'easy'),
+      AssessmentOption(icon: '🙂', label: 'Yes, but I get a little tired', value: 'okay'),
+      AssessmentOption(icon: '😐', label: 'I need a short break', value: 'tired'),
+      AssessmentOption(icon: '😓', label: "It's difficult for me", value: 'difficult'),
     ],
   ),
   const AssessmentQuestion(
@@ -632,6 +676,39 @@ final List<AssessmentQuestion> transformationQuestions = [
       AssessmentOption(icon: '🚶', label: 'Light movement (walks, chores)', value: 'light'),
       AssessmentOption(icon: '🏃', label: 'Moderately active (3–4x/week)', value: 'moderate'),
       AssessmentOption(icon: '💪', label: 'Very active (daily exercise)', value: 'active'),
+    ],
+  ),
+  const AssessmentQuestion(
+    field: 'workout_experience',
+    prompt: 'How much workout experience do you have?',
+    type: AssessmentQuestionType.options,
+    options: [
+      AssessmentOption(icon: '🌱', label: "I'm completely new", value: 'beginner'),
+      AssessmentOption(icon: '🙂', label: "I've tried a few times", value: 'novice'),
+      AssessmentOption(icon: '💪', label: 'I work out sometimes', value: 'intermediate'),
+      AssessmentOption(icon: '🔥', label: 'I work out regularly', value: 'advanced'),
+    ],
+  ),
+  const AssessmentQuestion(
+    field: 'stair_ability',
+    prompt: 'Can you climb 3 floors without stopping?',
+    type: AssessmentQuestionType.options,
+    options: [
+      AssessmentOption(icon: '😄', label: 'Yes, easily', value: 'easy'),
+      AssessmentOption(icon: '🙂', label: 'Yes, but I get a little tired', value: 'okay'),
+      AssessmentOption(icon: '😐', label: 'I need a short break', value: 'tired'),
+      AssessmentOption(icon: '😓', label: "It's difficult for me", value: 'difficult'),
+    ],
+  ),
+  const AssessmentQuestion(
+    field: 'squat_ability',
+    prompt: 'Can you do a few bodyweight squats?',
+    type: AssessmentQuestionType.options,
+    options: [
+      AssessmentOption(icon: '😄', label: 'Easily', value: 'easy'),
+      AssessmentOption(icon: '🙂', label: 'I can do some', value: 'okay'),
+      AssessmentOption(icon: '😐', label: 'Only a few', value: 'tired'),
+      AssessmentOption(icon: '😓', label: "They're difficult", value: 'difficult'),
     ],
   ),
   AssessmentQuestion(

@@ -82,6 +82,17 @@ class AssessmentInput(BaseModel):
         description="weight_loss | muscle_gain | general_fitness | transformation",
     )
 
+    # ── Fitness readiness (all optional — absent behaves exactly as before)
+    # The system knew how ACTIVE somebody was and never how CAPABLE. Two
+    # sedentary athletes are not the same athlete if one climbs three floors
+    # easily and the other cannot, and only these answers tell them apart.
+    # Empty string = not asked; services/fitness_stage.py treats it as no
+    # signal rather than guessing in either direction.
+    workout_experience: str = Field(default="", description="beginner | novice | intermediate | advanced — the athlete's own claim")
+    stair_ability:      str = Field(default="", description="easy | okay | tired | difficult — three floors without stopping")
+    walk_ability:       str = Field(default="", description="easy | okay | tired | difficult — 30 minutes comfortably")
+    squat_ability:      str = Field(default="", description="easy | okay | tired | difficult — a few bodyweight squats")
+
     # General fitness only
     health_goals:  list  = Field(default_factory=list,  description="multi-select: energy, health, fitness, habits, mobility, endurance, strength, posture, reduce_stress, sleep")
     fitness_level: str   = Field(default="beginner",    description="beginner | intermediate | advanced")

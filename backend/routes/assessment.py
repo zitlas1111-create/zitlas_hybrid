@@ -19,9 +19,40 @@ from fastapi import APIRouter, HTTPException
 from services import groq_service, rag_service, food_engine
 from services import medical_conditions as medcon
 from services import workout_engine, location_food_engine
+from services import fitness_stage
 from services.assessment_service import AssessmentInput, run_assessment
 
 router = APIRouter()
+
+
+def _resolved_level(data, bmi: float | None = None) -> str:
+    """The athlete's starting level for THIS assessment — one call site's
+    worth of plumbing, so every prompt asks the same question the same way.
+
+    See services/fitness_stage.py. Every input is optional: an athlete who
+    answered none of the readiness questions resolves exactly as before.
+    """
+    # `fitness_level` is asked ONLY by General Fitness. It carries a schema
+    # default of "beginner", so reading it on the other flows would turn a
+    # field nobody answered into a claim of "I'm completely new" — which
+    # would quietly re-level every existing Weight Loss athlete downward on
+    # their next plan. Only forward it where it was actually asked.
+    goal = (getattr(data, "fitness_goal", "") or "").strip().lower()
+    claimed_level = (getattr(data, "fitness_level", "") or "")         if goal == "general_fitness" else ""
+
+    return fitness_stage.resolve_stage(
+        workout_experience=getattr(data, "workout_experience", "") or "",
+        fitness_level=claimed_level,
+        activity_level=getattr(data, "activity_level", "") or "",
+        stair_ability=getattr(data, "stair_ability", "") or "",
+        walk_ability=getattr(data, "walk_ability", "") or "",
+        squat_ability=getattr(data, "squat_ability", "") or "",
+        bmi=bmi,
+        medical_restricted=medcon.has_medical_condition(
+            getattr(data, "medical_conditions", "") or ""),
+    )
+
+
 
 
 def _ram() -> str:
@@ -202,7 +233,9 @@ def _build_user_profile_block(
 
     gf_extra = ""
     if is_general:
-        fitness_level = getattr(data, 'fitness_level', 'beginner')
+        # The claim is `fitness_level` (General Fitness's existing question —
+        # never duplicated), capped by the practical answers.
+        fitness_level = _resolved_level(data).capitalize()
         health_goals  = getattr(data, 'health_goals', []) or []
         gf_extra = (
             f"\n  Fitness Level: {fitness_level}"
@@ -1124,7 +1157,7 @@ CRITICAL RULES:
 4. Add a progression field for every exercise (1 rep/week or 1 kg/week).
 5. This is a TRANSFORMATION plan — not a weight loss cardio plan and not a bodybuilding plan."""
     elif is_general:
-        fitness_level = getattr(data, 'fitness_level', 'beginner')
+        fitness_level = _resolved_level(data).capitalize()
         health_goals  = getattr(data, 'health_goals', []) or []
         pref          = data.workout_preference.lower()
         if pref == "gym":
@@ -1169,26 +1202,54 @@ Add a 'progression' field for every exercise showing how to advance week-over-we
         # ── Weight-loss prompt: BMI-aware intensity + mandatory Cardio+Strength mix ──
         bmi_val = float(calc.get("bmi", 25.0))
 
+        # STARTING LEVEL, from ability rather than body composition alone.
+        # BMI stays in the mix (it drives the impact rules below), but it no
+        # longer DECIDES the level: it used to classify anybody under BMI 25
+        # as Advanced, which handed jump squats to a sedentary athlete who
+        # could not climb three floors. See services/fitness_stage.py.
+        resolved_level = fitness_stage.resolve_stage(
+            workout_experience=getattr(data, "workout_experience", "") or "",
+            fitness_level=getattr(data, "fitness_level", "") or "",
+            activity_level=getattr(data, "activity_level", "") or "",
+            stair_ability=getattr(data, "stair_ability", "") or "",
+            walk_ability=getattr(data, "walk_ability", "") or "",
+            squat_ability=getattr(data, "squat_ability", "") or "",
+            bmi=bmi_val,
+            medical_restricted=medcon.has_medical_condition(
+                getattr(data, "medical_conditions", "") or ""),
+        )
+        print(f"[ASSESS] starting level resolved -> {resolved_level} "
+              f"(bmi={bmi_val:.1f} "
+              f"experience={getattr(data, 'workout_experience', '') or '-'} "
+              f"stairs={getattr(data, 'stair_ability', '') or '-'} "
+              f"walk={getattr(data, 'walk_ability', '') or '-'} "
+              f"squat={getattr(data, 'squat_ability', '') or '-'})")
+
+        # The IMPACT ceiling stays BMI-driven — joint loading really is a
+        # function of bodyweight — while the VOLUME/complexity comes from the
+        # resolved level. The two answer different questions.
         if bmi_val > 35:
+            # A hard floor, not a preference: at this bodyweight the impact
+            # rules apply regardless of how capable the athlete feels.
             fitness_level = "Beginner"
             intensity_note = (
                 "BMI > 35 — LOW IMPACT ONLY. Use Brisk Walk, Chair Squat, Wall Push-Up, "
                 "Glute Bridge, Bird Dog. Absolutely NO jumping, burpees, or high-impact drills."
             )
         elif bmi_val > 30:
-            fitness_level = "Beginner"
+            fitness_level = resolved_level.capitalize()
             intensity_note = (
                 "BMI 30–35 — Walking + Beginner Strength. Low-impact only. "
                 "Keep sessions under 35 min. Prioritize form and consistency."
             )
         elif bmi_val > 25:
-            fitness_level = "Intermediate"
+            fitness_level = resolved_level.capitalize()
             intensity_note = (
                 "BMI 25–30 — Walking + Moderate Bodyweight Strength. "
                 "Mix cardio and strength exercises every week."
             )
         else:
-            fitness_level = "Advanced"
+            fitness_level = resolved_level.capitalize()
             intensity_note = (
                 "BMI < 25 — More strength and conditioning. "
                 "Interval cardio allowed. Can include jump squats and push-up variations."
@@ -1238,9 +1299,9 @@ CRITICAL — FOLLOW THESE RULES OR THE PLAN WILL BE REJECTED:
     #    BEFORE the LLM is ever called. See docstring above.
     if fitness_goal == "weight_loss":
         bmi_val = float(calc.get("bmi", 25.0))
-        kb_fitness_level = "beginner" if bmi_val > 30 else ("intermediate" if bmi_val > 25 else "advanced")
+        kb_fitness_level = _resolved_level(data, bmi_val)
     else:
-        kb_fitness_level = getattr(data, "fitness_level", "intermediate")
+        kb_fitness_level = _resolved_level(data)
     engine = workout_engine.get_engine()
     condition_names = workout_engine.WorkoutRecommendationEngine.resolve_condition_names(data.medical_conditions)
 
@@ -1348,10 +1409,18 @@ async def analyze(body: AssessmentInput) -> dict[str, Any]:
     except ValueError as e:
         raise HTTPException(status_code=422, detail=str(e))
 
+    # THE STARTING LEVEL, returned with the assessment so both clients can
+    # show the same friendly "you're starting here, here's the ladder" card
+    # instead of each inventing its own wording — and so the level the athlete
+    # is shown is literally the one the workout generator used.
+    level = _resolved_level(body, float(result["calculations"].get("bmi") or 0) or None)
+    result["fitness_stage"] = fitness_stage.describe(level)
+
     print(f"[ASSESS] Done — BMI={result['calculations']['bmi']}  "
           f"TDEE={result['calculations']['tdee_kcal']} kcal  "
           f"target={result['calculations']['weight_loss_calories_kcal']} kcal  "
-          f"archetype={result['swot']['user_archetype']}")
+          f"archetype={result['swot']['user_archetype']}  "
+          f"startingLevel={level}")
     return result
 
 

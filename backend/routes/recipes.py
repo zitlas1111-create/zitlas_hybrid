@@ -285,8 +285,10 @@ async def recipe_for_meal(
         "meal_type": meal_type,
         "recipe": recipe,
         "video": video,
-        "video_note": None if video else
-            "No exact cooking video found for this meal.",
+        # No video is a FIRST-CLASS outcome, not a failure. A clip that only
+        # shows the finished dish being poured or served is worse than none —
+        # it misleads about what the athlete is supposed to do.
+        "video_note": None if video else "Recipe video coming soon.",
         "cached": from_cache,
         "usage": usage,
     }
