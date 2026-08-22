@@ -30,6 +30,8 @@ from google.cloud import firestore
 from pydantic import BaseModel
 
 import trial_config
+import launch_config
+import wallet_config
 from services import firestore_service, razorpay_service
 from services.auth_service import verify_firebase_token
 
@@ -119,6 +121,12 @@ _REQUEST_EXPERT_FIELDS = ("expertId", "coachId")
 
 @router.post("/create-order")
 async def create_order(body: CreateOrderBody, caller: dict = Depends(verify_firebase_token)):
+    # WALLET FROZEN. This endpoint exists only to start a wallet recharge, so
+    # it is refused outright rather than by amount — see wallet_config.py.
+    # Premium has its own order endpoint (/membership/create-order) and is
+    # deliberately untouched: Premium is bought from Razorpay, never from a
+    # wallet balance.
+    wallet_config.assert_wallet_unfrozen("wallet_recharge_create_order")
     uid = caller["uid"]
     print(f"[PAYMENT CREATE-ORDER] uid={uid} amount=₹{body.amount}")
 
@@ -159,6 +167,10 @@ async def create_order(body: CreateOrderBody, caller: dict = Depends(verify_fire
 
 @router.post("/verify")
 async def verify_payment(body: VerifyBody, caller: dict = Depends(verify_firebase_token)):
+    # WALLET FROZEN. This is the credit half of a wallet recharge. No new
+    # recharge can be started (create-order above refuses first), so nothing
+    # legitimate reaches here while the freeze is on.
+    wallet_config.assert_wallet_unfrozen("wallet_recharge_verify")
     uid = caller["uid"]
     print(f"[PAYMENT VERIFY] uid={uid} orderId={body.razorpay_order_id} paymentId={body.razorpay_payment_id}")
 
@@ -429,6 +441,18 @@ async def charge_service(body: ChargeBody, caller: dict = Depends(verify_firebas
                 or trial_config.PLATFORM_CHARGES_FREE
                 or _membership_is_premium(membership))
         charge_amount = 0.0 if free else amount
+
+        # Plan reviews and expert chat are free at launch. `free` above
+        # already zeroes them; this refuses any non-zero amount that reaches
+        # here another way rather than debiting an athlete for a free service.
+        launch_config.assert_expert_service_charge_allowed(charge_amount)
+
+        # WALLET FROZEN — but only for money that actually moves. At ₹0 (trial
+        # mode, platform-free policy, or a Premium member) no wallet field and
+        # no wallet_transactions doc is written, so those charges pass through
+        # exactly as before and expert services keep working.
+        wallet_config.assert_wallet_unfrozen("wallet_debit_service_charge",
+                                             charge_amount)
 
         wallet = dict((user_data or {}).get("wallet") or {})
         balance = float(wallet.get("balance", 0) or 0)

@@ -157,6 +157,17 @@
     '.zw-qa-btn:hover{border-color:rgba(var(--primary-rgb),.35);background:rgba(var(--primary-rgb),.06);' +
       'color:var(--text-primary);transform:translateY(-1px);}' +
     '.zw-qa-btn:active{transform:scale(.94);}' +
+    /* Frozen state — a disabled action must LOOK disabled. */
+    '.zw-qa-btn--off{opacity:.45;cursor:not-allowed;filter:grayscale(1);}' +
+    '.zw-qa-btn--off:hover{border-color:var(--border,#e5ebe7);background:transparent;transform:none;}' +
+    '.zw-qa-btn--off:active{transform:none;}' +
+    '.zw-frozen{display:flex;gap:10px;align-items:flex-start;margin:14px 0 4px;' +
+      'padding:12px 14px;border-radius:12px;background:rgba(242,140,40,.09);' +
+      'border:1px solid rgba(242,140,40,.28);}' +
+    '.zw-frozen-ico{font-size:17px;line-height:1.2;}' +
+    '.zw-frozen-ttl{display:block;font-size:13.5px;font-weight:800;margin-bottom:2px;}' +
+    '.zw-frozen-sub{display:block;font-size:12.5px;line-height:1.5;opacity:.85;}' +
+    '.zw-frozen-body{font-size:13px;line-height:1.6;opacity:.85;margin:14px 0 18px;}' +
     '.zw-qa-ico{width:36px;height:36px;border-radius:10px;font-size:17px;' +
       'background:rgba(var(--primary-rgb),.1);border:1px solid rgba(var(--primary-rgb),.18);' +
       'display:flex;align-items:center;justify-content:center;}' +
@@ -403,10 +414,15 @@
           : '<div class="zw-bal-sub">ZITLAS Wallet · Secure &amp; Instant</div>') +
       '</div>' +
 
-      /* Quick Actions */
+      /* Frozen banner sits directly under the balance, so the state is
+         stated before any action is offered. */
+      frozenNotice() +
+
+      /* Quick Actions — "Add Funds" is genuinely disabled while frozen,
+         never a live-looking button that fails on tap. */
       '<div class="zw-stitle">Quick Actions</div>' +
       '<div class="zw-qa-grid">' +
-        qaBtn('zwQA_add',  '💳', 'Add Funds') +
+        qaBtn('zwQA_add',  '💳', walletFrozen() ? 'Add Funds (soon)' : 'Add Funds', walletFrozen()) +
         qaBtn('zwQA_hist', '📋', 'Transaction History') +
         qaBtn('zwQA_off',  '🎁', 'Offers &amp; Coupons') +
       '</div>' +
@@ -432,17 +448,61 @@
       '</div>'
     );
 
-    on('zwQA_add',  'click', function() { showView('addFunds'); });
+    if (!walletFrozen()) {
+      on('zwQA_add', 'click', function() { showView('addFunds'); });
+    }
     on('zwQA_hist', 'click', function() { showView('transactions'); });
     on('zwQA_off',  'click', function() { showView('offers'); });
     on('zwSeeAll',  'click', function() { showView('transactions'); });
   }
 
-  function qaBtn(id, icon, label) {
-    return '<button class="zw-qa-btn" id="' + id + '">' +
+  function qaBtn(id, icon, label, disabled) {
+    return '<button class="zw-qa-btn' + (disabled ? ' zw-qa-btn--off' : '') +
+      '" id="' + id + '"' + (disabled ? ' disabled aria-disabled="true"' : '') + '>' +
       '<div class="zw-qa-ico">' + icon + '</div>' +
       '<span class="zw-qa-lbl">' + label + '</span>' +
     '</button>';
+  }
+
+  /* WALLET FREEZE — the Wallet moves no money this release.
+
+     Read from the server via ZitlasPayment (GET /api/system/trial-mode ->
+     walletFrozen), never from a constant here. Defaults to FROZEN if the
+     payment module has not loaded: showing "unavailable" when it is actually
+     open is a cosmetic bug, whereas offering a recharge the server will
+     refuse is a broken button.
+
+     WHAT IS FROZEN: adding funds only. Balance, usage stats, transaction
+     history and offers all keep rendering — freezing the Wallet must not
+     hide an athlete's own money or their records from them. */
+  function walletFrozen() {
+    try {
+      if (typeof ZitlasPayment !== 'undefined' &&
+          typeof ZitlasPayment.isWalletFrozen === 'function') {
+        return ZitlasPayment.isWalletFrozen();
+      }
+    } catch (_) {}
+    return true;
+  }
+
+  function walletFrozenMsg() {
+    try {
+      if (typeof ZitlasPayment !== 'undefined' &&
+          typeof ZitlasPayment.walletFrozenMessage === 'function') {
+        return ZitlasPayment.walletFrozenMessage();
+      }
+    } catch (_) {}
+    return 'Wallet is temporarily unavailable. Your balance and ' +
+      'transaction history are safe.';
+  }
+
+  function frozenNotice() {
+    if (!walletFrozen()) return '';
+    return '<div class="zw-frozen" role="status">' +
+      '<span class="zw-frozen-ico" aria-hidden="true">🔒</span>' +
+      '<div><b class="zw-frozen-ttl">Wallet coming soon</b>' +
+      '<span class="zw-frozen-sub">' + esc(walletFrozenMsg()) + '</span></div>' +
+    '</div>';
   }
   function statCard(lbl, val, cls) {
     return '<div class="zw-sc"><span class="zw-sc-lbl">' + lbl + '</span>' +
@@ -490,7 +550,21 @@
     });
   }
 
+  /* Second gate. Nothing should reach the recharge views while frozen —
+     the button is disabled and unwired — but a stale deep link or a
+     showView() call from elsewhere must not open a dead-end form. */
+  function renderFrozenView() {
+    el('zwBody').innerHTML =
+      frozenNotice() +
+      '<p class="zw-frozen-body">Adding funds is turned off for now. ' +
+      'Everything already in your Wallet stays exactly as it is, and your ' +
+      'full transaction history is still available.</p>' +
+      '<button class="zw-btn zw-btn-primary" id="zwFrozenBack">Back to Wallet</button>';
+    on('zwFrozenBack', 'click', function() { showView('main'); });
+  }
+
   function renderAddFundsStep1() {
+    if (walletFrozen()) { renderFrozenView(); return; }
     _addStep = 1; _amt = 0;
     var amounts = [100, 250, 500, 1000, 2000];
     el('zwBody').innerHTML = (
@@ -542,6 +616,7 @@
      would just be confusing — this step is now a single confirm-and-pay
      screen, and method selection happens inside Razorpay's modal. */
   function renderAddFundsStep2() {
+    if (walletFrozen()) { renderFrozenView(); return; }
     _addStep = 2;
     el('zwBody').innerHTML = (
       '<div class="zw-pay-amt-row">' +

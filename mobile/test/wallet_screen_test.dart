@@ -171,6 +171,12 @@ void main() {
     await pump(tester, controller);
 
     expect(find.text('Last 3 transactions'), findsOneWidget);
+    // The wallet is a scrolling list and the frozen-wallet notice made it
+    // taller than the 800x600 test viewport, so "See all" now starts below
+    // the fold. Scroll to it the way a person would rather than asserting
+    // against a screen that only fits on a large phone.
+    await tester.ensureVisible(find.text('See all →'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('See all →'));
     await tester.pumpAndSettle();
 

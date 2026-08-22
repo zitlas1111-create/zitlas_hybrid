@@ -42,7 +42,19 @@ class MealPhotoUploader {
     ApiClient? api,
   })  : _storage = storage,
         _auth = auth ?? FirebaseAuth.instance,
-        _api = api ?? ApiClient();
+        _api = api ?? ApiClient() {
+    // The /api/chat/upload fallback now requires a signed-in caller — it
+    // writes a file to the server and returns a public URL, which must never
+    // be anonymous. The Storage path already authenticated; this one simply
+    // never sent the token it had.
+    _api.authTokenProvider ??= () async {
+      try {
+        return await _auth.currentUser?.getIdToken();
+      } catch (_) {
+        return null;
+      }
+    };
+  }
 
   final FirebaseStorage? _storage;
   final FirebaseAuth _auth;

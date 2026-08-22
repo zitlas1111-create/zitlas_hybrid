@@ -2771,25 +2771,7 @@
     }
   }
 
-  /* ── TEMPORARY REVIEW-FLOW DIAGNOSTICS ────────────────────────────────
-     Every transition between "Expert Review tapped" and the Firestore write
-     logs a [VERIFY DEBUG] line. The device log showed the open-button log
-     firing but `[VERIFY] button clicked` never appearing, which means the
-     submit handler was never entered — i.e. vpSubmitBtn was still disabled.
-     These lines identify WHICH precondition was unmet, instead of guessing.
-
-     Remove this block (and the _vdbg calls) once the cause is confirmed. */
-  var VERIFY_BUILD = '2026-08-19-sheet-collapse-fix-5';
-
-  function _vdbg(label, data) {
-    try {
-      if (data === undefined) console.log('[VERIFY DEBUG] ' + label);
-      else console.log('[VERIFY DEBUG] ' + label, data);
-    } catch (_) {}
-  }
-
   function initVerifyPlanBtn(coach) {
-    console.log('[ZITLAS REVIEW BUILD] ' + VERIFY_BUILD);
     var openBtn      = document.getElementById('verifyPlanBtn');
     var verifyAgain  = document.getElementById('verifyAgainBtn');
     var sheet        = document.getElementById('vpSheet');
@@ -2805,14 +2787,7 @@
     var reviewTypeLabel = document.getElementById('vpReviewTypeLabel');
     var priceRow     = document.getElementById('vpPriceRow');
     var totalPriceEl = document.getElementById('vpTotalPrice');
-    _vdbg('elements resolved', {
-      sheet: !!sheet, openBtn: !!openBtn, submitBtn: !!submitBtn,
-      optDiet: !!optDiet, optWorkout: !!optWorkout, optBoth: !!optBoth,
-      svcVerify: !!svcVerify, svcChat: !!svcChat, svcBoth: !!svcBoth,
-      reviewTypeWrap: !!reviewTypeWrap
-    });
     if (!sheet || !openBtn) {
-      _vdbg('ABORT — sheet or openBtn missing, no handlers will be attached');
       return;
     }
 
@@ -2928,21 +2903,11 @@
         var uid = (user && user.uid) || _getMyUserId();
         if (!uid || typeof ZitlasCloudSync === 'undefined' ||
             typeof ZitlasCloudSync.hydrateOnLoad !== 'function') {
-          _vdbg('hydrate NOT ATTEMPTED — will retry on next open', {
-            uid: !!uid, cloudSync: typeof ZitlasCloudSync
-          });
           return { attempted: false, ok: false };
         }
-        _vdbg('hydrating plans from Firestore users/' + uid);
         return ZitlasCloudSync.hydrateOnLoad(uid).then(function (ok) {
-          _vdbg('hydrate done', {
-            cloudDocFound: ok,
-            hasDietAfter: _hasDietPlan(),
-            hasWorkoutAfter: _hasWorkoutPlan()
-          });
           return { attempted: true, ok: ok };
         }).catch(function (e) {
-          _vdbg('hydrate FAILED — continuing with local cache', String(e));
           return { attempted: false, ok: false };
         });
       }).then(function (r) {
@@ -2992,13 +2957,6 @@
 
     function _refreshSubmitState() {
       var ready = !!_selectedService && (!_needsReviewType() || !!_selectedType);
-      _vdbg('refreshSubmitState', {
-        selectedService: _selectedService,
-        selectedType: _selectedType,
-        needsReviewType: _needsReviewType(),
-        ready: ready,
-        submitDisabledNow: submitBtn ? !ready : '(no submit button)'
-      });
       if (submitBtn) submitBtn.disabled = !ready;
       if (totalPriceEl) totalPriceEl.textContent = '₹' + (ready ? _computeTotalPrice() : 0);
     }
@@ -3007,10 +2965,8 @@
        THE BUG THIS FIXES. `.vp-option--unavailable` carries
        `pointer-events: none` (cprofile.css:475), so an option marked
        unavailable becomes COMPLETELY UNTAPPABLE: no click event, therefore no
-       `[VERIFY DEBUG] review type tapped` log, no validation message, and no
-       way for the athlete or the log to explain why the sheet is dead. That is
-       exactly why the device log stopped at `hydrate done` and never produced
-       another line.
+       validation message, and no way for the athlete to find out why the
+       sheet is dead.
 
        My own previous commit widened it: the original code disabled only
        optDiet, and I added optWorkout and optBoth — so an athlete missing
@@ -3025,12 +2981,6 @@
     function _refreshPlanAvailability() {
       var hasDiet = _hasDietPlan();
       var hasWorkout = _hasWorkoutPlan();
-      _vdbg('plan selection state', {
-        hasDietPlan: hasDiet,
-        hasWorkoutPlan: hasWorkout,
-        selectedService: _selectedService,
-        selectedType: _selectedType
-      });
 
       [optDiet, optWorkout, optBoth].forEach(function (b) {
         // Clear any stale class from an earlier open (or an older cached CSS
@@ -3069,19 +3019,6 @@
       /* Start the Firestore pull the moment the sheet opens so it is usually
          settled before the athlete has finished choosing. */
       _ensurePlansHydrated();
-      _vdbg('sheet opened', {
-        hasDietPlan: _hasDietPlan(),
-        submitHandlerAttached: !!submitBtn,
-        // If hasDietPlan is false, tapping "Diet Review" or "Both" only
-        // shows a toast and returns — the selection is silently discarded
-        // and the submit button can never enable.
-        dietKeys: {
-          zitlas_diet_plan: !!localStorage.getItem('zitlas_diet_plan'),
-          zitlas_current_diet: !!localStorage.getItem('zitlas_current_diet'),
-          zitlas_generated_diet: !!localStorage.getItem('zitlas_generated_diet'),
-          zitlas_meal_plan: !!localStorage.getItem('zitlas_meal_plan')
-        }
-      });
       _selectedType    = null;
       _selectedService = null;
       reviewTypeBtns.forEach(function(b) { if (b) b.classList.remove('selected'); });
@@ -3123,15 +3060,7 @@
           ? document.elementFromPoint(Math.round(_cr.left + _cr.width / 2),
                                       Math.round(_cr.top + _cr.height / 2))
           : null;
-        _vdbg('sheet geometry', {
-          navInset: Math.round(navOffset),
-          innerHeight: window.innerHeight,
-          overlayHeight: Math.round(_or.height),
-          cardHeight: _cr ? Math.round(_cr.height) : null,
-          tappable: !!(_or.height > 0 && _cr && _cr.height > 0),
-          hitTestAtCardCentre: _mid ? (_mid.id || _mid.className || _mid.tagName) : null
-        });
-      } catch (e) { _vdbg('sheet geometry probe failed', String(e)); }
+      } catch (_) { /* geometry probe is diagnostic only */ }
     }
     function closeSheet() {
       sheet.classList.remove('open');
@@ -3279,7 +3208,6 @@
     svcBtns.forEach(function(btn) {
       if (!btn) return;
       btn.addEventListener('click', function() {
-        _vdbg('service tapped', { id: btn.id, dataSvc: btn.dataset.svc });
         _selectedService = btn.dataset.svc;
         svcBtns.forEach(function(b) { if (b) b.classList.remove('selected'); });
         btn.classList.add('selected');
@@ -3299,10 +3227,6 @@
     reviewTypeBtns.forEach(function(btn) {
       if (!btn) return;
       btn.addEventListener('click', function() {
-        _vdbg('review type tapped', {
-          id: btn.id, dataType: btn.dataset.type,
-          serviceSelectedFirst: _selectedService
-        });
         /* Select FIRST, validate after. The old order did the opposite and
            bailed with a bare `return`, so a tap on Diet/Both while
            localStorage was cold was discarded outright — leaving the submit
@@ -3321,7 +3245,6 @@
           _refreshPlanAvailability();
           if (!missing.length) { _refreshSubmitState(); return; }
 
-          _vdbg('review type unavailable AFTER hydration', { id: btn.id, missing: missing });
           /* Only retract if this is still the athlete's active choice — they
              may have tapped something else while hydration was in flight. */
           if (_selectedType === _type) {
@@ -3342,12 +3265,6 @@
          reported log. */
       submitBtn.parentNode.addEventListener('pointerdown', function(e) {
         if (e.target === submitBtn || submitBtn.contains(e.target)) {
-          _vdbg('submit AREA tapped', {
-            disabled: submitBtn.disabled,
-            selectedService: _selectedService,
-            selectedType: _selectedType,
-            willFireHandler: !submitBtn.disabled
-          });
         }
       }, true);
     }
@@ -3355,22 +3272,8 @@
     if (submitBtn) {
       submitBtn.addEventListener('click', function() {
         console.log('[VERIFY] button clicked', { service: _selectedService, type: _selectedType });
-        _vdbg('submit button clicked', {
-          selectedService: _selectedService,
-          selectedType: _selectedType,
-          submitDisabled: submitBtn.disabled
-        });
-        _vdbg('selected review type', _selectedType);
-        _vdbg('diet plan available', _hasDietPlan());
-        _vdbg('workout plan available', _hasWorkoutPlan());
 
         var _validOk = !!_selectedService && (!_needsReviewType() || !!_selectedType);
-        _vdbg('submit validation', {
-          passed: _validOk,
-          needsReviewType: _needsReviewType(),
-          reason: _validOk ? null
-            : (!_selectedService ? 'no service selected' : 'no review type selected')
-        });
         if (!_validOk) return;
 
         /* ── LIVE AUTH GUARD ──────────────────────────────────────────────
@@ -3394,12 +3297,10 @@
            loop. */
         if (!_live || !_live.uid) {
           if (_authRetried) {
-            _vdbg('submit BLOCKED — still no live session after waiting');
             showToast('You are signed out. Please sign in again to send this request.');
             return;
           }
           _authRetried = true;
-          _vdbg('submit WAITING for auth — WebView custom-token sign-in in flight');
           submitBtn.disabled = true;
           submitBtn.textContent = 'Signing in…';
           _awaitAuthUser().then(function (u) {
@@ -3422,9 +3323,6 @@
         if (_getMyUserId() !== _live.uid) {
           /* A cached uid that disagrees with the live session would be written
              into userId and denied. Trust the live session. */
-          _vdbg('cached uid disagrees with live session — using live uid', {
-            cached: _getMyUserId(), live: _live.uid
-          });
         }
 
         /* ── Lifecycle guard: only ONE active review per athlete↔expert ──
@@ -3587,19 +3485,7 @@
         try {
           var _fbUser = (typeof ZitlasAuth !== 'undefined' && ZitlasAuth)
             ? ZitlasAuth.currentUser : null;
-          _vdbg('identity before write', {
-            firebaseAuthUid: _fbUser ? _fbUser.uid : null,
-            reviewUserId: reviewDocs[0] && reviewDocs[0].userId,
-            reviewAthleteId: reviewDocs[0] && reviewDocs[0].athleteId,
-            reviewExpertId: reviewDocs[0] && reviewDocs[0].expertId,
-            // Rules require userId == request.auth.uid; a mismatch here is a
-            // guaranteed PERMISSION_DENIED on the write.
-            uidMatchesUserId: !!_fbUser &&
-              _fbUser.uid === (reviewDocs[0] && reviewDocs[0].userId),
-            docCount: reviewDocs.length,
-            zitlasDbPresent: (typeof ZitlasDB !== 'undefined' && !!ZitlasDB)
-          });
-        } catch (e) { _vdbg('identity probe failed', String(e)); }
+        } catch (_) { /* geometry probe is diagnostic only */ }
 
         /* Only remove currently-pending requests to avoid duplicates.
            Completed/rejected reviews are kept as permanent history. */
@@ -3649,15 +3535,6 @@
 
         /* Write to Firestore so the expert's dashboard inbox receives it.
            Money is NEVER touched here — only on the expert's Accept. */
-        _vdbg('submitting request', {
-          docCount: reviewDocs.length,
-          ids: reviewDocs.map(function(r) { return r.id; }),
-          userId: reviewDocs[0] && reviewDocs[0].userId,
-          expertId: reviewDocs[0] && reviewDocs[0].expertId,
-          reviewTypes: reviewDocs.map(function(r) { return r.reviewType; }),
-          status: reviewDocs[0] && reviewDocs[0].status,
-          hasPlanData: reviewDocs.map(function(r) { return !!r.planData; })
-        });
         if (typeof ZitlasDB !== 'undefined') {
           var writes = reviewDocs.map(function(r) {
             var firestoreReview = Object.assign({}, r, {
@@ -3669,7 +3546,6 @@
           Promise.all(writes)
             .then(function() {
               console.log('[VERIFY] review document(s) created', reviewDocs.map(function(r) { return r.id; }));
-              _vdbg('[REVIEW FIRESTORE] success', reviewDocs.map(function(r) { return r.id; }));
               _submitSucceeded();
             })
             .catch(function(e) {
@@ -3687,7 +3563,6 @@
              It used to fall through to "Sent ✓" anyway, which is the single
              most misleading outcome in the whole flow. */
           console.warn('[FIRESTORE] ZitlasDB not available — request cannot be delivered');
-          _vdbg('[REVIEW FIRESTORE] SKIPPED — ZitlasDB undefined; no expert can receive this');
           _submitFailed(reviewDocs, 'Could not send request — you appear to be offline.');
         }
 
@@ -4471,8 +4346,28 @@
       return typeof ZitlasPayment !== 'undefined' &&
         typeof ZitlasPayment.isTrialMode === 'function' && ZitlasPayment.isTrialMode();
     }
+    /* Personal Coaching is FREE at launch — from the server's launch matrix
+       (backend/launch_config.py), not from whether a temporary trial happens
+       to be running, so turning the trial off cannot start showing prices
+       for something the backend still refuses to charge for. */
+    function _coachingIsFree() {
+      if (typeof ZitlasPayment !== 'undefined' &&
+          typeof ZitlasPayment.isCoachingFree === 'function') {
+        return ZitlasPayment.isCoachingFree();
+      }
+      return true;
+    }
+
     function _coachingDisplayPrice(key) {
-      return _coachingTrialActive() ? 0 : COACHING_PLANS[key].price;
+      if (_coachingIsFree() || _coachingTrialActive()) return 0;
+      return COACHING_PLANS[key].price;
+    }
+
+    /* "FREE", never "₹0 / month" — a zero price with a checkout beside it
+       reads as a payment step that happens to cost nothing. It isn't one. */
+    function _coachingPriceLabel(key) {
+      var price = _coachingDisplayPrice(key);
+      return price > 0 ? '₹' + price + ' / month' : 'FREE';
     }
 
     var _myCoaching   = null;  /* personal_coaching/{uid} doc */
@@ -4666,13 +4561,17 @@
       if (!backdrop) return;
       _selectedPlan = null;
       showStep('plans');
-      /* Plan cards ship with static ₹499/699/999 markup — overwrite with
-         this expert's actual pricing (or ₹0 during the trial) every time
-         the sheet opens, so it's always current even if trial mode
-         flips between opens. */
+      /* Plan cards ship with static ₹499/699/999 markup — overwritten every
+         time the sheet opens so it is always current. At launch coaching is
+         FREE, so the card reads "FREE" rather than "₹0/mo": a zero price is
+         still a price, and this feature does not have one. */
       Object.keys(COACHING_PLANS).forEach(function(key) {
         var priceEl = backdrop.querySelector('.cp-plan-card[data-plan="' + key + '"] .cp-plan-price');
-        if (priceEl) priceEl.innerHTML = '₹' + _coachingDisplayPrice(key) + '<em>/mo</em>';
+        if (!priceEl) return;
+        var price = _coachingDisplayPrice(key);
+        priceEl.innerHTML = price > 0
+          ? '₹' + price + '<em>/mo</em>'
+          : 'FREE';
       });
       backdrop.style.display = 'flex';
       requestAnimationFrame(function() {
@@ -4772,7 +4671,7 @@
           var sr = document.getElementById('pcSummaryPrice');
           if (se) se.textContent = coach.name || 'Expert';
           if (sp) sp.textContent = plan.icon + ' ' + plan.label;
-          if (sr) sr.textContent = '₹' + _coachingDisplayPrice(key) + ' / month';
+          if (sr) sr.textContent = _coachingPriceLabel(key);
           showStep('summary');
         });
       });
@@ -4822,12 +4721,13 @@
         if (typeof getIdToken !== 'function') { showToast('Connection unavailable — please try again.'); return; }
 
         var plan = COACHING_PLANS[_selectedPlan];
-        /* CLIENT TRIAL MODE (backend/trial_config.py) — coach hiring is
-           free: skip the wallet pre-check entirely; the backend reserves
-           ₹0. When the trial flag is off this check is live again. */
-        var _coachingTrial = (typeof ZitlasPayment !== 'undefined' &&
-          typeof ZitlasPayment.isTrialMode === 'function' && ZitlasPayment.isTrialMode());
-        if (!_coachingTrial) {
+        /* Personal Coaching is FREE at launch, so there is no wallet
+           pre-check and no low-balance popup — a free feature must never
+           send an athlete to a wallet it cannot use anyway. The backend
+           reserves ₹0 and refuses any non-zero coaching amount outright
+           (launch_config.assert_coaching_charge_allowed). The check below
+           is kept, unchanged, for the day coaching is paid again. */
+        if (!_coachingIsFree() && !_coachingTrialActive()) {
           var w = {};
           try { w = JSON.parse(localStorage.getItem('zitlas_wallet') || '{}') || {}; } catch (_) {}
           var available = Number(w.balance || 0) - Number(w.reserved || 0);

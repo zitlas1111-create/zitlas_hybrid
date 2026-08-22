@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
 import '../models/personal_info.dart';
+import '../../payments/data/wallet_repository.dart' show WalletOrder;
 
 /// Firestore + backend access for the Profile feature. Every field/endpoint
 /// here was traced from `frontend/pages/profile/profile.js`,
@@ -76,17 +77,57 @@ class ProfileRepository {
   }
 
   /// `initUpgradeBtn()`'s order step (membership.js:223-246) — creates a
-  /// server-priced Razorpay order. The native app has no Razorpay Android
-  /// SDK integrated yet (see docs/MIGRATION_INVENTORY.md Phase 9), so this
-  /// call exists to validate connectivity/auth and surface the real backend
-  /// response; the checkout sheet itself cannot be opened from Flutter yet.
-  Future<Map<String, dynamic>> createMembershipOrder(String billing) async {
+  /// Razorpay order priced BY THE SERVER.
+  ///
+  /// The app sends only the billing period; the amount comes from
+  /// `MEMBERSHIP_PRICES_RUPEES` on the backend, so a patched client cannot
+  /// buy Premium for ₹1. The order is recorded against the caller's uid with
+  /// `purpose: 'membership'`, both of which /verify re-checks.
+  ///
+  /// Returns the same order shape the wallet path uses — one Razorpay order
+  /// model for the whole app, not a second copy of the same four fields.
+  Future<WalletOrder> createMembershipOrder(String billing) async {
     try {
       final res = await _api.post('/api/payment/membership/create-order', body: {'billing': billing});
-      return (res as Map).cast<String, dynamic>();
+      return WalletOrder.fromMap((res as Map).cast<String, dynamic>());
     } on ApiException catch (e) {
       final body = e.body;
       throw Exception(body is Map && body['detail'] != null ? body['detail'].toString() : 'Could not start payment.');
+    }
+  }
+
+  /// `POST /api/payment/membership/verify` — the ONLY thing that can make an
+  /// account Premium.
+  ///
+  /// The backend re-computes the HMAC signature over `order_id|payment_id`
+  /// with the Razorpay secret, confirms the order exists, belongs to THIS
+  /// uid and was created for a membership, and only then writes
+  /// `users/{uid}.membership` inside a transaction. It is idempotent: an
+  /// order already marked `paid` returns the existing membership instead of
+  /// extending it, so a retried callback cannot grant a second term.
+  ///
+  /// Nothing here writes membership locally. A client-side "premium = true"
+  /// is a claim, not a fact.
+  Future<void> verifyMembershipPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async {
+    try {
+      await _api.post('/api/payment/membership/verify', body: {
+        'razorpay_order_id': orderId,
+        'razorpay_payment_id': paymentId,
+        'razorpay_signature': signature,
+      });
+    } on ApiException catch (e) {
+      final body = e.body;
+      final detail = body is Map ? body['detail'] : null;
+      if (detail == 'signature_mismatch') {
+        throw Exception(
+            'That payment could not be verified. If money left your account, '
+            'it will be refunded automatically — Premium was not activated.');
+      }
+      throw Exception(detail?.toString() ?? 'Payment could not be verified.');
     }
   }
 }

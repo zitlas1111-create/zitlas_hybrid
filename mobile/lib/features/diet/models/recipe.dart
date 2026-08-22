@@ -107,13 +107,21 @@ class Recipe {
       costLevel: asText(m['cost_level']) ?? '',
       ingredients: asStringList(m['ingredients']),
       instructions: asStringList(m['instructions']),
-      caloriesKcal: asNum(nutrition['calories_kcal']),
+      // The dataset recipes carry `calories_kcal`; the ones generated for a
+      // specific dish (/api/recipes/for-meal) carry `calories`. Reading only
+      // the first blanked the macro row out on every meal-specific recipe.
+      caloriesKcal: asNum(nutrition['calories_kcal'] ?? nutrition['calories']),
       proteinG: asNum(nutrition['protein_g']),
       carbsG: asNum(nutrition['carbs_g']),
       fatG: asNum(nutrition['fat_g']),
       fiberG: asNum(nutrition['fiber_g']),
       primaryProteinSources: asStringList(m['primary_protein_sources']),
-      whyItWorks: asStringList(m['why_it_works']),
+      // A list in the dataset, a single sentence in a generated recipe.
+      whyItWorks: m['why_it_works'] is String
+          ? ((m['why_it_works'] as String).trim().isEmpty
+                ? const <String>[]
+                : [(m['why_it_works'] as String).trim()])
+          : asStringList(m['why_it_works']),
       tags: asStringList(m['tags']),
       regionalTag: asText(m['regional_tag']),
       hostelFriendly: m['hostel_friendly'] == true,

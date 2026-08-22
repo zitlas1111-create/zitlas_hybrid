@@ -8,15 +8,25 @@ import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
 import '../../../profile/data/profile_repository.dart';
 import '../../../profile/models/personal_info.dart';
+import '../../../payments/data/razorpay_checkout.dart';
 import '../../data/entitlements_repository.dart';
 
 /// Native rebuild of `frontend/pages/profile/membership/membership.html` +
 /// `.js` — Membership & Billing. Plan comparison, billing toggle, and
-/// pricing all match the website exactly. The Upgrade action calls the real
-/// backend order-creation endpoint (`POST /api/payment/membership/create-order`)
-/// to validate connectivity/auth honestly, but cannot open a native Razorpay
-/// checkout sheet — that SDK isn't integrated in the app yet (see
-/// docs/MIGRATION_INVENTORY.md Phase 9). Premium is never granted client-side.
+/// pricing all match the website exactly.
+///
+/// PREMIUM IS BOUGHT FROM RAZORPAY, AND ONLY FROM RAZORPAY. Upgrade runs the
+/// same three server steps the website runs — create a server-priced order,
+/// open Razorpay's own sheet, hand the signed result back for verification —
+/// so both clients activate Premium through one authoritative backend path
+/// and neither has any activation logic of its own. There is no wallet
+/// option and never has been.
+///
+/// This screen previously created the order and then told the athlete to go
+/// to the website, because the Razorpay SDK was believed to be unintegrated.
+/// It is integrated — `RazorpayCheckout` has been driving wallet top-ups all
+/// along — so the flow simply ended one step early and Premium could not be
+/// bought on mobile at all.
 class MembershipScreen extends StatelessWidget {
   const MembershipScreen({super.key});
 
@@ -47,6 +57,16 @@ class _MembershipBodyState extends State<_MembershipBody> {
   /// Seeded with the mirrored defaults so the comparison renders immediately
   /// and still renders if the request fails.
   Entitlements _ent = Entitlements.fallback;
+
+  /// Created on first use and disposed with the screen — the Razorpay plugin
+  /// keeps native event handlers alive until it is told not to.
+  RazorpayCheckout? _checkout;
+
+  @override
+  void dispose() {
+    _checkout?.dispose();
+    super.dispose();
+  }
 
   @override
   void initState() {
@@ -184,7 +204,9 @@ class _MembershipBodyState extends State<_MembershipBody> {
         _ComparisonTable(billing: _billing, ent: _ent),
         const SizedBox(height: 16),
         const Text(
-          'Subscriptions renew automatically. Cancel anytime from this screen. All prices are in Indian Rupees (INR). Payment integration coming soon.',
+          'Subscriptions renew automatically. Cancel anytime from this screen. '
+          'All prices are in Indian Rupees (INR). Payments are processed '
+          'securely by Razorpay.',
           style: TextStyle(fontSize: 11, color: ZitlasTokens.textMuted),
         ),
       ],
@@ -216,21 +238,55 @@ class _MembershipBodyState extends State<_MembershipBody> {
     );
   }
 
+  /// Premium page -> server-priced order -> Razorpay checkout -> server-side
+  /// verification -> Premium.
+  ///
+  /// EVERY failure path leaves the athlete on their previous entitlement.
+  /// Cancelled, failed, and a signature that does not verify all return
+  /// without granting anything, because the only thing that grants Premium
+  /// is the backend's own transaction after it checks the signature, the
+  /// order owner and the purpose.
   Future<void> _upgrade() async {
     setState(() => _submitting = true);
     try {
-      await widget.repository.createMembershipOrder(_billing);
+      final order = await widget.repository.createMembershipOrder(_billing);
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Checkout isn\'t available in the app yet — please upgrade from the ZITLAS website for now.')),
+
+      final checkout = _checkout ??= RazorpayCheckout();
+      final result = await checkout.open(
+        order: order,
+        description: 'ZITLAS Premium ($_billing)',
       );
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString().replaceFirst('Exception: ', ''))));
+      if (!mounted) return;
+
+      switch (result.outcome) {
+        case CheckoutOutcome.cancelled:
+          _say('Payment cancelled — nothing was charged.');
+        case CheckoutOutcome.failed:
+          _say(result.message ?? 'The payment could not be completed.');
+        case CheckoutOutcome.success:
+          await widget.repository.verifyMembershipPayment(
+            orderId: result.orderId!,
+            paymentId: result.paymentId!,
+            signature: result.signature!,
+          );
+          if (!mounted) return;
+          _say('Premium is active. Enjoy ZITLAS Premium!');
+          // Re-read the limits from the server rather than assuming the new
+          // tier — same rule as everywhere else: the server decides.
+          final refreshed = await EntitlementsRepository().fetch();
+          if (mounted) setState(() => _ent = refreshed);
       }
+    } catch (e) {
+      if (mounted) _say(e.toString().replaceFirst('Exception: ', ''));
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  void _say(String message) {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

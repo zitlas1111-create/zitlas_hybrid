@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'data/wallet_repository.dart';
 import 'models/wallet.dart';
 
+import 'wallet_freeze.dart';
+
 /// What the Wallet screen is currently showing.
 enum WalletStatus { loading, ready, error }
 
@@ -129,6 +131,10 @@ class WalletController extends ChangeNotifier {
   static String _friendly(Object e) {
     final raw = e.toString().replaceFirst('Exception: ', '');
     final lower = raw.toLowerCase();
+    // The server refuses every wallet money movement while the Wallet is
+    // frozen. That is a real, specific answer — showing "can't reach ZITLAS"
+    // (which `unavailable` below would otherwise match) would be a lie.
+    if (lower.contains('wallet_frozen')) return kWalletFrozenMessage;
     if (lower.contains('permission-denied') || lower.contains('permission denied')) {
       return "You don't have access to this wallet. Try signing out and back in.";
     }

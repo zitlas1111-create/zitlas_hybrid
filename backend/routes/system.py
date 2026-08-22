@@ -2,38 +2,72 @@
 ZITLAS — System Routes
 
 GET  /api/system/kb-status   — Knowledge base lazy-loading cache status
-GET  /api/system/trial-mode  — Whether CLIENT_TRIAL_MODE is on (coach payments free)
+GET  /api/system/launch-config — The launch business model (see launch_config.py)
+GET  /api/system/trial-mode  — Launch payment policy: CLIENT_TRIAL_MODE
+                               (coach payments free) + WALLET_FROZEN
 POST /api/system/test-push   — Send a test web-push notification to a token
+                               (ADMIN ONLY)
 """
 
 from typing import Any
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
+from services.auth_service import require_admin
 from services.kb_manager import kb_manager
 from services import push_service
+import launch_config
+import wallet_config
 from trial_config import CLIENT_TRIAL_MODE, PLATFORM_CHARGES_FREE
 
 router = APIRouter()
 
 
 @router.get("/trial-mode")
-async def trial_mode() -> dict[str, bool]:
+async def trial_mode() -> dict[str, Any]:
     """
-    Single source of truth for the platform charge policy
-    (backend/trial_config.py). The frontend payment layer
-    (assets/js/payment-service.js) reads this at page load:
+    Single source of truth for the launch payment policy
+    (backend/trial_config.py + backend/wallet_config.py). The frontend
+    payment layer (assets/js/payment-service.js) reads this at page load:
       - clientTrialMode:     temporary 10-day client trial flag
       - platformChargesFree: PERMANENT monetization policy — all expert
         services free for everyone; only the Premium subscription is paid
       - effectiveFree:       what the frontend actually gates on (either)
+      - launchConfig:        the full launch matrix (also served on its own
+        at GET /api/system/launch-config)
+      - walletFrozen:        the Wallet moves no money this release. Served
+        here so the UI and the server cannot disagree about it — the clients
+        disable wallet actions from THIS value, never from a local constant,
+        and the server refuses the operation regardless of what the client
+        believes.
+      - walletFrozenMessage: the exact copy both clients show.
     """
     return {
         "clientTrialMode": CLIENT_TRIAL_MODE,
         "platformChargesFree": PLATFORM_CHARGES_FREE,
         "effectiveFree": CLIENT_TRIAL_MODE or PLATFORM_CHARGES_FREE,
+        "walletFrozen": wallet_config.WALLET_FROZEN,
+        "walletFrozenMessage": wallet_config.WALLET_FROZEN_MESSAGE,
+        "launchConfig": launch_config.as_dict(),
     }
+
+
+@router.get("/launch-config")
+async def launch_configuration() -> dict[str, Any]:
+    """The ZITLAS launch business model, as the SERVER understands it.
+
+    Premium is the only paid feature; Personal Coaching and expert services
+    are free; wallet, expert verification and expert payouts are frozen.
+
+    DISPLAY ONLY. The clients render "FREE" / "Coming Soon" / "Upgrade to
+    Premium" from this so their copy cannot drift from what the server
+    actually does — but every rule here is separately enforced inside the
+    request handlers (backend/launch_config.py's guards). A client that
+    ignores this response, or a curl that never reads it, is refused just
+    the same.
+    """
+    return launch_config.as_dict()
 
 
 @router.get("/kb-status")
@@ -70,8 +104,16 @@ class TestPushRequest(BaseModel):
 
 
 @router.post("/test-push")
-async def test_push(req: TestPushRequest) -> dict[str, Any]:
-    """
+async def test_push(
+    req: TestPushRequest,
+    _admin: dict = Depends(require_admin),
+) -> dict[str, Any]:
+    """ADMIN ONLY. This endpoint sends a real push with a caller-supplied
+    title and body to any device token handed to it — i.e. an arbitrary
+    notification that appears to come from ZITLAS. It was unauthenticated and
+    live in production; a diagnostic tool is not a reason to leave that open.
+
+
     End-to-end push verification: sends one real FCM message to one device
     token. Requires FIREBASE_SERVICE_ACCOUNT_JSON (or _FILE) in the
     environment — returns 503 with setup instructions until it's configured,

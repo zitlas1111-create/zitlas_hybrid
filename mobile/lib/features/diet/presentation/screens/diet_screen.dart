@@ -241,7 +241,16 @@ Future<void> _openRecipe(
   required MealSlot slot,
   required DietMeal meal,
 }) async {
-  final zitlasRoute = '/recipe?meal_type=${Uri.encodeComponent(slot.apiValue)}';
+  // THE DISH IS THE KEY, not the slot. Sending `meal_type` alone is exactly
+  // what made this button answer "give me a breakfast recipe" and return a
+  // meal the athlete never tapped. `meal.foods` is the text rendered under
+  // the slot heading — the dish as the athlete sees it — with the slot name
+  // as the fallback for a plan entry that listed no foods.
+  final dish = meal.foods.isNotEmpty ? meal.foods.join(', ') : meal.mealName;
+  final zitlasRoute =
+      '/recipe?meal_type=${Uri.encodeComponent(slot.apiValue)}'
+      '&meal_name=${Uri.encodeComponent(dish)}'
+      '&foods=${Uri.encodeComponent(meal.foods.join('|'))}';
 
   if (slot.isWorkoutSlot) {
     context.push(zitlasRoute);

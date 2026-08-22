@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/theme/zitlas_tokens.dart';
 import '../../expert_profile_controller.dart';
+import '../../../payments/launch_config.dart';
 
 /// `#vpSheet` / `initVerifyPlanBtn()` (cprofile.js:2677-3195) — service type
 /// (verification / chat / verification+chat) → review type (diet / workout
@@ -45,6 +46,11 @@ class _RequestReviewSheetState extends State<_RequestReviewSheet> {
       };
     }
     if (_service == 'chat' || _service == 'verification_chat') total += e.pricing.chatPrice;
+    // Expert services are FREE at launch (backend/launch_config.py); the
+    // server prices them at ₹0 and refuses any non-zero charge. The expert's
+    // own pricing is kept and still drives this sum, so the day services are
+    // paid again nothing here has to be rewritten.
+    if (!kExpertServicesPaymentRequired) return 0;
     return total;
   }
 
@@ -71,8 +77,20 @@ class _RequestReviewSheetState extends State<_RequestReviewSheet> {
             const SizedBox(height: 4),
             const Text('Choose what you need from this expert.', style: TextStyle(fontSize: 12.5, color: ZitlasTokens.textSecondary)),
             const SizedBox(height: 16),
-            _optionTile('verification', 'Verification Only', 'Expert reviews your plan · from ₹${c.expert!.pricing.dietReviewPrice < c.expert!.pricing.workoutReviewPrice ? c.expert!.pricing.dietReviewPrice : c.expert!.pricing.workoutReviewPrice}'),
-            _optionTile('chat', 'Chat Only', 'Unlimited chat until the expert closes it · ₹${c.expert!.pricing.chatPrice}'),
+            _optionTile(
+              'verification',
+              'Verification Only',
+              kExpertServicesPaymentRequired
+                  ? 'Expert reviews your plan · from ₹${c.expert!.pricing.dietReviewPrice < c.expert!.pricing.workoutReviewPrice ? c.expert!.pricing.dietReviewPrice : c.expert!.pricing.workoutReviewPrice}'
+                  : 'Expert reviews your plan · $kFreeLabel',
+            ),
+            _optionTile(
+              'chat',
+              'Chat Only',
+              kExpertServicesPaymentRequired
+                  ? 'Unlimited chat until the expert closes it · ₹${c.expert!.pricing.chatPrice}'
+                  : 'Unlimited chat until the expert closes it · $kFreeLabel',
+            ),
             _optionTile('verification_chat', 'Verification + Chat', 'Review, then unlimited chat'),
             if (_needsReviewType) ...[
               const SizedBox(height: 14),
@@ -87,7 +105,11 @@ class _RequestReviewSheetState extends State<_RequestReviewSheet> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const Text('Total', style: TextStyle(fontSize: 13, color: ZitlasTokens.textSecondary)),
-                Text('₹${_ready ? _total : 0}', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ZitlasTokens.primaryDark)),
+                Text(
+                  launchPriceLabel(_ready ? _total : 0,
+                      paymentRequired: kExpertServicesPaymentRequired),
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ZitlasTokens.primaryDark),
+                ),
               ],
             ),
             const SizedBox(height: 12),

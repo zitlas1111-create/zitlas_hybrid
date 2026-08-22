@@ -960,6 +960,22 @@
     /* Substrings that indicate the LLM leaked prompt instructions into a food string */
     const _MALFORMED = ['is forbidden', 'previously suggested', 'using'];
 
+    /* AUTHENTICATION IS REQUIRED for a swap. The backend meters meal swaps
+       per week (free 70, premium unlimited) and the count is keyed to the
+       verified uid — so a request with no token cannot be metered and is
+       rejected outright. Fetched ONCE, outside the retry loop: the token is
+       valid for an hour, and re-minting it per attempt would add a round
+       trip to every retry for no benefit. */
+    let _swapToken = null;
+    if (typeof getIdToken === 'function') {
+      try { _swapToken = await getIdToken(); } catch (_) { _swapToken = null; }
+    }
+    if (!_swapToken) {
+      const _authErr = new Error('Please sign in again to swap a meal.');
+      _authErr.zitlasFatal = true;
+      throw _authErr;
+    }
+
     const MAX_RETRIES = 2;
     let lastError = null;
     for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
@@ -976,7 +992,10 @@
       try {
         const resp = await fetch('/api/ai/swap-meal', {
           method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type':  'application/json',
+            'Authorization': 'Bearer ' + _swapToken,
+          },
           body:    JSON.stringify({
             meal_name:            _swapMealName,
             meal_time:            _swapMealTime,
@@ -990,6 +1009,26 @@
           }),
         });
 
+        /* 401 and 429 are DECISIONS, not hiccups — retrying either one just
+           delays the same answer three times over. They break out of the
+           retry loop immediately via `zitlasFatal`. */
+        if (resp.status === 401) {
+          const e = new Error('Please sign in again to swap a meal.');
+          e.zitlasFatal = true;
+          throw e;
+        }
+        if (resp.status === 429) {
+          let d = null;
+          try { d = (await resp.json()).detail; } catch (_) { /* keep default copy */ }
+          const e = new Error(
+            d && d.tier === 'free'
+              ? 'You have used all ' + d.limit + ' meal swaps for this week. '
+                + 'Upgrade to Premium for unlimited swaps.'
+              : 'Meal swap limit reached for this week.'
+          );
+          e.zitlasFatal = true;
+          throw e;
+        }
         if (!resp.ok) throw new Error('API error ' + resp.status);
         const data = await resp.json();
         console.log('[SWAP API]', data);
@@ -1032,6 +1071,7 @@
         _swapHistory.push(swapFoods);
       } catch (_networkErr) {
         lastError = _networkErr;
+        if (_networkErr.zitlasFatal) throw _networkErr;
         console.warn(`[SWAP] Attempt ${attempt + 1}/${MAX_RETRIES + 1} failed (${_networkErr.message}) — retrying...`);
       }
     }
@@ -1195,7 +1235,12 @@
           console.error('[SWAP ERROR]', _e);
           console.error(_e.stack);
           closeSwapModal();
-          showToast("Couldn't find a swap right now — try again");
+          /* A spent weekly allowance or an expired session is a real,
+             actionable answer — showing "try again" for either one tells
+             the athlete to repeat something that cannot succeed. */
+          showToast(_e && _e.zitlasFatal
+            ? _e.message
+            : "Couldn't find a swap right now — try again");
         }
       });
     });
@@ -1241,7 +1286,12 @@
           console.error('[SWAP ERROR]', _e);
           console.error(_e.stack);
           closeSwapModal();
-          showToast("Couldn't find a swap right now — try again");
+          /* A spent weekly allowance or an expired session is a real,
+             actionable answer — showing "try again" for either one tells
+             the athlete to repeat something that cannot succeed. */
+          showToast(_e && _e.zitlasFatal
+            ? _e.message
+            : "Couldn't find a swap right now — try again");
         }
       });
     }

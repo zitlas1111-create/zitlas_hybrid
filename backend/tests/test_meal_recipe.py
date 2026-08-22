@@ -62,6 +62,13 @@ def app_client(monkeypatch):
 
     app = FastAPI()
     app.include_router(recipes_route.router, prefix="/api/recipes")
+    # These tests are about RECIPE IDENTITY — that the dish you asked for is
+    # the dish you get back. /for-meal is the metered "Get Recipe" action and
+    # requires a verified token; the unauthenticated case is pinned in
+    # tests/test_entitlement_enforcement.py.
+    app.dependency_overrides[recipes_route.verify_firebase_token] = lambda: {
+        "uid": "recipe-test-uid", "email": None, "name": "Recipe Test",
+    }
     return TestClient(app)
 
 
@@ -169,6 +176,9 @@ class TestDeterminism:
 
         app = FastAPI()
         app.include_router(recipes_route.router, prefix="/api/recipes")
+        app.dependency_overrides[recipes_route.verify_firebase_token] = lambda: {
+            "uid": "recipe-test-uid", "email": None, "name": "Recipe Test",
+        }
         client = TestClient(app)
 
         a = client.get("/api/recipes/for-meal", params={"meal_name": DISH}).json()
@@ -229,6 +239,9 @@ class TestVideoRelevance:
 
         app = FastAPI()
         app.include_router(recipes_route.router, prefix="/api/recipes")
+        app.dependency_overrides[recipes_route.verify_firebase_token] = lambda: {
+            "uid": "recipe-test-uid", "email": None, "name": "Recipe Test",
+        }
         body = TestClient(app).get("/api/recipes/for-meal",
                                    params={"meal_name": DISH}).json()
         assert body["video"]["video_id"] == "xyz"

@@ -48,7 +48,9 @@ from __future__ import annotations
 
 import random
 
-from fastapi import APIRouter, Header, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from services.auth_service import verify_firebase_token
 
 from services import (
     entitlements,
@@ -195,30 +197,6 @@ async def discover_recipes(
     return {"count": len(sample), "recipes": sample}
 
 
-def _uid_from_header(authorization: str | None) -> str | None:
-    """Best-effort uid for USAGE METERING only.
-
-    Deliberately non-fatal: this endpoint stays open exactly like
-    /recommended, which the recipe page already calls without a token. A
-    missing or bad token means the request is simply not metered — it never
-    turns a working recipe into a 401.
-    """
-    if not authorization or not authorization.startswith("Bearer "):
-        return None
-    try:
-        from google.auth.transport import requests as _gr
-        from google.oauth2 import id_token as _idt
-        from services import auth_service
-
-        claims = _idt.verify_firebase_token(
-            authorization[7:].strip(), _gr.Request(),
-            audience=auth_service._PROJECT_ID,
-        )
-        return (claims or {}).get("sub")
-    except Exception:  # noqa: BLE001 — see docstring
-        return None
-
-
 @router.get("/for-meal")
 async def recipe_for_meal(
     meal_name: str = Query(..., min_length=1, max_length=200,
@@ -228,7 +206,7 @@ async def recipe_for_meal(
     description: str | None = Query(None, max_length=500),
     diet_type: str | None = Query(None),
     fitness_goal: str | None = Query(None),
-    authorization: str | None = Header(default=None),
+    caller: dict = Depends(verify_firebase_token),
 ):
     """The recipe for the dish the athlete actually clicked.
 
@@ -253,9 +231,16 @@ async def recipe_for_meal(
     # Allowance BEFORE any generation: free 7/week, premium 27/week. Checked
     # here and recorded only after a recipe actually came back, so a failed
     # generation never costs the athlete part of their week.
-    recipe_uid = _uid_from_header(authorization)
-    if recipe_uid:
-        entitlements.require(recipe_uid, entitlements.RECIPE)
+    #
+    # AUTHENTICATION IS REQUIRED, for the same reason the swap endpoints
+    # require it: this used to meter only when a token happened to arrive,
+    # so a direct tokenless request got an unlimited, uncounted recipe and
+    # the 7/27 limit was advisory. The browse endpoints (/recipes,
+    # /recommended, /discover) stay open — they are not metered. This one is
+    # the metered "Get Recipe" action, and a request with no uid cannot be
+    # counted against anything.
+    recipe_uid = caller.get("uid") or ""
+    entitlements.require(recipe_uid, entitlements.RECIPE)
 
     print(f"[RECIPE] recipe query: exact-dish lookup key="
           f"{meal_recipe_service.cache_key(dish)}")

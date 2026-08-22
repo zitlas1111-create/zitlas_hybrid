@@ -7,10 +7,11 @@ import asyncio
 import json
 import traceback as _tb
 
-from fastapi import APIRouter, HTTPException, Header
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 from typing import Any
 
+from services.auth_service import verify_firebase_token
 from services import entitlements, groq_service, location_food_engine, offline_fallback, rag_service
 
 router = APIRouter()
@@ -720,7 +721,7 @@ async def nutrition_weekly_plan(body: NutritionWeeklyPlanRequest) -> dict[str, A
 @router.post("/swap-meal")
 async def swap_meal(
     body: SwapMealRequest,
-    authorization: str | None = Header(default=None),
+    caller: dict = Depends(verify_firebase_token),
 ) -> dict[str, Any]:
     """
     Replace a single meal with a realistic lower-calorie, higher-protein alternative.
@@ -730,9 +731,8 @@ async def swap_meal(
     # Same allowance as /api/diet/swap. BOTH swap paths must be gated or the
     # limit is decorative: the website uses this LLM endpoint while Flutter
     # uses the deterministic one, so leaving either open is a free bypass.
-    swap_uid = entitlements.uid_from_authorization(authorization)
-    if swap_uid:
-        entitlements.require(swap_uid, entitlements.MEAL_SWAP)
+    swap_uid = caller.get("uid") or ""
+    entitlements.require(swap_uid, entitlements.MEAL_SWAP)
 
     fitness_goal = body.fitness_goal or "general_fitness"
 

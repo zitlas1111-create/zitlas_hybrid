@@ -18,8 +18,10 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from fastapi import APIRouter, Header
+from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
+
+from services.auth_service import verify_firebase_token
 
 from services import (
     entitlements,
@@ -140,7 +142,7 @@ def _workout_swap_options(
 @router.post("/swap")
 async def deterministic_swap(
     body: SwapRequest,
-    authorization: str | None = Header(default=None),
+    caller: dict = Depends(verify_firebase_token),
 ) -> dict[str, Any]:
     started = time.perf_counter()
 
@@ -152,12 +154,13 @@ async def deterministic_swap(
     # Allowance.allowed short-circuits on `unlimited` without ever comparing
     # a count. There is no premium number to exceed — not 70, not 500.
     #
-    # An unverified caller is metered as free rather than waved through: the
-    # limit is what makes the tier mean something, so failing open here would
-    # hand every anonymous request unlimited swaps.
-    swap_uid = entitlements.uid_from_authorization(authorization)
-    if swap_uid:
-        entitlements.require(swap_uid, entitlements.MEAL_SWAP)
+    # AUTHENTICATION IS REQUIRED. This endpoint used to accept an optional
+    # token and simply skip metering when none arrived — which meant an
+    # unauthenticated POST got an unlimited, unmetered swap. Verified against
+    # production: a tokenless request returned HTTP 200 and a real swap, so
+    # the 70/week free limit was bypassable by anyone.
+    swap_uid = caller.get("uid") or ""
+    entitlements.require(swap_uid, entitlements.MEAL_SWAP)
 
     engine = food_engine.get_engine()
     ld = body.lifestyle_data or {}

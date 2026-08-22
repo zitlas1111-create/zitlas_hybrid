@@ -7,6 +7,7 @@ import '../../../dashboard/presentation/dashboard_visuals.dart';
 import '../../data/razorpay_checkout.dart';
 import '../../models/wallet.dart';
 import '../../wallet_controller.dart';
+import '../../wallet_freeze.dart';
 import '../widgets/add_funds_sheet.dart';
 import '../widgets/wallet_transaction_row.dart';
 import 'transaction_history_screen.dart';
@@ -78,6 +79,13 @@ class _WalletBodyState extends State<_WalletBody> {
   /// them credits anything locally. The balance on screen only ever changes
   /// because the live Firestore stream delivered a new server-written wallet.
   Future<void> _addFunds() async {
+    // Unreachable while frozen — the button is disabled below — but a second
+    // gate here means no future caller can open a recharge that the server
+    // will only refuse.
+    if (kWalletFrozen) {
+      _showMessage(kWalletFrozenMessage);
+      return;
+    }
     final controller = context.read<WalletController>();
     final amount = await showAddFundsSheet(context);
     if (amount == null || !mounted) return;
@@ -160,6 +168,55 @@ class _WalletBodyState extends State<_WalletBody> {
             ),
           ),
       },
+    );
+  }
+}
+
+/// "Wallet coming soon" — shown in place of the actions, never in place of
+/// the balance or the history.
+class _WalletFrozenNotice extends StatelessWidget {
+  const _WalletFrozenNotice();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF28C28).withValues(alpha: 0.09),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF28C28).withValues(alpha: 0.28)),
+      ),
+      child: const Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('🔒', style: TextStyle(fontSize: 17)),
+          SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Wallet coming soon',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w800,
+                    color: DashboardColors.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  kWalletFrozenMessage,
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    height: 1.5,
+                    color: DashboardColors.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -266,6 +323,11 @@ class _WalletContent extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
       children: [
         _BalanceCard(wallet: wallet),
+        // The state is stated before any action is offered.
+        if (kWalletFrozen) ...[
+          const SizedBox(height: 14),
+          const _WalletFrozenNotice(),
+        ],
         const SizedBox(height: 18),
         const _SectionTitle('Quick Actions'),
         const SizedBox(height: 8),
@@ -274,8 +336,13 @@ class _WalletContent extends StatelessWidget {
             Expanded(
               child: _QuickAction(
                 icon: '💳',
-                label: busy ? 'Starting…' : 'Add Funds',
-                onTap: busy ? null : onAddFunds,
+                // A disabled action must LOOK disabled: `_QuickAction`
+                // greys itself out on a null onTap, so this is never a
+                // live-looking button that fails on tap.
+                label: kWalletFrozen
+                    ? 'Add Funds (soon)'
+                    : (busy ? 'Starting…' : 'Add Funds'),
+                onTap: (kWalletFrozen || busy) ? null : onAddFunds,
               ),
             ),
             const SizedBox(width: 10),

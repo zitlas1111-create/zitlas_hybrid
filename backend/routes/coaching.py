@@ -59,6 +59,8 @@ from services.coaching_service import (
     release_reservation_txn,
 )
 from trial_config import CLIENT_TRIAL_MODE, PLATFORM_CHARGES_FREE
+import launch_config
+import wallet_config
 
 router = APIRouter()
 
@@ -231,8 +233,17 @@ async def create_request(body: RequestBody, caller: dict = Depends(verify_fireba
             # wallet check (available < 0) can never fail, and /accept later
             # debits the stored reservationAmount of ₹0. Flip both flags off
             # and real pricing is live again with no other change.
+            # PERSONAL COACHING IS FREE AT LAUNCH — decided by the launch
+            # matrix (backend/launch_config.py), not by whether a temporary
+            # trial happens to be running. Turning CLIENT_TRIAL_MODE off can
+            # no longer start charging for coaching by accident; only
+            # PERSONAL_COACHING_PAYMENT_REQUIRED can.
+            priced = launch_config.coaching_price(amount)
+            if priced != amount:
+                print(f"[COACHING REQUEST] launch policy: Personal Coaching is "
+                      f"FREE — amount {amount} -> 0")
+            amount = priced
             if CLIENT_TRIAL_MODE or PLATFORM_CHARGES_FREE:
-                print(f"[COACHING REQUEST] free-platform policy active — amount {amount} -> 0")
                 amount = 0
 
         # Duplicate-request / double-spend guard: at most one open
@@ -300,11 +311,22 @@ async def create_request(body: RequestBody, caller: dict = Depends(verify_fireba
             # still request a trial.
             print("[COACHING REQUEST] FREE_TRIAL — skipping wallet reservation")
         else:
+            # A free feature must never reach an insufficient-balance path.
+            # Unreachable while coaching is free (the amount is already 0),
+            # and deliberately kept: if a future edit lets a non-zero coaching
+            # price through, this refuses it instead of quietly charging.
+            launch_config.assert_coaching_charge_allowed(amount)
             if available < amount:
                 print(f"[COACHING REQUEST] insufficient balance — available={available} required={amount}")
                 raise HTTPException(status_code=402, detail={
                     "error": "insufficient_balance", "available": available, "required": amount,
                 })
+            # WALLET FROZEN — an escrow reservation locks real money, so it
+            # is refused while the wallet is frozen. Only reached when the
+            # amount is greater than zero: the ₹0 trial path returns above
+            # without touching the wallet at all.
+            wallet_config.assert_wallet_unfrozen("wallet_reserve_coaching",
+                                                 amount)
             wallet["reserved"] = reserved + amount
             tx.set(user_ref, {"wallet": wallet}, merge=True)
 
@@ -445,6 +467,15 @@ async def accept_request(body: ActionBody, caller: dict = Depends(verify_firebas
             print(f"[COACHING ACCEPT] FREE_TRIAL — skipping wallet debit, "
                   f"durationDays={body.durationDays}")
         else:
+            # Personal Coaching is free at launch, so no debit and no
+            # expert payout may run here at all.
+            launch_config.assert_coaching_charge_allowed(amount)
+            # WALLET FROZEN — this branch debits the athlete's real balance
+            # and pays the expert. The FREE_TRIAL branch above returns before
+            # reaching here and is unaffected, as is any PAID request whose
+            # reservation came out at ₹0 under trial/platform-free pricing.
+            wallet_config.assert_wallet_unfrozen("wallet_debit_coaching_accept",
+                                                 amount)
             user_snap = user_ref.get(transaction=tx)
             user_data = user_snap.to_dict() if user_snap.exists else {}
             wallet = dict((user_data or {}).get("wallet") or {})

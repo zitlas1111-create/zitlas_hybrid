@@ -274,6 +274,13 @@ from routes import swap as swap_route  # noqa: E402
 def swap_client():
     app = FastAPI()
     app.include_router(swap_route.router, prefix="/api/diet")
+    # These are RANKING tests, so they stand in for a signed-in athlete.
+    # /api/diet/swap requires a verified token (the swap allowance is keyed
+    # to the uid); the unauthenticated case has its own test in
+    # tests/test_entitlement_enforcement.py.
+    app.dependency_overrides[swap_route.verify_firebase_token] = lambda: {
+        "uid": "swap-test-uid", "email": None, "name": "Swap Test",
+    }
     return TestClient(app)
 
 

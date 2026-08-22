@@ -125,8 +125,18 @@
     var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     var timer = ctrl ? setTimeout(function () { ctrl.abort(); }, 60000) : null;
     function clearTimer() { if (timer) { clearTimeout(timer); timer = null; } }
-    return fetch('/api/chat/upload', {
-      method: 'POST', body: fd, signal: ctrl ? ctrl.signal : undefined,
+    /* The endpoint now requires a signed-in caller — it writes a file to
+       the server and returns a public URL on our own domain, which must
+       never be anonymous. Chat is a signed-in feature, so a token is always
+       available here in practice. */
+    var tokenPromise = (typeof getIdToken === 'function')
+      ? getIdToken().catch(function () { return null; })
+      : Promise.resolve(null);
+    return tokenPromise.then(function (token) {
+      return fetch('/api/chat/upload', {
+        method: 'POST', body: fd, signal: ctrl ? ctrl.signal : undefined,
+        headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+      });
     }).then(function (resp) {
       clearTimer();
       if (!resp.ok) throw new Error('Upload failed (' + resp.status + ')');

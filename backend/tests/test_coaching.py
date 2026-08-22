@@ -23,6 +23,27 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from routes import coaching  # noqa: E402
 from services import coaching_sweep, firestore_service  # noqa: E402
 from tests.fake_firestore import FakeClient, fake_transactional  # noqa: E402
+import launch_config  # noqa: E402
+import wallet_config  # noqa: E402
+
+
+# ── The Wallet is FROZEN for launch (backend/wallet_config.py) ──────────────
+# These tests exercise the wallet MECHANISM, which is deliberately kept intact
+# for V2 — balances, escrow, debits, the audit ledger. The freeze is a business
+# POLICY layered on top of it, and it has its own suite in
+# tests/test_wallet_freeze.py. Unfreezing here keeps the mechanism covered
+# instead of deleting the tests that prove it works; it does not, and cannot,
+# affect what production does.
+@pytest.fixture(autouse=True)
+def _wallet_unfrozen_for_mechanism_tests(monkeypatch):
+    monkeypatch.setattr(wallet_config, "WALLET_FROZEN", False)
+    # Personal Coaching is FREE at launch (backend/launch_config.py), so the
+    # server prices every plan at ₹0. The PAID escrow — reserve, debit, the
+    # 80/20 split, idempotency — is kept whole for V2, and these tests are
+    # what prove it still works. They opt into the paid model explicitly;
+    # tests/test_launch_config.py pins the launch behaviour instead.
+    monkeypatch.setattr(launch_config, "PERSONAL_COACHING_PAYMENT_REQUIRED", True)
+
 
 ATHLETE_UID = "athlete_1"
 EXPERT_UID = "expert_1"

@@ -78,11 +78,26 @@ class _ResetGoalDialogState extends State<_ResetGoalDialog> {
                               ? null
                               : () async {
                                   setState(() => _busy = true);
-                                  await widget.controller.resetGoal();
-                                  if (context.mounted) {
-                                    Navigator.of(context).pop();
-                                    context.push('/assessment');
+                                  // Goal resets are metered server-side
+                                  // (free 2/week, premium 5/week). A refusal
+                                  // is a real answer, not a failure: say why
+                                  // instead of dropping the athlete into the
+                                  // assessment as if the reset had happened.
+                                  final outcome =
+                                      await widget.controller.resetGoal();
+                                  if (!context.mounted) return;
+                                  Navigator.of(context).pop();
+                                  if (!outcome.allowed) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text(outcome.message ??
+                                            'Goal reset is not available '
+                                                'right now.'),
+                                      ),
+                                    );
+                                    return;
                                   }
+                                  context.push('/assessment');
                                 },
                           child: Center(
                             child: _busy

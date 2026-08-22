@@ -13,6 +13,7 @@ import 'models/daily_score.dart';
 import 'models/goal_model.dart';
 import 'models/health_status.dart';
 import 'models/weight_entry.dart';
+import '../membership/data/entitlements_repository.dart';
 
 /// Aggregates every Dashboard data source and exposes plain fields for the
 /// presentation widgets. Each fetch is isolated in its own try/catch —
@@ -29,8 +30,10 @@ class DashboardController extends ChangeNotifier {
     required DashboardRepository repository,
     HealthStatusStore? healthStore,
     StepTrackingService? stepService,
+    EntitlementsRepository? entitlements,
   }) : _repository = repository, // ignore: prefer_initializing_formals
        _healthStore = healthStore ?? HealthStatusStore(),
+       _entitlements = entitlements ?? EntitlementsRepository(),
        _stepService = stepService { // ignore: prefer_initializing_formals
     _init();
   }
@@ -38,6 +41,10 @@ class DashboardController extends ChangeNotifier {
   final String uid;
   final DashboardRepository _repository;
   final HealthStatusStore _healthStore;
+
+  /// The server-side weekly allowance. Reset is the only metered action the
+  /// dashboard owns; swaps and recipes are gated at their own endpoints.
+  final EntitlementsRepository _entitlements;
 
   /// Constructed lazily so tests (and any non-Android surface) can run the
   /// Dashboard without LocalStorageService being initialized.
@@ -658,8 +665,20 @@ class DashboardController extends ChangeNotifier {
     await _repository.saveGoal(uid, newGoal);
   }
 
-  Future<void> resetGoal() async {
+  /// Reset the goal, if the weekly allowance permits it.
+  ///
+  /// METERED: free 2/week, premium 5/week. The unit is reserved BEFORE the
+  /// Firestore write, and a refusal aborts the reset entirely — otherwise
+  /// the limit would be advisory, since the reset is a client-side write the
+  /// backend never sees.
+  ///
+  /// Returns the outcome so the caller can show the real reason; a denied
+  /// reset must never look like a silent no-op.
+  Future<ConsumeOutcome> resetGoal() async {
+    final outcome = await _entitlements.consume('goal_reset');
+    if (!outcome.allowed) return outcome;
     await _repository.resetGoal(uid);
+    return outcome;
   }
 
   Future<void> logWater(int deltaMl) async {

@@ -603,9 +603,9 @@
     probeStorage: _probeStorageOnInit, // callable from the console for a fresh check any time
   };
 
-  /* Run once automatically, right when this script loads — so the
-     console shows the storage diagnosis before anyone even opens the
-     upload UI. No-ops harmlessly (with a log line) on pages that don't
-     load firebase-storage-compat.js. */
-  _probeStorageOnInit();
+  /* NOT run automatically any more. This is a DIAGNOSTIC: it fired a real
+     Firebase Storage request on every page load that includes this script —
+     one wasted round trip per page view, and the source of the Storage CORS
+     error in the production console. It stays available on demand as
+     ZitlasCertificates.probeStorage() for the next time it's needed. */
 })(window);

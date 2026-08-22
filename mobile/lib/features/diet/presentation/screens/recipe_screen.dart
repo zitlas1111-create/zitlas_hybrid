@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
 import '../../data/recipe_repository.dart';
 import '../../models/meal_slot.dart';
+import '../../../../core/network/api_exception.dart';
+import '../../models/meal_recipe.dart';
 import '../../models/recipe.dart';
 
 enum _Phase { loading, error, none, preview, detail }
@@ -16,11 +19,28 @@ enum _Phase { loading, error, none, preview, detail }
 /// (`GET /api/recipes/recommended`) via [RecipeRepository] — no local copy
 /// of the 637-recipe dataset, no second recommendation engine.
 class RecipeScreen extends StatefulWidget {
-  const RecipeScreen({super.key, required this.mealType});
+  const RecipeScreen({
+    super.key,
+    required this.mealType,
+    this.mealName,
+    this.foods = const [],
+  });
 
   /// One of breakfast/lunch/dinner/snack — always set from the meal card
   /// that opened this screen (item 2: never a different meal's recipe).
   final String mealType;
+
+  /// THE DISH the athlete tapped, e.g. "Poha, Peanuts". When present it is
+  /// the primary key: the screen asks `/api/recipes/for-meal`, whose answer
+  /// is about this dish or explicitly empty. When absent (a manual deep link
+  /// carrying no meal_name) the screen falls back to the slot recommender —
+  /// which is where the original bug lived, so that fallback is never used
+  /// to paper over a dish lookup that failed.
+  final String? mealName;
+
+  /// The plan components rendered under the meal name. They sharpen
+  /// generation; they never replace [mealName] as the identifier.
+  final List<String> foods;
 
   @override
   State<RecipeScreen> createState() => _RecipeScreenState();
@@ -34,6 +54,20 @@ class _RecipeScreenState extends State<RecipeScreen> {
   List<String> _reasons = const [];
   final Set<String> _shownIds = {};
   bool _viewingDetail = false;
+
+  /// The video for THIS dish, when the backend found one it could verify.
+  MealRecipeVideo? _video;
+  String? _videoNote;
+
+  /// A spent weekly recipe allowance (free 7, premium 27) is a real answer,
+  /// not an outage — it gets its own copy instead of "try again", which
+  /// would tell the athlete to repeat something that cannot succeed.
+  String? _limitMessage;
+
+  /// True while the dish-specific path is in use, i.e. [widget.mealName] was
+  /// supplied. Drives the loading copy and hides "Get Another Recipe", which
+  /// is meaningless once the dish itself is the question.
+  bool get _dishSpecific => (widget.mealName ?? '').trim().isNotEmpty;
 
   // Filter overrides — null means "use the user's own profile value".
   // Normalized to the filter sheet's lowercase, singular option values
@@ -85,7 +119,11 @@ class _RecipeScreenState extends State<RecipeScreen> {
   }
 
   Future<bool> _fetch({required bool excludeShown}) async {
-    setState(() => _phase = _Phase.loading);
+    setState(() {
+      _phase = _Phase.loading;
+      _limitMessage = null;
+    });
+    if (_dishSpecific) return _fetchForMeal();
     try {
       final result = await _repo.getRecommended(
         mealType: _mealType,
@@ -122,9 +160,66 @@ class _RecipeScreenState extends State<RecipeScreen> {
       return true;
     } catch (e) {
       if (!mounted) return false;
-      setState(() => _phase = _Phase.error);
+      setState(() {
+        _limitMessage = _limitMessageFor(e);
+        _phase = _Phase.error;
+      });
       return false;
     }
+  }
+
+  /// `GET /api/recipes/for-meal` — the recipe for the dish that was tapped.
+  ///
+  /// No `excludeShown` and no draw-a-different-one retry: for a specific
+  /// dish there is exactly one right answer, and the backend caches it under
+  /// the dish name so opening the same meal twice returns the same recipe.
+  Future<bool> _fetchForMeal() async {
+    try {
+      final result = await _repo.getForMeal(
+        mealName: widget.mealName!.trim(),
+        mealType: _slot?.apiValue ?? _mealType,
+        foods: widget.foods,
+        dietType: _dietOverride ?? _context.dietType,
+        fitnessGoal: _goalOverride ?? _context.fitnessGoal,
+      );
+      if (!mounted) return false;
+      final recipe = result.recipe;
+      if (recipe == null) {
+        setState(() => _phase = _Phase.none);
+        return false;
+      }
+      _shownIds.add(recipe.id);
+      setState(() {
+        _current = recipe;
+        _reasons = recipe.whyItWorks;
+        _video = result.video;
+        _videoNote = result.videoNote;
+        _phase = _Phase.preview;
+        _viewingDetail = false;
+      });
+      return true;
+    } catch (e) {
+      if (!mounted) return false;
+      setState(() {
+        _limitMessage = _limitMessageFor(e);
+        _phase = _Phase.error;
+      });
+      return false;
+    }
+  }
+
+  /// Copy for a spent allowance (429). Null for anything else, which stays
+  /// a plain "temporarily unavailable".
+  static String? _limitMessageFor(Object e) {
+    if (e is! ApiException || e.statusCode != 429) return null;
+    final detail = e.body is Map ? (e.body as Map)['detail'] : null;
+    final tier = detail is Map ? detail['tier'] : null;
+    final limit = detail is Map ? detail['limit'] : null;
+    if (tier == 'free') {
+      return 'You have used all ${limit ?? 7} recipes for this week. '
+          'Upgrade to Premium for 27 a week.';
+    }
+    return 'Recipe limit reached for this week.';
   }
 
   void _applyFilters({String? mealType, String? cooking, String? diet, String? goal}) {
@@ -200,16 +295,30 @@ class _RecipeScreenState extends State<RecipeScreen> {
           ),
         );
       case _Phase.error:
+        final limited = _limitMessage != null;
         return _CenteredMessage(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off_rounded, size: 40, color: ZitlasTokens.textMuted),
+              Icon(limited ? Icons.lock_clock_rounded : Icons.cloud_off_rounded,
+                  size: 40, color: ZitlasTokens.textMuted),
               const SizedBox(height: 12),
-              const Text('Recipes are temporarily unavailable. Please try again.',
-                  textAlign: TextAlign.center, style: TextStyle(color: ZitlasTokens.textMuted, fontSize: 13.5)),
+              Text(
+                  _limitMessage ??
+                      'Recipes are temporarily unavailable. Please try again.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      color: ZitlasTokens.textMuted, fontSize: 13.5)),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: () => _fetch(excludeShown: false), child: const Text('Try Again')),
+              // Retrying a spent allowance only reproduces the same answer.
+              if (limited)
+                OutlinedButton(
+                    onPressed: () => context.pop(),
+                    child: const Text('Back to Diet'))
+              else
+                ElevatedButton(
+                    onPressed: () => _fetch(excludeShown: false),
+                    child: const Text('Try Again')),
             ],
           ),
         );
@@ -236,10 +345,19 @@ class _RecipeScreenState extends State<RecipeScreen> {
                 recipe: recipe,
                 reasons: _reasons,
                 slot: _slot,
-                onGetAnother: () async {
-                  final found = await _fetch(excludeShown: true);
-                  if (found) setState(() => _viewingDetail = true);
-                },
+                video: _video,
+                videoNote: _videoNote,
+                // "Get Another Recipe" only makes sense while the question is
+                // "a recipe for this slot". Once the athlete tapped a specific
+                // dish there IS no other recipe for it — offering one would
+                // hand back a different meal, which is the bug this path
+                // exists to fix.
+                onGetAnother: _dishSpecific
+                    ? null
+                    : () async {
+                        final found = await _fetch(excludeShown: true);
+                        if (found) setState(() => _viewingDetail = true);
+                      },
               )
             : _RecipePreviewCard(
                 recipe: recipe,
@@ -378,10 +496,24 @@ class _RecipePreviewCard extends StatelessWidget {
 
 /// Item 12/13 — the full recipe detail.
 class _RecipeDetailView extends StatelessWidget {
-  const _RecipeDetailView({required this.recipe, required this.reasons, required this.onGetAnother, this.slot});
+  const _RecipeDetailView({
+    required this.recipe,
+    required this.reasons,
+    required this.onGetAnother,
+    this.slot,
+    this.video,
+    this.videoNote,
+  });
   final Recipe recipe;
   final List<String> reasons;
-  final VoidCallback onGetAnother;
+  /// Null when this recipe is for one specific dish — see the call site.
+  final VoidCallback? onGetAnother;
+
+  /// A cooking video the backend verified is about THIS dish, or null.
+  final MealRecipeVideo? video;
+
+  /// Why there is no video, when the backend said so.
+  final String? videoNote;
   final MealSlot? slot;
 
   /// Family Combo / Multi-Goal has no implementation anywhere in this app
@@ -468,22 +600,116 @@ class _RecipeDetailView extends StatelessWidget {
             const SizedBox(height: 18),
             Wrap(spacing: 6, runSpacing: 6, children: [for (final t in recipe.tags) _Tag(t)]),
           ],
+          if (video != null) ...[
+            const _SectionTitle('Watch how to make it'),
+            _MealVideoCard(video: video!),
+          ] else if (videoNote != null) ...[
+            const _SectionTitle('Watch how to make it'),
+            Text(videoNote!,
+                style: const TextStyle(
+                    fontSize: 12.5, color: ZitlasTokens.textMuted, height: 1.5)),
+          ],
           const SizedBox(height: 22),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: onGetAnother,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Get Another Recipe', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ZitlasTokens.primary,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          if (onGetAnother != null)
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: onGetAnother,
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Get Another Recipe', style: TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ZitlasTokens.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
               ),
             ),
-          ),
         ],
+      ),
+    );
+  }
+}
+
+/// The verified cooking video for this dish. Opens in YouTube rather than
+/// embedding a player: this screen is a recipe, not a video screen, and the
+/// browse feature (`CreatorRecipeScreen`) already owns the embedded-player
+/// experience.
+class _MealVideoCard extends StatelessWidget {
+  const _MealVideoCard({required this.video});
+  final MealRecipeVideo video;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: () async {
+        final url = video.videoUrl;
+        if (url == null) return;
+        final uri = Uri.tryParse(url);
+        if (uri == null) return;
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: ZitlasTokens.bgCard,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: ZitlasTokens.border),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Row(
+          children: [
+            if (video.thumbnailUrl != null)
+              SizedBox(
+                width: 116,
+                height: 74,
+                child: Image.network(
+                  video.thumbnailUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const ColoredBox(
+                    color: ZitlasTokens.bgCardLight,
+                    child: Icon(Icons.play_circle_outline,
+                        color: ZitlasTokens.textMuted),
+                  ),
+                ),
+              ),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      video.title,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: ZitlasTokens.textPrimary),
+                    ),
+                    if (video.channelName != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        video.channelName!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                            fontSize: 11.5, color: ZitlasTokens.textMuted),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.only(right: 12),
+              child: Icon(Icons.open_in_new_rounded,
+                  size: 18, color: ZitlasTokens.textMuted),
+            ),
+          ],
+        ),
       ),
     );
   }

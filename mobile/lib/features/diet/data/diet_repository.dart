@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/foundation.dart';
 
@@ -17,12 +18,33 @@ import '../models/swap_result.dart';
 /// `frontend/pages/experts/modify-diet.js` — no new collections, no schema
 /// changes. See docs/MIGRATION_INVENTORY.md for the full audit.
 class DietRepository {
-  DietRepository({required FirebaseFirestore firestore, ApiClient? apiClient})
-    : _db = firestore,
-      _api = apiClient ?? ApiClient();
+  DietRepository({
+    required FirebaseFirestore firestore,
+    ApiClient? apiClient,
+    FirebaseAuth? auth,
+  }) : _db = firestore,
+       // Nullable by design so the repo can fall back to
+       // FirebaseAuth.instance lazily, matching role_repository.
+       // ignore: prefer_initializing_formals
+       _auth = auth,
+       _api = apiClient ?? ApiClient() {
+    // EVERY backend call from this repository carries the athlete's ID
+    // token. `/api/diet/swap` meters swaps per week against the verified
+    // uid (free 70, premium unlimited) and now REJECTS a tokenless request
+    // outright — without this the app could not swap at all, and before the
+    // backend was tightened it swapped without ever being counted.
+    _api.authTokenProvider ??= () async {
+      try {
+        return await (_auth ?? FirebaseAuth.instance).currentUser?.getIdToken();
+      } catch (_) {
+        return null;
+      }
+    };
+  }
 
   final FirebaseFirestore _db;
   final ApiClient _api;
+  final FirebaseAuth? _auth;
 
   DocumentReference<Map<String, dynamic>> _userDoc(String uid) =>
       _db.collection('users').doc(uid);

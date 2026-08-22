@@ -185,6 +185,14 @@ GoRouter buildRouter(AuthState authState) {
         // never silently become a normal meal recommendation.
         builder: (context, state) => RecipeScreen(
           mealType: state.uri.queryParameters['meal_type'] ?? 'snack',
+          // The DISH the athlete tapped. Absent only on a manual deep link,
+          // in which case the screen falls back to the slot recommender —
+          // never as a silent substitute for a dish lookup that failed.
+          mealName: state.uri.queryParameters['meal_name'],
+          foods: (state.uri.queryParameters['foods'] ?? '')
+              .split('|')
+              .where((f) => f.trim().isNotEmpty)
+              .toList(),
         ),
       ),
       // 🎥 Creator Recipe — a YouTube creator's video. A SEPARATE source

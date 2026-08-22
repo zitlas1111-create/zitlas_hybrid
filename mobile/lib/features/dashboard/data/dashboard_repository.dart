@@ -235,8 +235,36 @@ class DashboardRepository {
   }
 
   /// Matches `cloud-sync.js`'s `clearGoalData()` — the same
-  /// `GOAL_SCOPED_FIELDS` set to null, plus a `goalResetAt` timestamp.
-  Future<void> resetGoal(String uid) {
+  /// `GOAL_SCOPED_FIELDS` set to null, plus a `goalResetAt` timestamp — AND
+  /// `coaching-reset.js`'s `clearAll({relationshipStatus: 'reset'})`, which
+  /// this used to skip entirely.
+  ///
+  /// THE BUG THAT FIXES: nulling the user doc alone left
+  /// `personal_coaching/{uid}.status` at `'active'`. Personal Coaching is
+  /// served by the website (in a WebView on mobile), and `diet.js`'s
+  /// `_pcShowsCoachPlan()` gates purely on that status — so after a reset
+  /// performed IN THE APP the previous coach's diet and training plans went
+  /// straight back over the freshly generated AI plan, and the coach kept
+  /// seeing the old goal's assessment and medical conditions in
+  /// `coaching_plans/{uid}.athleteContext`. A reset done on the website
+  /// cleared both; the same reset done in Flutter did not.
+  ///
+  /// NOTHING IS DELETED. The relationship is retired to a status no client
+  /// treats as show-worthy, and only the published context pair is removed.
+  /// Coaching history, ratings, chat, wallet and transactions all survive —
+  /// resetting a goal is not deleting an account.
+  Future<void> resetGoal(String uid) async {
+    await _clearGoalScopedFields(uid);
+    // Non-blocking, exactly like the website: a coaching write that fails
+    // must not leave the athlete unable to reset their goal. Each half
+    // reports its own failure.
+    await Future.wait([
+      _retireCoachingRelationship(uid),
+      _clearPublishedAthleteContext(uid),
+    ]);
+  }
+
+  Future<void> _clearGoalScopedFields(String uid) {
     const goalScopedFields = [
       'goal',
       'assessment',
@@ -257,6 +285,57 @@ class DashboardRepository {
       'goalResetAt': DateTime.now().toIso8601String(),
     };
     return _userDoc(uid).set(updates, SetOptions(merge: true));
+  }
+
+  /// Retire `personal_coaching/{uid}` to `'reset'`.
+  ///
+  /// Mirrors `coaching-reset.js`'s `_retireCoachingRelationship()` field for
+  /// field — `status`, `priorStatus`, `<newStatus>At` — which is also exactly
+  /// the key set `firestore.rules` lets the athlete change on their own
+  /// relationship (`changedOnly(['status','priorStatus','resetAt','endedAt',
+  /// 'endedBy','reason'])` with `status in ['reset','ended']`).
+  Future<void> _retireCoachingRelationship(String uid) async {
+    try {
+      final ref = _firestore.collection('personal_coaching').doc(uid);
+      final snap = await ref.get();
+      if (!snap.exists) return;
+      final prior = snap.data() ?? const <String, dynamic>{};
+      if (prior['status'] == 'reset') return;
+      await ref.update({
+        'status': 'reset',
+        'priorStatus': prior['status'],
+        'resetAt': DateTime.now().toIso8601String(),
+      });
+      if (kDebugMode) {
+        debugPrint('[GOAL RESET] personal_coaching/$uid retired '
+            "(was '${prior['status']}')");
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[GOAL RESET] relationship retire failed (non-blocking): $e');
+      }
+    }
+  }
+
+  /// Remove the athlete context published into `coaching_plans/{uid}`.
+  ///
+  /// Without this a coach opening the workspace after a reset still sees the
+  /// PREVIOUS goal's data — including medical conditions the athlete never
+  /// reported on their new assessment. The coach-authored `diet`/`training`
+  /// on the same document are deliberately untouched (that is history), and
+  /// fresh context republishes on its own once a relationship is active
+  /// again. A missing document means nothing was ever published.
+  Future<void> _clearPublishedAthleteContext(String uid) async {
+    try {
+      await _firestore.collection('coaching_plans').doc(uid).update({
+        'athleteContext': FieldValue.delete(),
+        'athleteContextUpdatedAt': FieldValue.delete(),
+      });
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[GOAL RESET] context clear skipped (non-blocking): $e');
+      }
+    }
   }
 
   Future<void> logWater(String uid, int deltaMl, {DateTime? now}) async {

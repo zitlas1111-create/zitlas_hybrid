@@ -7,8 +7,9 @@ POST /api/chat/upload  — Upload a chat image; returns a public URL
 import uuid
 from pathlib import Path
 
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
+from services.auth_service import verify_firebase_token
 
 router = APIRouter()
 
@@ -18,7 +19,19 @@ _UPLOAD_DIR = Path(__file__).parent.parent / "uploads" / "chat"
 
 
 @router.post("/upload")
-async def upload_chat_image(file: UploadFile = File(...)) -> JSONResponse:
+async def upload_chat_image(
+    file: UploadFile = File(...),
+    _caller: dict = Depends(verify_firebase_token),
+) -> JSONResponse:
+    """AUTHENTICATION IS REQUIRED.
+
+    This writes a caller-supplied file to the server's disk and hands back a
+    public /uploads/chat/ URL on the ZITLAS domain. Unauthenticated, that is
+    anonymous disk-fill and free image hosting under our own name — with no
+    uid on the request, there is nothing to rate-limit or attribute either.
+    Chat and meal check-ins are both signed-in features, so requiring a token
+    costs no real caller anything.
+    """
     print(f"[CHAT UPLOAD] Received file: name={file.filename!r}  type={file.content_type!r}")
 
     if file.content_type not in _ALLOWED_TYPES:

@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../../../core/network/api_client.dart';
 import '../models/creator_recipe.dart';
+import '../models/meal_recipe.dart';
 import '../models/recipe.dart';
 
 /// The athlete's existing context, resolved from the SAME `users/{uid}`
@@ -119,6 +120,45 @@ class RecipeRepository {
     });
     if (res is! Map) return const RecipeRecommendation(recipes: [], reasons: {});
     return RecipeRecommendation.fromMap(res.cast<String, dynamic>());
+  }
+
+  /// `GET /api/recipes/for-meal` — THE recipe for the dish the athlete
+  /// tapped, plus a video verified to be about that same dish.
+  ///
+  /// This is what [getRecommended] should have been for this button.
+  /// `/recommended` treats the SLOT as the key and draws a recipe from that
+  /// slot's pool, so tapping the "Poha" card could return "Masala Omelette"
+  /// — a different meal entirely. Here [mealName] is the primary key end to
+  /// end: it drives the recipe, the cache and the video query, and the
+  /// backend forces the returned recipe's name back to it.
+  ///
+  /// [foods] are the plan components shown under the meal name; they sharpen
+  /// generation but never replace the dish as the identifier.
+  ///
+  /// Metered by the backend against the verified uid — free 7/week,
+  /// premium 27/week — which is why the ID token travels with it.
+  Future<MealRecipeResult> getForMeal({
+    required String mealName,
+    String? mealType,
+    List<String> foods = const [],
+    String? description,
+    String? dietType,
+    String? fitnessGoal,
+  }) async {
+    final res = await _api.get('/api/recipes/for-meal', query: {
+      'meal_name': mealName,
+      'meal_type': ?mealType,
+      // Pipe-separated, matching the website's `data-recipe-foods` and the
+      // backend's own split on '|'.
+      if (foods.isNotEmpty) 'foods': foods.join('|'),
+      'description': ?description,
+      'diet_type': ?dietType,
+      'fitness_goal': ?fitnessGoal,
+    });
+    if (res is! Map) {
+      throw FormatException('Unexpected for-meal response: ${res.runtimeType}');
+    }
+    return MealRecipeResult.fromMap(res.cast<String, dynamic>());
   }
 
   // ── Creator Recipes (YouTube) ─────────────────────────────────────────

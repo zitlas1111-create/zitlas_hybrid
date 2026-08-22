@@ -446,6 +446,65 @@
     document.body.style.overflow = '';
   }
 
+  /* Reserve one goal reset from the server-side weekly allowance.
+
+     Returns {ok:true} or {ok:false, message}. FAILS CLOSED on 401/429 —
+     the whole point of the endpoint is that a client cannot reset without
+     being counted. A transport failure is the one case that fails OPEN:
+     the backend records the reset when it can, and blocking a paying user
+     from resetting their goal because the network blipped is worse than
+     the rare uncounted reset. */
+  async function consumeGoalReset() {
+    if (typeof getIdToken !== 'function') {
+      return { ok: false, message: 'Please sign in again to reset your goal.' };
+    }
+    let token = null;
+    try { token = await getIdToken(); } catch (_) { token = null; }
+    if (!token) {
+      return { ok: false, message: 'Please sign in again to reset your goal.' };
+    }
+
+    let resp;
+    try {
+      resp = await fetch('/api/entitlements/consume', {
+        method: 'POST',
+        headers: {
+          'Content-Type':  'application/json',
+          'Authorization': 'Bearer ' + token,
+        },
+        body: JSON.stringify({ feature: 'goal_reset' }),
+      });
+    } catch (e) {
+      console.warn('[ENTITLEMENTS] goal_reset reservation unreachable —', e);
+      return { ok: true };
+    }
+
+    if (resp.ok) {
+      try {
+        const data = await resp.json();
+        console.log('[ENTITLEMENTS] goal_reset allowance:', data.allowance);
+      } catch (_) { /* the reservation succeeded either way */ }
+      return { ok: true };
+    }
+
+    if (resp.status === 429) {
+      let d = null;
+      try { d = (await resp.json()).detail; } catch (_) { /* default copy */ }
+      return {
+        ok: false,
+        message: d && d.tier === 'free'
+          ? 'You have used all ' + d.limit + ' goal resets for this week. '
+            + 'Upgrade to Premium for 5 a week.'
+          : 'Goal reset limit reached for this week.',
+      };
+    }
+    if (resp.status === 401 || resp.status === 403) {
+      return { ok: false, message: 'Please sign in again to reset your goal.' };
+    }
+    console.warn('[ENTITLEMENTS] goal_reset reservation failed —', resp.status);
+    return { ok: true };
+  }
+
   function initResetGoalModal() {
     const modal      = document.getElementById('resetGoalModal');
     const cancelBtn  = document.getElementById('cancelResetBtn');
@@ -456,7 +515,24 @@
     modal.addEventListener('click', (e) => { if (e.target === modal) closeResetGoalModal(); });
 
     if (confirmBtn) {
-      confirmBtn.addEventListener('click', () => {
+      confirmBtn.addEventListener('click', async () => {
+        /* GOAL RESETS ARE METERED — free 2/week, premium 5/week.
+           A goal reset is written straight to Firestore + localStorage by
+           this client, so there is no other server call to hang the check
+           on: the allowance is reserved HERE, before anything is cleared,
+           and a refused reservation aborts the reset entirely. The count
+           lives in `usage_weekly` server-side and is keyed to the verified
+           uid, so clearing localStorage, reinstalling or refreshing does
+           not hand anyone a fresh set of resets. */
+        confirmBtn.disabled = true;
+        const spend = await consumeGoalReset();
+        if (!spend.ok) {
+          confirmBtn.disabled = false;
+          closeResetGoalModal();
+          showToast(spend.message, 4200);
+          return;
+        }
+
         if (typeof ZitlasNotify !== 'undefined') {
           const gUid = ZitlasNotify.myUid();
           if (gUid) {
@@ -468,7 +544,6 @@
         }
         clearAllSurveyData();
         closeResetGoalModal();
-        confirmBtn.disabled = true;
         clearCoachingArtifactsOnReset().then(() => {
           window.location.href = './ai-coach/ai-coach.html';
         });

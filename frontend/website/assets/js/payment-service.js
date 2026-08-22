@@ -43,6 +43,53 @@
      Premium plan payments and Razorpay wallet recharge NEVER route
      through this module's charge path, so they keep working normally.
   ══════════════════════════════════════════════════════════════════ */
+  /* WALLET FREEZE — the Wallet moves no money this release.
+
+     Read from the SERVER (GET /api/system/trial-mode -> walletFrozen), never
+     from a constant here, so the UI and the backend cannot disagree about
+     it. This value only decides what the UI SHOWS: the backend refuses every
+     wallet money movement with 503 wallet_frozen regardless of what any
+     client believes, so a tampered flag buys nothing.
+
+     Defaults to FROZEN before the first answer arrives — the safe direction:
+     briefly showing "unavailable" on a slow network is harmless, briefly
+     offering a recharge that the server will refuse is not. */
+  var _WALLET_FROZEN_LS_KEY = 'zitlas_wallet_frozen';
+  var _walletFrozen = (function () {
+    try {
+      var cached = localStorage.getItem(_WALLET_FROZEN_LS_KEY);
+      return cached === null ? true : cached === 'true';
+    } catch (_) { return true; }
+  })();
+  var _walletFrozenMessage = 'Wallet is temporarily unavailable. ' +
+    "It's coming in a future update — your balance and transaction history are safe.";
+
+  /* THE LAUNCH BUSINESS MODEL, as the SERVER states it.
+
+     Premium is the only paid feature; Personal Coaching and expert services
+     are free; wallet, expert verification and expert payouts are frozen.
+     Served by GET /api/system/launch-config (and mirrored on
+     /api/system/trial-mode, which this module already fetches).
+
+     DISPLAY ONLY — every rule is enforced again inside the backend request
+     handlers, so a tampered flag here changes copy, never money. Defaults to
+     the launch model so the UI is correct before the first answer arrives. */
+  var _LAUNCH_LS_KEY = 'zitlas_launch_config';
+  var _launch = (function () {
+    try {
+      var cached = JSON.parse(localStorage.getItem(_LAUNCH_LS_KEY) || 'null');
+      if (cached && cached.personalCoaching) return cached;
+    } catch (_) {}
+    return {
+      premium:            { enabled: true,  paymentRequired: true, provider: 'razorpay' },
+      personalCoaching:   { enabled: true,  paymentRequired: false, price: 0 },
+      expertServices:     { paymentRequired: false },
+      expertVerification: { enabled: false, paymentRequired: false },
+      wallet:             { enabled: false },
+      expertPayouts:      { enabled: false },
+    };
+  })();
+
   var _TRIAL_LS_KEY = 'zitlas_trial_mode';
   var _trialMode = (function () {
     try { return localStorage.getItem(_TRIAL_LS_KEY) === 'true'; } catch (_) { return false; }
@@ -60,6 +107,26 @@
           var eff = (typeof data.effectiveFree === 'boolean')
             ? data.effectiveFree
             : (typeof data.clientTrialMode === 'boolean' ? data.clientTrialMode : null);
+          if (data.launchConfig && data.launchConfig.personalCoaching) {
+            _launch = data.launchConfig;
+            try {
+              localStorage.setItem(_LAUNCH_LS_KEY, JSON.stringify(_launch));
+            } catch (_) {}
+            console.log('[PAYMENT] launch config —',
+              'coachingFree=' + !_launch.personalCoaching.paymentRequired,
+              'walletEnabled=' + _launch.wallet.enabled,
+              'premiumProvider=' + _launch.premium.provider);
+          }
+          if (typeof data.walletFrozen === 'boolean') {
+            _walletFrozen = data.walletFrozen;
+            try {
+              localStorage.setItem(_WALLET_FROZEN_LS_KEY, String(_walletFrozen));
+            } catch (_) {}
+            console.log('[PAYMENT] wallet frozen =', _walletFrozen);
+          }
+          if (typeof data.walletFrozenMessage === 'string' && data.walletFrozenMessage) {
+            _walletFrozenMessage = data.walletFrozenMessage;
+          }
           if (eff === null) return;
           _trialMode = eff;
           try { localStorage.setItem(_TRIAL_LS_KEY, String(_trialMode)); } catch (_) {}
@@ -70,6 +137,17 @@
     } catch (_) {}
   })();
   function isTrialMode() { return _trialMode; }
+  function isWalletFrozen() { return _walletFrozen; }
+  function launchConfig() { return _launch; }
+  /* Personal Coaching costs nothing at launch. Not "₹0 at checkout" — there
+     is no checkout: the request goes straight to the expert. */
+  function isCoachingFree() {
+    return !(_launch.personalCoaching && _launch.personalCoaching.paymentRequired);
+  }
+  function areExpertServicesFree() {
+    return !(_launch.expertServices && _launch.expertServices.paymentRequired);
+  }
+  function walletFrozenMessage() { return _walletFrozenMessage; }
 
   /* PREMIUM MEMBERSHIP — local, synchronous read of THIS device's user
      (zitlas_membership, cloud-synced via users/{uid}.membership). For UI
@@ -298,6 +376,11 @@
   }
 
   win.ZitlasPayment = {
+    isWalletFrozen: isWalletFrozen,
+    launchConfig: launchConfig,
+    isCoachingFree: isCoachingFree,
+    areExpertServicesFree: areExpertServicesFree,
+    walletFrozenMessage: walletFrozenMessage,
     PLATFORM_FEE_PERCENT: PLATFORM_FEE_PERCENT,
     attemptCharge: attemptCharge,
     creditWallet: creditWallet,
