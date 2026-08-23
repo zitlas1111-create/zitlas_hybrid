@@ -133,7 +133,12 @@ class _FakeScheduler extends ZinoNotificationScheduler {
   }
 
   @override
-  Future<void> scheduleAll({NotificationPreferences? preferences}) async {
+  Future<bool> scheduleAll({NotificationPreferences? preferences}) async {
+    // Returns whether anything was ACTUALLY scheduled — the real
+    // implementation now refuses when POST_NOTIFICATIONS is missing, and a
+    // caller must be able to tell the difference between "scheduled" and
+    // "silently did nothing".
     scheduleAllCalls++;
+    return true;
   }
 }

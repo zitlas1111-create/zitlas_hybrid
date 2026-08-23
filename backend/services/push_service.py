@@ -47,7 +47,12 @@ def _access_token() -> str:
 # notification whose channel_id does not exist on the device, so a typo here is
 # an invisible delivery failure, not an error.
 CHANNEL_MESSAGES = "zitlas_messages"
-CHANNEL_COACHING = "zitlas_coaching"
+# v2: Android CACHES a channel's importance at creation time, so raising the
+# old `zitlas_coaching` channel to high importance would have had no effect on
+# any device that already had it — every existing install would have kept the
+# silent, no-heads-up behaviour forever. A new id is the only way to change it.
+# MUST stay identical to FcmService.channelCoaching in the Flutter app.
+CHANNEL_COACHING = "zitlas_coaching_v2"
 CHANNEL_MEAL_REVIEWS = "zitlas_meal_reviews"
 CHANNEL_PLANS = "zitlas_plans"
 CHANNEL_GENERAL = "zitlas_general"
@@ -99,6 +104,51 @@ def _is_dead_token(status_code: int, detail: Any) -> bool:
     return False
 
 
+#: Notification types that are TIME-CRITICAL and must punch through Doze.
+#: A coaching approval the athlete paid for, an expert replying, a review
+#: finishing — none of these are useful an hour late.
+_HIGH_PRIORITY_TYPES = frozenset({
+    "chat_message",
+    "coaching_accepted",
+    "coaching_started",
+    "coaching_request",
+    "coaching_rejected",
+    "coaching_ended",
+    "review_completed",
+    "review_complete",
+    "expert_request",
+    "meal_review_completed",
+    "meal_reviewed",
+    "diet_updated",
+    "workout_updated",
+})
+
+#: Caller-supplied priority words that mean "deliver now".
+_HIGH_PRIORITY_WORDS = frozenset({"high", "urgent", "critical"})
+
+
+def is_high_priority(notification_type: str | None,
+                     priority: str | None = None) -> bool:
+    """Whether this notification is delivered at FCM HIGH priority.
+
+    THE BUG THIS FIXES: this used to be `high = notification_type ==
+    "chat_message"`, so EVERY other notification — including a coaching
+    approval whose caller explicitly passed `priority="high"` — went out at
+    FCM `normal`. Android defers normal-priority messages while the device is
+    in Doze or the app is in App Standby and releases them in a batch when the
+    device next becomes active, which is why events "only appeared when the
+    user opened the app", several at once.
+
+    The caller's own `priority` now decides, with a type allowlist as the
+    fallback for callers that never stated one. Genuinely informational
+    notifications stay `normal` — high priority is a limited resource and
+    marking everything urgent is the same as marking nothing urgent.
+    """
+    if priority and priority.strip().lower() in _HIGH_PRIORITY_WORDS:
+        return True
+    return (notification_type or "") in _HIGH_PRIORITY_TYPES
+
+
 def send_to_token(
     token: str,
     title: str,
@@ -107,6 +157,7 @@ def send_to_token(
     *,
     notification_type: str | None = None,
     collapse_key: str | None = None,
+    priority: str | None = None,
 ) -> dict[str, Any]:
     """Send one notification to one device token via FCM HTTP v1.
 
@@ -127,7 +178,8 @@ def send_to_token(
 
     payload_data = {str(k): str(v) for k, v in (data or {}).items()}
     channel = channel_for(notification_type)
-    high = notification_type == "chat_message"
+    # The caller's priority is HONOURED here. See is_high_priority().
+    high = is_high_priority(notification_type, priority)
 
     message: dict[str, Any] = {
         "token": token,

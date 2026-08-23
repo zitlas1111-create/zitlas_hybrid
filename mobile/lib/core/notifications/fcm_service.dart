@@ -46,7 +46,15 @@ class FcmService {
   /// Android silently DROPS a notification whose channel does not exist on the
   /// device, so a mismatch here is an invisible delivery failure.
   static const channelMessages = 'zitlas_messages';
-  static const channelCoaching = 'zitlas_coaching';
+  /// v2: Android caches a channel's importance at creation, so the original
+  /// `zitlas_coaching` channel could never be raised from default to high on
+  /// a device that already had it. A NEW id is the only way to change it —
+  /// existing installs get the new channel on next launch and the old one
+  /// simply stops being used.
+  ///
+  /// MUST stay identical to `push_service.CHANNEL_COACHING` on the backend:
+  /// Android silently drops a notification whose channel_id does not exist.
+  static const channelCoaching = 'zitlas_coaching_v2';
   static const channelMealReviews = 'zitlas_meal_reviews';
   static const channelPlans = 'zitlas_plans';
   static const channelGeneral = 'zitlas_general';
@@ -62,7 +70,11 @@ class FcmService {
       channelCoaching,
       'Personal Coaching',
       description: 'Coaching requests, activation, payments and updates.',
-      importance: Importance.defaultImportance,
+      // HIGH so a coaching approval actually shows a heads-up banner. The
+      // channel id had to change (v2) to make this land: Android caches a
+      // channel's importance at creation, so editing the old channel would
+      // have left every existing install silent.
+      importance: Importance.high,
     ),
     AndroidNotificationChannel(
       channelMealReviews,
@@ -190,9 +202,23 @@ class FcmService {
       (c) => c.id == channelId,
       orElse: () => _channels.last,
     );
-    // Stable per-conversation id so repeated messages from the same chat
-    // REPLACE each other (grouped) instead of stacking N separate entries.
-    final id = (payload.chatId ?? payload.mealId ?? payload.type).hashCode & 0x7fffffff;
+    // ONE EVENT -> ONE NOTIFICATION.
+    //
+    // `notificationId` is minted per event by the backend
+    // (notification_service.persist), so redelivering the SAME push — an FCM
+    // retry, a reconnect, a rebuild that re-attaches the listener — reuses
+    // the same tray id and replaces the entry instead of stacking a second
+    // copy. Two DIFFERENT coaching events still get two ids and show
+    // separately, which keying on `type` alone would have collapsed.
+    //
+    // Chat keeps its per-conversation grouping ahead of that: a thread should
+    // show one live entry, not one per message.
+    final id = (payload.chatId ??
+            payload.mealId ??
+            payload.notificationId ??
+            payload.type)
+        .hashCode &
+        0x7fffffff;
     try {
       await _plugin.show(
         id: id,

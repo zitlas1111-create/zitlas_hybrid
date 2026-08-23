@@ -161,14 +161,34 @@ class ZinoNotificationScheduler {
 
   /// (Re)schedules every enabled slot. Safe to call on every launch — stable
   /// ids mean this replaces rather than duplicates.
-  Future<void> scheduleAll({NotificationPreferences? preferences}) async {
+  ///
+  /// RETURNS whether anything was actually scheduled. Callers must not assume
+  /// success: on Android 13+ an alarm registers perfectly happily without
+  /// POST_NOTIFICATIONS and then fires into nothing, which is exactly how
+  /// meal reminders came to "just not appear" with no error anywhere.
+  Future<bool> scheduleAll({NotificationPreferences? preferences}) async {
     await init();
     final prefs = preferences ?? NotificationPreferences.load(_prefs);
 
     if (!prefs.masterEnabled) {
       await cancelAll();
       if (kDebugMode) debugPrint('[NOTIF] master switch off — all cancelled');
-      return;
+      return false;
+    }
+
+    // PERMISSION FIRST. Android 13+ silently discards every notification from
+    // an app without POST_NOTIFICATIONS — the alarms fire, nothing shows, and
+    // nothing logs. Scheduling into that void is worse than not scheduling:
+    // it produces a "scheduled successfully" state that is simply untrue.
+    if (!await areEnabled()) {
+      await cancelAll();
+      if (kDebugMode) {
+        debugPrint('[NOTIF] NOT SCHEDULED — POST_NOTIFICATIONS is not granted. '
+            'Reminders would fire into a void. The consent sheet '
+            '(NotificationOnboarding) must be accepted first; scheduling '
+            'resumes automatically on the next launch after that.');
+      }
+      return false;
     }
 
     var scheduled = 0;
@@ -181,8 +201,10 @@ class ZinoNotificationScheduler {
       scheduled++;
     }
     if (kDebugMode) {
-      debugPrint('[NOTIF] scheduled $scheduled/${ZinoSlot.values.length} daily reminders');
+      debugPrint('[NOTIF] scheduled $scheduled/${ZinoSlot.values.length} daily reminders '
+          '(exactAlarms=${_exactAlarms ?? 'unknown'})');
     }
+    return scheduled > 0;
   }
 
   Future<void> _scheduleSlot(ZinoSlot slot) async {

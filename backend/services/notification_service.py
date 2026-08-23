@@ -122,7 +122,8 @@ def persist(db, user_id: str, *, title: str, message: str, category: str = "gene
 
 def push_only(db, user_id: str, *, title: str, body: str,
               type: str | None = None, data: dict[str, Any] | None = None,
-              collapse_key: str | None = None) -> dict[str, Any]:
+              collapse_key: str | None = None,
+              priority: str | None = None) -> dict[str, Any]:
     """FCM delivery ONLY (no persisted document) to all of `user_id`'s devices.
 
     Used for high-volume events that must not spam the notification centre —
@@ -140,6 +141,10 @@ def push_only(db, user_id: str, *, title: str, body: str,
         res = push_service.send_to_token(
             token, title, body, payload,
             notification_type=type, collapse_key=collapse_key,
+            # FORWARDED, not dropped. `send()`'s callers pass priority="high"
+            # for time-critical events; it used to reach only the Firestore
+            # document and never the push itself.
+            priority=priority,
         )
         if res.get("ok"):
             sent += 1
@@ -147,7 +152,9 @@ def push_only(db, user_id: str, *, title: str, body: str,
             failed += 1
             if res.get("dead_token"):
                 _prune_token(db, user_id, token, source)
-    print(f"[NOTIFY] push type={type} uid={user_id} tokens={len(tokens)} sent={sent} failed={failed}")
+    print(f"[NOTIFY] push type={type} uid={user_id} tokens={len(tokens)} "
+          f"sent={sent} failed={failed} "
+          f"fcmPriority={'high' if push_service.is_high_priority(type, priority) else 'normal'}")
     return {"sent": sent, "failed": failed, "tokens": len(tokens)}
 
 
@@ -182,5 +189,6 @@ def send(db, user_id: str, title: str, message: str, *,
         payload.setdefault("notificationId", notif_id)
 
     result = push_only(db, user_id, title=title, body=message, type=type,
-                       data=payload, collapse_key=collapse_key)
+                       data=payload, collapse_key=collapse_key,
+                       priority=priority)
     return {"ok": True, "notificationId": notif_id, **result}
