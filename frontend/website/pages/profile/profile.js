@@ -160,16 +160,25 @@
          clear was the multi-user data-leak root cause: the next account
          to sign in on this browser inherited everything the list missed.
          Fallback list kept for the cached-page case. */
-      if (typeof ZitlasAccountGuard !== 'undefined') {
-        ZitlasAccountGuard.clearUserCache();
-      } else {
-        ['zitlas_token','zitlas_user','zitlas_firebase_user','zitlas_user_role',
-         'zitlas_expert_id','loggedIn','user','zitlas_expert_profile','currentUser',
-         'zitlas_expert_applied','zitlas_experts'].forEach(k => localStorage.removeItem(k));
-        ['zitlas_guest','zitlas_pending_action','user'].forEach(k => sessionStorage.removeItem(k));
+      try {
+        if (typeof ZitlasAccountGuard !== 'undefined') {
+          ZitlasAccountGuard.clearUserCache();
+        } else {
+          ['zitlas_token','zitlas_user','zitlas_firebase_user','zitlas_user_role',
+           'zitlas_expert_id','loggedIn','user','zitlas_expert_profile','currentUser',
+           'zitlas_expert_applied','zitlas_experts'].forEach(k => localStorage.removeItem(k));
+          ['zitlas_guest','zitlas_pending_action','user'].forEach(k => sessionStorage.removeItem(k));
+        }
+        console.log('[LOGOUT] Cleared account cache: true');
+      } catch (e) {
+        /* A failed cache purge must not strand a signed-out user on a
+           protected page. Firebase sign-out has already happened above, so
+           leaving is both safe and the only correct next step. */
+        console.error('[LOGOUT] cache purge failed, leaving anyway:', e);
       }
-      console.log('[LOGOUT] Cleared account cache: true');
 
+      /* replace(), not assign(): the dashboard must not be reachable with the
+         browser Back button after signing out. */
       window.location.replace('../login/login.html');
     });
 
@@ -333,22 +342,44 @@
   }
 
   /* ---- INIT ---- */
-  function init() {
-    var _nb = document.getElementById('zitlas-navbar');
-    if (_nb) document.documentElement.style.setProperty('--nav-height', (window.innerHeight - _nb.getBoundingClientRect().top) + 'px');
 
-    loadTheme();
-    initSystemThemeWatcher();
-    loadAthleteProfile();
-    initAppearanceModal();
-    initLanguageModal();
-    initSettingsItems();
-    initLogoutModal();
-    initShareProfile();
-    initEditProfile();
-    initNavItems();
-    initAvatarFallback();
-    initExpertAppliedBanner();
+  /* Runs one init step in isolation.
+
+     THE BUG THIS FIXES: init() used to call every step as a bare sequence, so
+     a throw in ANY earlier one — a missing element, a bad cached profile,
+     a locale lookup — silently aborted the rest of the chain. When that
+     happened before initLogoutModal(), the logout button was never wired and
+     clicking it did nothing at all, with no visible error. One broken feature
+     must not be able to take logout down with it. */
+  function step(name, fn) {
+    try {
+      fn();
+    } catch (e) {
+      console.error('[PROFILE] init step "' + name + '" failed:', e);
+    }
+  }
+
+  function init() {
+    /* LOGOUT IS WIRED FIRST, deliberately. It is the one control a user must
+       always be able to reach — including when the rest of this page is
+       misbehaving, which is exactly when they most want to sign out. */
+    step('logout', initLogoutModal);
+
+    step('navHeight', function () {
+      var _nb = document.getElementById('zitlas-navbar');
+      if (_nb) document.documentElement.style.setProperty('--nav-height', (window.innerHeight - _nb.getBoundingClientRect().top) + 'px');
+    });
+    step('theme', loadTheme);
+    step('themeWatcher', initSystemThemeWatcher);
+    step('profile', loadAthleteProfile);
+    step('appearance', initAppearanceModal);
+    step('language', initLanguageModal);
+    step('settings', initSettingsItems);
+    step('share', initShareProfile);
+    step('editProfile', initEditProfile);
+    step('nav', initNavItems);
+    step('avatar', initAvatarFallback);
+    step('expertBanner', initExpertAppliedBanner);
   }
 
   /* Cross-device sync: hydrate before the first render so a second device

@@ -3249,17 +3249,23 @@ async function logout() {
      while still signed in lets a mid-flight sync re-read or re-upload the
      account it was meant to wipe. ACCOUNT GUARD does the full user-cache
      purge; the list is the fallback for a cached page where it isn't loaded. */
-  if (typeof ZitlasAccountGuard !== 'undefined') {
-    ZitlasAccountGuard.clearUserCache();
-  } else {
-    ['zitlas_token','zitlas_user','user','zitlas_user_role','zitlas_expert_id',
-     'zitlas_firebase_user','loggedIn','zitlas_expert_profile','currentUser',
-     'zitlas_expert_applied','zitlas_experts'].forEach(function (k) {
-      localStorage.removeItem(k);
-    });
+  try {
+    if (typeof ZitlasAccountGuard !== 'undefined') {
+      ZitlasAccountGuard.clearUserCache();
+    } else {
+      ['zitlas_token','zitlas_user','user','zitlas_user_role','zitlas_expert_id',
+       'zitlas_firebase_user','loggedIn','zitlas_expert_profile','currentUser',
+       'zitlas_expert_applied','zitlas_experts'].forEach(function (k) {
+        localStorage.removeItem(k);
+      });
+    }
+    console.log('[LOGOUT] Cleared account cache: true');
+    sessionStorage.removeItem('zitlas_guest');
+  } catch (e) {
+    /* Sign-out already happened above. A failed purge must not strand a
+       signed-out expert on the dashboard — leaving is the safe next step. */
+    console.error('[LOGOUT] cache purge failed, leaving anyway:', e);
   }
-  console.log('[LOGOUT] Cleared account cache: true');
-  sessionStorage.removeItem('zitlas_guest');
 
   /* ── 4. Leave. Inside the Flutter WebView, hand logout to the native app
      (it owns the real session and its own login screen); navigating to the
@@ -3268,15 +3274,23 @@ async function logout() {
   if (window.ZitlasWebview && typeof window.ZitlasWebview.postMessage === 'function') {
     window.ZitlasWebview.postMessage('logout');
   } else {
-    window.location.href = '../login/login.html';
+    /* replace(), not href: the expert dashboard must not be reachable with
+       the browser Back button after signing out. */
+    window.location.replace('../login/login.html');
   }
 }
 
 function initLogout() {
-  const btn1 = document.getElementById('edLogoutBtn');
-  const btn2 = document.getElementById('edLogoutFullBtn');
-  if (btn1) btn1.addEventListener('click', logout);
-  if (btn2) btn2.addEventListener('click', logout);
+  /* Never let a missing button, or a throw here, take the other one down —
+     logout is the one control that must always be reachable. */
+  ['edLogoutBtn', 'edLogoutFullBtn'].forEach(function (id) {
+    try {
+      const btn = document.getElementById(id);
+      if (btn) btn.addEventListener('click', logout);
+    } catch (e) {
+      console.error('[LOGOUT] could not wire ' + id + ':', e);
+    }
+  });
 }
 
 /* ══════════════════════════════════════════════
@@ -5249,17 +5263,36 @@ function renderPlanReviews(expert) { renderInbox(expert); }
    RENDER ALL — shared between Firebase and legacy paths
    ══════════════════════════════════════════════ */
 
+/* Runs one render/init step in isolation so a single failure cannot abort
+   the rest of the dashboard — above all, cannot prevent logout being wired. */
+function _edStep(name, fn) {
+  try {
+    fn();
+  } catch (e) {
+    console.error('[EXPERT DASHBOARD] step "' + name + '" failed:', e);
+  }
+}
+
 function renderAll(baseExpert) {
   /* Apply any saved profile overrides on top of the Firebase/EXPERT_DB base */
   _baseExpert    = baseExpert;
   const expert   = loadProfile(baseExpert);
   _currentExpert = expert;
 
-  renderHeader(expert);
-  renderDashboard(expert);
-  renderProfile(expert);
-  initNavigation();
-  initLogout();
+  /* LOGOUT IS WIRED FIRST, deliberately.
+
+     THE BUG THIS FIXES: these ran as a bare sequence, so a throw in any
+     earlier step — a malformed cached expert, a missing element, a failed
+     render — silently aborted the rest, and when that happened before
+     initLogout() the logout button was never wired at all. Clicking it did
+     nothing, with no visible error. Signing out is the one control that must
+     survive a broken dashboard, because that is exactly when it is needed. */
+  _edStep('logout', initLogout);
+
+  _edStep('header', function () { renderHeader(expert); });
+  _edStep('dashboard', function () { renderDashboard(expert); });
+  _edStep('profile', function () { renderProfile(expert); });
+  _edStep('navigation', initNavigation);
   initEditProfile();
   initCertificateUpload(expert);
   listenForMyCertificates(expert);

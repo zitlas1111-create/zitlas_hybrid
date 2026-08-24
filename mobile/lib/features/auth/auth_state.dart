@@ -179,12 +179,39 @@ class AuthState extends ChangeNotifier {
     // coaching pages still running as the PREVIOUS user — the reason an expert
     // login landed in the athlete area. webview-bridge.js also re-checks the
     // uid on every load, so this is defence in depth, not the only guard.
-    await CoachingWebViewSession.clear();
-    await _repository.signOut();
-    await AccountGuard.instance.clearUserCache();
-    _profile = null;
-    _status = AuthStatus.unauthenticated;
-    notifyListeners();
+    // THE AUTH-STATE RESET IS UNCONDITIONAL.
+    //
+    // These three awaits used to run as a bare sequence, so a throw in ANY of
+    // them — a WebView that is not available, a failed cache purge — skipped
+    // the reset below. The router keys off `_status`, so the app stayed on the
+    // dashboard and logout appeared to do nothing. Worse, if Firebase sign-out
+    // had already succeeded, the app was left claiming `authenticated` with no
+    // session behind it.
+    //
+    // Each cleanup step is now independent, and the reset happens in `finally`
+    // so it cannot be skipped. A user who asked to sign out is signed out.
+    try {
+      await CoachingWebViewSession.clear();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AUTH] webview session clear failed: $e');
+    }
+    try {
+      await _repository.signOut();
+    } catch (e) {
+      // Firebase itself refusing is the one genuinely serious case, so it is
+      // logged loudly — but the local session is still torn down, because
+      // leaving the user on an authenticated screen is worse.
+      if (kDebugMode) debugPrint('[AUTH] FIREBASE SIGN-OUT FAILED: $e');
+    }
+    try {
+      await AccountGuard.instance.clearUserCache();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[AUTH] cache purge failed: $e');
+    } finally {
+      _profile = null;
+      _status = AuthStatus.unauthenticated;
+      notifyListeners();
+    }
   }
 
   bool _disposed = false;

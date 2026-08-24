@@ -1,4 +1,24 @@
 {
-  "indexes": [],
+  "//": "ZITLAS composite indexes. Only queries that Firestore genuinely CANNOT serve are listed — each entry below was verified by running the real query against the live project and observing FAILED_PRECONDITION. Equality-only queries (device_tokens uid+enabled, personal_coach_requests athleteId+status, expert_ratings expertId+status) were tested too and Firestore serves them by merging single-field indexes, so declaring them would be noise. Deploy with: firebase deploy --only firestore:indexes",
+  "indexes": [
+    {
+      "//": "coaching_sweep.sweep_expired_requests — the 48h request-expiry sweep, scheduled every 15 minutes (main.py:208). Equality on `status` combined with a RANGE on `expiresAt` cannot be served by single-field indexes. VERIFIED FAILING in production: this is the FailedPrecondition filling the Render logs, and it means the sweep has never actually run.",
+      "collectionGroup": "personal_coach_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "expiresAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "//": "coaching_sweep.sweep_expired_relationships — the 30d relationship-expiry sweep, also every 15 minutes (main.py:215). Same shape: equality on `status`, range on `endDateTs`. VERIFIED FAILING in production.",
+      "collectionGroup": "personal_coaching",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "endDateTs", "order": "ASCENDING" }
+      ]
+    }
+  ],
   "fieldOverrides": []
 }
