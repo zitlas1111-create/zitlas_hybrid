@@ -154,7 +154,9 @@ class _Shell extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Your coach\'s plan',
+                        // Matches the website's banner wording so an athlete
+                        // switching devices reads the same sentence.
+                        '✓ Reviewed & Updated by your nutritionist',
                         style: const TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w900,
@@ -163,8 +165,8 @@ class _Shell extends StatelessWidget {
                       ),
                       Text(
                         updatedAt == null
-                            ? 'Set by $coachName'
-                            : 'Updated by $coachName · ${_relative(updatedAt!)}',
+                            ? coachName
+                            : '$coachName · ${_relative(updatedAt!)}',
                         style: const TextStyle(fontSize: 11, color: ZitlasTokens.textSecondary),
                       ),
                     ],

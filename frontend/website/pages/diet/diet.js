@@ -2031,12 +2031,26 @@
       mealList.parentNode.insertBefore(banner, mealList);
     }
     var coachName = esc(_pcPlanDoc.coachName || 'your coach');
+    /* WHEN the nutritionist last published, from the same document the meals
+       came from (coaching_plans/{uid}.dietUpdatedAt). Says "Reviewed &
+       Updated by <name>" rather than the older "Diet managed by": the
+       athlete's question is whether their expert has actually been through
+       this plan, and a date is what answers it. */
+    var updatedOn = '';
+    try {
+      var ts = _pcPlanDoc.dietUpdatedAt;
+      if (ts) {
+        updatedOn = new Date(ts).toLocaleDateString('en-IN',
+          { day: 'numeric', month: 'short', year: 'numeric' });
+      }
+    } catch (_) { updatedOn = ''; }
+
     function paint(verification) {
       var badge = (typeof ZitlasBadge !== 'undefined') ? ZitlasBadge.render(verification, { size: 'sm' }) : '';
+      var when = updatedOn ? '&nbsp;·&nbsp;' + esc(updatedOn) : '';
       banner.innerHTML = _pcRel.status === 'active'
-        ? (badge
-            ? '👨‍🏫 Your Verified Coach: <b>&nbsp;' + coachName + '</b>' + badge + '&nbsp;— swaps use your coach’s options only.'
-            : '👨‍🏫 Diet managed by <b>&nbsp;' + coachName + '</b>&nbsp;— swaps use your coach’s options only.')
+        ? '✓ Reviewed &amp; Updated by <b>&nbsp;' + coachName + '</b>' + badge + when +
+          '<br><span style="opacity:.75">Your nutritionist manages this plan — swaps use their options only.</span>'
         : '👨‍🏫 Coaching ended — you’re keeping your coach’s last diet plan.';
     }
     paint(null);
