@@ -377,7 +377,14 @@ class DietController extends ChangeNotifier {
   bool get _coachDietRelationshipActive {
     final rel = coachRelationship;
     if (rel == null || !rel.isActive) return false;
-    final type = rel.planType;
+    // A FREE TRIAL stores planType = null (routes/coaching.py sets
+    // `plan_type_val = None` for FREE_TRIAL, and /accept copies it onto the
+    // relationship). The coach side already treats null as full coverage —
+    // `CoachingPlanRepository.canEditDiet` includes `planType == null` — which
+    // is why a nutritionist could publish a diet this gate then refused to
+    // render. Kept byte-identical in meaning to the website's
+    // `_pcShowsCoachPlan()` so the two clients cannot disagree.
+    final type = rel.planType ?? 'complete';
     return type == 'diet' || type == 'complete';
   }
 

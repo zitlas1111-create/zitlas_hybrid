@@ -35,9 +35,14 @@ class PersonalCoachingRelationship {
   /// stops being the ACTIVE plan the moment the relationship is not active.
   /// Kept byte-identical in meaning to the website's `_pcShowsCoachPlan()` so
   /// the two clients can never disagree about which plan an athlete is on.
-  bool get showsCoachTrainingPlan =>
-      status == 'active' &&
-      (planType == 'training' || planType == 'complete');
+  /// A FREE TRIAL stores `planType = null` — see
+  /// `DietController._coachDietRelationshipActive` for the full explanation.
+  /// Treated as full coverage, matching the coach side and the website.
+  bool get showsCoachTrainingPlan {
+    if (status != 'active') return false;
+    final type = planType ?? 'complete';
+    return type == 'training' || type == 'complete';
+  }
 
   /// `ZitlasCoachingGate.evaluate(rel).active` — status is 'active' AND not
   /// past `endDate`. This is the separate, stricter gate used for "Send

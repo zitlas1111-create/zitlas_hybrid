@@ -76,7 +76,10 @@
   }
   function _pcShowsCoachPlan() {
     return !!(_pcRel && _pcRel.status === 'active' &&
-      (_pcRel.planType === 'training' || _pcRel.planType === 'complete'));
+      /* planType is null for a FREE TRIAL — see diet.js's _pcShowsCoachPlan.
+         Treated as full coverage, matching the coach side. */
+      ((_pcRel.planType || 'complete') === 'training' ||
+       (_pcRel.planType || 'complete') === 'complete'));
   }
 
   function initCoachTrainingMode() {

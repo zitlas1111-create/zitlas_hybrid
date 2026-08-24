@@ -1887,9 +1887,24 @@
      own AI/expert-reviewed plan. Historical data is untouched: the
      coaching_plans document still exists for audit, it simply stops being
      the ACTIVE plan the moment the relationship is not active. */
+  /* A FREE TRIAL stores planType = null.
+
+     THE BUG THIS FIXES: routes/coaching.py sets `plan_type_val = None` for a
+     FREE_TRIAL request (a trial is not one of the three paid plans), and
+     /accept copies that straight onto personal_coaching/{uid}. The COACH side
+     already tolerates it — cprofile.js opens the workspace with
+     `planType: rel.planType || 'complete'`, which is why the nutritionist can
+     edit and publish a diet. This gate did not, so `null` matched neither
+     'diet' nor 'complete': the coach's plan was saved to coaching_plans and
+     the athlete's page never even attached the listener, let alone rendered
+     it. The athlete kept seeing their AI plan and no coach attribution.
+
+     `null` therefore means FULL coverage here, exactly as it already does on
+     the coach side — a trial is a trial of the complete experience. */
   function _pcShowsCoachPlan() {
-    return !!(_pcRel && _pcRel.status === 'active' &&
-      (_pcRel.planType === 'diet' || _pcRel.planType === 'complete'));
+    if (!_pcRel || _pcRel.status !== 'active') return false;
+    var t = _pcRel.planType || 'complete';
+    return t === 'diet' || t === 'complete';
   }
 
   function initCoachDietMode() {
