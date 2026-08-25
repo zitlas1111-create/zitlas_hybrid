@@ -56,7 +56,10 @@ a      { text-decoration: none; color: inherit; }
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  gap: 10px;
+  /* The page renders inside a Flutter WebView that draws edge-to-edge, so
+     without this the avatar and name sit under the Android status bar. */
+  padding: max(14px, env(safe-area-inset-top, 0px)) 16px 14px;
   background: rgba(244,247,237,0.85);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
@@ -149,8 +152,13 @@ a      { text-decoration: none; color: inherit; }
 .ed-main {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 16px 100px;
+  /* The nav is fixed at bottom:max(20px, safe-area) and is 64px tall. A flat
+     100px cleared it only on a device with NO gesture inset; with a ~48px
+     inset the last card sat behind the bar. This tracks the same inset. */
+  padding: 16px 16px calc(96px + env(safe-area-inset-bottom, 0px));
   scroll-behavior: smooth;
+  /* Momentum scrolling in the WebView. */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* â”€â”€ Sections â”€â”€ */
@@ -1076,24 +1084,34 @@ a      { text-decoration: none; color: inherit; }
 .ed-empty-sub   { font-size: 13px; color: var(--text-muted); line-height: 1.5; max-width: 240px; }
 
 /* â”€â”€ My Athletes (personal coaching) â”€â”€ */
-.ed-athlete-card {
+/* ═══════════════ CLIENT / ROSTER CARDS ═══════════════
+   THE BUG THESE FIX. This block used to be named `.ed-athlete-*`, but
+   expert-dashboard.js renders `ed-user-*` (a rename that landed in the JS
+   and never in the CSS). The result: EVERY client card on the Coaching
+   screen matched no rule at all, so the roster rendered as bare text on top
+   of the homebg.png photo — no card surface, initials as loose characters,
+   name and badges running into one line. `ed-athlete-*` appeared in no JS,
+   HTML or Dart file, so these are renamed rather than duplicated. */
+.ed-user-card {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding: 14px;
   margin-bottom: 10px;
   border-radius: 22px;
-  background: rgba(255,255,255,0.78);
+  /* Slightly more opaque than the old 0.78: this card sits directly on the
+     homebg.png photograph, and the status/meta text is 11.5px. */
+  background: rgba(255,255,255,0.90);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid rgba(255,255,255,0.6);
   box-shadow: 0 12px 28px rgba(35,75,53,0.08), 0 6px 14px rgba(35,75,53,0.06);
 }
 /* A trial pending-request card has 4 action buttons instead of the usual
-   2 (Accept/Decline) — wrap the whole card so they get a full-width row
+   2 (Accept/Decline) — the card wraps (above) so they get a full-width row
    of their own instead of being crammed into the narrow flex column the
    avatar+info already leave. */
-.ed-athlete-card.pc-req-card--trial { flex-wrap: wrap; }
 .pc-req-actions--trial {
   flex-wrap: wrap;
   width: 100%;
@@ -1105,19 +1123,100 @@ a      { text-decoration: none; color: inherit; }
   font-size: 11.5px;
   white-space: nowrap;
 }
-.ed-athlete-av {
+.ed-user-av {
   width: 44px; height: 44px; border-radius: 50%;
   background: linear-gradient(135deg, #A9C46C, #6BA539);
   border: 2px solid rgba(255,255,255,0.85);
   display: flex; align-items: center; justify-content: center;
   font-size: 14px; font-weight: 800; color: #fff;
-  flex-shrink: 0;
+  flex: 0 0 44px;
 }
-.ed-athlete-info { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
-.ed-athlete-name { font-size: 14px; font-weight: 800; color: var(--text); }
-.ed-athlete-sub  { font-size: 11.5px; color: var(--text-muted); }
-.ed-athlete-sub--warn { color: #D97706; font-weight: 700; }
-.ed-athlete-chat { flex-shrink: 0; }
+/* flex-basis 150px, not `flex: 1`: with the card wrapping, a bare `flex: 1`
+   lets this column collapse toward zero and the name wrap one character per
+   line before the action button ever gives up its space. */
+.ed-user-info {
+  flex: 1 1 150px;
+  min-width: 0;
+  display: flex; flex-direction: column; gap: 4px;
+}
+/* overflow-wrap, because a client name can be a single long unbroken token
+   and must not push the card wider than the viewport. */
+.ed-user-name {
+  font-size: 14px; font-weight: 800; color: var(--text);
+  line-height: 1.3; overflow-wrap: anywhere;
+}
+.ed-user-sub {
+  font-size: 11.5px; color: var(--text-muted);
+  line-height: 1.4; overflow-wrap: anywhere;
+}
+.ed-user-sub--warn { color: #D97706; font-weight: 700; }
+.ed-user-chat { flex: 0 0 auto; margin-left: auto; }
+
+/* ── Chips (priority / plan type / price / free trial) ──
+   These were inline `style="…"` spans concatenated INSIDE the name span, so
+   on a narrow screen the name, the badge and the plan all reflowed as one
+   run-on line. They are real elements in their own wrapping row now. */
+.ed-user-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 1px;
+}
+.ed-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 100%;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: .02em;
+  overflow-wrap: anywhere;
+}
+/* #fff, not the previous #101010 — near-black on the dark green gradient was
+   effectively unreadable at 9px. */
+.ed-chip--priority { background: linear-gradient(135deg,#234B35,#2E5F47); color: #fff; }
+.ed-chip--trial    { background: linear-gradient(135deg,#3B82F6,#2563EB); color: #fff; }
+.ed-chip--type     { background: rgba(35,75,53,0.09); color: var(--text-sec); }
+.ed-chip--price    { background: rgba(35,75,53,0.06); color: var(--text-muted); font-weight: 600; }
+
+/* Pending-request actions (Accept/Decline). `.pc-req-actions--trial` was
+   styled; the plain two-button variant never was. */
+.pc-req-actions {
+  display: flex;
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+/* :not(--trial) — this rule sits AFTER .pc-req-actions--trial and has equal
+   specificity, so an unscoped `gap` here silently replaced the trial
+   variant's 6px. Its buttons are sized `calc(50% - 3px)` to pair up two per
+   row against exactly that 6px gap; at 8px the pair overflowed by 2px and
+   every button dropped onto its own line. */
+.pc-req-actions:not(.pc-req-actions--trial) { gap: 8px; }
+
+/* ── Phones: the action row gets its own full-width line ──
+   Keeping the button inline is what made it look like it was floating
+   between cards once a name wrapped to two lines. Below this width the
+   action always sits on its own row, so its position no longer depends on
+   how long the client's name happens to be. Desktop/tablet (> 520px) keeps
+   the compact inline layout, so this is additive rather than a replacement. */
+@media (max-width: 520px) {
+  .ed-user-card > .erc-btn,
+  .ed-user-card .pc-req-actions {
+    flex: 1 1 100%;
+    margin-left: 0;
+    width: 100%;
+  }
+  /* :not(--trial) — the trial variant deliberately wraps its FOUR buttons
+     into a 2x2 grid (.pc-req-actions--trial .erc-btn, flex-basis 50%).
+     Without this exclusion the rule below is more specific and flattened
+     them into one cramped row of four at 320px. */
+  .ed-user-card .pc-req-actions:not(.pc-req-actions--trial) .erc-btn { flex: 1 1 0; }
+  /* A comfortable Android touch target. */
+  .ed-user-card > .erc-btn { min-height: 44px; }
+}
 
 /* â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
    BOTTOM NAV
@@ -2223,6 +2322,43 @@ a      { text-decoration: none; color: inherit; }
   border-bottom: 1px solid var(--border);
   margin-bottom: 16px;
 }
+
+/* Phones: "Pending / Active / Past Clients" is ~283px of nowrap text plus a
+   count badge, which overflowed a 320px viewport. Equal flex columns keep
+   all three on screen at every supported width and give the active
+   underline a predictable span to sit under. */
+@media (max-width: 520px) {
+  .pr-inbox-tabs { gap: 2px; }
+  .pr-inbox-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    justify-content: center;
+    padding: 10px 6px;
+    font-size: 12.5px;
+    gap: 4px;
+  }
+  .pr-inbox-tab > span:not(.pr-tab-badge) {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* Very narrow (320px): the online *label* is the least important thing in
+   the header — the dot already carries the state. */
+@media (max-width: 360px) {
+  .ed-online-label { display: none; }
+}
+
+/* The header must never be the reason the page scrolls sideways. */
+.ed-header-left { min-width: 0; }
+.ed-header-info { min-width: 0; display: flex; flex-direction: column; }
+.ed-header-name,
+.ed-header-role {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ed-header-right { flex-shrink: 0; }
 
 .pr-inbox-tab {
   display: inline-flex;

@@ -1385,15 +1385,19 @@ function renderMyAthletes(rels, expert) {
     var name     = rel.athleteName || 'Athlete';
     var initials = name.split(/\s+/).map(function(w) { return w[0] || ''; }).slice(0, 2).join('').toUpperCase();
 
+    /* A chip in its own wrapping row, not an inline span glued to the end of
+       the name — concatenated into .ed-user-name it reflowed as part of the
+       name itself and pushed the card sideways on a narrow phone. */
     var _trialTag = rel.coachingType === 'FREE_TRIAL'
-      ? ' <span style="background:linear-gradient(135deg,var(--ai-accent,#3B82F6),#2563EB);color:#fff;font-weight:800;border-radius:999px;padding:1px 8px;font-size:9px;letter-spacing:.04em;vertical-align:middle;">FREE TRIAL</span>'
+      ? '<span class="ed-chip ed-chip--trial">FREE TRIAL</span>'
       : '';
     var card = document.createElement('div');
     card.className = 'ed-user-card';
     card.innerHTML =
       '<div class="ed-user-av">' + esc(initials) + '</div>' +
       '<div class="ed-user-info">' +
-        '<span class="ed-user-name">' + esc(name) + _trialTag + '</span>' +
+        '<span class="ed-user-name">' + esc(name) + '</span>' +
+        (_trialTag ? '<div class="ed-user-chips">' + _trialTag + '</div>' : '') +
         '<span class="ed-user-sub' + (lowDays ? ' ed-user-sub--warn' : '') + '">' +
           (lowDays ? '⚠ ' : '') + 'Coaching since ' +
           esc(new Date(rel.startDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })) +
@@ -1512,8 +1516,11 @@ function renderCoachingRequests() {
       req.status === 'ended'    ? 'Coaching ended by user' :
       req.status === 'withdrawn'? 'Withdrawn by user' : 'Completed';
 
+    /* #101010 on the dark green gradient was unreadable at 9px; the chip
+       class carries white text. Rendered in .ed-user-chips below rather than
+       inside the name span — see the FREE TRIAL chip above. */
     var _pcPremBadge = req.isPremium
-      ? ' <span style="background:linear-gradient(135deg,#234B35,#2E5F47);color:#101010;font-weight:800;border-radius:999px;padding:1px 8px;font-size:9px;letter-spacing:.04em;vertical-align:middle;">⭐ PRIORITY</span>'
+      ? '<span class="ed-chip ed-chip--priority">⭐ PRIORITY</span>'
       : '';
     var card = document.createElement('div');
     card.className = 'ed-user-card pc-req-card' +
@@ -1521,10 +1528,18 @@ function renderCoachingRequests() {
     card.innerHTML =
       '<div class="ed-user-av">' + esc(initials) + '</div>' +
       '<div class="ed-user-info">' +
-        '<span class="ed-user-name">' + esc(name) + _pcPremBadge + '</span>' +
-        '<span class="ed-user-sub">' + icon + ' ' +
-          esc(isTrialReq ? 'Personal Coaching Free Trial' : (req.planLabel || req.planType)) +
-          (isTrialReq ? '' : (' · ₹' + esc(String(req.price)) + '/mo')) + '</span>' +
+        '<span class="ed-user-name">' + esc(name) + '</span>' +
+        /* Priority / plan / price as separate chips that wrap independently.
+           These used to be one run-on text line ("Atharva Sankpal ⭐ PRIORITY
+           👨‍🏫 Personal Coaching Free Trial · ₹0/mo"), which is what the bug
+           report screenshot shows. */
+        '<div class="ed-user-chips">' + _pcPremBadge +
+          '<span class="ed-chip ed-chip--type">' + icon + ' ' +
+            esc(isTrialReq ? 'Personal Coaching Free Trial' : (req.planLabel || req.planType)) +
+          '</span>' +
+          (isTrialReq ? '' :
+            '<span class="ed-chip ed-chip--price">₹' + esc(String(req.price)) + '/mo</span>') +
+        '</div>' +
         '<span class="ed-user-sub">' + esc(statusLine) + '</span>' +
       '</div>' +
       (req.status === 'pending'
