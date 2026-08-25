@@ -5472,31 +5472,30 @@ function _initInboxTabs(expert) {
            checks the verified token's custom claim AND `experts/{uid}.approved`,
            neither of which a browser can write.
 
-           Fails CLOSED: any error routes to the user dashboard. */
-        let isExpert = false;
-        try {
-          /* FORCE REFRESH. A cached ID token can be up to an hour old and
-             will not contain a custom claim granted after it was minted —
-             which is exactly how a newly-authorised expert kept landing
-             back on the user dashboard. */
-          const _token = await firebaseUser.getIdToken(true);
-          const _resp  = await fetch('/api/auth/role', {
-            headers: { 'Authorization': 'Bearer ' + _token }
-          });
-          if (_resp.ok) {
-            const _role = await _resp.json();
-            isExpert = _role.isExpert === true;
-          } else {
-            console.warn('[AUTH] /api/auth/role returned', _resp.status);
-          }
-        } catch (e) {
-          console.warn('[AUTH] role verification failed — denying', e);
+           Fails CLOSED for ACCESS — expert data needs a positive answer —
+           but an error is no longer routed anywhere; see below. */
+        /* THREE OUTCOMES. This used to start `isExpert = false` and treat a
+           failed request exactly like a server verdict of "not an expert",
+           so ONE flaky /api/auth/role call bounced an approved expert to the
+           athlete dashboard — which then read their client-writable legacy
+           fields and bounced them straight back. All three approved experts
+           carry those markers, so all three could ping-pong. Resolution now
+           lives in assets/js/role-service.js and `null` means "could not
+           ask", which is never a reason to redirect. */
+        const _role = await ZitlasRole.resolve(firebaseUser);
+        console.log('[AUTH ROLE] firebaseUid=' + uid);
+        console.log('[AUTH ROLE] landing=' + (_role === null ? 'HOLD (unresolved)' : _role));
+        console.log('[AUTH STATE] Firebase UID:', uid, ' Verified role:', _role);
+
+        if (_role === null) {
+          /* Hold. Redirecting here is the bug; guessing "expert" would be a
+             security hole. Offer a retry and stay put. */
+          ZitlasRole.showUnresolvedNotice(function () { window.location.reload(); });
+          return;
         }
-        console.log('[AUTH STATE] Firebase UID:', uid, ' Verified role:', isExpert ? 'expert' : 'user');
-        if (!isExpert) {
-          /* A normal user tried to open the expert dashboard — same
-             symmetric guard as dashboard.js's check for an expert landing
-             on the user dashboard. */
+        if (_role !== 'expert') {
+          /* The server evaluated this caller and said no — a normal user
+             opening the expert dashboard. Symmetric to dashboard.js. */
           console.log('[AUTH STATE] Redirect destination: ../dashboard/dashboard.html');
           window.location.href = '../dashboard/dashboard.html';
           return;

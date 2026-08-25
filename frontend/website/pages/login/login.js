@@ -133,23 +133,58 @@ async function resolveRole(user) {
     t.issuedAt    = tokenResult.issuedAtTime;
     t.expiresAt   = tokenResult.expirationTime;
 
-    const resp = await fetch('/api/auth/role', {
-      headers: { 'Authorization': 'Bearer ' + tokenResult.token }
-    });
-    t.roleEndpointStatus = resp.status;
+    /* RETRY A FAILURE TO ANSWER — a 401/403 is an answer, a 502 or a dropped
+       connection is not. Degrading straight to 'user' on the second kind is
+       what put approved experts on the athlete dashboard after a single flaky
+       request (a backend waking from idle is the common one), with no error
+       and no way back except signing in again. Mirrors
+       RoleRepository.fetchRole() in the Flutter app so both clients behave
+       identically for the same account. */
+    const _ROLE_RETRY_MS = [400, 1000, 2000, 4000];
+    let resp = null, role = null, lastStatus = null;
 
-    let role = 'user';
-    if (resp.ok) {
-      const data = await resp.json();
-      t.roleEndpointResponse = data;
-      role = data.role === 'expert' ? 'expert' : 'user';
-    } else {
-      /* NOT a silent fallback: the failure is reported loudly and the role
-         still degrades to 'user', because granting expert access on an
-         unverifiable answer would be the worse bug. */
-      t.roleEndpointResponse = '(non-OK response)';
-      console.error('[AUTH] /api/auth/role FAILED with', resp.status,
-                    '— cannot establish role, treating as user');
+    for (let attempt = 0; attempt <= _ROLE_RETRY_MS.length; attempt++) {
+      try {
+        resp = await fetch('/api/auth/role', {
+          headers: { 'Authorization': 'Bearer ' + tokenResult.token }
+        });
+        lastStatus = resp.status;
+        if (resp.ok) {
+          const data = await resp.json();
+          t.roleEndpointResponse = data;
+          role = data.role === 'expert' ? 'expert' : 'user';
+          break;
+        }
+        if (resp.status === 401 || resp.status === 403) {
+          /* The server evaluated this caller and refused. That IS the
+             verdict, so stop asking. */
+          t.roleEndpointResponse = '(' + resp.status + ' — server refused)';
+          role = 'user';
+          break;
+        }
+      } catch (netErr) {
+        lastStatus = '(network)';
+        t.roleEndpointResponse = '(network error: ' + (netErr && netErr.message) + ')';
+      }
+      if (attempt < _ROLE_RETRY_MS.length) {
+        console.warn('[AUTH] /api/auth/role unresolved (status=' + lastStatus +
+                     ') — retry ' + (attempt + 2) + '/' + (_ROLE_RETRY_MS.length + 1));
+        await new Promise(function (r) { setTimeout(r, _ROLE_RETRY_MS[attempt]); });
+      }
+    }
+    t.roleEndpointStatus = lastStatus;
+
+    if (role === null) {
+      /* Still no answer after every retry. Deliberately NOT 'user': that is a
+         guess about the account, and for an approved expert it is the wrong
+         one. Throwing sends the caller down its existing error path, which
+         keeps the user on the login screen with a message instead of landing
+         them in the wrong app. */
+      t.resolvedRole = '(unresolved)';
+      _printAuthTrace(t);
+      console.error('[AUTH] /api/auth/role UNRESOLVED after retries — ' +
+                    'refusing to guess a role; not redirecting');
+      throw new Error('role_unresolved');
     }
     t.resolvedRole = role;
     _printAuthTrace(t);

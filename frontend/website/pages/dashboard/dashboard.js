@@ -2185,24 +2185,31 @@
       // just because it happened to land on this URL. The CURRENT
       // authenticated uid is the only thing this checks — never a cached
       // role/name from localStorage.
-      if (typeof ZitlasDB === 'undefined') { proceedAsAthlete(user); return; }
-      ZitlasDB.collection('users').doc(user.uid).get().then(function (docSnap) {
-        if (docSnap.exists) {
-          var data  = docSnap.data();
-          var roles = Array.isArray(data.roles) ? data.roles : [];
-          var isExpert =
-            roles.includes('expert')         ||
-            roles.includes('expert_pending') ||
-            data.expert_status === 'approved' ||
-            data.expert_status === 'pending'  ||
-            data.role === 'expert';
-          console.log('[AUTH STATE] Detected role:', isExpert ? 'expert' : 'athlete', ' Profile UID:', user.uid);
-          if (isExpert) {
-            console.log('[AUTH STATE] Redirect destination: ../experts/expert-dashboard.html');
-            window.location.replace('../experts/expert-dashboard.html');
-            return;
-          }
+      /* SERVER-AUTHORITATIVE. This used to read users/{uid}.roles /
+         expert_status / role — fields the CLIENT ITSELF writes — and counted
+         'expert_pending' and 'pending' as expert, so merely applying bounced
+         you to the expert dashboard. That page then asked the server, got
+         "not an expert" (or failed to ask at all) and bounced you back here:
+         a redirect ping-pong. All three approved experts still carry those
+         legacy markers, which is why they could land in the athlete app.
+
+         GET /api/auth/role checks the verified token's custom claim AND
+         experts/{uid}.approved. See assets/js/role-service.js. */
+      if (typeof ZitlasRole === 'undefined') { proceedAsAthlete(user); return; }
+      ZitlasRole.resolve(user).then(function (role) {
+        console.log('[AUTH ROLE] firebaseUid=' + user.uid);
+        console.log('[AUTH ROLE] landing=' + (role === null ? 'athlete (unresolved)' : role));
+        console.log('[AUTH STATE] Detected role:', role, ' Profile UID:', user.uid);
+        if (role === 'expert') {
+          console.log('[AUTH STATE] Redirect destination: ../experts/expert-dashboard.html');
+          window.location.replace('../experts/expert-dashboard.html');
+          return;
         }
+        /* 'user' — the server's verdict. `null` — unresolved, and the SAFE
+           side here is the athlete app: it grants nothing an ordinary account
+           does not already have, and unlike the expert page there is nothing
+           to bounce to, so it cannot loop. Expert access still requires a
+           positive answer. */
         proceedAsAthlete(user);
       }).catch(function (e) {
         console.warn('[ZITLAS] role check failed — proceeding as athlete:', e);
