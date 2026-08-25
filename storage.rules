@@ -2,10 +2,20 @@ rules_version = '2';
 
 // ZITLAS — Firebase Storage rules
 // =================================================================
-// NOT YET DEPLOYED. No storage.rules existed in this repository, which means
-// the live bucket is running whatever was last set in the Firebase console —
-// unknown from here. Deploying this file REPLACES those rules, so it needs a
-// deliberate decision, not a side effect of a feature branch.
+// NOT YET DEPLOYED — because there is nothing to deploy to. Firebase Storage
+// has never been provisioned on project zitlas-b8677: the Firebase CLI answers
+// "Firebase Storage has not been set up on project 'zitlas-b8677'" and the
+// Storage API lists ZERO buckets. That is the root cause of every broken meal
+// photo — uploads silently fell through to the backend's ephemeral disk.
+//
+// This also RETIRES the old caution in this header. It warned that deploying
+// would replace unknown console-set rules; that assumption is now disproven —
+// with no bucket, there are no live rules, so these will be the FIRST rules
+// the bucket ever has. Deploying them cannot overwrite anything.
+//
+// Order of operations (the first step cannot be done from here):
+//   1. Firebase console -> Storage -> "Get started"   [MANUAL, one-time]
+//   2. firebase deploy --only storage --project zitlas-b8677
 //
 // Every path below was traced from real production upload code:
 //   certificates/{expertId}/...  — assets/js/certificate-manager.js:77
@@ -35,18 +45,44 @@ service firebase.storage {
         && request.resource.contentType.matches('image/.*');
     }
 
-    // Meal photos. The athlete writes their own; reads are open to any signed-in
-    // caller because the coach must be able to load them and Storage rules
-    // cannot see the coaching relationship (that lives in Firestore). The URL
-    // itself is the secret, and it is only ever published into a meal_checkins
-    // document that firestore.rules restricts to the athlete and their coach.
+    // Meal photos — the athlete's own path, and ONLY the athlete may read it
+    // through the API.
+    //
+    // This deliberately does NOT say `signedIn()`. Storage rules cannot see the
+    // coaching relationship (it lives in Firestore, and Storage rules have no
+    // cross-service get()), so `signedIn()` would have let ANY signed-in expert
+    // read ANY athlete's meal photo just by putting a different uid in the
+    // path — the exact URL-swapping attack this must prevent.
+    //
+    // The coach is not locked out by this: no reader anywhere in the codebase
+    // ever builds a Storage ref for someone else's meal photo. Refs are built
+    // only on the UPLOAD path (chat-attachments.js:127, meal_photo_uploader
+    // .dart:198), always under the uploader's own uid. Coaches render the
+    // download URL stored on the check-in, and a download URL carries its own
+    // access token — it resolves without consulting these rules at all.
+    // So: the coach keeps working, path-guessing stops working.
     match /meal_checkins/{uid}/{file} {
-      allow read: if signedIn();
+      allow read: if isUser(uid);
       allow write: if isUser(uid) && isImageUnder10MB();
     }
 
     // AI-only Snap Meal — no coach involved, so nobody else needs to read it.
     match /meal_snaps/{uid}/{file} {
+      allow read: if isUser(uid);
+      allow write: if isUser(uid) && isImageUnder10MB();
+    }
+
+    // Transformation photos attached to an expert rating
+    // (features/experts/data/expert_rating_repository.dart:64). This path was
+    // MISSING from this file: the catch-all below would have started denying
+    // every transformation-photo upload the moment these rules deployed —
+    // exactly the failure mode the closing comment warns about.
+    //
+    // Same shape as meal photos, for the same reason: the URL is published
+    // only into an expert_ratings document, which firestore.rules already
+    // restricts to that athlete and that expert (firestore.rules:180-184).
+    // The expert renders that stored download URL; nobody path-guesses.
+    match /transformation_photos/{uid}/{file} {
       allow read: if isUser(uid);
       allow write: if isUser(uid) && isImageUnder10MB();
     }

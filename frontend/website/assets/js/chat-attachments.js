@@ -22,6 +22,13 @@
   var ALLOWED   = ['image/jpeg', 'image/png', 'image/webp'];
   var MAX_BYTES = 10 * 1024 * 1024;
 
+  /* The one athlete-facing sentence for "durable storage was required and
+     was not available". Exported so callers can recognise it and show it
+     verbatim rather than inventing their own wording per call site. */
+  var DURABLE_UPLOAD_FAILED =
+    'Photo storage is unavailable right now — your photo was NOT saved. ' +
+    'Please try again in a moment.';
+
   /* ── Validation ── */
   function validate(file) {
     if (!file) return { ok: false, reason: 'No file selected.' };
@@ -83,7 +90,21 @@
      FALLBACK: the original POST /api/chat/upload (FastAPI local storage)
      whenever Storage is unavailable on the page, denied by bucket rules,
      or times out — the upload NEVER fails just because Storage did.
-     opts.pathPrefix names the bucket folder (default 'chat_uploads'). */
+     opts.pathPrefix names the bucket folder (default 'chat_uploads').
+
+     opts.requireDurable — NO FALLBACK. Set by callers whose URL is
+     persisted into Firestore and read back days later by somebody else.
+     The /api/chat/upload fallback writes to the CONTAINER'S EPHEMERAL
+     DISK: the file is gone at the next deploy/restart, but the URL has
+     already been saved, so the record silently rots into a broken image
+     with no trace of what went wrong. That is precisely what happened to
+     every meal check-in — all of them stored /uploads/chat/… URLs that
+     now return 404 to the nutritionist reviewing them.
+     For those callers a LOUD FAILURE is strictly better than a saved
+     record that will not survive: the athlete is told to retry while
+     they still have the photo, instead of being told it worked. Chat
+     attachments keep the fallback — they are read immediately and are
+     not persisted as long-lived references. */
   var _STORAGE_TIMEOUT_MS = 30000;
 
   function _withTimeout(promise, ms, label) {
@@ -167,8 +188,17 @@
         console.log('[UPLOAD] FIREBASE UPLOAD SUCCESS');
         return url;
       }).catch(function (e) {
-        console.warn('[UPLOAD] FIREBASE UPLOAD FAILED (' +
-          ((e && (e.code || e.message)) || 'unknown') + ') — falling back to backend upload');
+        var why = (e && (e.code || e.message)) || 'unknown';
+        if (opts.requireDurable) {
+          /* Deliberately NOT falling back — see requireDurable above. The
+             ephemeral fallback is what turns a Storage outage into a
+             permanently broken record days later. */
+          console.error('[UPLOAD] FIREBASE UPLOAD FAILED (' + why +
+            ') — durable storage required, NOT falling back to ephemeral disk');
+          throw new Error(DURABLE_UPLOAD_FAILED);
+        }
+        console.warn('[UPLOAD] FIREBASE UPLOAD FAILED (' + why +
+          ') — falling back to backend upload');
         return _uploadToBackend(blob);
       });
     }).then(function (url) {
@@ -338,5 +368,6 @@
     upload:         upload,
     confirmPreview: confirmPreview,
     openViewer:     openViewer,
+    DURABLE_UPLOAD_FAILED: DURABLE_UPLOAD_FAILED,
   };
 })(window);

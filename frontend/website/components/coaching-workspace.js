@@ -307,6 +307,11 @@
   function openSheet(html) {
     var bd = $('cwSheetBackdrop');
     $('cwSheet').innerHTML = html;
+    /* Centrally, so every sheet that shows a meal photo is covered — the two
+       review sheets marked their images data-cw-photo but never wired the
+       handler, so an unreachable photo still rendered a broken-image glyph
+       once the coach opened it. */
+    _cwWireImageFallbacks($('cwSheet'));
     bd.style.display = 'flex';
     requestAnimationFrame(function () {
       requestAnimationFrame(function () { bd.classList.add('open'); });
@@ -2226,11 +2231,62 @@
         '</div>';
     }
 
+
+  /* A meal photo that cannot load must say so, not render a broken-image
+     glyph the coach has to interpret.
+
+     WHY THIS HAPPENS AT ALL: Firebase Storage was never provisioned for this
+     project (zero buckets), so every photo upload silently fell back to
+     `POST /api/chat/upload`, which writes to the container's EPHEMERAL disk.
+     Those files vanish on the next deploy, leaving `meal_checkins.imageUrl`
+     pointing at a permanent 404. This handler does not fix that — provisioning
+     the bucket does — it just stops the coach seeing a broken icon with no
+     explanation. A photo whose URL still resolves is untouched and still
+     renders normally.
+
+     Kept as a data-attribute + delegated listener rather than an inline
+     onerror so nothing has to be interpolated into markup. */
+  function _cwWireImageFallbacks(root) {
+    (root || document).querySelectorAll('img[data-cw-photo]').forEach(function (img) {
+      if (img._cwWired) return;
+      img._cwWired = true;
+      img.addEventListener('error', function () {
+        var note = document.createElement('div');
+        /* Keep the image's OWN size class (cw-review-thumb in the list,
+           cw-review-img-lg in the sheet) — hardcoding the thumb class here
+           shrank the enlarged view down to list-thumbnail size. */
+        note.className = (img.className || 'cw-review-thumb') + ' cw-review-thumb--missing';
+        note.setAttribute('role', 'img');
+        note.setAttribute('aria-label', 'Meal photo unavailable');
+        note.textContent = '🖼';
+        note.title = 'Photo unavailable — it was not stored permanently.';
+        if (img.parentNode) img.parentNode.replaceChild(note, img);
+      });
+    });
+  }
+
+  /* THREE DISTINCT STATES, never conflated:
+       a URL that loads      -> the photo
+       a URL that 404s       -> "Photo unavailable" (above) — the athlete DID
+                                submit one; it was lost to ephemeral storage
+       no URL at all         -> "No photo submitted" (here)
+     Rendering `src=""` for the third case made it fire the error handler and
+     report a lost photo where none was ever sent. */
+  function _cwPhotoMarkup(url, cls, alt) {
+    if (!url || !String(url).trim()) {
+      return '<div class="' + cls + ' cw-review-thumb--empty" role="img" ' +
+        'aria-label="No photo submitted" title="No photo submitted">' +
+        'No photo submitted</div>';
+    }
+    return '<img class="' + cls + '" data-cw-photo src="' + esc(url) +
+      '" alt="' + esc(alt || 'meal') + '">';
+  }
+
     function card(c) {
       var statusCls = c.status === 'reviewed' ? 'cw-review-status--done' : 'cw-review-status--pending';
       var statusTxt = c.status === 'reviewed' ? (c.score != null ? c.score + '/10' : 'Reviewed') : 'Pending';
       return '<div class="cw-review-card" data-cw-review="' + esc(c.checkinId) + '">' +
-        '<img class="cw-review-thumb" src="' + esc(c.imageUrl) + '" alt="' + esc(c.mealName || 'meal') + '">' +
+        _cwPhotoMarkup(c.imageUrl, 'cw-review-thumb', c.mealName) +
         '<div class="cw-review-info">' +
           '<span class="cw-review-title">' + esc(cap(c.mealType)) + ' — ' + esc(c.mealName || '') + '</span>' +
           '<span class="cw-review-sub">' + esc(c.day) + ' · ' + esc(fmtTime(c.timestamp)) +
@@ -2255,6 +2311,8 @@
       (todays.length ? '<p class="cw-review-sec-title">Today</p>' + todays.map(card).join('') : '') +
       (earlier.length ? '<p class="cw-review-sec-title">Earlier</p>' + earlier.map(card).join('') : '');
 
+    _cwWireImageFallbacks(body);
+
     body.querySelectorAll('[data-cw-review]').forEach(function (el) {
       el.addEventListener('click', function () {
         var c = S.checkins.find(function (x) { return x.checkinId === el.dataset.cwReview; });
@@ -2272,7 +2330,7 @@
   function openCheckinHistorySheet(c) {
     var body =
       '<p class="cw-sheet-title">' + esc(cap(c.mealType)) + ' — ' + esc(c.day) + '</p>' +
-      '<img class="cw-review-img-lg" src="' + esc(c.imageUrl) + '" alt="' + esc(c.mealName || 'meal') + '">' +
+      _cwPhotoMarkup(c.imageUrl, 'cw-review-img-lg', c.mealName) +
       (c.status === 'reviewed'
         ? '<div class="pc-checkin-feedback">' +
             '<span class="pc-checkin-reaction">' + esc(REACTION_LABEL[c.reaction] || 'Reviewed') + '</span>' +
@@ -2295,7 +2353,7 @@
     openSheet(
       '<p class="cw-sheet-title">' + esc(cap(c.mealType)) + ' — ' + esc(c.athleteName || 'Athlete') + '</p>' +
       '<p class="cw-sheet-sub">' + esc(c.day) + ' · ' + esc(fmtTime(c.timestamp)) + '</p>' +
-      '<img class="cw-review-img-lg" src="' + esc(c.imageUrl) + '" alt="' + esc(c.mealName || 'meal') + '">' +
+      _cwPhotoMarkup(c.imageUrl, 'cw-review-img-lg', c.mealName) +
       '<span class="cw-score-label">Reaction (required)</span>' +
       '<div class="cw-reaction-grid">' + reactions.map(function (r) {
         return '<button class="cw-reaction-btn' + (d.reaction === r ? ' selected' : '') + '" data-cw-reaction="' + r + '">' +

@@ -650,3 +650,45 @@
 @media (prefers-reduced-motion: reduce) {
   .cw-overlay, .cw-sheet, .cw-sheet-backdrop, .cw-toast { transition: none; }
 }
+
+/* A meal photo that cannot load. Firebase Storage was never provisioned for
+   this project, so older check-ins point at the ephemeral /uploads/chat path
+   and now 404 — this renders an honest placeholder instead of the browser's
+   broken-image glyph. Valid photos never reach this class. */
+.cw-review-thumb--missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, .05);
+  border: 1px dashed rgba(0, 0, 0, .18);
+  color: rgba(0, 0, 0, .35);
+  font-size: 18px;
+}
+
+/* THIRD STATE: no photo was ever submitted. Distinct from --missing above,
+   which means a photo WAS submitted and its URL no longer resolves. Telling
+   a coach "No photo submitted" when the athlete did send one (and it was lost
+   to ephemeral storage) misattributes the failure to the athlete. */
+.cw-review-thumb--empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 4px;
+  background: rgba(0, 0, 0, .03);
+  border: 1px dashed rgba(0, 0, 0, .14);
+  color: rgba(0, 0, 0, .40);
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1.15;
+}
+
+/* Both placeholders are <div>s, so at the enlarged size they would collapse
+   to their text height — .cw-review-img-lg only caps height, never sets it. */
+.cw-review-img-lg.cw-review-thumb--empty,
+.cw-review-img-lg.cw-review-thumb--missing {
+  min-height: 140px;
+  font-size: 13px;
+}

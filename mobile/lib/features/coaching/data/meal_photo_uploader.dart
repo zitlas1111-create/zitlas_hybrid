@@ -23,9 +23,17 @@ typedef PreparedMealPhoto = ({Uint8List bytes, String contentType, String fileNa
 ///   3. `POST /api/chat/upload` — the fallback, used whenever Storage is
 ///      unavailable, denied by bucket rules, or times out.
 ///
-/// The fallback is the whole point: an athlete photographing their lunch must
-/// not lose it because a bucket rule changed. A failed Storage upload is a
-/// logged warning, never a failed check-in.
+/// THE FALLBACK IS NOT SAFE FOR PERSISTED PHOTOS. `/api/chat/upload` writes
+/// to the CONTAINER'S EPHEMERAL DISK — the file is gone at the next
+/// deploy/restart, but its URL has already been written to Firestore. The
+/// record then rots silently into a broken image, which is exactly what
+/// happened to every meal check-in: all of them stored `/uploads/chat/…`
+/// URLs that now return 404 to the nutritionist reviewing them.
+///
+/// So callers whose URL is PERSISTED must pass `requireDurable: true`, which
+/// removes the fallback entirely and fails loudly instead. Losing the upload
+/// while the athlete still has the photo and can retry beats telling them it
+/// worked and showing their coach a broken thumbnail a week later.
 ///
 /// ROOT CAUSE this class also fixes: the Android camera/gallery can hand back
 /// HEIC/HEIF (increasingly the DEFAULT capture format on newer Android/Samsung
@@ -41,7 +49,7 @@ class MealPhotoUploader {
     FirebaseAuth? auth,
     ApiClient? api,
   })  : _storage = storage,
-        _auth = auth ?? FirebaseAuth.instance,
+        _injectedAuth = auth,
         _api = api ?? ApiClient() {
     // The /api/chat/upload fallback now requires a signed-in caller — it
     // writes a file to the server and returns a public URL, which must never
@@ -57,8 +65,15 @@ class MealPhotoUploader {
   }
 
   final FirebaseStorage? _storage;
-  final FirebaseAuth _auth;
   final ApiClient _api;
+
+  /// Resolved lazily, NOT in the initializer list. `FirebaseAuth.instance`
+  /// throws when no Firebase app exists, so touching it eagerly made this
+  /// class — and every object that merely holds one, like
+  /// MealCheckinRepository — impossible to construct in a widget test, even
+  /// for tests that never upload anything.
+  final FirebaseAuth? _injectedAuth;
+  FirebaseAuth get _auth => _injectedAuth ?? FirebaseAuth.instance;
 
   /// Matches the website's own limits (`chat-attachments.js`).
   static const maxBytes = 10 * 1024 * 1024;
@@ -120,19 +135,45 @@ class MealPhotoUploader {
     return (bytes: raw, contentType: sniffed, fileName: 'meal_snap.${_extensionFor(sniffed)}');
   }
 
+  /// The one athlete-facing sentence for "durable storage was required and
+  /// was not available". Exported so callers can recognise it and show it
+  /// verbatim rather than inventing their own wording per call site.
+  /// Mirrors `ZitlasChatAttach.DURABLE_UPLOAD_FAILED` on the website.
+  static const durableUploadFailed =
+      'Photo storage is unavailable right now — your photo was NOT saved. '
+      'Please try again in a moment.';
+
   /// Uploads an already-[prepare]d photo. Returns the URL to store on the
-  /// check-in. Throws only when BOTH Storage and the backend fallback fail —
-  /// at which point there genuinely is no image to attach — with a short,
-  /// athlete-facing message; the real cause (a technical exception, an
-  /// unexpected response) is only ever logged, never shown.
-  Future<String> uploadPrepared(PreparedMealPhoto photo, {String pathPrefix = 'meal_checkins'}) async {
+  /// check-in.
+  ///
+  /// With [requireDurable] false (the default, for callers that are not
+  /// persisting the URL) it throws only when BOTH Storage and the backend
+  /// fallback fail. With [requireDurable] true there is NO fallback: a failed
+  /// Storage upload throws [durableUploadFailed] immediately, so nothing is
+  /// ever persisted that points at ephemeral disk.
+  ///
+  /// Either way the real cause (a technical exception, an unexpected
+  /// response) is only ever logged, never shown to the athlete.
+  Future<String> uploadPrepared(
+    PreparedMealPhoto photo, {
+    String pathPrefix = 'meal_checkins',
+    bool requireDurable = false,
+  }) async {
     try {
       final url = await _toFirebaseStorage(photo.bytes, pathPrefix).timeout(_storageTimeout);
       if (kDebugMode) debugPrint('[MEAL UPLOAD] Firebase Storage OK');
       return url;
     } catch (e) {
-      // Exactly the website's behaviour: warn and fall through. Storage being
-      // unreachable is not a reason to lose the athlete's photo.
+      if (requireDurable) {
+        // Deliberately NOT falling back — see the class doc. The ephemeral
+        // fallback is what turns a Storage outage into a permanently broken
+        // record days later.
+        if (kDebugMode) {
+          debugPrint('[MEAL UPLOAD] Firebase Storage failed ($e) — durable '
+              'storage required, NOT falling back to ephemeral disk');
+        }
+        throw Exception(durableUploadFailed);
+      }
       if (kDebugMode) {
         debugPrint('[MEAL UPLOAD] Firebase Storage failed ($e) — falling back to backend');
       }
@@ -145,9 +186,13 @@ class MealPhotoUploader {
 
   /// Convenience for a caller that only needs the final URL and does not also
   /// need the prepared bytes for anything else.
-  Future<String> upload(File file, {String pathPrefix = 'meal_checkins'}) async {
+  Future<String> upload(
+    File file, {
+    String pathPrefix = 'meal_checkins',
+    bool requireDurable = false,
+  }) async {
     final prepared = await prepare(file);
-    return uploadPrepared(prepared, pathPrefix: pathPrefix);
+    return uploadPrepared(prepared, pathPrefix: pathPrefix, requireDurable: requireDurable);
   }
 
   Future<String> _toFirebaseStorage(Uint8List bytes, String pathPrefix) async {

@@ -335,6 +335,22 @@ class _CheckinCardState extends State<_CheckinCard> {
                   ),
                 ),
               ),
+            )
+          else
+            // Previously the whole image block was simply omitted here, so a
+            // check-in with no photo and one whose photo cannot be shown
+            // looked identical — and identical to a card that just had no
+            // image area at all. Both now say which it is.
+            //
+            // The distinction matters and is NOT cosmetic: three of the ten
+            // production check-ins store a RELATIVE path (`/uploads/chat/…`,
+            // written by the website before this fix). isNetworkImageUrl
+            // rejects those, so calling them "No photo submitted" would blame
+            // the athlete for a photo they did send and the platform lost.
+            _MealPhotoPlaceholder(
+              label: (c.imageUrl != null && c.imageUrl!.trim().isNotEmpty)
+                  ? 'Photo unavailable'
+                  : 'No photo submitted',
             ),
           Padding(
             padding: const EdgeInsets.fromLTRB(14, 11, 14, 12),
@@ -602,6 +618,34 @@ class _Message extends StatelessWidget {
             color: ZitlasTokens.textSecondary,
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The two non-photo states of a meal-review card, drawn identically so the
+/// card's geometry never jumps between them: "Photo unavailable" (a photo was
+/// submitted but cannot be loaded) and "No photo submitted" (none was ever
+/// attached). Matches the website's `.cw-review-thumb--missing` /
+/// `--empty` placeholders in coaching-workspace.css.
+class _MealPhotoPlaceholder extends StatelessWidget {
+  const _MealPhotoPlaceholder({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 190,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        color: ZitlasTokens.bgCardLight,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(15)),
+      ),
+      alignment: Alignment.center,
+      child: Text(
+        label,
+        style: const TextStyle(fontSize: 12, color: ZitlasTokens.textMuted),
       ),
     );
   }

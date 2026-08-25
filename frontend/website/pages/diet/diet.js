@@ -2518,7 +2518,11 @@
     var mealType = (meal.meal_name || 'meal').toLowerCase();
 
     showToast('📷 Analyzing your meal…');
-    Promise.all([ZitlasChatAttach.upload(file, { pathPrefix: 'meal_snaps' }), _pcEstimateNutrition(file)]).then(function (results) {
+    /* requireDurable: this URL is written into meal_snap_logs and read back
+       later. The /api/chat/upload fallback stores on the container's
+       ephemeral disk, so falling back would save a URL that 404s after the
+       next deploy. Fail visibly instead — see chat-attachments.js. */
+    Promise.all([ZitlasChatAttach.upload(file, { pathPrefix: 'meal_snaps', requireDurable: true }), _pcEstimateNutrition(file)]).then(function (results) {
       var url = results[0];
       var estimate = results[1];
       var id = 'MSL_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
@@ -2542,7 +2546,10 @@
       showToast(hadEstimate ? '✅ Meal logged and analyzed.' : '📷 Meal logged — nutrition estimate unavailable.');
     }).catch(function (e) {
       console.error('[SNAP MEAL] PIPELINE FAILED —', (e && e.message) || e, e);
-      showToast('Could not log meal — try again.');
+      /* Surface the storage-unavailable sentence verbatim: "try again" alone
+         would not tell the athlete the photo was not saved at all. */
+      var durable = (typeof ZitlasChatAttach !== 'undefined') && ZitlasChatAttach.DURABLE_UPLOAD_FAILED;
+      showToast(durable && e && e.message === durable ? durable : 'Could not log meal — try again.');
     });
   }
 
@@ -2708,7 +2715,12 @@
     }
     if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
 
-    Promise.all([ZitlasChatAttach.upload(file, { pathPrefix: 'meal_checkins' }), _pcEstimateNutrition(file)]).then(function (results) {
+    /* requireDurable: imageUrl below is persisted on the check-in and opened
+       by the NUTRITIONIST days later. Every existing meal_checkins record
+       stored an /uploads/chat/… URL from the ephemeral fallback and every
+       one of them now 404s in the reviewer's Meal Reviews tab — that is the
+       bug this flag closes. Never save a URL that will not survive. */
+    Promise.all([ZitlasChatAttach.upload(file, { pathPrefix: 'meal_checkins', requireDurable: true }), _pcEstimateNutrition(file)]).then(function (results) {
       var url = results[0];
       var estimate = results[1];
       var uid = _pcUid();

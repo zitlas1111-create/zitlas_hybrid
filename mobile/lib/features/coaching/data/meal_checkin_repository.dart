@@ -92,8 +92,14 @@ class MealCheckinRepository {
     // photo is unusable.
     final prepared = await _uploader.prepare(photo);
 
+    // requireDurable: imageUrl below is persisted on the check-in and opened
+    // by the NUTRITIONIST days later. The /api/chat/upload fallback stores on
+    // the container's ephemeral disk — every existing meal_checkins record
+    // took that path and every one of them now 404s in the reviewer's Meal
+    // Reviews tab. Never save a URL that will not survive; fail loudly here
+    // instead, while the athlete still has the photo and can retry.
     final results = await Future.wait([
-      _uploader.uploadPrepared(prepared),
+      _uploader.uploadPrepared(prepared, requireDurable: true),
       _estimateNutrition(prepared),
     ]);
     final imageUrl = results[0] as String;
