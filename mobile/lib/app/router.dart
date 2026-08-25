@@ -97,9 +97,27 @@ GoRouter buildRouter(AuthState authState) {
         return onLogin ? null : '/login';
       }
 
-      // Role comes from the authoritative profile (users/{uid} -> roles /
-      // expert_status / role, the SAME algorithm login.js uses — see
-      // UserModel.isExpert). Never from an email, a cached role, or a default.
+      // Role comes from the SERVER — GET /api/auth/role, derived from the
+      // verified token's `expert` claim AND experts/{uid}.approved. Never
+      // from an email, a cached role, `users/{uid}` (client-writable), or a
+      // default. See UserModel.serverRole.
+      //
+      // NEVER ROUTE ON AN UNRESOLVED ROLE. `resolvedRole` reads 'user' while
+      // the server has not answered, because isExpert fails closed — correct
+      // for authorization, wrong for picking a landing screen. Routing on it
+      // is what dropped a genuine expert onto the athlete dashboard after one
+      // flaky /api/auth/role call, with no error and no way back except
+      // reopening the app. Hold the splash instead; AuthState retries, and
+      // this redirect re-runs on notifyListeners().
+      if (!authState.roleResolved) {
+        if (kDebugMode) {
+          debugPrint('[AUTH ROUTING] uid=${authState.profile?.uid} '
+              'role=UNRESOLVED -> holding /splash '
+              '(failed=${authState.roleResolutionFailed})');
+        }
+        return onSplash ? null : '/splash';
+      }
+
       final role = authState.profile?.resolvedRole;
       final isExpert = role == 'expert';
 

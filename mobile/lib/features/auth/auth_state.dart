@@ -53,6 +53,37 @@ class AuthState extends ChangeNotifier {
   UserModel? get profile => _profile;
   bool get isAuthenticated => _status == AuthStatus.authenticated;
 
+  bool _roleResolutionFailed = false;
+
+  /// Whether the server has actually answered `GET /api/auth/role`.
+  ///
+  /// False while a signed-in session exists but the role could not be
+  /// resolved. The router treats this as "keep waiting", never as "user" —
+  /// guessing here is what put experts on the athlete dashboard after a
+  /// single flaky request.
+  bool get roleResolved => _profile?.roleResolved ?? false;
+
+  /// True once the retries in [RoleRepository.fetchRole] have all failed, so
+  /// the splash can offer a retry instead of spinning forever.
+  bool get roleResolutionFailed => _roleResolutionFailed;
+
+  /// Re-runs role resolution for the signed-in account. Safe to call from a
+  /// "Try again" button; a no-op when nobody is signed in.
+  Future<void> retryRoleResolution() async {
+    final current = _profile;
+    if (current == null) return;
+    _roleResolutionFailed = false;
+    notifyListeners();
+    final role = await (_roleRepository ?? RoleRepository()).fetchRole();
+    _profile = current.withServerRole(role);
+    _roleResolutionFailed = role == null;
+    if (kDebugMode) {
+      debugPrint('[ROLE RETRY] uid=${current.uid} -> '
+          '${role ?? "STILL UNRESOLVED"}');
+    }
+    notifyListeners();
+  }
+
   /// Cold-start session restore (Firebase persists sessions natively on
   /// Android/iOS) and the fallback path if an interactive flow's own
   /// resolution hasn't completed yet. Guarded against redoing work an
@@ -86,10 +117,15 @@ class AuthState extends ChangeNotifier {
     // Awaited before the session is published so no frame ever renders with
     // an unresolved role — a moment of "expert" for a normal user (or the
     // reverse) would be a visible routing flicker at best and a leak at
-    // worst. fetchRole() fails closed to 'user' and never throws, so this
-    // cannot block login.
+    // worst.
+    //
+    // fetchRole() returns null when it could not reach an answer at all
+    // (after its own retries). That is NOT "user": the profile keeps a null
+    // serverRole, `roleResolved` stays false, and the router holds the splash
+    // instead of landing an expert on the athlete dashboard.
     final serverRole = await (_roleRepository ?? RoleRepository()).fetchRole();
     profile = profile.withServerRole(serverRole);
+    _roleResolutionFailed = serverRole == null;
 
     // Role-resolution trace. Deliberately logs only identity/role facts — never
     // a password, ID token, refresh token or API key.
@@ -97,7 +133,8 @@ class AuthState extends ChangeNotifier {
       debugPrint('[AUTH LOGIN SUCCESS] uid=${profile.uid}');
       debugPrint('[ROLE SOURCE] GET /api/auth/role (server-authoritative); '
           'users/${profile.uid} fields are no longer trusted for role');
-      debugPrint('[ROLE RESULT] ${profile.resolvedRole}');
+      debugPrint('[ROLE RESULT] '
+          '${serverRole ?? "UNRESOLVED (holding — not treated as user)"}');
     }
     // Purges any cached state belonging to a DIFFERENT account before this
     // session is applied, so the incoming user can never inherit or re-upload

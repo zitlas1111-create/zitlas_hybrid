@@ -61,7 +61,20 @@ class UserModel {
   bool get isExpert => serverRole == 'expert';
 
   /// `'expert' | 'user'` — the same two values `GET /api/auth/role` returns.
+  ///
+  /// Only meaningful once [roleResolved] is true. While the role is still
+  /// unresolved this reads `'user'` because [isExpert] fails closed, which is
+  /// correct for AUTHORIZATION but must never be used to pick a landing
+  /// screen — see [roleResolved].
   String get resolvedRole => isExpert ? 'expert' : 'user';
+
+  /// Whether the server actually answered.
+  ///
+  /// `serverRole == null` means the role lookup never completed (no network,
+  /// a 5xx, a captive portal). Routing on the fail-closed `'user'` in that
+  /// state is what dropped genuine experts onto the athlete dashboard; the
+  /// router holds the splash on this flag instead of guessing.
+  bool get roleResolved => serverRole != null;
 
   factory UserModel.fromMap(Map<String, dynamic> map) {
     return UserModel(
