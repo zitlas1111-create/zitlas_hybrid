@@ -389,7 +389,16 @@
 
       var edited  = collectEdited();
       var history = buildHistory(edited, expertName);
-      if (!edited || !edited.days || !edited.days.length) {
+      /* A WORKOUT plan's days live on `weekly_plan` — that is exactly what
+         collectEdited() returns above, and what buildHistory() iterates.
+         This guard used to read `edited.days`, copied verbatim from
+         modify-diet.js where `days` IS the key. `.days` never exists on a
+         workout plan, so the check was unconditionally true and EVERY
+         training-plan save was rejected as empty, no matter how much the
+         expert had edited. `|| edited.days` mirrors the plan reader at the
+         top of this file, which already accepts either shape. */
+      var editedDays = edited && (edited.weekly_plan || edited.days);
+      if (!editedDays || !editedDays.length) {
         console.error('[REVIEW COMPLETE] FAILURE operation=validate ' +
                       'code=empty_plan message=collected plan has no days');
         showToast('⚠️ Nothing to save — the plan looks empty. Please reload and retry.');
