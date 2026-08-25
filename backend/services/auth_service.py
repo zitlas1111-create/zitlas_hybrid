@@ -17,6 +17,8 @@ package (see push_service.py).
 
 from __future__ import annotations
 
+import time
+
 import os
 
 import google.auth.transport.requests
@@ -146,33 +148,81 @@ async def require_admin(caller: dict = Depends(verify_firebase_token)) -> dict:
 # without a claim fails (1). The client is asked for neither — both are read
 # server-side from the authenticated uid.
 
-def is_approved_expert(uid: str) -> bool:
+_EXPERT_LOOKUP_ATTEMPTS = 3
+_EXPERT_LOOKUP_BACKOFF = [0.25, 0.75]
+
+
+def is_approved_expert(uid: str) -> bool | None:
     """Whether `experts/{uid}` exists and is approved.
 
-    Fails CLOSED: an unreachable Firestore denies expert access rather than
-    granting it. A locked-out expert is recoverable; a wrongly-admitted one
-    can read other people's plans.
+    THREE OUTCOMES, and the third one matters:
+        True  — the document says approved.
+        False — the document says otherwise, or does not exist. A VERDICT.
+        None  — the question could not be ASKED (Firestore unreachable, a
+                misconfigured client, a transport fault). NOT a verdict.
+
+    This used to return False for all three. That is safe for authorization —
+    and `is_expert()` still treats None as "no access" — but it made an
+    INFRASTRUCTURE FAULT indistinguishable from "this person is not an
+    expert", so `/api/auth/role` answered a confident "user" for genuinely
+    approved experts and the apps landed them in the athlete experience.
+    That is exactly the reported failure: the deployed backend logged
+    `InvalidArgument: 400 Invalid database id %28default%29` from this very
+    lookup, swallowed it here, and reported
+    `token_expert_claim=True firestore_approved=False -> user`.
+
+    Callers that decide a LANDING SCREEN must treat None as "cannot answer"
+    and say so, rather than guessing. Callers that gate ACCESS keep failing
+    closed.
     """
     if not uid:
         return False
-    try:
-        from services import firestore_service
+    from services import firestore_service
 
-        db = firestore_service.get_client()
-        if db is None:
-            print("[AUTH] expert check: Firestore unavailable — denying")
-            return False
-        snap = db.collection("experts").document(uid).get()
-        if not snap or not getattr(snap, "exists", False):
-            return False
-        return bool((snap.to_dict() or {}).get("approved"))
-    except Exception as e:  # noqa: BLE001 — see docstring
-        print(f"[AUTH] expert lookup failed for {uid}: {type(e).__name__}: {e}")
-        return False
+    db = firestore_service.get_client()
+    if db is None:
+        print("[AUTH] expert check: Firestore client unavailable — CANNOT DETERMINE")
+        return None
+
+    # A transient read fault should not cost an expert their dashboard.
+    last: Exception | None = None
+    for attempt in range(_EXPERT_LOOKUP_ATTEMPTS):
+        try:
+            snap = db.collection("experts").document(uid).get()
+            if not snap or not getattr(snap, "exists", False):
+                return False
+            return bool((snap.to_dict() or {}).get("approved"))
+        except Exception as e:  # noqa: BLE001 — see docstring
+            last = e
+            print(f"[AUTH] expert lookup attempt {attempt + 1}/"
+                  f"{_EXPERT_LOOKUP_ATTEMPTS} failed for {uid}: "
+                  f"{type(e).__name__}: {e}")
+            if attempt + 1 < _EXPERT_LOOKUP_ATTEMPTS:
+                time.sleep(_EXPERT_LOOKUP_BACKOFF[attempt])
+
+    print(f"[AUTH] expert lookup UNAVAILABLE for {uid} after "
+          f"{_EXPERT_LOOKUP_ATTEMPTS} attempts — reporting 'cannot determine', "
+          f"NOT 'not an expert'. Last error: {type(last).__name__}: {last}")
+    return None
 
 
 def is_expert(caller: dict) -> bool:
-    """Claim AND approval row. Never a client-supplied role."""
+    """Claim AND approval row. Never a client-supplied role.
+
+    FAILS CLOSED on None: an unanswerable approval check grants nothing.
+    Routing callers should use [expert_status] instead so they can tell
+    "not an expert" from "could not check".
+    """
+    if not bool(caller.get("expert")):
+        return False
+    return is_approved_expert(caller.get("uid") or "") is True
+
+
+def expert_status(caller: dict) -> bool | None:
+    """Tri-state for callers that pick a LANDING SCREEN.
+
+    True = expert, False = not an expert, None = could not determine.
+    """
     if not bool(caller.get("expert")):
         return False
     return is_approved_expert(caller.get("uid") or "")

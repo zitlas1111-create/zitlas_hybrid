@@ -59,6 +59,22 @@ def get_client() -> firestore.Client | None:
     try:
         _client = firestore.Client(project=_PROJECT_ID, credentials=creds)
         print(f"[FIRESTORE SERVICE] client initialized OK — project={_PROJECT_ID}")
+        # WHICH DATABASE, AND WHO DECIDED. Production was failing every read
+        # with `InvalidArgument: 400 Invalid database id %28default%29` — a
+        # percent-encoded "(default)" — while the identical code and library
+        # versions worked locally. Nothing in this repo passes a database id,
+        # so the value comes from the deployed environment; these lines make
+        # the next deploy's logs say so outright instead of leaving it to be
+        # inferred from a swallowed exception three layers up.
+        import os as _os
+        print("[FIRESTORE SERVICE] database_id="
+              f"{getattr(_client, '_database', '(unknown)')!r} "
+              f"library={getattr(firestore, '__version__', '?')}")
+        _influencers = {k: v for k, v in _os.environ.items()
+                        if ("FIRESTORE" in k or "DATASTORE" in k
+                            or k in ("GOOGLE_CLOUD_PROJECT", "GCLOUD_PROJECT"))}
+        if _influencers:
+            print(f"[FIRESTORE SERVICE] env influencing Firestore: {_influencers}")
     except Exception as e:
         _construction_error = f"{type(e).__name__}: {e}"
         print(f"[FIRESTORE SERVICE] client construction FAILED: {_construction_error}")

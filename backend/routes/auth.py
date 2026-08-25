@@ -45,8 +45,8 @@ async def my_role(caller: dict = Depends(verify_firebase_token)):
     """
     uid = caller.get("uid") or ""
     claim = bool(caller.get("expert"))
-    approved = auth_service.is_approved_expert(uid) if claim else None
-    role = auth_service.resolve_role(caller)
+    approved = auth_service.expert_status(caller)   # True / False / None
+    role = "expert" if approved is True else "user"
 
     # Both halves, every time. When this answers "user" for somebody who
     # should be an expert, the log says WHICH half failed instead of leaving
@@ -56,7 +56,27 @@ async def my_role(caller: dict = Depends(verify_firebase_token)):
     print(f"[AUTH] role uid={uid} email={caller.get('email')} "
           f"token_expert_claim={claim} "
           f"firestore_approved={approved if claim else '(not checked - no claim)'} "
-          f"-> {role}")
+          f"-> {role if approved is not None else 'UNDETERMINED'}")
+
+    if claim and approved is None:
+        # THE APPROVAL CHECK COULD NOT RUN — Firestore was unreachable or
+        # misconfigured (the deployed backend was logging
+        # `InvalidArgument: 400 Invalid database id %28default%29` here).
+        #
+        # Answering "user" would be a LIE about the account, and it is the
+        # lie that put approved experts into the athlete app. 503 says "ask
+        # again" — both clients already treat a non-answer as "hold and
+        # retry" rather than as a role (see assets/js/role-service.js and
+        # RoleRepository.fetchRole), so nobody is mis-landed and nobody is
+        # granted access they have not earned.
+        print("[AUTH] role UNDETERMINED — refusing to answer 'user' for an "
+              "account whose approval could not be read")
+        raise HTTPException(
+            status_code=503,
+            detail="role_unavailable",
+            headers={"Retry-After": "2"},
+        )
+
     if role != "expert":
         reason = ("token carries no `expert` claim — the ID token predates the "
                   "claim being granted; the client must force-refresh it"
