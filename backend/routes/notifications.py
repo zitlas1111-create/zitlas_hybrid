@@ -25,6 +25,8 @@ here talks to FCM directly.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
@@ -55,6 +57,11 @@ def _short(text: str | None, limit: int = 120) -> str:
     if len(t) <= limit:
         return t
     return t[: limit - 1] + "…"
+
+
+def _now_iso() -> str:
+    """UTC ISO-8601, matching the timestamps the clients write."""
+    return datetime.now(timezone.utc).isoformat()
 
 
 def _name_of(db, uid: str, fallback: str = "Someone") -> str:
@@ -206,12 +213,33 @@ async def notify_meal_review(body: CheckinBody, caller: dict = Depends(verify_fi
 
     coach_name = c.get("reviewedBy") or _name_of(db, caller["uid"], "Your coach")
     meal = c.get("mealName") or c.get("mealType") or "your meal"
-    score = c.get("score")
-    detail = f"{coach_name} reviewed {meal}" + (f" — {score}/10." if score is not None else ".")
+
+    # IDEMPOTENT. A retried submit, a refresh, or the expert reopening the
+    # sheet must not produce a second "your meal was rated" push. The client
+    # already suppresses the call when EDITING; this is the server-side
+    # backstop for the retry case, which the client cannot see.
+    if c.get("ratingNotifiedAt"):
+        print(f"[MEAL RATING] already notified for {body.checkinId} at "
+              f"{c.get('ratingNotifiedAt')} — not sending again")
+        return {"success": True, "sent": 0, "detail": "already_notified"}
+
+    # Prefer the star rating; fall back to the legacy 1-10 score so meals
+    # reviewed before the star UI still read correctly.
+    overall = c.get("overallRating")
+    if isinstance(overall, (int, float)):
+        rating_txt = f"{float(overall):.1f}⭐"
+    elif isinstance(c.get("score"), (int, float)):
+        rating_txt = f"{float(c['score']) / 2:.1f}⭐"
+    else:
+        rating_txt = None
+
+    title = "⭐ Your Meal Was Rated"
+    detail = (f"{coach_name} rated {meal} {rating_txt}."
+              if rating_txt else f"{coach_name} reviewed {meal}.")
 
     res = notification_service.send(
         db, athlete_id,
-        "⭐ Meal reviewed",
+        title,
         detail,
         category="meal_snap", type="meal_review_completed",
         action="diet", priority="high",
@@ -220,8 +248,22 @@ async def notify_meal_review(body: CheckinBody, caller: dict = Depends(verify_fi
             "mealId": body.checkinId,
             "coachingId": athlete_id,
             "coachId": caller["uid"],
+            # Carried so the app can open the exact meal, not the dashboard.
+            "athleteId": athlete_id,
+            **({"rating": str(overall)} if overall is not None else {}),
         },
     )
+
+    # Stamp AFTER a successful send. A notification failure must never roll
+    # back the rating itself — the rating is already persisted by the client;
+    # this only records that the athlete was told.
+    try:
+        db.collection("meal_checkins").document(body.checkinId).update(
+            {"ratingNotifiedAt": _now_iso()})
+    except Exception as e:  # noqa: BLE001
+        print(f"[MEAL RATING] could not stamp ratingNotifiedAt for "
+              f"{body.checkinId}: {type(e).__name__}: {e}")
+
     return {"success": True, **res}
 
 

@@ -2283,8 +2283,22 @@
   }
 
     function card(c) {
-      var statusCls = c.status === 'reviewed' ? 'cw-review-status--done' : 'cw-review-status--pending';
-      var statusTxt = c.status === 'reviewed' ? (c.score != null ? c.score + '/10' : 'Reviewed') : 'Pending';
+      var rated = _cwIsRated(c);
+      var overall = _cwExistingOverall(c);
+      var statusCls = rated ? 'cw-review-status--done' : 'cw-review-status--pending';
+      /* The real value, never a placeholder. One decimal so a future
+         half-star average still reads correctly. */
+      var statusTxt = rated ? ('Rated ' + overall.toFixed(1) + '★') : 'Pending';
+
+      /* The expert always gets an explicit call to action; the athlete sees
+         the verdict, not a button to rate their own meal. */
+      var cta = S.opts.role === 'coach'
+        ? '<button type="button" class="cw-rate-cta' + (rated ? ' cw-rate-cta--edit' : '') + '" ' +
+            'data-cw-rate="' + esc(c.checkinId) + '">' +
+            (rated ? 'Edit Rating' : '⭐ Rate Meal') +
+          '</button>'
+        : '';
+
       return '<div class="cw-review-card" data-cw-review="' + esc(c.checkinId) + '">' +
         _cwPhotoMarkup(c.imageUrl, 'cw-review-thumb', c.mealName) +
         '<div class="cw-review-info">' +
@@ -2292,6 +2306,7 @@
           '<span class="cw-review-sub">' + esc(c.day) + ' · ' + esc(fmtTime(c.timestamp)) +
             (S.opts.role === 'coach' ? '' : (c.reaction ? ' · ' + esc(REACTION_LABEL[c.reaction] || '') : '')) +
           '</span>' +
+          cta +
         '</div>' +
         '<span class="cw-review-status ' + statusCls + '">' + esc(statusTxt) + '</span>' +
       '</div>';
@@ -2319,6 +2334,16 @@
         if (c) openCheckinSheet(c);
       });
     });
+
+    /* The Rate/Edit button opens the same sheet. stopPropagation so the card's
+       own handler does not also fire — one tap must open one sheet. */
+    body.querySelectorAll('[data-cw-rate]').forEach(function (btn) {
+      btn.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        var c = S.checkins.find(function (x) { return x.checkinId === btn.dataset.cwRate; });
+        if (c) openCheckinReviewSheet(c);
+      });
+    });
   }
 
   function openCheckinSheet(c) {
@@ -2341,75 +2366,187 @@
     openSheet(body);
   }
 
-  /* Coach: reaction (required) + score 1-10 (required) + optional comment */
+  /* ══════════════════════════════════════════════
+     EXPERT MEAL RATING
+     Overall (required, 1-5 stars) + three optional dimensions + comment.
+
+     `reaction` and `score` are STILL WRITTEN, derived from Overall. They are
+     not legacy baggage: meal_compliance.dart scores adherence purely off
+     `reaction.isCompliant`, and this file's own "Avg Score" chip reads
+     `score` on a 1-10 scale. Dropping either would silently break compliance
+     maths and the stats row for every meal rated from here.
+  ══════════════════════════════════════════════ */
+
+  /* Overall 1-5 -> the reaction ids compliance already understands. */
+  var STARS_TO_REACTION = {
+    5: 'perfect', 4: 'great', 3: 'good',
+    2: 'needs_improvement', 1: 'not_recommended',
+  };
+
+  var RATING_DIMENSIONS = [
+    { key: 'overallRating',      label: 'Overall',            required: true  },
+    { key: 'tasteRating',        label: 'Taste',              required: false },
+    { key: 'presentationRating', label: 'Presentation',       required: false },
+    { key: 'nutritionRating',    label: 'Nutrition / Quality', required: false },
+  ];
+
+  /* The rating an expert has already given, if any. Older records predate the
+     star fields and only carry `score` (1-10), so fall back to that rather
+     than showing a rated meal as unrated. */
+  function _cwExistingOverall(c) {
+    if (typeof c.overallRating === 'number') return c.overallRating;
+    if (typeof c.score === 'number') return Math.max(1, Math.min(5, Math.round(c.score / 2)));
+    return null;
+  }
+  function _cwIsRated(c) {
+    return c.status === 'reviewed' && _cwExistingOverall(c) !== null;
+  }
+
   function openCheckinReviewSheet(c) {
-    S.reviewDraft = { reaction: c.reaction || null, score: c.score || null, comment: c.comment || '' };
+    S.reviewDraft = {
+      overallRating:      _cwExistingOverall(c),
+      tasteRating:        typeof c.tasteRating === 'number' ? c.tasteRating : null,
+      presentationRating: typeof c.presentationRating === 'number' ? c.presentationRating : null,
+      nutritionRating:    typeof c.nutritionRating === 'number' ? c.nutritionRating : null,
+      comment:            c.comment || '',
+      /* Editing an ALREADY-reviewed meal must not fire a second "your meal
+         was rated" push. See saveCheckinReview. */
+      isEdit:             _cwIsRated(c),
+    };
     renderCheckinReviewSheet(c);
+  }
+
+  /* One row of five stars. Buttons, not spans: they must be reachable by
+     keyboard and give Android a real 44px touch target. */
+  function _cwStarRow(dim, value) {
+    var stars = '';
+    for (var n = 1; n <= 5; n++) {
+      stars +=
+        '<button type="button" class="cw-star' + (value >= n ? ' cw-star--on' : '') + '" ' +
+          'data-cw-star="' + dim.key + '" data-cw-star-value="' + n + '" ' +
+          'aria-label="' + esc(dim.label) + ': ' + n + ' of 5" ' +
+          'aria-pressed="' + (value === n ? 'true' : 'false') + '">★</button>';
+    }
+    return '<div class="cw-rate-row">' +
+      '<span class="cw-score-label">' + esc(dim.label) +
+        (dim.required ? ' <b class="cw-req">(required)</b>' : ' <span class="cw-opt">(optional)</span>') +
+      '</span>' +
+      '<div class="cw-star-row">' + stars +
+        (value ? '<button type="button" class="cw-star-clear" data-cw-star-clear="' + dim.key +
+                 '" aria-label="Clear ' + esc(dim.label) + '">Clear</button>' : '') +
+      '</div></div>';
   }
 
   function renderCheckinReviewSheet(c) {
     var d = S.reviewDraft;
-    var reactions = ['perfect', 'great', 'good', 'needs_improvement', 'not_recommended'];
     openSheet(
       '<p class="cw-sheet-title">' + esc(cap(c.mealType)) + ' — ' + esc(c.athleteName || 'Athlete') + '</p>' +
       '<p class="cw-sheet-sub">' + esc(c.day) + ' · ' + esc(fmtTime(c.timestamp)) + '</p>' +
       _cwPhotoMarkup(c.imageUrl, 'cw-review-img-lg', c.mealName) +
-      '<span class="cw-score-label">Reaction (required)</span>' +
-      '<div class="cw-reaction-grid">' + reactions.map(function (r) {
-        return '<button class="cw-reaction-btn' + (d.reaction === r ? ' selected' : '') + '" data-cw-reaction="' + r + '">' +
-          esc(REACTION_LABEL[r]) + '</button>';
-      }).join('') + '</div>' +
-      '<span class="cw-score-label">Meal Score (required)</span>' +
-      '<div class="cw-score-grid">' + [1,2,3,4,5,6,7,8,9,10].map(function (n) {
-        return '<button class="cw-score-btn' + (d.score === n ? ' selected' : '') + '" data-cw-score="' + n + '">' + n + '</button>';
-      }).join('') + '</div>' +
-      '<textarea class="cw-textarea" id="cwReviewComment" rows="2" placeholder="Optional comment (e.g. “Increase protein”)">' + esc(d.comment || '') + '</textarea>' +
+      RATING_DIMENSIONS.map(function (dim) {
+        return _cwStarRow(dim, d[dim.key]);
+      }).join('') +
+      '<textarea class="cw-textarea" id="cwReviewComment" rows="3" ' +
+        'placeholder="Feedback for ' + esc(c.athleteName || 'the athlete') + ' (optional)">' +
+        esc(d.comment || '') + '</textarea>' +
       '<div class="cw-save-bar" style="position:static;background:none;padding-top:12px">' +
-        '<button class="cw-save-btn" id="cwReviewSave"' + (!d.reaction || !d.score ? ' disabled' : '') + '>Save Review</button>' +
+        '<button class="cw-cancel-btn" id="cwReviewCancel" type="button">Cancel</button>' +
+        '<button class="cw-save-btn" id="cwReviewSave"' + (!d.overallRating ? ' disabled' : '') + '>' +
+          (d.isEdit ? 'Update Rating' : 'Submit Rating') + '</button>' +
       '</div>'
     );
     var sheet = $('cwSheet');
-    sheet.querySelectorAll('[data-cw-reaction]').forEach(function (b) {
-      b.addEventListener('click', function () { S.reviewDraft.reaction = b.dataset.cwReaction; renderCheckinReviewSheet(c); });
+    sheet.querySelectorAll('[data-cw-star]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        S.reviewDraft[b.dataset.cwStar] = parseInt(b.dataset.cwStarValue, 10);
+        renderCheckinReviewSheet(c);
+      });
     });
-    sheet.querySelectorAll('[data-cw-score]').forEach(function (b) {
-      b.addEventListener('click', function () { S.reviewDraft.score = parseInt(b.dataset.cwScore, 10); renderCheckinReviewSheet(c); });
+    sheet.querySelectorAll('[data-cw-star-clear]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        /* Overall is required, so clearing it just disables Save rather than
+           being forbidden — the expert can still change their mind. */
+        S.reviewDraft[b.dataset.cwStarClear] = null;
+        renderCheckinReviewSheet(c);
+      });
     });
     var commentEl = $('cwReviewComment');
     if (commentEl) commentEl.addEventListener('input', function () { S.reviewDraft.comment = commentEl.value; });
+    var cancelBtn = $('cwReviewCancel');
+    if (cancelBtn) cancelBtn.addEventListener('click', function () { S.reviewDraft = null; closeSheet(); });
     var saveBtn = $('cwReviewSave');
     if (saveBtn) saveBtn.addEventListener('click', function () { saveCheckinReview(c); });
   }
 
   function saveCheckinReview(c) {
     var d = db();
-    if (!d || !S.reviewDraft || !S.reviewDraft.reaction || !S.reviewDraft.score) return;
+    var draft = S.reviewDraft;
+    /* Overall is the ONLY required dimension. */
+    if (!d || !draft || !draft.overallRating) return;
+
     var btn = $('cwReviewSave');
-    if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+    var wasEdit = !!draft.isEdit;
+    if (btn) { btn.disabled = true; btn.textContent = wasEdit ? 'Updating…' : 'Saving…'; }
+
     var now = new Date().toISOString();
-    console.log('[MEAL_REVIEW_UPDATE] mealId=' + c.checkinId + ' rating=' + S.reviewDraft.reaction +
-      ' score=' + S.reviewDraft.score + ' feedback=' + JSON.stringify(S.reviewDraft.comment || null));
-    d.collection('meal_checkins').doc(c.checkinId).update({
+    var overall = draft.overallRating;
+    var payload = {
       status: 'reviewed',
-      reaction: S.reviewDraft.reaction,
-      score: S.reviewDraft.score,
-      comment: (S.reviewDraft.comment || '').trim() || null,
-      reviewedAt: now, reviewedBy: myName() || 'Coach',
-    }).then(function () {
-      notify(c.athleteId, '🍽 Coach reviewed your ' + cap(c.mealType) + ' — ' + S.reviewDraft.score + '/10.', 'meal_reviewed');
-      // Push it too, so the athlete hears about the review even with the app
-      // closed. Backend verifies this caller IS the coach on that check-in and
-      // derives the athlete from the document.
-      if (typeof ZitlasNotify !== 'undefined' && ZitlasNotify.pushMealReview) {
-        ZitlasNotify.pushMealReview(c.checkinId);
+      /* Derived, and deliberately still written — see the block comment above
+         RATING_DIMENSIONS. reaction drives compliance; score drives the
+         "Avg Score" chip on a 1-10 scale, so a 5-star meal is 10/10. */
+      reaction: STARS_TO_REACTION[overall],
+      score: overall * 2,
+      overallRating: overall,
+      tasteRating: draft.tasteRating || null,
+      presentationRating: draft.presentationRating || null,
+      nutritionRating: draft.nutritionRating || null,
+      comment: (draft.comment || '').trim() || null,
+      reviewedAt: now,
+      reviewedBy: myName() || 'Coach',
+    };
+
+    console.log('[MEAL_RATING_SAVE] mealId=' + c.checkinId +
+      ' athleteId=' + c.athleteId +
+      ' overall=' + overall + ' taste=' + payload.tasteRating +
+      ' presentation=' + payload.presentationRating +
+      ' nutrition=' + payload.nutritionRating +
+      ' isEdit=' + wasEdit);
+
+    d.collection('meal_checkins').doc(c.checkinId).update(payload).then(function () {
+      console.log('[MEAL_RATING_SAVE] persisted mealId=' + c.checkinId);
+
+      /* NOTIFY ONLY ON THE FIRST RATING. Editing must not spam the athlete —
+         the rating they already saw simply changes in place. A retry of the
+         same submit is covered by the same flag, because the document is
+         `reviewed` by then and the sheet reopens in edit mode. */
+      if (!wasEdit) {
+        notify(c.athleteId,
+          '⭐ ' + (payload.reviewedBy) + ' rated your ' + cap(c.mealType) + ' ' + overall + '⭐',
+          'meal_reviewed');
+        /* Push, so it lands on the lock screen with the app closed. The
+           backend re-reads the check-in, verifies this caller is its coach,
+           and derives the athlete from the document — the client never says
+           who to notify. */
+        if (typeof ZitlasNotify !== 'undefined' && ZitlasNotify.pushMealReview) {
+          ZitlasNotify.pushMealReview(c.checkinId);
+        }
+      } else {
+        console.log('[MEAL_RATING_SAVE] edit — notification deliberately suppressed');
       }
+
       S.reviewDraft = null;
       closeSheet();
-      toast('✅ Review sent to ' + (c.athleteName || 'the athlete'));
+      toast(wasEdit
+        ? '✅ Rating updated'
+        : '✅ Rated ' + overall + '⭐ — sent to ' + (c.athleteName || 'the athlete'));
     }).catch(function (e) {
-      console.error('[CW] review save failed', e);
-      toast('Could not save — try again.');
-      if (btn) { btn.disabled = false; btn.textContent = 'Save Review'; }
+      console.error('[MEAL_RATING_SAVE] FAILED mealId=' + c.checkinId, e);
+      toast('Could not save the rating — try again.');
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = wasEdit ? 'Update Rating' : 'Submit Rating';
+      }
     });
   }
 

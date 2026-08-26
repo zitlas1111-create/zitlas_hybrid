@@ -160,23 +160,44 @@ class MealCheckinRepository {
   ///
   /// `status`, `reaction`, `score`, `comment`, `reviewedAt` and `reviewedBy`
   /// are exactly the fields the website's own review sets, so a meal reviewed
-  /// here shows as reviewed there.
+  /// here shows as reviewed there — plus the star dimensions the expert
+  /// dashboard now writes (`overallRating` and the three optional ones).
+  ///
+  /// `reaction` and `score` are still written and are NOT redundant:
+  /// meal_compliance.dart scores adherence purely off `reaction.isCompliant`,
+  /// and the website's "Avg Score" chip reads `score` on a 1-10 scale.
+  ///
+  /// [overall] is the 1-5 star rating. When omitted it is derived from
+  /// [reaction], so existing callers keep working unchanged.
   Future<void> review({
     required MealCheckin checkin,
     required MealReaction reaction,
     required String coachName,
     String? comment,
+    int? overall,
+    int? taste,
+    int? presentation,
+    int? nutrition,
     DateTime? now,
   }) async {
     final at = now ?? DateTime.now();
+    final overallStars = overall ?? reaction.score;
     if (kDebugMode) {
-      debugPrint('[MEAL CHECKIN] review ${checkin.checkinId} -> ${reaction.id}');
+      debugPrint('[MEAL RATING] ${checkin.checkinId} -> ${reaction.id} '
+          'overall=$overallStars taste=$taste presentation=$presentation '
+          'nutrition=$nutrition');
     }
 
     await _db.collection('meal_checkins').doc(checkin.checkinId).set({
       'status': 'reviewed',
       'reaction': reaction.id,
-      'score': reaction.score,
+      // 1-10, matching the website. reaction.score is 1-5, so a 5-star meal
+      // reads 10/10 on both clients instead of 5/10 on one of them.
+      'score': overallStars * 2,
+      'overallRating': overallStars,
+      'tasteRating': taste,
+      'presentationRating': presentation,
+      'nutritionRating': nutrition,
       'comment': (comment?.trim().isEmpty ?? true) ? null : comment!.trim(),
       'reviewedAt': at.toIso8601String(),
       'reviewedBy': coachName,

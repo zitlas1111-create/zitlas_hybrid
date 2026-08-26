@@ -692,3 +692,97 @@
   min-height: 140px;
   font-size: 13px;
 }
+
+/* ══════════════ EXPERT MEAL RATING ══════════════
+   Replaces the reaction-grid + 1-10 score grid. Overall is required; the
+   other three dimensions are optional and may be cleared. */
+
+.cw-rate-row { margin-bottom: 10px; }
+
+.cw-req { color: var(--accent, #2E5F47); font-weight: 800; }
+.cw-opt { color: var(--text-muted, #64748B); font-weight: 600; }
+
+.cw-star-row {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+/* A button, not a glyph: 44px is the Android touch target, and the expert
+   dashboard is rendered inside the app's WebView. */
+.cw-star {
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+  color: rgba(35, 75, 53, 0.20);
+  transition: color .15s ease, transform .12s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+.cw-star--on { color: #F5A524; }
+.cw-star:active { transform: scale(0.88); }
+.cw-star:focus-visible {
+  outline: 2px solid var(--accent, #2E5F47);
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.cw-star-clear {
+  margin-left: 6px;
+  padding: 6px 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted, #64748B);
+  text-decoration: underline;
+}
+
+/* Submit sits beside Cancel; Cancel must not look like the primary action. */
+.cw-cancel-btn {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0 18px;
+  margin-right: 8px;
+  border-radius: 14px;
+  border: 1.5px solid var(--border, rgba(35,75,53,0.16));
+  background: transparent;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--text-sec, #475569);
+  cursor: pointer;
+}
+
+/* ── The card call to action ──
+   "⭐ Rate Meal" until rated, then "Edit Rating" — never a second rating. */
+.cw-rate-cta {
+  align-self: flex-start;
+  margin-top: 7px;
+  min-height: 34px;
+  padding: 7px 14px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #234B35, #2E5F47);
+  color: #fff;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cw-rate-cta:active { transform: scale(0.97); }
+
+.cw-rate-cta--edit {
+  background: transparent;
+  color: var(--accent, #2E5F47);
+  border: 1.5px solid var(--accent, #2E5F47);
+}
+
+/* The status chip carries the actual value, e.g. "Rated 4.0★". */
+.cw-review-status--done { white-space: nowrap; }

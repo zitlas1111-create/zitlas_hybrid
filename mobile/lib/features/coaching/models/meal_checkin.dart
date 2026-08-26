@@ -61,6 +61,10 @@ class MealCheckin {
     this.timestamp,
     this.reaction,
     this.score,
+    this.overallRating,
+    this.tasteRating,
+    this.presentationRating,
+    this.nutritionRating,
     this.comment,
     this.reviewedAt,
     this.reviewedBy,
@@ -94,6 +98,24 @@ class MealCheckin {
 
   final MealReaction? reaction;
   final int? score;
+
+  /// The expert's star rating, 1-5. `reaction` and `score` are still the
+  /// compliance/stat inputs; these are what the rating UI shows and edits.
+  /// Null on meals reviewed before the star UI existed — [displayRating]
+  /// falls back to `score` for those.
+  final int? overallRating;
+  final int? tasteRating;
+  final int? presentationRating;
+  final int? nutritionRating;
+
+  /// What "Rated X.X★" should show, or null when genuinely unrated.
+  double? get displayRating {
+    if (overallRating != null) return overallRating!.toDouble();
+    if (score != null) return (score! / 2).clamp(1, 5).toDouble();
+    return null;
+  }
+
+  bool get isRated => isReviewed && displayRating != null;
   final String? comment;
   final DateTime? reviewedAt;
   final String? reviewedBy;
@@ -125,6 +147,10 @@ class MealCheckin {
         'status': status,
         'reaction': reaction?.id,
         'score': score,
+        'overallRating': overallRating,
+        'tasteRating': tasteRating,
+        'presentationRating': presentationRating,
+        'nutritionRating': nutritionRating,
         'comment': comment,
         'reviewedAt': reviewedAt?.toIso8601String(),
         'reviewedBy': reviewedBy,
@@ -155,6 +181,10 @@ class MealCheckin {
       timestamp: _date(m['timestamp']),
       reaction: MealReaction.fromId(m['reaction'] as String?),
       score: asNum(m['score'])?.toInt(),
+      overallRating: asNum(m['overallRating'])?.toInt(),
+      tasteRating: asNum(m['tasteRating'])?.toInt(),
+      presentationRating: asNum(m['presentationRating'])?.toInt(),
+      nutritionRating: asNum(m['nutritionRating'])?.toInt(),
       comment: m['comment'] as String?,
       reviewedAt: _date(m['reviewedAt']),
       reviewedBy: m['reviewedBy'] as String?,
