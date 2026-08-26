@@ -332,6 +332,14 @@
       console.warn('[CW] open() missing athleteId/coachId', opts);
       return;
     }
+    /* These two are called from openSheet() and the two check-in sheets,
+       which live at module scope. They were once nested inside
+       renderCheckins(), which made the meal LIST work while opening any meal
+       threw `_cwPhotoMarkup is not defined`. Reported here so a regression is
+       visible in the Android WebView log rather than only at the moment a
+       coach taps a meal. */
+    console.log('[CW PHOTO] _cwPhotoMarkup available=' + typeof _cwPhotoMarkup +
+      ' _cwWireImageFallbacks available=' + typeof _cwWireImageFallbacks);
     ensureDom();
     S.opts = opts;
     S.tab = opts.initialTab || 'overview';
@@ -2204,6 +2212,64 @@
     return ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][new Date().getDay()];
   }
 
+  /* MODULE SCOPE, deliberately. Both of these used to sit INSIDE
+     renderCheckins(). card() is nested there too so the meal LIST
+     rendered fine — but openSheet(), openCheckinHistorySheet() and
+     renderCheckinReviewSheet() live at module scope and could not see
+     them, so opening any meal threw
+     `Uncaught ReferenceError: _cwPhotoMarkup is not defined` and the
+     sheet never rendered. The indentation hid it: the enclosing
+     function had not closed where it appeared to. */
+  /* A meal photo that cannot load must say so, not render a broken-image
+     glyph the coach has to interpret.
+
+     WHY THIS HAPPENS AT ALL: Firebase Storage was never provisioned for this
+     project (zero buckets), so every photo upload silently fell back to
+     `POST /api/chat/upload`, which writes to the container's EPHEMERAL disk.
+     Those files vanish on the next deploy, leaving `meal_checkins.imageUrl`
+     pointing at a permanent 404. This handler does not fix that — provisioning
+     the bucket does — it just stops the coach seeing a broken icon with no
+     explanation. A photo whose URL still resolves is untouched and still
+     renders normally.
+
+     Kept as a data-attribute + delegated listener rather than an inline
+     onerror so nothing has to be interpolated into markup. */
+  function _cwWireImageFallbacks(root) {
+    (root || document).querySelectorAll('img[data-cw-photo]').forEach(function (img) {
+      if (img._cwWired) return;
+      img._cwWired = true;
+      img.addEventListener('error', function () {
+        var note = document.createElement('div');
+        /* Keep the image's OWN size class (cw-review-thumb in the list,
+           cw-review-img-lg in the sheet) — hardcoding the thumb class here
+           shrank the enlarged view down to list-thumbnail size. */
+        note.className = (img.className || 'cw-review-thumb') + ' cw-review-thumb--missing';
+        note.setAttribute('role', 'img');
+        note.setAttribute('aria-label', 'Meal photo unavailable');
+        note.textContent = '🖼';
+        note.title = 'Photo unavailable — it was not stored permanently.';
+        if (img.parentNode) img.parentNode.replaceChild(note, img);
+      });
+    });
+  }
+
+  /* THREE DISTINCT STATES, never conflated:
+       a URL that loads      -> the photo
+       a URL that 404s       -> "Photo unavailable" (above) — the athlete DID
+                                submit one; it was lost to ephemeral storage
+       no URL at all         -> "No photo submitted" (here)
+     Rendering `src=""` for the third case made it fire the error handler and
+     report a lost photo where none was ever sent. */
+  function _cwPhotoMarkup(url, cls, alt) {
+    if (!url || !String(url).trim()) {
+      return '<div class="' + cls + ' cw-review-thumb--empty" role="img" ' +
+        'aria-label="No photo submitted" title="No photo submitted">' +
+        'No photo submitted</div>';
+    }
+    return '<img class="' + cls + '" data-cw-photo src="' + esc(url) +
+      '" alt="' + esc(alt || 'meal') + '">';
+  }
+
   function renderCheckins() {
     var body = $('cwBody');
     var today = _todayName();
@@ -2259,55 +2325,6 @@
     }
 
 
-  /* A meal photo that cannot load must say so, not render a broken-image
-     glyph the coach has to interpret.
-
-     WHY THIS HAPPENS AT ALL: Firebase Storage was never provisioned for this
-     project (zero buckets), so every photo upload silently fell back to
-     `POST /api/chat/upload`, which writes to the container's EPHEMERAL disk.
-     Those files vanish on the next deploy, leaving `meal_checkins.imageUrl`
-     pointing at a permanent 404. This handler does not fix that — provisioning
-     the bucket does — it just stops the coach seeing a broken icon with no
-     explanation. A photo whose URL still resolves is untouched and still
-     renders normally.
-
-     Kept as a data-attribute + delegated listener rather than an inline
-     onerror so nothing has to be interpolated into markup. */
-  function _cwWireImageFallbacks(root) {
-    (root || document).querySelectorAll('img[data-cw-photo]').forEach(function (img) {
-      if (img._cwWired) return;
-      img._cwWired = true;
-      img.addEventListener('error', function () {
-        var note = document.createElement('div');
-        /* Keep the image's OWN size class (cw-review-thumb in the list,
-           cw-review-img-lg in the sheet) — hardcoding the thumb class here
-           shrank the enlarged view down to list-thumbnail size. */
-        note.className = (img.className || 'cw-review-thumb') + ' cw-review-thumb--missing';
-        note.setAttribute('role', 'img');
-        note.setAttribute('aria-label', 'Meal photo unavailable');
-        note.textContent = '🖼';
-        note.title = 'Photo unavailable — it was not stored permanently.';
-        if (img.parentNode) img.parentNode.replaceChild(note, img);
-      });
-    });
-  }
-
-  /* THREE DISTINCT STATES, never conflated:
-       a URL that loads      -> the photo
-       a URL that 404s       -> "Photo unavailable" (above) — the athlete DID
-                                submit one; it was lost to ephemeral storage
-       no URL at all         -> "No photo submitted" (here)
-     Rendering `src=""` for the third case made it fire the error handler and
-     report a lost photo where none was ever sent. */
-  function _cwPhotoMarkup(url, cls, alt) {
-    if (!url || !String(url).trim()) {
-      return '<div class="' + cls + ' cw-review-thumb--empty" role="img" ' +
-        'aria-label="No photo submitted" title="No photo submitted">' +
-        'No photo submitted</div>';
-    }
-    return '<img class="' + cls + '" data-cw-photo src="' + esc(url) +
-      '" alt="' + esc(alt || 'meal') + '">';
-  }
 
     function card(c) {
       var rated = _cwIsRated(c);
