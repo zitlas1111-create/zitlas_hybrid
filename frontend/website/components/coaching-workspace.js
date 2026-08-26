@@ -1468,7 +1468,12 @@
       day.meals.push({ id: newId('meal'), name: '', time: '', options: [{ name: '', calories: '', protein: '', notes: '' }] });
       markDirty(); renderDietEditor();
     });
-    $('cwDietSave').addEventListener('click', saveDiet);
+    /* NOT `addEventListener('click', saveX)` — that hands the click Event in
+       as `isAuto`, and an Event is truthy. A manual save then took the
+       auto-save branch: no "Saving…" on the button, and on failure it
+       silently rescheduled a retry instead of surfacing the error, so a save
+       that never landed looked like nothing had happened at all. */
+    $('cwDietSave').addEventListener('click', function () { saveDiet(false); });
     $('cwDietHistory').addEventListener('click', function () { openHistory('diet'); });
   }
 
@@ -2067,7 +2072,7 @@
       day.exercises.push({ name: '', sets: '', reps: '', duration: '', rest: '', notes: '' });
       markDirty(); renderTrainingEditor();
     });
-    $('cwTrainSave').addEventListener('click', saveTraining);
+    $('cwTrainSave').addEventListener('click', function () { saveTraining(false); });
     $('cwTrainHistory').addEventListener('click', function () { openHistory('training'); });
   }
 
