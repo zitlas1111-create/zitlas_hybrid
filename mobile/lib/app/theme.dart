@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../core/theme/zitlas_tokens.dart';
+
 /// Official ZITLAS color tokens for the DARK premium surfaces (splash,
 /// loading, and a couple of legacy dark screens/sheets) — see
 /// `core/theme/zitlas_tokens.dart` for the LIGHT tokens the rest of the app
@@ -46,57 +48,78 @@ const double kCardRadius = 22;
 class ZitlasTheme {
   ZitlasTheme._();
 
-  static ThemeData get dark {
-    final colorScheme = const ColorScheme.dark(
-      primary: ZitlasColors.primary,
-      onPrimary: ZitlasColors.textPrimary,
-      secondary: ZitlasColors.aiAccent,
-      onSecondary: ZitlasColors.textPrimary,
-      surface: ZitlasColors.bgCard,
-      onSurface: ZitlasColors.textPrimary,
-      error: ZitlasColors.error,
-      onError: ZitlasColors.textPrimary,
+  /// THE APP-WIDE THEME IS LIGHT.
+  ///
+  /// It used to be `Brightness.dark` with white default text, left over from
+  /// before the light rebrand. Meanwhile 89 files migrated to the LIGHT
+  /// tokens in `core/theme/zitlas_tokens.dart` and paint white cards and
+  /// cream surfaces. Every widget that did not set a colour of its own
+  /// therefore inherited WHITE text and drew it on a white background:
+  /// unreadable labels in the survey (Medical Conditions), the Meal Snap
+  /// flow, dialogs, dropdowns, snackbars and pickers — anywhere a default
+  /// was relied on.
+  ///
+  /// Fixing individual screens would have left the NEXT new screen broken
+  /// the same way, so the default itself is now dark-text-on-light. The
+  /// genuinely dark surfaces that remain (splash, loading ring) set their
+  /// colours explicitly from [ZitlasColors] and are unaffected.
+  ///
+  /// [dark] is kept as a forwarder so existing call sites keep working;
+  /// [light] is the honest name.
+  static ThemeData get dark => light;
+
+  static ThemeData get light {
+    const colorScheme = ColorScheme.light(
+      primary: ZitlasTokens.primary,
+      onPrimary: Color(0xFFFFFFFF), // on the dark green button — correct
+      secondary: ZitlasTokens.aiAccent,
+      onSecondary: Color(0xFFFFFFFF),
+      surface: ZitlasTokens.bgCard,
+      onSurface: ZitlasTokens.textPrimary, // near-black on white
+      error: ZitlasTokens.danger,
+      onError: Color(0xFFFFFFFF),
     );
 
     return ThemeData(
       useMaterial3: true,
-      brightness: Brightness.dark,
+      brightness: Brightness.light,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor: ZitlasColors.bgPrimary,
-      canvasColor: ZitlasColors.bgPrimary,
+      scaffoldBackgroundColor: ZitlasTokens.bgPrimary,
+      canvasColor: ZitlasTokens.bgPrimary,
       fontFamily: 'Roboto',
       textTheme: const TextTheme(
         headlineMedium: TextStyle(
-          color: ZitlasColors.textPrimary,
+          color: ZitlasTokens.textPrimary,
           fontWeight: FontWeight.w700,
         ),
         titleLarge: TextStyle(
-          color: ZitlasColors.textPrimary,
+          color: ZitlasTokens.textPrimary,
           fontWeight: FontWeight.w600,
         ),
-        bodyLarge: TextStyle(color: ZitlasColors.textPrimary),
-        bodyMedium: TextStyle(color: ZitlasColors.textSecondary),
-        bodySmall: TextStyle(color: ZitlasColors.textMuted),
+        bodyLarge: TextStyle(color: ZitlasTokens.textPrimary),
+        bodyMedium: TextStyle(color: ZitlasTokens.textSecondary),
+        bodySmall: TextStyle(color: ZitlasTokens.textMuted),
       ),
       appBarTheme: const AppBarTheme(
-        backgroundColor: ZitlasColors.bgPrimary,
-        foregroundColor: ZitlasColors.textPrimary,
+        backgroundColor: ZitlasTokens.bgCard,
+        foregroundColor: ZitlasTokens.textPrimary,
         elevation: 0,
         centerTitle: false,
       ),
       cardTheme: CardThemeData(
-        color: ZitlasColors.bgCard,
+        color: ZitlasTokens.bgCard,
         elevation: 0,
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(kCardRadius),
-          side: const BorderSide(color: ZitlasColors.border),
+          side: const BorderSide(color: ZitlasTokens.border),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
-          backgroundColor: ZitlasColors.primary,
-          foregroundColor: ZitlasColors.textPrimary,
-          shadowColor: ZitlasColors.shadow,
+          backgroundColor: ZitlasTokens.primary,
+          // White is correct here: the button itself is dark green.
+          foregroundColor: const Color(0xFFFFFFFF),
+          shadowColor: ZitlasTokens.borderSub,
           elevation: 6,
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
           shape: RoundedRectangleBorder(
@@ -105,39 +128,122 @@ class ZitlasTheme {
         ),
       ),
       textButtonTheme: TextButtonThemeData(
-        style: TextButton.styleFrom(foregroundColor: ZitlasColors.primary),
+        style: TextButton.styleFrom(foregroundColor: ZitlasTokens.primary),
+      ),
+      // Dialogs, sheets and menus inherit these, and they were the worst of
+      // it: on a dark ThemeData a Material dialog paints a dark surface with
+      // light text, but these sit on light screens, so the text came out
+      // white on white.
+      dialogTheme: const DialogThemeData(
+        backgroundColor: ZitlasTokens.bgCard,
+        surfaceTintColor: Colors.transparent,
+        titleTextStyle: TextStyle(
+          color: ZitlasTokens.textPrimary,
+          fontSize: 17,
+          fontWeight: FontWeight.w800,
+        ),
+        contentTextStyle: TextStyle(
+          color: ZitlasTokens.textSecondary,
+          fontSize: 14,
+        ),
+      ),
+      bottomSheetTheme: const BottomSheetThemeData(
+        backgroundColor: ZitlasTokens.bgCard,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: ZitlasTokens.bgCard,
+      ),
+      popupMenuTheme: const PopupMenuThemeData(
+        color: ZitlasTokens.bgCard,
+        surfaceTintColor: Colors.transparent,
+        textStyle: TextStyle(color: ZitlasTokens.textPrimary),
+      ),
+      dropdownMenuTheme: const DropdownMenuThemeData(
+        textStyle: TextStyle(color: ZitlasTokens.textPrimary),
+      ),
+      // Snackbars stay DARK deliberately — a floating toast reads better as
+      // a dark slab over light content — so their white text is correct.
+      snackBarTheme: const SnackBarThemeData(
+        backgroundColor: Color(0xFF17221A),
+        contentTextStyle: TextStyle(color: Color(0xFFFFFFFF)),
+        actionTextColor: ZitlasTokens.achievementYellow,
+        behavior: SnackBarBehavior.floating,
+      ),
+      // Selection controls: the tick/dot is white on a filled green box,
+      // which is correct. The LABEL beside it comes from textTheme above —
+      // that is what was unreadable on Medical Conditions.
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? ZitlasTokens.primary
+              : Colors.transparent,
+        ),
+        checkColor: const WidgetStatePropertyAll(Color(0xFFFFFFFF)),
+        side: const BorderSide(color: ZitlasTokens.border, width: 1.5),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? ZitlasTokens.primary
+              : ZitlasTokens.textMuted,
+        ),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? const Color(0xFFFFFFFF)
+              : ZitlasTokens.textMuted,
+        ),
+        trackColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected)
+              ? ZitlasTokens.primary
+              : ZitlasTokens.border,
+        ),
+      ),
+      listTileTheme: const ListTileThemeData(
+        textColor: ZitlasTokens.textPrimary,
+        iconColor: ZitlasTokens.textSecondary,
+      ),
+      iconTheme: const IconThemeData(color: ZitlasTokens.textSecondary),
+      // Date/time pickers are full Material surfaces; on the old dark
+      // defaults they lost their labels against a light app.
+      datePickerTheme: const DatePickerThemeData(
+        backgroundColor: ZitlasTokens.bgCard,
+        surfaceTintColor: Colors.transparent,
+        headerForegroundColor: ZitlasTokens.textPrimary,
+      ),
+      timePickerTheme: const TimePickerThemeData(
+        backgroundColor: ZitlasTokens.bgCard,
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: ZitlasColors.bgCardLight,
+        fillColor: ZitlasTokens.bgCardLight,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: ZitlasColors.border),
+          borderSide: const BorderSide(color: ZitlasTokens.border),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: ZitlasColors.border),
+          borderSide: const BorderSide(color: ZitlasTokens.border),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(14),
-          borderSide: const BorderSide(color: ZitlasColors.primary),
+          borderSide: const BorderSide(color: ZitlasTokens.primary),
         ),
-        hintStyle: const TextStyle(color: ZitlasColors.textMuted),
+        labelStyle: const TextStyle(color: ZitlasTokens.textSecondary),
+        // textSecondary, not textMuted: muted (#8A968E) on the cream fill
+        // (#F3F0E6) measures 2.7:1, below even the relaxed 3:1 bar for
+        // secondary text — a placeholder nobody can read is the same bug in
+        // a quieter register. Still clearly softer than the entered value,
+        // which uses textPrimary.
+        hintStyle: const TextStyle(color: ZitlasTokens.textSecondary),
       ),
-      // Kept light/neutral (rather than ZitlasColors.bgCard/dark) even
-      // though the rest of this theme is dark — the Home tab now renders
-      // the real (light) Athlete Dashboard per theme.css, and a dark bar
-      // directly beneath a light dashboard reproduced exactly the
-      // black-framing defect fixed for the auth screens. The still-dark
-      // placeholder tabs (Diet/Training/Experts/Profile) tolerate a light
-      // nav bar fine until their own migration.
       bottomNavigationBarTheme: const BottomNavigationBarThemeData(
-        backgroundColor: Color(0xFFFFFFFF),
-        selectedItemColor: Color(0xFF234B35),
-        unselectedItemColor: Color(0xFF94A3B8),
+        backgroundColor: ZitlasTokens.bgCard,
+        selectedItemColor: ZitlasTokens.primary,
+        unselectedItemColor: ZitlasTokens.textMuted,
         type: BottomNavigationBarType.fixed,
       ),
-      dividerTheme: const DividerThemeData(color: ZitlasColors.border),
+      dividerTheme: const DividerThemeData(color: ZitlasTokens.border),
     );
   }
 }

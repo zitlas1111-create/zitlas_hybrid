@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../app/theme.dart';
+import '../theme/zitlas_tokens.dart';
 
 /// Stand-in for a feature screen not yet implemented. Every `features/*`
 /// folder scaffolded in this pass uses this so the routing foundation and
@@ -38,7 +38,7 @@ class PlaceholderScreenBody extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.construction, color: ZitlasColors.textMuted, size: 40),
+            const Icon(Icons.construction, color: ZitlasTokens.textMuted, size: 40),
             const SizedBox(height: 12),
             Text(
               subtitle ?? 'Coming soon',

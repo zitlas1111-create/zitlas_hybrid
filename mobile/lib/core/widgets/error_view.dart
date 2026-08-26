@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../app/theme.dart';
+import '../theme/zitlas_tokens.dart';
 import '../network/api_exception.dart';
 
 /// Standard full-space error state with a retry action, for when a screen's
@@ -29,7 +29,7 @@ class ErrorView extends StatelessWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: ZitlasColors.textMuted, size: 40),
+            const Icon(Icons.error_outline, color: ZitlasTokens.textMuted, size: 40),
             const SizedBox(height: 12),
             Text(
               _message,

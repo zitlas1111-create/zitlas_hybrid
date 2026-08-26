@@ -11,10 +11,15 @@ import 'package:zitlas_mobile/features/support/models/support_conversation.dart'
 /// the real screen under the real app theme, then reading the resolved styles
 /// back off the element tree.
 ///
-/// The app theme is `Brightness.dark` and is deliberately NOT modified — these
-/// fields state their own colours locally. That is exactly what these tests
-/// pin: the screen must be readable *despite* the dark global theme, so a
-/// future theme change cannot silently make typing invisible again.
+/// These fields state their own colours locally, and still do. What CHANGED
+/// is the global theme: it used to be `Brightness.dark`, which is why these
+/// fields needed local overrides at all. The whole app now runs the LIGHT
+/// theme (see ZitlasTheme.light), because the dark default was making
+/// unstyled text white on white everywhere — the survey, Meal Snap, dialogs.
+///
+/// The local overrides are deliberately KEPT: they are harmless under a light
+/// theme and they are what these tests actually pin — that this screen is
+/// readable on its own terms, whichever way the global theme moves.
 ///
 /// Three different Material slots are involved, which is what made the first
 /// attempt at this fix miss the dropdown entirely:
@@ -54,14 +59,17 @@ Future<void> _openNewConversationSheet(WidgetTester tester) async {
 }
 
 void main() {
-  group('the global theme is left alone', () {
-    test('ThemeData is still the untouched dark theme', () {
-      final theme = ZitlasTheme.dark;
-      expect(theme.brightness, Brightness.dark);
-      // If these ever become dark, someone edited the GLOBAL theme — which is
-      // the change this task deliberately avoided.
-      expect(theme.textTheme.bodyLarge?.color, const Color(0xFFFFFFFF));
-      expect(theme.canvasColor, const Color(0xFF000000));
+  group('the global theme', () {
+    test('is now LIGHT — the dark default was the root cause', () {
+      final theme = ZitlasTheme.light;
+      expect(theme.brightness, Brightness.light);
+      // These previously asserted white-on-black and were the guard on a
+      // decision to fix this screen only. That decision was superseded: the
+      // dark default was making every unstyled Text white on a light
+      // surface, so the default itself moved. theme_contrast_test.dart owns
+      // the readability contract now.
+      expect(theme.textTheme.bodyLarge?.color, ZitlasTokens.textPrimary);
+      expect(theme.canvasColor, ZitlasTokens.bgPrimary);
     });
   });
 
@@ -178,14 +186,13 @@ void main() {
     });
   });
 
-  group('the fix is local, not global', () {
-    testWidgets('the screen is readable even though the theme stays dark',
+  group('the local colours still hold', () {
+    testWidgets('the field states its own colour, not just the theme default',
         (tester) async {
       await _openNewConversationSheet(tester);
-      // Proves the readability comes from the widgets themselves: the theme
-      // pumped above still reports white bodyLarge and a black canvas.
-      expect(ZitlasTheme.dark.textTheme.bodyLarge?.color,
-          const Color(0xFFFFFFFF));
+      // The point of this one is that readability comes from the WIDGET, so
+      // it survives whatever the global theme does next — which is precisely
+      // why it kept passing when the theme flipped from dark to light.
       final e = tester.widgetList<EditableText>(find.byType(EditableText)).first;
       expect(e.style.color, ZitlasTokens.textPrimary);
     });
