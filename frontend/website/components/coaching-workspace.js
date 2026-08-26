@@ -485,10 +485,20 @@
       .onSnapshot(function (snap) {
         S.plan = snap.exists ? snap.data() : null;
         S.planLoaded = true;
+        var _sd = S.plan && S.plan.diet, _st = S.plan && S.plan.training;
         console.log('[CW] plan snapshot — diet days:',
-          S.plan && S.plan.diet && S.plan.diet.days ? S.plan.diet.days.length : 0,
+          _sd && _sd.days ? _sd.days.length : 0,
           '| training days:',
-          S.plan && S.plan.training && S.plan.training.days ? S.plan.training.days.length : 0);
+          _st && _st.days ? _st.days.length : 0);
+        /* RELOAD RESULT. A coach plan is only shown when it carries the
+           athlete's CURRENT planId (coachPlanIsCurrent), so "saved but not
+           showing" and "never saved" look identical without this. */
+        console.log('[CW TRAINING RELOAD] athleteId=' + S.opts.athleteId +
+          ' savedPlanId=' + (_st && _st.planId) +
+          ' athletePlanId=' + (athleteCtx().planId) +
+          ' current=' + (_st ? coachPlanIsCurrent(_st) : false) +
+          ' trainingUpdatedAt=' + (S.plan && S.plan.trainingUpdatedAt) +
+          ' trainingVersion=' + (S.plan && S.plan.trainingVersion));
         renderHeader();
         /* Never clobber an editor mid-edit; viewers always refresh */
         if (S.tab === 'diet' && !S.dietDirty) renderTab();
@@ -2075,6 +2085,23 @@
 
     /* Goal-identity stamp — same contract as saveDiet() */
     draft.planId = athleteCtx().planId || null;
+
+    /* WHAT IS ACTUALLY BEING SAVED. `coaching_plans/{uid}.training` was
+       reported empty in the field; these lines say whether the collector
+       produced days at all, so an empty save is distinguishable from a
+       failed one without guessing. */
+    var _tDays = (draft && draft.days) || [];
+    console.log('[CW TRAINING SAVE] athleteId=' + S.opts.athleteId +
+      ' planId=' + draft.planId +
+      ' dayCount=' + _tDays.length +
+      ' dayKeys=' + JSON.stringify(_tDays.map(function (x) { return x && x.day; })) +
+      ' withExercises=' + _tDays.filter(function (x) {
+        return x && x.exercises && x.exercises.length; }).length +
+      ' auto=' + !!isAuto);
+    if (!_tDays.length) {
+      console.warn('[CW TRAINING SAVE] the collected plan has NO days — ' +
+        'saving it would blank the coach plan');
+    }
 
     var savedVersion;
     d.runTransaction(function (tx) {

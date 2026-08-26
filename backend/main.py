@@ -363,5 +363,36 @@ else:
     # website matter more than one internal tool being reachable.
     print(f"[STARTUP] admin portal directory missing, /admin/ not mounted: {_ADMIN_DIR}")
 
+# ── Cache policy for the website ─────────────────────────────────────────────
+# WHY THIS EXISTS. StaticFiles sends an ETag and Last-Modified but NO
+# Cache-Control. With no explicit policy a client is free to apply HEURISTIC
+# caching — commonly a fraction of the document's age — and serve a stale copy
+# WITHOUT revalidating. The Android WebView that renders the coaching workspace
+# does exactly that, which is how a deployed fix kept not reaching the device:
+# the server had the new JavaScript, the phone kept running the old file, and
+# the `?v=` query on the script tag cannot help when the HTML naming that query
+# is itself the thing being served from cache.
+#
+# `no-cache` does NOT mean "do not store" — it means "revalidate before use".
+# The ETag above is what makes that cheap: an unchanged file answers 304 with
+# no body, so this costs one conditional request per asset, not a re-download.
+#
+# Deliberately applied to HTML/JS/CSS only. Images, fonts and uploaded media
+# keep the default so they are still cached freely; they are content that does
+# not change under a fixed URL.
+_REVALIDATE_SUFFIXES = (".html", ".js", ".css", ".mjs")
+
+
+@app.middleware("http")
+async def _no_stale_frontend(request, call_next):
+    response = await call_next(request)
+    path = request.url.path.lower()
+    if path.endswith(_REVALIDATE_SUFFIXES) or path.endswith("/"):
+        # must-revalidate so a stale entry can never be reused after an
+        # error/offline moment either.
+        response.headers["Cache-Control"] = "no-cache, must-revalidate"
+    return response
+
+
 # ── Serve frontend (must be last — catches everything else) ───────────────────
 app.mount("/", StaticFiles(directory=str(FRONTEND_DIR)), name="frontend")
