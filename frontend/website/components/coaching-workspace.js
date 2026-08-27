@@ -2733,6 +2733,57 @@
   /* ══════════════════════════════════════════════
      EXPORT
   ══════════════════════════════════════════════ */
+  /* ══════════════════════════════════════════════
+     ANDROID BACK — the level the app could not see
+     ══════════════════════════════════════════════
+     The coaching workspace navigates ENTIRELY inside one HTML page: opening
+     an athlete, switching tab and opening a meal sheet are JS state, and
+     expert-dashboard.js deliberately uses history.replaceState (never
+     pushState) so tab clicks do not pollute history.
+
+     So the WebView has NO history entries for any of it: canGoBack() is
+     false and the path never changes. The Flutter host therefore saw "no
+     history, at root" and treated ONE back press as "leave the coaching
+     surface" — from a meal sheet, Back closed the entire expert section.
+
+     `ZitlasBack.handle()` gives the host the missing step. It returns the
+     level it consumed, or 'none' when the page genuinely has nothing left to
+     unwind, at which point the host falls through to WebView history, then
+     to the Flutter route stack. Deepest level first, one per press. */
+  win.ZitlasBack = win.ZitlasBack || {
+    _handlers: [],
+    /* Later registrations are asked FIRST, so a page layered on top of the
+       workspace unwinds before the workspace does. */
+    register: function (fn) { this._handlers.push(fn); },
+    handle: function () {
+      for (var i = this._handlers.length - 1; i >= 0; i--) {
+        try {
+          var consumed = this._handlers[i]();
+          if (consumed && consumed !== 'none') return String(consumed);
+        } catch (e) {
+          /* A throwing handler must not trap the user on the screen. */
+          if (win.console) console.warn('[BACK] handler failed', e);
+        }
+      }
+      return 'none';
+    },
+  };
+
+  win.ZitlasBack.register(function () {
+    /* 1. A sheet is the deepest level — meal review, versions, swap, ask. */
+    var bd = document.getElementById('cwSheetBackdrop');
+    if (bd && bd.classList.contains('open')) {
+      closeSheet();
+      return 'sheet';
+    }
+    /* 2. Then the workspace itself, back to the roster underneath. */
+    if (S.open) {
+      close();
+      return 'workspace';
+    }
+    return 'none';
+  });
+
   win.ZitlasCoachingWorkspace = {
     open: open,
     close: close,

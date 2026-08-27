@@ -5,6 +5,7 @@ import 'dart:ui' show ImageFilter;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -432,6 +433,39 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
     router.go('/login');
   }
 
+  /// Asks the page to unwind ONE of its own levels.
+  ///
+  /// The coaching pages expose `window.ZitlasBack.handle()`, which closes the
+  /// deepest thing open (a sheet, then the workspace) and returns the level it
+  /// consumed, or `'none'`. See the registry in
+  /// `components/coaching-workspace.js`.
+  ///
+  /// Returns false — letting the caller fall through to WebView history and
+  /// then the Flutter route stack — whenever the page has nothing to unwind,
+  /// does not define the hook (an older deployed build, or a coaching page
+  /// that never loaded it), or fails to answer. Never trapping the user on a
+  /// screen matters more than consuming the press.
+  Future<bool> _pageHandledBack() async {
+    try {
+      final raw = await _controller.runJavaScriptReturningResult(
+        "(function () {"
+        "  try {"
+        "    return (window.ZitlasBack && window.ZitlasBack.handle)"
+        "      ? window.ZitlasBack.handle() : 'none';"
+        "  } catch (e) { return 'none'; }"
+        "})();",
+      );
+      // Android returns a JSON-encoded string, so '"sheet"' with the quotes.
+      final level = raw.toString().replaceAll('"', '').trim();
+      final handled = level.isNotEmpty && level != 'none' && level != 'null';
+      if (handled) _log('STEP back — page consumed one level ($level)');
+      return handled;
+    } catch (e) {
+      _log('STEP back — page hook unavailable ($e), falling through');
+      return false;
+    }
+  }
+
   /// Leaves this screen safely: pops if there is a route underneath (the
   /// normal case — this screen was pushed from the native Experts list),
   /// otherwise goes to the dashboard so GoRouter is never left with zero
@@ -451,8 +485,62 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
     // or assumed value.
     final isExpert = context.read<AuthState>().profile?.resolvedRole == 'expert';
     final fallback = isExpert ? '/expert-dashboard' : '/dashboard';
+
+    // ALREADY THERE. An expert who signed in lands on /expert-dashboard via
+    // go(), so there is nothing to pop AND the fallback is this very screen.
+    // Navigating to it re-entered the same route, which made Back look
+    // completely dead: press after press, nothing moved. This IS the root of
+    // the app for an expert, so behave like one — the same exit confirmation
+    // the athlete shell gives at Home, rather than a silent no-op or a
+    // redirect loop.
+    final here = router.routerDelegate.currentConfiguration.uri.path;
+    if (here == fallback) {
+      _log('STEP leave-screen — at the expert root, confirming exit');
+      _confirmExitApp();
+      return;
+    }
+
     _log('STEP leave-screen — nothing to pop, role-aware fallback -> $fallback');
     router.go(fallback);
+  }
+
+  /// Latched so repeated back presses cannot stack dialogs. Mirrors
+  /// `AppShell._confirmExitApp` — an expert never enters the athlete shell, so
+  /// this screen is their app root and has to answer Back the same way.
+  bool _exitDialogOpen = false;
+
+  Future<void> _confirmExitApp() async {
+    if (_exitDialogOpen || !mounted) return;
+    _exitDialogOpen = true;
+    try {
+      final leave = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text(
+            'Exit ZITLAS?',
+            style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+          ),
+          content: const Text(
+            'You’re at the start of the app. Going back again will close ZITLAS.',
+            style: TextStyle(fontSize: 13, height: 1.45),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Exit',
+                  style: TextStyle(fontWeight: FontWeight.w800)),
+            ),
+          ],
+        ),
+      );
+      if (leave == true) await SystemNavigator.pop();
+    } finally {
+      _exitDialogOpen = false;
+    }
   }
 
 
@@ -649,6 +737,24 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
         // Capture the router BEFORE the await — never touch BuildContext
         // across an async gap.
         final router = GoRouter.of(context);
+
+        // 0) THE PAGE'S OWN LEVELS, FIRST.
+        //
+        //    The coaching workspace navigates entirely INSIDE one HTML page:
+        //    opening an athlete, switching tab and opening a meal sheet are
+        //    JS state, and expert-dashboard.js uses history.replaceState
+        //    (never pushState) on purpose so tab clicks do not pollute
+        //    history. So none of it produces a WebView history entry:
+        //    canGoBack() is false and the path never changes.
+        //
+        //    Without this step the checks below saw "no history, at root" and
+        //    treated ONE press as "leave coaching" — from an open meal sheet,
+        //    Back closed the whole expert section. Ask the page to unwind one
+        //    level; it answers with the level it consumed, or 'none'.
+        final consumed = await _pageHandledBack();
+        if (consumed) return;
+
+        if (!mounted) return;
         // 1) INTERNAL coaching navigation (profile -> request -> payment ->
         //    active coaching -> diet/training/chat…): walk the website's own
         //    history, which feels native and preserves the flow.
