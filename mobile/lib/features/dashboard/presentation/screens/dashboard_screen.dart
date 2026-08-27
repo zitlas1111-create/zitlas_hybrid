@@ -21,7 +21,6 @@ import '../widgets/quick_stats_row.dart';
 import '../widgets/recent_chats_card.dart';
 import '../widgets/swot_widget_card.dart';
 import '../widgets/training_widget_card.dart';
-import '../widgets/wellness_card.dart';
 
 /// Native rebuild of `frontend/pages/dashboard/dashboard.html` +
 /// `dashboard.js` + `dashboard.css` — the real Athlete Home dashboard,
@@ -192,8 +191,9 @@ class _DashboardBodyState extends State<_DashboardBody> with WidgetsBindingObser
                           ),
                           const SizedBox(height: 16),
                           DailyScoreCard(),
-                          SizedBox(height: 16),
-                          WellnessCard(),
+                          // Daily Wellness removed. Its trailing SizedBox went
+                          // with it — leaving both would have left a 32px gap
+                          // where the card used to be.
                           SizedBox(height: 16),
                           TrainingWidgetCard(),
                           SizedBox(height: 16),

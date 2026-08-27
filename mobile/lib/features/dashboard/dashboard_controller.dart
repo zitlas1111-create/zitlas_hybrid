@@ -12,7 +12,6 @@ import 'models/activity_week.dart';
 import 'models/daily_score.dart';
 import 'models/goal_model.dart';
 import 'models/health_status.dart';
-import 'models/weight_entry.dart';
 import '../membership/data/entitlements_repository.dart';
 
 /// Aggregates every Dashboard data source and exposes plain fields for the
@@ -109,9 +108,6 @@ class DashboardController extends ChangeNotifier {
 
   /// Whether the athlete has opted into step tracking.
   bool get stepTrackingEnabled => _steps.isEnabled;
-
-  bool weightLoading = true;
-  List<WeightEntry> weightHistory = const [];
 
   double? mealScoreAvg;
   bool hasActiveCoaching = false;
@@ -257,7 +253,6 @@ class DashboardController extends ChangeNotifier {
       _loadActivity(),
       _loadActivityHistory(),
       _loadHealthStatus(),
-      _loadWeightHistory(),
       _loadMealScore(),
       _loadCoachingStatus(),
     ]);
@@ -300,17 +295,6 @@ class DashboardController extends ChangeNotifier {
     dailyStepGoal = goal;
     _safeNotify();
     await _loadActivity();
-  }
-
-  Future<void> _loadWeightHistory() async {
-    try {
-      weightHistory = await _repository.fetchWeightHistory(uid);
-    } catch (_) {
-      weightHistory = const [];
-    } finally {
-      weightLoading = false;
-      _safeNotify();
-    }
   }
 
   Future<void> _loadMealScore() async {
@@ -542,7 +526,6 @@ class DashboardController extends ChangeNotifier {
   /// (user doc, unread count) don't need re-subscribing.
   Future<void> refresh() async {
     activityLoading = true;
-    weightLoading = true;
     _safeNotify();
     await _loadOneTimeSections();
     await refreshSteps();
@@ -679,21 +662,6 @@ class DashboardController extends ChangeNotifier {
     if (!outcome.allowed) return outcome;
     await _repository.resetGoal(uid);
     return outcome;
-  }
-
-  Future<void> logWater(int deltaMl) async {
-    await _repository.logWater(uid, deltaMl);
-    await _loadActivity();
-  }
-
-  Future<void> logSleep(double hours) async {
-    await _repository.logSleep(uid, hours);
-    await _loadActivity();
-  }
-
-  Future<void> logWeight(double kg) async {
-    await _repository.logWeight(uid, kg);
-    await _loadWeightHistory();
   }
 
   void _safeNotify() {
