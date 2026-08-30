@@ -62,18 +62,72 @@ abstract final class NotificationRouter {
       remember(payload);
       return;
     }
+    // Logged on release builds: a tap that lands on the wrong screen is
+    // reported from a real phone running a release APK, and a debug-only line
+    // is invisible exactly when it is needed. Ids only — never the body, which
+    // can carry an expert's private feedback.
+    debugPrint('[NOTIFY] notification tap type=${payload.type}');
+    if (payload.deepLink != null) {
+      debugPrint('[NOTIFY] deepLink=${payload.deepLink}');
+    }
     final destination = destinationFor(payload);
     if (destination == null) {
-      if (kDebugMode) debugPrint('[NOTIF ROUTER] no destination for ${payload.type}');
+      debugPrint('[NOTIFY] no destination for type=${payload.type}');
       return;
     }
-    if (kDebugMode) {
-      debugPrint('[NOTIF ROUTER] ${payload.type} -> $destination');
+    if (payload.mealId != null) {
+      debugPrint('[NOTIFY] opening meal review mealId=${payload.mealId}');
     }
+    debugPrint('[NOTIFY] navigating type=${payload.type} -> $destination');
     try {
       GoRouter.of(context).push(destination);
     } catch (e) {
       if (kDebugMode) debugPrint('[NOTIF ROUTER] navigation failed: $e');
+    }
+  }
+
+  /// Translates a `zitlas://…` deep link into an in-app route, or null when
+  /// there is nothing usable to translate.
+  ///
+  /// Deliberately a TRANSLATION and not a redirect. The same meal review opens
+  /// in two different places depending on who tapped it — the athlete in their
+  /// coach's workspace, the expert in their own dashboard — and the server
+  /// cannot know which device it landed on. Resolving that here also means a
+  /// malformed or hostile link can never navigate anywhere the type switch
+  /// would not have gone anyway.
+  static String? _fromDeepLink(NotificationPayload p, {required bool isCoach}) {
+    final raw = p.deepLink;
+    if (raw == null || raw.isEmpty) return null;
+
+    final uri = Uri.tryParse(raw);
+    if (uri == null || uri.scheme != 'zitlas') return null;
+
+    switch (uri.host) {
+      case 'meal-review':
+        // zitlas://meal-review/<checkinId>
+        //
+        // The id comes from the PAYLOAD, not from the link path: the path is
+        // only ever as trustworthy as the string the server built, while
+        // mealId/mealCheckinId are the fields every other consumer already
+        // reads. `cwCheckin` is what makes the exact meal open instead of
+        // just the list — the workspace holds it until meal_checkins loads.
+        final meal = p.mealId;
+        final mealParam = meal == null ? '' : '&cwCheckin=$meal';
+        if (isCoach) {
+          final athlete = p.athleteId ?? p.counterpartId ?? p.senderId;
+          return athlete != null
+              ? '/expert-dashboard?cwAthlete=$athlete&cwTab=checkins$mealParam'
+              : '/expert-dashboard';
+        }
+        final coach = p.coachId ?? p.counterpartId ?? p.senderId;
+        return coach != null
+            ? '/coach-profile/$coach?cwTab=checkins$mealParam'
+            : '/diet';
+
+      default:
+        // A link shape this build does not know. Falling through to the type
+        // switch is what lets the backend ship a new one first.
+        return null;
     }
   }
 
@@ -83,6 +137,17 @@ abstract final class NotificationRouter {
   /// widget tree — see test/notification_router_test.dart.
   static String? destinationFor(NotificationPayload p) {
     final isCoach = p.recipientRole == 'coach';
+
+    // `deepLink` (zitlas://…) is what the backend templates now send, and it
+    // names the destination directly instead of making the client re-derive
+    // it from loose ids. It is translated rather than trusted verbatim: the
+    // in-app route depends on WHO is looking (an expert and an athlete open a
+    // meal review from different sides), which a single server-side string
+    // cannot know. Unknown or malformed links fall through to the type switch
+    // below, so a new link shape can ship on the backend before the app that
+    // understands it exists.
+    final viaLink = _fromDeepLink(p, isCoach: isCoach);
+    if (viaLink != null) return viaLink;
 
     switch (p.type) {
       // ── Chat ────────────────────────────────────────────────────────────
@@ -95,12 +160,36 @@ abstract final class NotificationRouter {
         return coach != null ? '/coach-profile/$coach?action=ask' : '/experts';
 
       // ── Meal reviews ────────────────────────────────────────────────────
+      //
+      // Both sides land on the Meal Reviews tab of the coaching workspace —
+      // the screen the notification is actually ABOUT. These used to stop at
+      // the dashboard and at /diet, leaving the user to find the meal
+      // themselves; /diet in particular shows the plan, not the coach's
+      // feedback, so the one thing the notification promised was the one
+      // thing the destination did not contain.
+      //
+      // `cwAthlete`/`cwTab` are the query params the website's own
+      // refresh-restore already understands (expert-dashboard.js
+      // _restorePendingWorkspace, cprofile.js's onSnapshot restore hook), so
+      // this needs nothing new deployed. Both re-read `personal_coaching`
+      // and fail closed on an ended or foreign relationship, which is why it
+      // is safe to build these from payload values.
       case 'meal_review_pending': // coach: an athlete sent a meal
       case 'meal_checkin':
-        return '/expert-dashboard';
+        final athlete = p.athleteId ?? p.counterpartId ?? p.senderId;
+        final pendingMeal = p.mealId == null ? '' : '&cwCheckin=${p.mealId}';
+        return athlete != null
+            ? '/expert-dashboard?cwAthlete=$athlete&cwTab=checkins$pendingMeal'
+            : '/expert-dashboard';
       case 'meal_review_completed': // athlete: the coach rated it
       case 'meal_reviewed':
-        return '/diet';
+        // Without a coach there is no workspace to open, and /diet remains
+        // the closest useful screen rather than a dead end.
+        final coach = p.coachId ?? p.counterpartId ?? p.senderId;
+        final ratedMeal = p.mealId == null ? '' : '&cwCheckin=${p.mealId}';
+        return coach != null
+            ? '/coach-profile/$coach?cwTab=checkins$ratedMeal'
+            : '/diet';
 
       // ── Plans ───────────────────────────────────────────────────────────
       // `_modified` and `_updated` are the same event under two names: the

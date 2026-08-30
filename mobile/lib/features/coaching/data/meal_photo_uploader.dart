@@ -163,20 +163,27 @@ class MealPhotoUploader {
       final url = await _toFirebaseStorage(photo.bytes, pathPrefix).timeout(_storageTimeout);
       if (kDebugMode) debugPrint('[MEAL UPLOAD] Firebase Storage OK');
       return url;
-    } catch (e) {
+    } catch (e, st) {
+      // NOT behind kDebugMode. On the release build the athlete installs,
+      // kDebugMode is false — so the real exception was never printed
+      // anywhere and "Photo storage is unavailable" was the ONLY evidence
+      // that existed. A FirebaseException's `code` (unauthorized /
+      // object-not-found / retry-limit-exceeded / unknown) is the single
+      // most useful field here, so it is named explicitly.
+      final code = e is FirebaseException ? e.code : e.runtimeType.toString();
+      final detail = e is FirebaseException ? (e.message ?? '') : e.toString();
+      debugPrint('[MEAL PHOTO] upload FAILED code=$code detail=$detail');
+      if (e is! FirebaseException) debugPrint('[MEAL PHOTO] stack: $st');
+
       if (requireDurable) {
         // Deliberately NOT falling back — see the class doc. The ephemeral
         // fallback is what turns a Storage outage into a permanently broken
         // record days later.
-        if (kDebugMode) {
-          debugPrint('[MEAL UPLOAD] Firebase Storage failed ($e) — durable '
-              'storage required, NOT falling back to ephemeral disk');
-        }
+        debugPrint('[MEAL PHOTO] durable storage required — NOT falling back '
+            'to ephemeral disk');
         throw Exception(durableUploadFailed);
       }
-      if (kDebugMode) {
-        debugPrint('[MEAL UPLOAD] Firebase Storage failed ($e) — falling back to backend');
-      }
+      debugPrint('[MEAL PHOTO] falling back to backend upload');
     }
 
     final url = await _toBackend(photo).timeout(_backendTimeout);
@@ -197,14 +204,33 @@ class MealPhotoUploader {
 
   Future<String> _toFirebaseStorage(Uint8List bytes, String pathPrefix) async {
     final storage = _storage ?? FirebaseStorage.instance;
-    final uid = _auth.currentUser?.uid ?? 'anon';
+
+    // NO 'anon' FALLBACK. storage.rules scopes every write to
+    // `meal_checkins/{uid}` with isUser(uid), so uploading as 'anon' could
+    // only ever be rejected — and it surfaced as an opaque
+    // "storage unavailable" instead of naming the real problem, which is
+    // that there is no signed-in user to attribute the photo to.
+    final uid = _auth.currentUser?.uid;
+    if (uid == null || uid.isEmpty) {
+      debugPrint('[MEAL PHOTO] no signed-in user — cannot attribute the photo');
+      throw StateError('not_signed_in');
+    }
+
     final stamp = DateTime.now().millisecondsSinceEpoch;
     final rand = (stamp % 100000).toRadixString(36);
     final path = '$pathPrefix/$uid/${stamp}_$rand.jpg';
 
+    debugPrint('[MEAL PHOTO] bucket=${storage.bucket} path=$path '
+        'bytes=${bytes.length}');
+    debugPrint('[MEAL PHOTO] upload started');
+
     final ref = storage.ref().child(path);
     await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
-    return ref.getDownloadURL();
+    debugPrint('[MEAL PHOTO] upload completed');
+
+    final url = await ref.getDownloadURL();
+    debugPrint('[MEAL PHOTO] download URL obtained');
+    return url;
   }
 
   Future<String> _toBackend(PreparedMealPhoto photo) async {

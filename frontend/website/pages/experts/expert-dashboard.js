@@ -114,7 +114,7 @@ function _cwClearUrlParams() {
 /* Open the shared Coaching Workspace (components/coaching-workspace.js) for
    an ACTIVE coaching client. Falls back to the normal chat overlay when the
    module is unavailable so the button never dead-ends. */
-function openCoachWorkspace(rel, initialTab) {
+function openCoachWorkspace(rel, initialTab, initialCheckinId) {
   if (!rel) return;
   if (typeof ZitlasCoachingWorkspace === 'undefined') {
     openExpertChat('chat_' + rel.athleteId + '_' + rel.coachId, rel.athleteName || 'Athlete');
@@ -136,6 +136,9 @@ function openCoachWorkspace(rel, initialTab) {
     endDate:     rel.endDate,
     status:      rel.status,
     initialTab:  tab,
+    /* Set only by a notification tap (?cwCheckin=). The workspace holds it
+       until the meal_checkins snapshot arrives, then opens that one meal. */
+    initialCheckinId: initialCheckinId || null,
     onTabChange: function (t) { _cwSetUrlParams(rel.athleteId, t); },
     onClose:     function () { _cwClearUrlParams(); },
   });
@@ -5374,6 +5377,9 @@ function _restorePendingWorkspace(expert) {
   _restorePendingWorkspace._done = true;
 
   var tab = url.searchParams.get('cwTab') || 'overview';
+  /* The meal a notification pointed at — a hint only. The ownership and
+     lifecycle re-validation below still decides whether anything opens. */
+  var checkinId = url.searchParams.get('cwCheckin');
   var uid = (typeof ZitlasAuth !== 'undefined' && ZitlasAuth.currentUser)
     ? ZitlasAuth.currentUser.uid : (expert && expert.id);
   if (!uid || typeof ZitlasDB === 'undefined' || typeof ZitlasCoachingWorkspace === 'undefined') {
@@ -5394,7 +5400,7 @@ function _restorePendingWorkspace(expert) {
        (which is itself lifecycle-filtered) never offered in the first
        place. */
     if (rel.coachId !== uid || !isActive) { _cwClearUrlParams(); return; }
-    openCoachWorkspace(rel, tab);
+    openCoachWorkspace(rel, tab, checkinId);
   }).catch(function (e) {
     console.warn('[CW] restore-on-refresh lookup failed', e);
     _cwClearUrlParams();

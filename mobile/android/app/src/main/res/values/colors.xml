@@ -4,4 +4,9 @@
     <!-- Must equal ZitlasColors.bgPrimary in lib/app/theme.dart so the native
          pre-Flutter launch frame and the Dart splash are the same colour. -->
     <color name="zitlas_splash_bg">#000000</color>
+    <!-- Tint Android fills the notification small-icon silhouette with, and
+         the accent it draws on the shade entry. ZITLAS green (#16A34A) — the
+         brand accent from lib/app/theme.dart. Referenced from AndroidManifest
+         (default_notification_color) and FcmService's notification details. -->
+    <color name="zitlas_notification">#16A34A</color>
 </resources>

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -124,6 +126,45 @@ abstract final class _PresenceBootstrap {
   }
 }
 
+/// Refreshes the signed-in device's `lastActiveAt` whenever the app returns to
+/// the foreground.
+///
+/// Only `resumed` is acted on. `inactive` fires for the notification shade and
+/// the app switcher — acting on it would write on every glance — and the
+/// pause/detach side needs no write at all: the value records when the device
+/// was last SEEN, so not updating it is exactly right once the app is away.
+class _ActiveDeviceTouch with WidgetsBindingObserver {
+  String? _uid;
+  FcmService? _service;
+  bool _attached = false;
+
+  void start(String uid, FcmService service) {
+    _uid = uid;
+    _service = service;
+    if (_attached) return;
+    _attached = true;
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  void stop() {
+    _uid = null;
+    if (!_attached) return;
+    _attached = false;
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    final uid = _uid;
+    final service = _service;
+    if (uid == null || service == null) return;
+    // Best-effort and unawaited: a failed timestamp must never delay the
+    // frame the user is waiting for.
+    unawaited(service.touchActive(uid));
+  }
+}
+
 /// Fires `FcmService.initForUser()` exactly once per newly-authenticated
 /// uid — NOT at splash, only once [AuthState] actually resolves to
 /// `authenticated` — mirroring `push-notifications.js`'s "only after login"
@@ -149,10 +190,32 @@ abstract final class _FcmBootstrap {
   static bool _listenersAttached = false;
   static final FcmService _service = FcmService(firestore: FirebaseFirestore.instance);
 
+  /// Keeps `lastActiveAt` current on the signed-in device's registry row.
+  ///
+  /// Registration alone stamps when a SESSION STARTED, which cannot tell a
+  /// phone in daily use apart from one that signed in months ago and was
+  /// never opened again — both look identical to anything sweeping stale
+  /// devices. One write per foreground is enough to order devices by
+  /// recency, and deliberately not a heartbeat.
+  ///
+  /// Lives here rather than in PresenceService: presence answers "is this
+  /// user online right now" for the UI, notification targeting answers "is
+  /// this device still real", and wiring one into the other would mean a
+  /// change to either silently moves the other.
+  static final _ActiveDeviceTouch _touch = _ActiveDeviceTouch();
+
   static void maybeInit(AuthState authState) {
     _attachListeners();
     if (authState.status != AuthStatus.authenticated) {
       _role = null;
+      // Release the latch too. It exists to stop initForUser() re-running on
+      // every AuthState rebuild, but being static it used to survive sign-out:
+      // logging back into the SAME account without killing the app hit
+      // `uid == _initializedForUid` and skipped registration entirely, so the
+      // session that had just tombstoned its token never re-enabled it and
+      // that account received no push at all until the process restarted.
+      _initializedForUid = null;
+      _touch.stop();
       return;
     }
     _role = authState.profile?.resolvedRole;
@@ -162,6 +225,7 @@ abstract final class _FcmBootstrap {
     _service.initForUser(uid).catchError((Object e) {
       if (kDebugMode) debugPrint('[FCM] init failed: $e');
     });
+    _touch.start(uid, _service);
     // A cold start FROM a notification can only navigate once the session is
     // real AND the splash has released the route.
     if (NotificationRouter.hasPending) _consumePendingWhenReady();

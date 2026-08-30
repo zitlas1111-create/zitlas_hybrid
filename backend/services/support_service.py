@@ -139,6 +139,64 @@ def is_configured() -> bool:
     return bool(sender and password)
 
 
+# ── IMAP auth backoff ────────────────────────────────────────────────────────
+# The poller runs every SUPPORT_IMAP_POLL_SECONDS (default 60). An
+# [AUTHENTICATIONFAILED] is NOT transient — a wrong app password stays wrong —
+# so retrying it every minute produced one identical log line per minute
+# forever, which is what buried real errors in the Railway logs.
+#
+# Deliberately NOT silenced: the first failure still prints in full, and the
+# backoff itself is announced. After that the poll is SKIPPED (no connection
+# attempted, no log) until the delay elapses, doubling 1 -> 2 -> 4 … up to
+# _AUTH_BACKOFF_MAX. Any successful poll clears it, so fixing the credential
+# recovers on the next tick without a redeploy.
+_AUTH_BACKOFF_MAX = 3600.0  # an hour between complaints, at most
+_auth_failures = 0
+_auth_retry_after = 0.0
+
+
+def _auth_backoff_active() -> bool:
+    """True while a previous auth failure is still being backed off."""
+    return _auth_retry_after > time.monotonic()
+
+
+def _note_auth_failure() -> None:
+    global _auth_failures, _auth_retry_after
+    _auth_failures += 1
+    delay = min(_AUTH_BACKOFF_MAX, 60.0 * (2 ** (_auth_failures - 1)))
+    _auth_retry_after = time.monotonic() + delay
+    print(f"[SUPPORT] IMAP credentials rejected ({_auth_failures}x). This does "
+          f"not fix itself by retrying — check SUPPORT_EMAIL / "
+          f"SUPPORT_EMAIL_PASSWORD. Pausing IMAP polling for "
+          f"{int(delay)}s; a successful poll clears it.")
+
+
+def _clear_auth_backoff() -> None:
+    global _auth_failures, _auth_retry_after
+    if _auth_failures:
+        print("[SUPPORT] IMAP credentials accepted again — backoff cleared.")
+    _auth_failures = 0
+    _auth_retry_after = 0.0
+
+
+def reset_auth_backoff() -> None:
+    """Clear the backoff. Module-level state survives between polls by design
+    (that is the whole point), which also means it survives between TESTS —
+    one test simulating a rejected credential would otherwise suppress every
+    later poll in the same process. Tests reset it; production never calls it.
+    """
+    global _auth_failures, _auth_retry_after
+    _auth_failures = 0
+    _auth_retry_after = 0.0
+
+
+def _looks_like_auth_failure(text: str) -> bool:
+    low = (text or "").lower()
+    return ("authenticationfailed" in low
+            or "invalid credentials" in low
+            or "authentication failed" in low)
+
+
 def _redact(text: str) -> str:
     """Scrub the app password (spaced or unspaced) out of arbitrary text.
 
@@ -627,6 +685,13 @@ def ingest_replies(db=None, *, limit: int = 50) -> dict[str, Any]:
 
     summary: dict[str, Any] = {"scanned": 0, "imported": 0, "skipped": 0, "errors": 0}
 
+    # A rejected credential is not transient. Skip the round trip entirely
+    # while backed off — no connection, no log line — rather than repeating
+    # the same failure every minute. See _note_auth_failure.
+    if _auth_backoff_active():
+        summary["skipped_reason"] = "imap_auth_backoff"
+        return summary
+
     db = db or firestore_service.get_client()
     if db is None:
         summary["error"] = "firestore_unavailable"
@@ -721,7 +786,17 @@ def ingest_replies(db=None, *, limit: int = 50) -> dict[str, Any]:
     except Exception as exc:
         summary["errors"] += 1
         summary["error"] = _redact(f"{type(exc).__name__}: {exc}")
-        print(f"[SUPPORT] IMAP poll failed: {summary['error']}")
+        # An auth rejection gets ONE full line plus a backoff notice; anything
+        # else (network blip, mailbox hiccup) still logs every time, because
+        # those genuinely are worth seeing per-occurrence.
+        if _looks_like_auth_failure(summary["error"]):
+            print(f"[SUPPORT] IMAP poll failed: {summary['error']}")
+            _note_auth_failure()
+        else:
+            print(f"[SUPPORT] IMAP poll failed: {summary['error']}")
+    else:
+        # Reached only when the try block completed — the credential worked.
+        _clear_auth_backoff()
     finally:
         if conn is not None:
             try:

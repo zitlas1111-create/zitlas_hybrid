@@ -343,6 +343,12 @@
     ensureDom();
     S.opts = opts;
     S.tab = opts.initialTab || 'overview';
+    /* A notification tap names ONE meal, not just the tab. Held until the
+       meal_checkins snapshot arrives (S.checkins is empty right now — the
+       listener below has not fired yet), then consumed exactly once by
+       _cwOpenPendingCheckin. One-shot so it cannot re-open the sheet every
+       time a later snapshot lands, which would trap the user in it. */
+    S.pendingCheckinId = opts.initialCheckinId || null;
     S.dayIdx = todayIdx();
     S.dietDraft = null; S.dietDirty = false; S.dietDraftSeeded = false; S.dietEditGen = 0;
     S.trainDraft = null; S.trainDirty = false; S.trainDraftSeeded = false; S.trainEditGen = 0;
@@ -562,6 +568,7 @@
         S.checkins = rawDocs
           .filter(function (c) { return c.coachId === S.opts.coachId; })
           .sort(function (a, b) { return (b.timestamp || '') < (a.timestamp || '') ? -1 : 1; });
+        _cwOpenPendingCheckin();
         var pending = S.checkins.filter(function (c) { return c.status === 'pending'; }).length;
         if (S.opts.role === 'coach') {
           // documentsFound = what the QUERY returned (athleteId match only,
@@ -2393,6 +2400,44 @@
         if (c) openCheckinReviewSheet(c);
       });
     });
+  }
+
+  /* Opens the one meal a notification pointed at, once its data has loaded.
+
+     Deliberately driven off the snapshot rather than called from open():
+     S.checkins is empty at open() time, so looking the meal up there always
+     failed and the user landed on the list. Clearing S.pendingCheckinId
+     BEFORE opening makes this strictly one-shot — a later snapshot (a rating
+     saved, a new meal arriving) must not yank the sheet open again.
+
+     A meal that is not in the list is not an error: the id may be stale, or
+     belong to a relationship that has since ended. The user simply stays on
+     the Meal Reviews tab, which is where they wanted to be anyway. */
+  function _cwOpenPendingCheckin() {
+    var wanted = S.pendingCheckinId;
+    if (!wanted) return;
+
+    /* An EMPTY list is not an answer. A fresh onSnapshot listener can deliver
+       a cached, empty result before the server's, and giving up on that first
+       firing would clear the id moments before the real data arrives — the
+       meal would then never open, which is the exact failure this whole
+       mechanism exists to avoid. Keep holding; the next snapshot decides. */
+    if (!S.checkins.length) return;
+
+    var c = S.checkins.find(function (x) { return x.checkinId === wanted; });
+    if (!c) {
+      /* The list is populated and the meal is not in it: a stale id, or a
+         relationship that has since ended. Not an error — the user stays on
+         the Meal Reviews tab, which is where they were headed anyway. */
+      console.log('[CW] pending meal ' + wanted + ' not in this list — staying on the tab');
+      S.pendingCheckinId = null;
+      return;
+    }
+    /* Cleared BEFORE opening, so a sheet that throws cannot leave the id set
+       and retry on every future snapshot. */
+    S.pendingCheckinId = null;
+    console.log('[CW] opening meal review from notification mealId=' + wanted);
+    openCheckinSheet(c);
   }
 
   function openCheckinSheet(c) {

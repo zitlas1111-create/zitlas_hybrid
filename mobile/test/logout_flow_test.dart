@@ -119,6 +119,78 @@ void main() {
     });
   });
 
+  group('a signed-out device stops being a target', () {
+    // THE HOLE THIS CLOSES. Tokens reach the backend from two places:
+    // device_tokens/{token} (the registry, which knows about sessions) and
+    // the legacy users/{uid}.pushTokens array (which does not). The backend
+    // treats a token with NO registry row as an unverifiable website-only
+    // device and still delivers to it — so DELETING the row at logout, which
+    // is what this used to do, turned a signed-out phone back into a valid
+    // target whenever the array still listed the token. The arrayRemove is a
+    // separate write that can fail, and the website appends to that array
+    // independently, so 'still listed' is the normal case, not the edge one.
+
+    String fcm() => source('lib/core/notifications/fcm_service.dart');
+
+    test('logout leaves a tombstone rather than deleting the row', () {
+      final src = fcm();
+      if (src.isEmpty) return;
+      final body = src.substring(src.indexOf('Future<void> unregisterDevice'));
+      expect(body.contains("'enabled': false"), isTrue,
+          reason: 'logout must be something the registry STATES, not '
+              'something it merely stops mentioning');
+      expect(body.contains('.delete()'), isFalse,
+          reason: 'deleting the row makes the token unverifiable, and an '
+              'unverifiable token is still delivered to');
+    });
+
+    test('the tombstone still satisfies the security rule', () {
+      final src = fcm();
+      if (src.isEmpty) return;
+      final body = src.substring(src.indexOf('Future<void> unregisterDevice'));
+      // firestore.rules validates the POST-merge document and requires
+      // uid == request.auth.uid and fcmToken is string. Relying on those
+      // surviving from the stored doc would pass only by accident.
+      expect(body.contains("'uid': uid"), isTrue);
+      expect(body.contains("'fcmToken': token"), isTrue);
+    });
+
+    test('signing back in re-owns the row outright, clearing the tombstone', () {
+      final src = fcm();
+      if (src.isEmpty) return;
+      final store = src.substring(src.indexOf('Future<void> _storeToken'));
+      final setCall = store.substring(0, store.indexOf('});') + 3);
+      expect(setCall.contains('SetOptions(merge: true)'), isFalse,
+          reason: 'a merge would leave signedOutAt sitting beside '
+              'enabled:true, and leave fields from a previous owner');
+    });
+
+    test('a full token is never logged', () {
+      final src = fcm();
+      if (src.isEmpty) return;
+      // An FCM token is a credential: whoever holds it can push to that
+      // device. Only a prefix may reach a log.
+      final logs = RegExp(r"debugPrint\('\[FCM\][^']*'").allMatches(src);
+      expect(logs, isNotEmpty);
+      expect(src.contains(r'$token'), isFalse,
+          reason: 'interpolating the raw token puts a credential in logcat');
+    });
+
+    test('re-login in the same session re-registers', () {
+      final src = source('lib/app/app.dart');
+      if (src.isEmpty) return;
+      final gate = src.substring(src.indexOf('static void maybeInit'));
+      final unauth = gate.substring(
+          gate.indexOf('status != AuthStatus.authenticated'));
+      final block = unauth.substring(0, unauth.indexOf('}'));
+      expect(block.contains('_initializedForUid = null'), isTrue,
+          reason: 'the latch is static and used to survive sign-out, so '
+              'logging back into the SAME account without killing the app '
+              'skipped registration entirely — that account then received no '
+              'push at all until the process restarted');
+    });
+  });
+
   group('the router reacts to the reset', () {
     test('redirect keys off the auth status', () {
       final src = source('lib/app/router.dart');

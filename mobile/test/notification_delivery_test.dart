@@ -18,11 +18,92 @@ import 'package:zitlas_mobile/core/notifications/notification_router.dart';
 ///     (Android 8+ silently drops a notification whose channel does not exist)
 void main() {
   group('notification channels', () {
-    test('the coaching channel is v2', () {
-      // Android caches a channel's importance at creation, so the original
-      // `zitlas_coaching` channel could never be raised from default to high
-      // on a device that already had it. A new id is the only way.
-      expect(FcmService.channelCoaching, 'zitlas_coaching_v2');
+    test('every channel id is versioned', () {
+      // Android freezes a channel's importance AND its sound at creation, so
+      // neither can be changed later on a device that already has the
+      // channel. A new id is the only mechanism there is, so each id carries
+      // the version it was last re-cut at. Dropping a suffix silently reverts
+      // every upgrading device to the old importance and the old sound.
+      expect(FcmService.channelCoaching, 'zitlas_coaching_v3');
+      for (final id in [
+        FcmService.channelMessages,
+        FcmService.channelMealReviews,
+        FcmService.channelPlans,
+        FcmService.channelGeneral,
+      ]) {
+        expect(id, endsWith('_v2'), reason: '$id lost its version suffix');
+      }
+    });
+
+    test('the manifest fallback channel is one the app creates', () {
+      // THE REGRESSION THIS CATCHES. AndroidManifest names a
+      // default_notification_channel_id for messages that arrive without an
+      // explicit channel. When the channel ids were re-cut with version
+      // suffixes, the manifest kept pointing at the OLD id — a channel the
+      // app no longer creates. Android drops such a notification in silence,
+      // with nothing in any log to say it happened.
+      final manifest = File('android/app/src/main/AndroidManifest.xml');
+      if (!manifest.existsSync()) {
+        markTestSkipped('android tree not reachable from this run');
+        return;
+      }
+      final xml = manifest.readAsStringSync();
+      // `dotAll` so the value may sit on the line after the name, which is
+      // how the manifest is actually formatted.
+      final m = RegExp(
+        r'default_notification_channel_id".*?android:value="([^"]+)"',
+        dotAll: true,
+      ).firstMatch(xml);
+      expect(m, isNotNull, reason: 'the fallback channel meta-data is gone');
+      expect(
+        [
+          FcmService.channelMessages,
+          FcmService.channelCoaching,
+          FcmService.channelMealReviews,
+          FcmService.channelPlans,
+          FcmService.channelGeneral,
+        ],
+        contains(m!.group(1)),
+        reason: '${m.group(1)} is not a channel FcmService creates',
+      );
+    });
+
+    test('the notification small icon is not the launcher icon', () {
+      // Android reduces a small icon to its ALPHA channel and re-tints it.
+      // ic_launcher is a fully opaque square, so it renders as a white blob.
+      final manifest = File('android/app/src/main/AndroidManifest.xml');
+      final icon = File('android/app/src/main/res/drawable/ic_stat_zitlas.xml');
+      if (!manifest.existsSync()) {
+        markTestSkipped('android tree not reachable from this run');
+        return;
+      }
+      final xml = manifest.readAsStringSync();
+      expect(xml, contains('default_notification_icon'),
+          reason: 'without this, FCM falls back to the launcher icon for '
+              'every notification the OS draws itself');
+      expect(xml, contains('@drawable/ic_stat_zitlas'));
+      expect(icon.existsSync(), isTrue,
+          reason: 'the manifest names an icon that does not exist — the '
+              'build would fail, or fall back to the blob');
+    });
+
+    test('the ZITLAS tone exists in res/raw', () {
+      // A missing res/raw resource does not throw — Android falls back to the
+      // default sound. The tone would simply never play, and the only symptom
+      // is that ZITLAS sounds like every other app.
+      final dir = Directory('android/app/src/main/res/raw');
+      if (!dir.existsSync()) {
+        markTestSkipped('android tree not reachable from this run');
+        return;
+      }
+      final matches = dir
+          .listSync()
+          .whereType<File>()
+          .where((f) => f.uri.pathSegments.last
+              .startsWith('${FcmService.soundResource}.'));
+      expect(matches, isNotEmpty,
+          reason: 'the channels name ${FcmService.soundResource} but '
+              '${dir.path} has no such file');
     });
 
     test('every channel the app creates matches the backend', () {

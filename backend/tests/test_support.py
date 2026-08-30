@@ -31,6 +31,17 @@ from services import support_service  # noqa: E402
 from services.auth_service import require_admin, verify_firebase_token  # noqa: E402
 import routes.support as support_routes  # noqa: E402
 
+@pytest.fixture(autouse=True)
+def _reset_imap_backoff():
+    """The IMAP auth backoff is module-level by design — it has to survive
+    between scheduled polls. That also means it survives between tests, so a
+    test that simulates a rejected credential would silently suppress every
+    later ingest in the same process."""
+    support_service.reset_auth_backoff()
+    yield
+    support_service.reset_auth_backoff()
+
+
 
 ATHLETE = {"uid": "athlete_1", "email": "athlete@example.com", "name": "Test Athlete",
            "admin": False, "expert": False, "email_verified": True}

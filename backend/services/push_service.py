@@ -46,16 +46,47 @@ def _access_token() -> str:
 # creates in lib/core/notifications/fcm_service.dart — Android silently DROPS a
 # notification whose channel_id does not exist on the device, so a typo here is
 # an invisible delivery failure, not an error.
-CHANNEL_MESSAGES = "zitlas_messages"
-# v2: Android CACHES a channel's importance at creation time, so raising the
-# old `zitlas_coaching` channel to high importance would have had no effect on
-# any device that already had it — every existing install would have kept the
-# silent, no-heads-up behaviour forever. A new id is the only way to change it.
-# MUST stay identical to FcmService.channelCoaching in the Flutter app.
-CHANNEL_COACHING = "zitlas_coaching_v2"
-CHANNEL_MEAL_REVIEWS = "zitlas_meal_reviews"
-CHANNEL_PLANS = "zitlas_plans"
-CHANNEL_GENERAL = "zitlas_general"
+#
+# WHY EVERY ID CARRIES A VERSION SUFFIX. Android FREEZES a channel's importance
+# and its sound at creation time and an app may never raise either afterwards
+# — that restriction is the point of channels, so a user's own choices cannot
+# be overridden. Giving these channels the ZITLAS tone therefore could not be
+# done by editing them: every existing install would have kept the stock
+# Android sound forever. A new id is the only mechanism that exists.
+CHANNEL_MESSAGES = "zitlas_messages_v2"
+# Bumped to v2 once already, to raise importance from default to high (a
+# coaching approval was not producing a heads-up banner); v3 adds the tone.
+CHANNEL_COACHING = "zitlas_coaching_v3"
+CHANNEL_MEAL_REVIEWS = "zitlas_meal_reviews_v2"
+CHANNEL_PLANS = "zitlas_plans_v2"
+CHANNEL_GENERAL = "zitlas_general_v2"
+
+#: The ZITLAS notification tone, `android/app/src/main/res/raw/zitlas_tone.wav`
+#: in the Flutter app, named WITHOUT its extension (both Android resource
+#: lookup and FCM refer to it that way).
+#:
+#: MUST stay identical to `FcmService.soundResource`. If this names a resource
+#: the installed APK does not contain, Android falls back to the default sound
+#: — quiet degradation, not an error, so a typo here would never be reported.
+#:
+#: NOTE this only affects devices BELOW Android 8. From 8 onward the channel's
+#: own sound wins and this field is ignored, which is exactly why the channel
+#: ids above had to change.
+SOUND_ANDROID = "zitlas_tone"
+
+#: Notification small icon, `res/drawable/ic_stat_zitlas.xml` in the app.
+#: Android reduces a small icon to its ALPHA channel and re-tints it, so this
+#: must name the monochrome drawable and never the launcher icon — an opaque
+#: square renders as a featureless white blob. The manifest declares the same
+#: resource as the default; sending it explicitly means a notification does
+#: not depend on that meta-data surviving a manifest edit.
+#: MUST stay identical to the icon name in FcmService.
+ICON_ANDROID = "ic_stat_zitlas"
+
+#: ZITLAS green — the tint Android fills the icon silhouette with, and the
+#: accent on the shade entry. Must equal @color/zitlas_notification in the
+#: app's colors.xml and FcmService._brandColor.
+BRAND_COLOR = "#16A34A"
 
 # notification `type` -> channel. Chat is the only HIGH-priority one (it is the
 # only type a user expects to interrupt them, like any messaging app).
@@ -192,7 +223,26 @@ def send_to_token(
             "priority": "high" if high else "normal",
             "notification": {
                 "channel_id": channel,
-                "sound": "default",
+                "sound": SOUND_ANDROID,
+                # THE OS DRAWS THIS ONE ITSELF. When the app is backgrounded or
+                # closed no Dart runs, so everything the notification looks
+                # like has to be in this block. The Flutter side sets the same
+                # four on the notification it draws in the foreground, or the
+                # same event would look like two different apps.
+                "icon": ICON_ANDROID,
+                "color": BRAND_COLOR,
+                # Readable on the lock screen. Safe because the BODY is
+                # deliberately non-sensitive — notification_templates.py keeps
+                # it to a meal name, a coach's display name and their
+                # feedback. That constraint is what lets this be public.
+                "visibility": "PUBLIC",
+                # Distinct from android.priority above: that one governs
+                # DELIVERY (whether it punches through Doze), this one governs
+                # PRESENTATION (whether it peeks as a heads-up banner). Both
+                # are needed for a time-critical notification to actually
+                # interrupt; setting only the first delivers it silently into
+                # the shade.
+                "notification_priority": "PRIORITY_HIGH" if high else "PRIORITY_DEFAULT",
                 # Groups multiple messages from the SAME conversation under one
                 # entry instead of stacking them (messaging-app behaviour).
                 "tag": payload_data.get("chatId") or payload_data.get("collapseKey") or None,

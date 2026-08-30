@@ -153,12 +153,36 @@
         <!-- FCM fallback channel. Used ONLY if a message somehow arrives
              without an android.notification.channel_id (Android 8+ DROPS such a
              notification silently otherwise). The real per-category channels
-             (zitlas_messages / _coaching / _meal_reviews / _plans / _general)
              are created by FcmService at runtime and are what the backend
-             targets — see services/push_service.py's channel constants. -->
+             targets — see services/push_service.py's channel constants.
+
+             MUST NAME A CHANNEL THE APP ACTUALLY CREATES. This said
+             `zitlas_general` after the channel ids were re-cut with version
+             suffixes (Android freezes a channel's sound and importance at
+             creation, so adding the ZITLAS tone required new ids). A fallback
+             pointing at a channel that no longer exists is the worst kind of
+             bug here: the notification is dropped in silence, with nothing in
+             any log. Keep this in step with FcmService.channelGeneral —
+             test_notification_delivery.py asserts they match. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="zitlas_general" />
+            android:value="zitlas_general_v2" />
+
+        <!-- Notification small icon for messages the OS draws ITSELF (app
+             backgrounded or closed) — no Dart runs then, so the icon cannot be
+             set from the message. Without this FCM falls back to the launcher
+             icon, which Android reduces to its alpha channel: a solid, fully
+             opaque square renders as a featureless white blob. See
+             res/drawable/ic_stat_zitlas.xml. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_icon"
+            android:resource="@drawable/ic_stat_zitlas" />
+
+        <!-- The tint Android applies behind that silhouette. ZITLAS green, so
+             the shade entry is branded rather than system-grey. -->
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_color"
+            android:resource="@color/zitlas_notification" />
 
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

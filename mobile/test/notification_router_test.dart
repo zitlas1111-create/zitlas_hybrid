@@ -48,13 +48,52 @@ void main() {
   });
 
   group('meal reviews', () {
-    test('pending meal (coach side) opens the coach dashboard', () {
-      expect(dest({'type': 'meal_review_pending', 'mealId': 'MCI_1'}), '/expert-dashboard');
+    // A rated meal used to land on /diet, which shows the PLAN — not the
+    // coach's feedback. The notification's whole content was the one thing
+    // its destination did not contain. Both sides now open the Meal Reviews
+    // tab of the coaching workspace, using the ?cwAthlete=/?cwTab= params
+    // the deployed website already restores from.
+
+    test('a completed review opens the meal reviews tab, not the diet plan',
+        () {
+      // Exactly what routes/notifications.py notify_meal_review sends.
+      expect(
+        dest({
+          'type': 'meal_review_completed',
+          'mealId': 'MCI_1',
+          'coachId': 'COACH_9',
+          'athleteId': 'ATH_1',
+          'rating': '4.0',
+        }),
+        '/coach-profile/COACH_9?cwTab=checkins&cwCheckin=MCI_1',
+      );
     });
-    test('completed review (athlete side) opens Diet', () {
-      expect(dest({'type': 'meal_review_completed', 'mealId': 'MCI_1'}), '/diet');
+
+    test('a pending meal opens that athlete in the expert workspace', () {
+      expect(
+        dest({
+          'type': 'meal_review_pending',
+          'mealId': 'MCI_1',
+          'athleteId': 'ATH_1',
+        }),
+        '/expert-dashboard?cwAthlete=ATH_1&cwTab=checkins&cwCheckin=MCI_1',
+      );
     });
-    test('legacy meal_checkin/meal_reviewed types still route', () {
+
+    test('counterpartId works when the explicit id is absent', () {
+      expect(dest({'type': 'meal_reviewed', 'counterpartId': 'COACH_9'}),
+          '/coach-profile/COACH_9?cwTab=checkins');
+      expect(dest({'type': 'meal_checkin', 'counterpartId': 'ATH_1'}),
+          '/expert-dashboard?cwAthlete=ATH_1&cwTab=checkins');
+    });
+
+    test('an id-less payload still lands somewhere useful', () {
+      // Older notification documents predate these fields. A deep link that
+      // cannot be built must degrade, never dead-end.
+      expect(dest({'type': 'meal_review_pending', 'mealId': 'MCI_1'}),
+          '/expert-dashboard');
+      expect(dest({'type': 'meal_review_completed', 'mealId': 'MCI_1'}),
+          '/diet');
       expect(dest({'type': 'meal_checkin'}), '/expert-dashboard');
       expect(dest({'type': 'meal_reviewed'}), '/diet');
     });
@@ -161,6 +200,123 @@ void main() {
       expect(NotificationPayload.decode('not json'), isNull);
       expect(NotificationPayload.decode(null), isNull);
       expect(NotificationPayload.decode(''), isNull);
+    });
+  });
+
+  group('zitlas:// deep links', () {
+    // The backend templates now send `deepLink`. It is TRANSLATED, never
+    // followed verbatim — the same review opens in different places for the
+    // athlete and the expert, which the server cannot know.
+
+    test('the athlete side resolves to their coach workspace', () {
+      expect(
+        dest({
+          'type': 'meal_review_completed',
+          'deepLink': 'zitlas://meal-review/MCI_1',
+          'coachId': 'COACH_9',
+        }),
+        '/coach-profile/COACH_9?cwTab=checkins',
+      );
+    });
+
+    test('the SAME link resolves elsewhere for the expert', () {
+      expect(
+        dest({
+          'type': 'meal_review_completed',
+          'deepLink': 'zitlas://meal-review/MCI_1',
+          'recipientRole': 'coach',
+          'athleteId': 'ATH_1',
+        }),
+        '/expert-dashboard?cwAthlete=ATH_1&cwTab=checkins',
+        reason: 'following the link verbatim would send the expert to the '
+            'athlete-side screen',
+      );
+    });
+
+    test('an unknown link shape falls through to the type switch', () {
+      // Lets the backend ship a new link before the app that understands it.
+      expect(
+        dest({
+          'type': 'meal_review_completed',
+          'deepLink': 'zitlas://something-new/xyz',
+          'coachId': 'COACH_9',
+        }),
+        '/coach-profile/COACH_9?cwTab=checkins',
+      );
+    });
+
+    test('a foreign scheme is ignored, not navigated to', () {
+      for (final link in [
+        'https://evil.example.com/steal',
+        'javascript:alert(1)',
+        'zitlas:://malformed',
+        '',
+      ]) {
+        final out = dest({
+          'type': 'meal_review_completed',
+          'deepLink': link,
+          'coachId': 'COACH_9',
+        });
+        expect(out, '/coach-profile/COACH_9?cwTab=checkins',
+            reason: '$link must not reach the navigator');
+      }
+    });
+
+    test('a link with no usable ids still lands somewhere', () {
+      expect(dest({'type': 'meal_review_completed',
+                   'deepLink': 'zitlas://meal-review/MCI_1'}), '/diet');
+    });
+  });
+
+  group('the exact meal opens, not just the list', () {
+    // /diet showed the plan. The Meal Reviews TAB showed a list. Neither is
+    // "the meal the notification was about" — the user still had to find it.
+    // cwCheckin is what the website workspace holds until meal_checkins
+    // loads, then opens that one sheet.
+
+    test('the athlete lands on the reviewed meal', () {
+      expect(
+        dest({
+          'type': 'meal_review_completed',
+          'deepLink': 'zitlas://meal-review/MCI_1',
+          'mealId': 'MCI_1',
+          'coachId': 'COACH_9',
+        }),
+        '/coach-profile/COACH_9?cwTab=checkins&cwCheckin=MCI_1',
+      );
+    });
+
+    test('the expert lands on the meal awaiting review', () {
+      expect(
+        dest({
+          'type': 'meal_review_pending',
+          'mealId': 'MCI_7',
+          'athleteId': 'ATH_1',
+        }),
+        '/expert-dashboard?cwAthlete=ATH_1&cwTab=checkins&cwCheckin=MCI_7',
+      );
+    });
+
+    test('a payload with no meal id still opens the tab', () {
+      // Older notification documents predate mealId. Degrade, never dead-end.
+      expect(
+        dest({'type': 'meal_review_completed', 'coachId': 'COACH_9'}),
+        '/coach-profile/COACH_9?cwTab=checkins',
+      );
+    });
+
+    test('the id comes from the payload, not the link path', () {
+      // The path is only as trustworthy as the string the server built;
+      // mealId is the field every other consumer already reads.
+      expect(
+        dest({
+          'type': 'meal_review_completed',
+          'deepLink': 'zitlas://meal-review/SOMETHING_ELSE',
+          'mealId': 'MCI_1',
+          'coachId': 'COACH_9',
+        }),
+        '/coach-profile/COACH_9?cwTab=checkins&cwCheckin=MCI_1',
+      );
     });
   });
 }

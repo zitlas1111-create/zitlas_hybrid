@@ -46,6 +46,63 @@ var ZitlasStorage = (typeof firebase.storage === 'function') ? firebase.storage(
 /* Persist login across tabs and page reloads */
 ZitlasAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
 
+/* ── Release this browser's push session BEFORE signing out ──────────────
+   A logged-out browser must stop receiving ZITLAS notifications. Marking it
+   inactive is an owner-only Firestore write, so it has only one valid window:
+   BEFORE firebase.auth().signOut() tears the auth context down. Afterwards
+   the security rules reject it and the device would stay listed as active
+   forever — which is exactly how a user who logged out yesterday kept
+   receiving pushes.
+
+   Wrapping the singleton (rather than every call site) is deliberate:
+   sign-out is invoked from profile.js, expert-dashboard.js, admin-portal.js
+   and webview-bridge.js, and `ZitlasAuth === firebase.auth()`, so patching
+   the instance covers all four — including the ones that call
+   firebase.auth().signOut() directly. push-notifications.js is NOT loaded on
+   most of those pages, which is why this cannot live there.
+
+   Registry semantics match the app's (fcm_service.dart unregisterDevice):
+   enabled:false, never a delete. The backend treats a token with no registry
+   row as an unverifiable device, so a tombstone is stronger than a deletion.
+
+   Best-effort and non-blocking on failure: signing out must always finish. */
+(function wrapSignOutForPush(auth) {
+  if (!auth || auth.__zitlasPushSignOutWrapped) return;
+  auth.__zitlasPushSignOutWrapped = true;
+
+  var nativeSignOut = auth.signOut.bind(auth);
+
+  auth.signOut = function () {
+    var uid = auth.currentUser && auth.currentUser.uid;
+    var token = null;
+    try { token = localStorage.getItem('zitlas_push_token'); } catch (_) {}
+
+    if (!uid || !token || typeof ZitlasDB === 'undefined') {
+      return nativeSignOut();
+    }
+
+    var now = new Date().toISOString();
+    var cleanup = Promise.all([
+      ZitlasDB.collection('device_tokens').doc(token).set({
+        fcmToken: token,
+        uid: uid,
+        enabled: false,
+        loggedIn: false,
+        signedOutAt: now,
+      }, { merge: true }),
+      ZitlasDB.collection('users').doc(uid).set({
+        pushTokens: firebase.firestore.FieldValue.arrayRemove(token),
+      }, { merge: true }),
+    ]).then(function () {
+      console.log('[PUSH] device released from ' + uid + ' before sign-out');
+    }).catch(function (e) {
+      console.warn('[PUSH] sign-out cleanup failed (non-fatal)', e);
+    });
+
+    return cleanup.then(nativeSignOut, nativeSignOut);
+  };
+})(ZitlasAuth);
+
 /* Firebase ID token for authenticated backend calls (/api/coaching/*, the
    first backend routes in this codebase that verify a real caller identity
    server-side instead of trusting a client-supplied uid). Rejects instead

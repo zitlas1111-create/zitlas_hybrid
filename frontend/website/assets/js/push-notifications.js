@@ -72,6 +72,96 @@
     });
   }
 
+  /* Writes this browser's session into BOTH stores.
+
+     users/{uid}.pushTokens is a plain array with no session state: it keeps a
+     token after that browser signs out, and the SAME token can end up listed
+     under two different accounts. The backend therefore cannot tell an active
+     device from an abandoned one by reading it — which is how a user with one
+     phone came to be targeted as three devices.
+
+     device_tokens/{fcmToken} is the registry the Flutter app already uses and
+     the backend already trusts (see mobile/lib/core/notifications/
+     fcm_service.dart and backend/services/notification_service.py). Keying by
+     TOKEN is what makes it authoritative: a browser has one token, so the
+     document can only ever name one owning uid, and signing in as somebody
+     else overwrites it rather than adding a second claim.
+
+     The array is still written so nothing that reads it breaks; the registry
+     is what decides delivery. This is deliberately the SAME collection the app
+     writes — a second, web-only device system would just reproduce the
+     problem it is here to fix. */
+  function storeToken(uid, token) {
+    var now = new Date().toISOString();
+    var registry = ZitlasDB.collection('device_tokens').doc(token).set({
+      fcmToken: token,
+      uid: uid,
+      platform: 'web',
+      deviceId: deviceId(),
+      enabled: true,
+      loggedIn: true,
+      lastActiveAt: now,
+      updatedAt: now,
+    }).then(function () {
+      console.log('[PUSH] device registered as active for ' + uid);
+    });
+
+    var legacy = ZitlasDB.collection('users').doc(uid).set({
+      /* arrayUnion: each device APPENDS its own token — logging in on a
+         second device never overwrites the first one's. */
+      pushTokens: firebase.firestore.FieldValue.arrayUnion(token),
+      pushTokensUpdatedAt: now,
+    }, { merge: true });
+
+    return Promise.all([registry, legacy]).catch(function (e) {
+      console.warn('[PUSH] token store failed', e);
+    });
+  }
+
+  /* Marks this browser's session inactive. Called on sign-out.
+
+     enabled:false rather than deleting the row: the backend treats a token
+     with NO registry entry as an unverifiable device, so a deleted row is
+     WEAKER than one that positively states the device is signed out. The
+     array entry is removed as well, because nothing else would ever remove
+     it. Best-effort — a failure here must not block signing out. */
+  function markSignedOut(uid, token) {
+    if (!uid || !token || typeof ZitlasDB === 'undefined') return Promise.resolve();
+    var now = new Date().toISOString();
+    return Promise.all([
+      ZitlasDB.collection('device_tokens').doc(token).set({
+        fcmToken: token,
+        uid: uid,
+        enabled: false,
+        loggedIn: false,
+        signedOutAt: now,
+      }, { merge: true }),
+      ZitlasDB.collection('users').doc(uid).set({
+        pushTokens: firebase.firestore.FieldValue.arrayRemove(token),
+      }, { merge: true }),
+    ]).then(function () {
+      console.log('[PUSH] device marked signed out for ' + uid);
+    }).catch(function (e) {
+      console.warn('[PUSH] sign-out cleanup failed (non-fatal)', e);
+    });
+  }
+
+  /* Stable per-browser id, so a device stays recognisable across token
+     rotations. Mirrors the app's DeviceIdentity; localStorage is the only
+     durable per-browser store available here. */
+  function deviceId() {
+    var KEY = 'zitlas_device_id';
+    try {
+      var existing = localStorage.getItem(KEY);
+      if (existing) return existing;
+      var made = 'web_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      localStorage.setItem(KEY, made);
+      return made;
+    } catch (_) {
+      return 'web_unknown';
+    }
+  }
+
   function registerAndStoreToken() {
     return navigator.serviceWorker.register('/firebase-messaging-sw.js')
       .then(_waitForActive)
@@ -90,15 +180,7 @@
         try { localStorage.setItem(TOKEN_KEY, token); } catch (_) {}
         var uid = myUid();
         if (uid && typeof ZitlasDB !== 'undefined') {
-          /* arrayUnion: each device APPENDS its own token — logging in on a
-             second device never overwrites the first one's. */
-          return ZitlasDB.collection('users').doc(uid).set({
-            pushTokens: firebase.firestore.FieldValue.arrayUnion(token),
-            pushTokensUpdatedAt: new Date().toISOString(),
-          }, { merge: true }).then(function () {
-            console.log('[PUSH] token stored in users/' + uid + '.pushTokens');
-            return token;
-          });
+          return storeToken(uid, token).then(function () { return token; });
         }
         return token;
       });

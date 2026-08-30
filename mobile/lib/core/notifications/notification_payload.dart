@@ -24,6 +24,7 @@ class NotificationPayload {
     this.notificationId,
     this.recipientRole,
     this.counterpartId,
+    this.deepLink,
   });
 
   final String type;
@@ -43,6 +44,15 @@ class NotificationPayload {
 
   /// The other party's uid: an user's coach, or a coach's athlete.
   final String? counterpartId;
+
+  /// A `zitlas://…` route naming the destination directly, sent by the
+  /// backend templates (services/notification_templates.py).
+  ///
+  /// Advisory, not authoritative: [NotificationRouter] translates it against
+  /// the viewer's role rather than following it blindly, and falls back to
+  /// `type` when it is absent or unrecognised. Older notification documents
+  /// predate it entirely, which is why nothing may depend on it being set.
+  final String? deepLink;
 
   /// The website's own `navigateForAction()` key (`diet`, `training`,
   /// `expert_dashboard`, `coaching_workspace`…). Used as the fallback when
@@ -75,6 +85,7 @@ class NotificationPayload {
       notificationId: _s(data, 'notificationId'),
       recipientRole: _s(data, 'recipientRole'),
       counterpartId: _s(data, 'counterpartId'),
+      deepLink: _s(data, 'deepLink'),
     );
   }
 
@@ -84,6 +95,7 @@ class NotificationPayload {
         if (senderId != null) 'senderId': senderId,
         if (senderName != null) 'senderName': senderName,
         if (mealId != null) 'mealId': mealId,
+        if (deepLink != null) 'deepLink': deepLink,
         if (coachingId != null) 'coachingId': coachingId,
         if (coachId != null) 'coachId': coachId,
         if (athleteId != null) 'athleteId': athleteId,

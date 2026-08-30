@@ -135,6 +135,54 @@ class TestTheFcmMessageItself:
         assert msg["android"]["priority"] == "high"
         assert msg["apns"]["headers"]["apns-priority"] == "10"
 
+    def test_the_android_sound_names_the_zitlas_tone(self, monkeypatch):
+        """Guards the one line that would silently undo the custom sound on
+        pre-Android-8 devices: reverting it to "default" is a one-word edit
+        that breaks nothing loudly."""
+        msg = self._message(monkeypatch, "meal_review_completed", "high")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert msg["android"]["notification"]["sound"] == push_service.SOUND_ANDROID
+        assert msg["android"]["notification"]["sound"] != "default"
+
+    def test_the_os_drawn_notification_carries_the_zitlas_identity(
+            self, monkeypatch):
+        """Background/closed delivery is drawn by Android from this block
+        alone — no Dart runs — so anything missing here is missing from every
+        notification the user is most likely to actually see."""
+        msg = self._message(monkeypatch, "meal_review_completed", "high")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        n = msg["android"]["notification"]
+        assert n["icon"] == push_service.ICON_ANDROID
+        assert n["icon"] != "ic_launcher", (
+            "the launcher icon is opaque; Android renders it as a white blob")
+        assert n["color"] == push_service.BRAND_COLOR
+        assert n["sound"] == push_service.SOUND_ANDROID
+
+    def test_it_is_readable_on_the_lock_screen(self, monkeypatch):
+        msg = self._message(monkeypatch, "meal_review_completed", "high")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert msg["android"]["notification"]["visibility"] == "PUBLIC"
+
+    def test_delivery_priority_and_heads_up_are_both_set(self, monkeypatch):
+        """Two DIFFERENT settings that are easy to confuse: android.priority
+        decides whether it punches through Doze, notification_priority decides
+        whether it peeks as a banner. Setting only the first delivers it
+        silently into the shade."""
+        msg = self._message(monkeypatch, "meal_review_completed", "high")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert msg["android"]["priority"] == "high"
+        assert msg["android"]["notification"]["notification_priority"] == "PRIORITY_HIGH"
+
+    def test_an_informational_type_does_not_force_a_heads_up(self, monkeypatch):
+        msg = self._message(monkeypatch, "general")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert msg["android"]["notification"]["notification_priority"] == "PRIORITY_DEFAULT"
+
     def test_an_informational_type_stays_normal(self, monkeypatch):
         msg = self._message(monkeypatch, "general")
         if not msg:
@@ -150,10 +198,69 @@ class TestChannels:
     FLUTTER = Path(__file__).resolve().parents[2] / "mobile" / "lib" / \
         "core" / "notifications" / "fcm_service.dart"
 
-    def test_the_coaching_channel_is_v2(self):
-        """Android caches a channel's importance at creation, so raising the
-        old channel would have changed nothing on existing installs."""
-        assert push_service.CHANNEL_COACHING == "zitlas_coaching_v2"
+    def test_the_channel_ids_are_versioned(self):
+        """Android freezes a channel's importance AND its sound at creation,
+        so editing either would have changed nothing on existing installs.
+        Every id therefore carries the version it was last re-cut at; losing
+        the suffix silently reverts every upgrading device to the old
+        behaviour."""
+        assert push_service.CHANNEL_COACHING == "zitlas_coaching_v3"
+        for name in ("CHANNEL_MESSAGES", "CHANNEL_MEAL_REVIEWS",
+                     "CHANNEL_PLANS", "CHANNEL_GENERAL"):
+            assert getattr(push_service, name).endswith("_v2"), name
+
+    def test_the_sound_resource_matches_the_flutter_app(self):
+        """The backend names the sound in android.notification.sound and the
+        app names it in the channel. If they drift, devices below Android 8
+        get the stock sound while newer ones get the ZITLAS tone — and nothing
+        anywhere reports it."""
+        if not self.FLUTTER.exists():
+            pytest.skip("Flutter source not reachable from this run")
+        dart = self.FLUTTER.read_text(encoding="utf-8")
+        m = re.search(r"soundResource\s*=\s*'([a-z0-9_]+)'", dart)
+        assert m, "fcm_service.dart no longer declares soundResource"
+        assert push_service.SOUND_ANDROID == m.group(1)
+
+    def test_the_icon_name_matches_the_flutter_app(self):
+        if not self.FLUTTER.exists():
+            pytest.skip("Flutter source not reachable from this run")
+        dart = self.FLUTTER.read_text(encoding="utf-8")
+        assert f"'{push_service.ICON_ANDROID}'" in dart, (
+            f"backend sends icon={push_service.ICON_ANDROID!r}, which the app "
+            f"never names — the OS-drawn and app-drawn notifications would "
+            f"then look different for the same event")
+
+    def test_the_icon_drawable_actually_exists(self):
+        d = (Path(__file__).resolve().parents[2] / "mobile" / "android" / "app"
+             / "src" / "main" / "res" / "drawable")
+        if not d.exists():
+            pytest.skip("Flutter android tree not reachable from this run")
+        assert list(d.glob(push_service.ICON_ANDROID + ".*")), (
+            f"{d} has no {push_service.ICON_ANDROID} — Android would fall "
+            f"back to the launcher icon blob")
+
+    def test_the_brand_colour_matches_the_app(self):
+        colors = (Path(__file__).resolve().parents[2] / "mobile" / "android"
+                  / "app" / "src" / "main" / "res" / "values" / "colors.xml")
+        if not colors.exists():
+            pytest.skip("Flutter android tree not reachable from this run")
+        text = colors.read_text(encoding="utf-8")
+        assert push_service.BRAND_COLOR.lower() in text.lower(), (
+            "the tint the backend sends and the one the app declares must be "
+            "the same colour, or one event looks like two apps")
+
+    def test_the_sound_file_the_app_names_actually_exists(self):
+        """A res/raw resource that is missing does not raise — Android just
+        falls back to the default sound, so the tone would quietly never play
+        and the only symptom is 'it sounds like every other app'."""
+        raw = (Path(__file__).resolve().parents[2] / "mobile" / "android" /
+               "app" / "src" / "main" / "res" / "raw")
+        if not raw.exists():
+            pytest.skip("Flutter android tree not reachable from this run")
+        found = list(raw.glob(push_service.SOUND_ANDROID + ".*"))
+        assert found, (
+            f"push_service sends sound={push_service.SOUND_ANDROID!r} but "
+            f"{raw} contains no such file")
 
     def test_every_backend_channel_exists_in_the_flutter_app(self):
         """A notification whose channel_id the app never created is silently

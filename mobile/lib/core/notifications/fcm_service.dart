@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:ui' show Color;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -42,22 +43,59 @@ class FcmService {
   static const _stateKey = 'zitlas_push_state'; // mirrors web's STATE_KEY
   static const _snoozeDays = 7;
 
+  /// The ZITLAS notification tone, `res/raw/zitlas_tone.wav`.
+  ///
+  /// Named WITHOUT its extension because that is how both Android resource
+  /// lookup and FCM's `android.notification.sound` field refer to it; the
+  /// backend sends this exact string, so the two must not drift.
+  ///
+  /// Regenerate with `python tool/generate_notification_sound.py`.
+  static const soundResource = 'zitlas_tone';
+
   /// Channel IDs — these MUST match `push_service.py`'s constants exactly.
   /// Android silently DROPS a notification whose channel does not exist on the
   /// device, so a mismatch here is an invisible delivery failure.
-  static const channelMessages = 'zitlas_messages';
-  /// v2: Android caches a channel's importance at creation, so the original
-  /// `zitlas_coaching` channel could never be raised from default to high on
-  /// a device that already had it. A NEW id is the only way to change it —
-  /// existing installs get the new channel on next launch and the old one
-  /// simply stops being used.
   ///
-  /// MUST stay identical to `push_service.CHANNEL_COACHING` on the backend:
-  /// Android silently drops a notification whose channel_id does not exist.
-  static const channelCoaching = 'zitlas_coaching_v2';
-  static const channelMealReviews = 'zitlas_meal_reviews';
-  static const channelPlans = 'zitlas_plans';
-  static const channelGeneral = 'zitlas_general';
+  /// WHY THEY ALL CARRY A VERSION SUFFIX. Android freezes a channel's
+  /// importance AND its sound at the moment the channel is first created, and
+  /// an app may never raise either afterwards — that restriction is the whole
+  /// point of channels, so the user's own choices cannot be overridden. So
+  /// giving these channels the ZITLAS tone is NOT a matter of editing them:
+  /// every existing install would have kept the stock Android sound forever.
+  /// A new id is the only mechanism there is. Existing installs pick up the
+  /// new channels on next launch; the old ones stop being used and linger in
+  /// system settings until the app is reinstalled, which is the unavoidable
+  /// cost of the change.
+  ///
+  /// A user who has customised one of the old channels loses that
+  /// customisation. That is why the id must NOT be bumped casually — only for
+  /// a change that genuinely cannot be made any other way.
+  static const channelMessages = 'zitlas_messages_v2';
+  /// Was bumped to v2 once already, to raise importance from default to high
+  /// (a coaching approval was not showing a heads-up banner). v3 adds the
+  /// tone.
+  static const channelCoaching = 'zitlas_coaching_v3';
+  static const channelMealReviews = 'zitlas_meal_reviews_v2';
+  static const channelPlans = 'zitlas_plans_v2';
+  static const channelGeneral = 'zitlas_general_v2';
+
+  /// Every channel plays [soundResource] and vibrates — one recognisable
+  /// ZITLAS sound, the audible half of the app's identity. Both flags are
+  /// explicit rather than implied so that turning either off later is a
+  /// visible edit here, not an accident.
+  ///
+  /// Vibration matters as much as the sound: a phone is usually in a pocket or
+  /// face-down, where a silent heads-up banner is simply never seen. Like
+  /// importance and sound, it is frozen at channel creation — which is why
+  /// adding it needed the version-suffixed ids above.
+  static const _zitlasTone = RawResourceAndroidNotificationSound(soundResource);
+
+  /// ZITLAS green — must equal `@color/zitlas_notification` in
+  /// android/app/src/main/res/values/colors.xml, which the manifest hands to
+  /// FCM for OS-drawn notifications. Both paths tint the same silhouette, so
+  /// they have to agree or a foreground notification is a different colour
+  /// from the same event backgrounded.
+  static const _brandColor = Color(0xFF16A34A);
 
   static const _channels = <AndroidNotificationChannel>[
     AndroidNotificationChannel(
@@ -65,34 +103,49 @@ class FcmService {
       'Messages',
       description: 'Chat messages from your coach or users.',
       importance: Importance.high,
+      playSound: true,
+      sound: _zitlasTone,
+      enableVibration: true,
     ),
     AndroidNotificationChannel(
       channelCoaching,
       'Personal Coaching',
       description: 'Coaching requests, activation, payments and updates.',
       // HIGH so a coaching approval actually shows a heads-up banner. The
-      // channel id had to change (v2) to make this land: Android caches a
+      // channel id had to change to make this land: Android caches a
       // channel's importance at creation, so editing the old channel would
       // have left every existing install silent.
       importance: Importance.high,
+      playSound: true,
+      sound: _zitlasTone,
+      enableVibration: true,
     ),
     AndroidNotificationChannel(
       channelMealReviews,
       'Meal Reviews',
       description: 'Meal photos awaiting review, and your coach’s feedback.',
       importance: Importance.defaultImportance,
+      playSound: true,
+      sound: _zitlasTone,
+      enableVibration: true,
     ),
     AndroidNotificationChannel(
       channelPlans,
       'Diet & Workout',
       description: 'Updates to your diet and training plans.',
       importance: Importance.defaultImportance,
+      playSound: true,
+      sound: _zitlasTone,
+      enableVibration: true,
     ),
     AndroidNotificationChannel(
       channelGeneral,
       'General',
       description: 'Reminders, milestones and other ZITLAS updates.',
       importance: Importance.defaultImportance,
+      playSound: true,
+      sound: _zitlasTone,
+      enableVibration: true,
     ),
   ];
 
@@ -158,7 +211,10 @@ class FcmService {
     try {
       await _plugin.initialize(
         settings: const InitializationSettings(
-          android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+          // NOT the launcher icon. Android reduces a small icon to its alpha
+          // channel and re-tints it; ic_launcher is a fully opaque square, so
+          // it renders as a white blob. ic_stat_zitlas is authored alpha-only.
+          android: AndroidInitializationSettings('ic_stat_zitlas'),
           iOS: DarwinInitializationSettings(),
         ),
         onDidReceiveNotificationResponse: (NotificationResponse r) {
@@ -192,6 +248,8 @@ class FcmService {
     final notification = message.notification;
     final data = message.data.cast<String, dynamic>();
     final payload = NotificationPayload.fromData(data);
+    debugPrint('[NOTIFY] received type=${payload.type} '
+        'channel=${channelFor(payload.type)}');
     final title = notification?.title ?? 'ZITLAS';
     final body = notification?.body ?? '';
     if (title.isEmpty && body.isEmpty) return;
@@ -230,10 +288,38 @@ class FcmService {
             channel.name,
             channelDescription: channel.description,
             importance: channel.importance,
+            // On Android 8+ the CHANNEL's sound wins and this is ignored; it
+            // matters on 7 and below, where there are no channels and the
+            // per-notification sound is the only one there is.
+            playSound: true,
+            sound: _zitlasTone,
+            enableVibration: true,
+            // The OS reads these from the manifest for messages IT draws;
+            // a locally-drawn one has to name them itself, or a foreground
+            // notification looks different from a backgrounded one.
+            icon: 'ic_stat_zitlas',
+            color: _brandColor,
+            // PUBLIC so the notification is readable on the lock screen —
+            // the whole point of a heads-up alert is that it is seen without
+            // unlocking. Safe here because the BODY is deliberately
+            // non-sensitive: notification_templates.py keeps it to the meal
+            // name, the coach's display name and their feedback. Nothing
+            // medical, financial, or identifying goes in a body, and that is
+            // the constraint that lets this stay public.
+            visibility: NotificationVisibility.public,
             priority: payload.type == 'chat_message'
                 ? Priority.high
                 : Priority.defaultPriority,
-            styleInformation: const BigTextStyleInformation(''),
+            // The BODY, not ''. An empty BigTextStyleInformation marks the
+            // notification expandable and then renders nothing when expanded
+            // — which is how a coach's written feedback vanished at the exact
+            // moment the user pulled the notification down to read it.
+            styleInformation: BigTextStyleInformation(
+              body,
+              contentTitle: title,
+              htmlFormatBigText: false,
+              htmlFormatContentTitle: false,
+            ),
             // Same tag the backend sets, so a foreground-drawn notification and
             // an OS-drawn one for the same conversation collapse together.
             tag: payload.chatId ?? payload.mealId,
@@ -272,12 +358,75 @@ class FcmService {
     await _setState('granted');
     await _registerToken(uid);
     FirebaseMessaging.instance.onTokenRefresh.listen((token) {
-      // A rotated token is a NEW document; the old one is removed so the
-      // backend never keeps sending to a token FCM has retired.
-      _storeToken(uid, token).catchError((Object e) {
-        if (kDebugMode) debugPrint('[FCM] token refresh store failed: $e');
+      // A rotated token is a NEW document. The comment here used to claim the
+      // old one was removed — it was not. `_storeToken` only ever wrote the
+      // new row, so every rotation left the previous token behind with
+      // `enabled: true`, and it stayed in `users/{uid}.pushTokens` forever.
+      // That is how one phone accumulated three "active" tokens and why a
+      // send reported tokens=3 for a user with one device.
+      _rotateToken(uid, token).catchError((Object e) {
+        debugPrint('[FCM] token refresh failed: $e');
       });
     });
+  }
+
+  /// The token FCM last issued us, so a rotation knows what it replaced.
+  ///
+  /// `onTokenRefresh` hands over only the NEW token; the old one is not
+  /// recoverable from the SDK afterwards, so it has to be remembered here.
+  static const _lastTokenKey = 'zitlas_fcm_last_token';
+
+  /// Replaces [uid]'s previous token with [token], retiring the old row.
+  ///
+  /// Retiring rather than deleting, for the same reason logout tombstones:
+  /// the backend treats a token with no registry row as an unverifiable
+  /// device, so a deleted row is weaker than one that says `enabled: false`.
+  Future<void> _rotateToken(String uid, String token) async {
+    final previous = LocalStorageService.instance.getString(_lastTokenKey);
+    await _storeToken(uid, token);
+    if (previous == null || previous.isEmpty || previous == token) return;
+    try {
+      await _db.collection('device_tokens').doc(previous).set({
+        'fcmToken': previous,
+        'uid': uid,
+        'enabled': false,
+        'retiredAt': DateTime.now().toIso8601String(),
+        'retiredFor': _short(token),
+      }, SetOptions(merge: true));
+      await _db.collection('users').doc(uid).set({
+        'pushTokens': FieldValue.arrayRemove([previous]),
+      }, SetOptions(merge: true));
+      debugPrint('[FCM] token rotated for $uid: ${_short(previous)} retired, '
+          '${_short(token)} active');
+    } catch (e) {
+      // Non-fatal: the new token is already registered, so push works. The
+      // stale row is inert (the backend prunes on UNREGISTERED) and the next
+      // rotation tries again.
+      debugPrint('[FCM] retiring old token failed (non-fatal): $e');
+    }
+  }
+
+  /// Refreshes `lastActiveAt` when the app comes to the foreground.
+  ///
+  /// Registration alone records when a SESSION started, which does not
+  /// distinguish a phone in daily use from one that signed in months ago and
+  /// has not been opened since. Both look identical to a stale-device sweep.
+  ///
+  /// Deliberately a single write per foreground, not a heartbeat: the value
+  /// only has to be good enough to sort devices by recency.
+  Future<void> touchActive(String uid) async {
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      if (token == null) return;
+      await _db.collection('device_tokens').doc(token).set({
+        'fcmToken': token,
+        'uid': uid,
+        'enabled': true,
+        'lastActiveAt': DateTime.now().toIso8601String(),
+      }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint('[FCM] lastActiveAt touch failed (non-fatal): $e');
+    }
   }
 
   /// Enables notifications from ZITLAS Settings after an earlier decline —
@@ -311,10 +460,10 @@ class FcmService {
   }
 
   Future<void> _storeToken(String uid, String token) async {
-    if (kDebugMode) {
-      debugPrint('[FCM] registering device for $uid: '
-          '${token.substring(0, token.length.clamp(0, 24))}…');
-    }
+    // Logged on RELEASE builds too. Push failures get reported from real
+    // phones running release APKs, and a debug-only line is invisible exactly
+    // when it is needed. Only a token PREFIX is ever printed.
+    debugPrint('[FCM] registering device for $uid (token ${_short(token)})');
     final platform = kIsWeb
         ? 'web'
         : Platform.isAndroid
@@ -327,14 +476,35 @@ class FcmService {
     // Keyed by token — see the class doc. A .set() (not merge) so a device that
     // used to belong to another account is fully re-owned, with no leftover
     // fields from the previous owner.
+    final now = DateTime.now().toIso8601String();
     await _db.collection('device_tokens').doc(token).set({
       'fcmToken': token,
       'uid': uid,
       'platform': platform,
       'deviceId': deviceId,
       'enabled': true,
-      'updatedAt': DateTime.now().toIso8601String(),
+      'updatedAt': now,
+      // When this device was last known to be signed in and running, kept
+      // current by [touchActive] on every foreground. A row whose
+      // lastActiveAt is ancient is a phone that was wiped, uninstalled or
+      // simply abandoned; the token is usually dead, but FCM does not always
+      // say so, and without a timestamp that is indistinguishable from a
+      // device which is merely quiet.
+      'lastActiveAt': now,
+      // `loggedIn` is the session fact; `enabled` is the delivery switch.
+      // They are the same today, but a user muting ZITLAS in Settings must
+      // be able to clear `enabled` WITHOUT the backend concluding they
+      // signed out, so the two are recorded separately from the start.
+      'loggedIn': true,
+      // NO merge — see above. That is also what clears a `signedOutAt`
+      // tombstone left by the previous sign-out on this device: the whole
+      // document is replaced, so signing back in cannot leave a stale
+      // "signed out" marker sitting beside `enabled: true`.
     });
+
+    // Remembered so `onTokenRefresh` can retire this token when FCM rotates
+    // it — the SDK hands over only the new value at that point.
+    await LocalStorageService.instance.setString(_lastTokenKey, token);
 
     // Legacy array the website also writes; the backend reads both.
     await _db.collection('users').doc(uid).set({
@@ -347,9 +517,22 @@ class FcmService {
   ///
   /// Without this the previous account keeps a live token for a phone somebody
   /// else is now using, and the backend would keep delivering their
-  /// notifications there. Deleting the `device_tokens` doc (rather than just
-  /// flipping `enabled`) also guarantees the next account's registration
-  /// starts from a clean document.
+  /// notifications there.
+  ///
+  /// WHY A TOMBSTONE AND NOT A DELETE. This used to `delete()` the row. But
+  /// `users/{uid}.pushTokens` — the legacy array the website also writes — can
+  /// still list the token afterwards (the arrayRemove below is a separate
+  /// write that can fail, and the website appends to it independently). The
+  /// backend treats a token with NO registry row as an unverifiable
+  /// website-only device and still delivers to it, so deleting the row turned
+  /// a signed-out phone back into a valid target. Writing `enabled: false`
+  /// instead leaves a POSITIVE record that this device is signed out, which
+  /// the backend already honours — logout becomes something the registry can
+  /// state, rather than something it merely fails to mention.
+  ///
+  /// Nothing is leaked by keeping the row: it holds a token and a uid this
+  /// device already had, and the next login `.set()`s it outright, so a new
+  /// owner still starts from a clean document.
   ///
   /// Best-effort by design: it runs during sign-out, so a failure here must
   /// never block logout. The token is ALSO re-owned on the next login, so a
@@ -357,14 +540,33 @@ class FcmService {
   Future<void> unregisterDevice(String uid) async {
     try {
       final token = await FirebaseMessaging.instance.getToken();
-      if (token == null) return;
-      await _db.collection('device_tokens').doc(token).delete();
+      if (token == null) {
+        debugPrint('[FCM] unregister skipped: no token on this device');
+        return;
+      }
+      // uid + fcmToken are restated because the security rule validates the
+      // POST-merge document; a merge that omitted them would pass only by
+      // accident of what happens to be stored already.
+      await _db.collection('device_tokens').doc(token).set({
+        'fcmToken': token,
+        'uid': uid,
+        'enabled': false,
+        'loggedIn': false,
+        'signedOutAt': DateTime.now().toIso8601String(),
+      }, SetOptions(merge: true));
       await _db.collection('users').doc(uid).set({
         'pushTokens': FieldValue.arrayRemove([token]),
       }, SetOptions(merge: true));
-      if (kDebugMode) debugPrint('[FCM] device unregistered from $uid');
+      debugPrint('[FCM] session ended for $uid on this device '
+          '(token ${_short(token)}, enabled=false)');
     } catch (e) {
-      if (kDebugMode) debugPrint('[FCM] unregister failed (non-fatal): $e');
+      debugPrint('[FCM] unregister failed (non-fatal): $e');
     }
   }
+
+  /// First 12 characters of a token — enough to correlate two log lines, never
+  /// enough to send with. A full FCM token is a credential: anyone holding it
+  /// can push to that device, so it must not reach a log.
+  static String _short(String token) =>
+      token.length <= 12 ? token : '${token.substring(0, 12)}…';
 }

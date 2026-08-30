@@ -1090,6 +1090,13 @@
      history.replaceState (never pushState) so tab clicks don't pollute the
      back-stack. Frontend-only convenience — see the onSnapshot restore hook
      below for the actual Firestore-authoritative re-validation. */
+  /* The meal a notification pointed at. Like ?cwTab= this is a UX HINT only:
+     the workspace itself is still gated by the Firestore re-validation above,
+     and a meal id that is not in this relationship's list is simply ignored. */
+  function _cwCheckinUrlParam() {
+    try { return new URL(window.location.href).searchParams.get('cwCheckin'); }
+    catch (_) { return null; }
+  }
   function _cwTabUrlParam() {
     try { return new URL(window.location.href).searchParams.get('cwTab'); } catch (_) { return null; }
   }
@@ -1108,7 +1115,7 @@
     } catch (_) {}
   }
 
-  function _openCoachingWorkspace(coach, tab) {
+  function _openCoachingWorkspace(coach, tab, checkinId) {
     var rel = _pcRelationship;
     var effTab = tab || 'overview';
     _cwSetTabUrlParam(effTab);
@@ -1127,6 +1134,9 @@
       endDate:     rel.endDate,
       status:      rel.status,
       initialTab:  effTab,
+      /* Set only by a notification tap (?cwCheckin=). The workspace holds it
+         until the meal_checkins snapshot arrives, then opens that one meal. */
+      initialCheckinId: checkinId || null,
       onTabChange: function (t) { _cwSetTabUrlParam(t); },
       onClose:     function () { _cwClearTabUrlParam(); },
     });
@@ -4991,8 +5001,9 @@
           if (!_cwRestoreChecked) {
             _cwRestoreChecked = true;
             var pendingTab = _cwTabUrlParam();
+            var pendingCheckin = _cwCheckinUrlParam();
             if (pendingTab && window.ZitlasCoachingWorkspace && _coachingWorkspaceFor(coach)) {
-              _openCoachingWorkspace(coach, pendingTab);
+              _openCoachingWorkspace(coach, pendingTab, pendingCheckin);
             } else if (pendingTab) {
               _cwClearTabUrlParam();
             }

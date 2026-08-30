@@ -30,7 +30,8 @@ from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from services import firestore_service, notification_service
+from services import (firestore_service, notification_service,
+                      notification_templates)
 from services.auth_service import verify_firebase_token
 
 router = APIRouter()
@@ -226,32 +227,33 @@ async def notify_meal_review(body: CheckinBody, caller: dict = Depends(verify_fi
     # Prefer the star rating; fall back to the legacy 1-10 score so meals
     # reviewed before the star UI still read correctly.
     overall = c.get("overallRating")
-    if isinstance(overall, (int, float)):
-        rating_txt = f"{float(overall):.1f}⭐"
-    elif isinstance(c.get("score"), (int, float)):
-        rating_txt = f"{float(c['score']) / 2:.1f}⭐"
-    else:
-        rating_txt = None
+    if not isinstance(overall, (int, float)):
+        score = c.get("score")
+        overall = float(score) / 2 if isinstance(score, (int, float)) else None
 
-    title = "⭐ Your Meal Was Rated"
-    detail = (f"{coach_name} rated {meal} {rating_txt}."
-              if rating_txt else f"{coach_name} reviewed {meal}.")
+    # WORDING LIVES IN services/notification_templates.py, not here. This route
+    # supplies the facts; the template owns the copy, the emoji, the priority
+    # and the data keys the app deep-links on — so the same event cannot be
+    # phrased two different ways by two different call sites.
+    note = notification_templates.meal_review_completed(
+        checkin_id=body.checkinId,
+        meal_name=meal,
+        coach_name=coach_name,
+        coach_id=caller["uid"],
+        athlete_id=athlete_id,
+        rating=overall,
+        comment=c.get("comment"),
+    )
 
     res = notification_service.send(
-        db, athlete_id,
-        title,
-        detail,
-        category="meal_snap", type="meal_review_completed",
-        action="diet", priority="high",
-        data={
-            "type": "meal_review_completed",
-            "mealId": body.checkinId,
-            "coachingId": athlete_id,
-            "coachId": caller["uid"],
-            # Carried so the app can open the exact meal, not the dashboard.
-            "athleteId": athlete_id,
-            **({"rating": str(overall)} if overall is not None else {}),
-        },
+        db, athlete_id, note.title, note.body,
+        category=note.category, type=note.type,
+        action=note.action, priority=note.priority,
+        data=note.data,
+        # ONE notification per review event, even if this endpoint is called
+        # twice. `ratingNotifiedAt` above already blocks the second CALL; this
+        # makes FCM itself collapse a redelivery of the same event.
+        collapse_key=note.data.get("eventId"),
     )
 
     # Stamp AFTER a successful send. A notification failure must never roll
