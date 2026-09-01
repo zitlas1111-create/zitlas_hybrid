@@ -145,11 +145,143 @@ class TestTheFcmMessageItself:
         assert msg["android"]["notification"]["sound"] == push_service.SOUND_ANDROID
         assert msg["android"]["notification"]["sound"] != "default"
 
+    def _platform_message(self, monkeypatch, platform,
+                          ntype="meal_review_completed", renders_own=True):
+        captured = {}
+
+        def _fake_post(url, **kwargs):
+            captured["json"] = kwargs.get("json")
+
+            class _R:
+                status_code = 200
+                headers = {}
+                text = "{}"
+
+                @staticmethod
+                def json():
+                    return {"name": "ok"}
+            return _R()
+
+        monkeypatch.setattr(push_service, "is_configured", lambda: True)
+        monkeypatch.setattr(push_service, "_access_token", lambda: "t")
+        import requests
+        monkeypatch.setattr(requests, "post", _fake_post)
+        try:
+            push_service.send_to_token("tok", "T", "B", {"type": ntype},
+                                       notification_type=ntype, priority="high",
+                                       platform=platform,
+                                       renders_own=renders_own)
+        except Exception:
+            pass
+        body = captured.get("json") or {}
+        return body.get("message", body)
+
+    def test_ANDROID_GETS_NO_NOTIFICATION_BLOCK(self, monkeypatch):
+        """THE ROOT CAUSE OF "IT STILL LOOKS GENERIC".
+
+        A message carrying a `notification` block is drawn by the FCM SDK
+        whenever the app is backgrounded or terminated — the app never sees
+        it and cannot style it. Those are the two states in which people
+        actually read their tray, so every bit of ZITLAS identity the client
+        applies was reaching only the foreground.
+
+        Data-only is what moves rendering into the app for every state."""
+        msg = self._platform_message(monkeypatch, "android")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert "notification" not in msg, (
+            "a notification block hands rendering back to the FCM SDK, and "
+            "the ZITLAS icon/sound/photo/expanded text are lost again")
+        assert "notification" not in msg.get("android", {})
+
+    def test_AN_OLD_APK_STILL_GETS_A_NOTIFICATION_BLOCK(self, monkeypatch):
+        """THE MIGRATION SAFETY NET.
+
+        A build that predates FcmService.render cannot draw a data-only
+        message — its background handler only logs — so it would show NOTHING
+        at all. A backend deploy does not upgrade anyone's phone, so assuming
+        the capability from the platform alone would silence every user who
+        has not updated the app. The DEVICE declares it; the backend believes
+        only the declaration."""
+        msg = self._platform_message(monkeypatch, "android", renders_own=False)
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert "notification" in msg, (
+            "an un-upgraded Android install must keep the old behaviour, not "
+            "go silent")
+        assert msg["notification"]["title"] == "T"
+
+    def test_the_capability_is_what_switches_it_not_the_platform(
+            self, monkeypatch):
+        with_cap = self._platform_message(monkeypatch, "android", renders_own=True)
+        without = self._platform_message(monkeypatch, "android", renders_own=False)
+        if not with_cap or not without:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert "notification" not in with_cap
+        assert "notification" in without
+
+    def test_a_web_device_claiming_the_capability_is_still_web(self, monkeypatch):
+        # The flag only means "this Android build renders its own". It must
+        # not turn a browser into a data-only target.
+        msg = self._platform_message(monkeypatch, "web", renders_own=True)
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert "notification" in msg
+
+    def test_android_carries_the_text_in_data_instead(self, monkeypatch):
+        # With no notification block, this is the ONLY place the client can
+        # read the title and body from.
+        msg = self._platform_message(monkeypatch, "android")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert msg["data"]["title"] == "T"
+        assert msg["data"]["body"] == "B"
+
+    def test_android_data_messages_are_always_high_priority(self, monkeypatch):
+        """Not optional. A NORMAL-priority data message is held by Doze until
+        the next maintenance window, so the app never wakes to draw it and the
+        notification arrives late — a notification-message would still have
+        displayed. High priority is what buys that back."""
+        msg = self._platform_message(monkeypatch, "android", ntype="general")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert msg["android"]["priority"] == "high"
+
+    def test_the_channel_still_reaches_the_client(self, monkeypatch):
+        msg = self._platform_message(monkeypatch, "android")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert msg["data"]["channelId"] == push_service.CHANNEL_MEAL_REVIEWS
+
+    def test_WEB_KEEPS_ITS_NOTIFICATION_BLOCK(self, monkeypatch):
+        """The website's service worker reads `payload.notification`. Dropping
+        it for every platform would have silently killed web push."""
+        msg = self._platform_message(monkeypatch, "web")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert msg["notification"]["title"] == "T"
+        assert msg["notification"]["body"] == "B"
+
+    def test_ios_keeps_its_notification_block(self, monkeypatch):
+        msg = self._platform_message(monkeypatch, "ios")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert "notification" in msg
+
+    def test_an_unknown_platform_is_treated_as_web(self, monkeypatch):
+        """Fails SAFE. A device whose platform was never recorded still gets a
+        renderable notification rather than a data message no client on that
+        device knows how to draw."""
+        msg = self._platform_message(monkeypatch, "unknown")
+        if not msg:
+            pytest.skip("FCM transport not reachable in this environment")
+        assert "notification" in msg
+
     def test_the_os_drawn_notification_carries_the_zitlas_identity(
             self, monkeypatch):
-        """Background/closed delivery is drawn by Android from this block
-        alone — no Dart runs — so anything missing here is missing from every
-        notification the user is most likely to actually see."""
+        """The web/iOS path, where FCM still renders. Android no longer uses
+        this block at all, but a mis-set field here would still reach every
+        browser and iPhone."""
         msg = self._message(monkeypatch, "meal_review_completed", "high")
         if not msg:
             pytest.skip("FCM transport not reachable in this environment")
@@ -314,7 +446,8 @@ class TestHistoryIsNotDelivery:
         monkeypatch.setattr(push_service, "send_to_token",
                             lambda *a, **k: calls.append(a[0]) or {"ok": True})
         monkeypatch.setattr(notification_service, "_tokens_for_user",
-                            lambda db, uid: [("tokA", "s"), ("tokB", "s")])
+                            lambda db, uid: [("tokA", ("s", "android", True)),
+                             ("tokB", ("s", "android", True))])
         db = FakeClient()
         notification_service.send(db, UID, "Congratulations!", "You're in",
                                   type="coaching_accepted", priority="high")
@@ -331,7 +464,7 @@ class TestHistoryIsNotDelivery:
 
         monkeypatch.setattr(push_service, "send_to_token", _capture)
         monkeypatch.setattr(notification_service, "_tokens_for_user",
-                            lambda db, uid: [("tokA", "s")])
+                            lambda db, uid: [("tokA", ("s", "android", True))])
         db = FakeClient()
         notification_service.send(db, UID, "T", "M", type="coaching_accepted")
 
@@ -344,7 +477,7 @@ class TestHistoryIsNotDelivery:
             push_service, "send_to_token",
             lambda t, ti, b, data=None, **k: payloads.append(data or {}) or {"ok": True})
         monkeypatch.setattr(notification_service, "_tokens_for_user",
-                            lambda db, uid: [("tokA", "s")])
+                            lambda db, uid: [("tokA", ("s", "android", True))])
         db = FakeClient()
         notification_service.send(db, UID, "A", "1", type="coaching_accepted")
         notification_service.send(db, UID, "B", "2", type="coaching_accepted")

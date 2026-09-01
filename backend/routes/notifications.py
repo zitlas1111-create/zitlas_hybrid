@@ -243,6 +243,7 @@ async def notify_meal_review(body: CheckinBody, caller: dict = Depends(verify_fi
         athlete_id=athlete_id,
         rating=overall,
         comment=c.get("comment"),
+        image_url=c.get("imageUrl"),
     )
 
     res = notification_service.send(

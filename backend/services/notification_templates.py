@@ -40,6 +40,7 @@ backend deploy.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from typing import Any
 
 from services import push_service
@@ -109,6 +110,7 @@ def meal_review_completed(
     athlete_id: str,
     rating: float | None = None,
     comment: str | None = None,
+    image_url: str | None = None,
 ) -> Notification:
     """An expert finished reviewing an athlete's meal photo.
 
@@ -117,12 +119,12 @@ def meal_review_completed(
     the notification: a score with no reason for it sends the athlete into the
     app to find out why, which is the trip the notification exists to save.
 
-    It goes in the BODY rather than only in `data` because a push arriving
-    while the app is closed is drawn by Android from the `notification` block
-    alone — no Dart runs — so anything only in `data` is invisible until the
-    app is opened. Android collapses a long body to one line and expands it on
-    pull-down, which is exactly the wanted behaviour and needs nothing from
-    the client.
+    It goes in the BODY rather than only in `data` because the body is what
+    every platform renders without being asked: web and iOS get it in the FCM
+    `notification` block, and on Android the app copies it straight onto the
+    notification it draws. Anything that lives ONLY in `data` has to be read
+    and placed deliberately by each client, which is how the comment came to
+    be delivered but never shown.
     """
     meal = (meal_name or "your meal").strip()
     coach = (coach_name or "Your expert").strip()
@@ -135,6 +137,10 @@ def meal_review_completed(
     preview = _preview(comment or "")
     if preview:
         body += f" “{preview}”"
+
+    print(f"[NOTIFY_TEMPLATE] type=meal_review_completed "
+          f"expert={coach} rating={rating} meal={meal} "
+          f"hasComment={bool(preview)} hasImage={bool(image_url)}")
 
     return Notification(
         title="Zino • Meal Review",
@@ -160,6 +166,16 @@ def meal_review_completed(
             # the tray copy above is shortened.
             "comment": (comment or "").strip(),
             "deepLink": f"zitlas://meal-review/{checkin_id}",
+            # When the EVENT happened, so the tray entry is timestamped by the
+            # review rather than by when the phone happened to receive it —
+            # they differ by however long the device was offline or dozing.
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            # The meal photo. Android renders it as the notification's large
+            # icon collapsed and as a BigPicture expanded, which is the
+            # difference between "you have a notification" and something
+            # worth opening. Fetched best-effort by the client — a photo that
+            # will not load costs the picture, never the notification.
+            "imageUrl": image_url,
             # Stable per EVENT. The client uses it as the tray id, so a
             # redelivered push replaces its own entry instead of stacking a
             # second copy of the same review.

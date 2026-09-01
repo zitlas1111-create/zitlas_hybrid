@@ -5,6 +5,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:http/http.dart' as http;
+import 'package:path_provider/path_provider.dart';
 
 import '../storage/device_identity.dart';
 import '../storage/local_storage_service.dart';
@@ -24,12 +26,21 @@ import 'notification_payload.dart';
 /// `users/{uid}.pushTokens` (the legacy array the website writes) is kept in
 /// sync so a mixed web/mobile account keeps working; the backend reads both.
 ///
-/// FOREGROUND DISPLAY — Android does NOT draw a notification tray entry for a
-/// message that arrives while the app is in the foreground; FCM hands it to
-/// `onMessage` instead. So [showForeground] re-publishes it through
-/// flutter_local_notifications, which is what makes an in-app arrival look the
-/// same as a backgrounded one. Background/closed delivery is drawn by the OS
-/// from the `notification` block the backend sends — no Dart involved.
+/// RENDERING — on Android, ZITLAS draws EVERY notification itself, in every
+/// app state, through [render]. The backend sends Android a DATA-ONLY message
+/// for exactly this reason (see push_service.send_to_token): a message with an
+/// FCM `notification` block is drawn by the SDK whenever the app is not in the
+/// foreground, and the app never sees it — so all of the styling here applied
+/// only while the user was already looking at the app, and every notification
+/// they actually read in the tray came out looking stock.
+///
+/// One renderer for foreground, background and terminated also means there is
+/// no second display path to accidentally fire alongside the first, so
+/// duplicate notifications are prevented structurally rather than by care.
+///
+/// Web and iOS still receive an FCM `notification` block: the website's
+/// service worker reads `payload.notification`, and iOS has no equivalent
+/// background rendering hook.
 class FcmService {
   FcmService({
     FirebaseFirestore? firestore,
@@ -149,6 +160,13 @@ class FcmService {
     ),
   ];
 
+  /// Non-empty string, or null. FCM data values arrive as strings, and an
+  /// empty one must not beat a real fallback.
+  static String? _str(Object? v) {
+    final s = v?.toString().trim();
+    return (s == null || s.isEmpty || s == 'null') ? null : s;
+  }
+
   static String channelFor(String? type) {
     switch (type) {
       case 'chat_message':
@@ -203,6 +221,35 @@ class FcmService {
 
   /// Creates the Android channels and wires the local-notification tap
   /// handler. Safe to call repeatedly.
+  /// Creates the ZITLAS channels on [p]. Safe to call repeatedly and from any
+  /// isolate — `createNotificationChannel` is idempotent, and channels are
+  /// app-wide rather than per-isolate.
+  ///
+  /// The background isolate MUST do this too: it is a cold Dart isolate that
+  /// has never run `initLocalNotifications`, so without it the channel may
+  /// not exist yet on a device whose first ever notification arrives while
+  /// the app is terminated — and Android silently drops a notification
+  /// posted to a channel that does not exist.
+  static Future<void> _prepare(FlutterLocalNotificationsPlugin p) async {
+    try {
+      await p.initialize(
+        settings: const InitializationSettings(
+          android: AndroidInitializationSettings('ic_stat_zitlas'),
+          iOS: DarwinInitializationSettings(),
+        ),
+      );
+      final android = p.resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin>();
+      if (android != null) {
+        for (final channel in _channels) {
+          await android.createNotificationChannel(channel);
+        }
+      }
+    } catch (e) {
+      debugPrint('[ANDROID_NOTIFICATION] channel prepare failed: $e');
+    }
+  }
+
   Future<void> initLocalNotifications({
     void Function(NotificationPayload payload)? onTap,
   }) async {
@@ -242,19 +289,59 @@ class FcmService {
   /// notifying you about the screen you are reading.
   Future<void> showForeground(RemoteMessage message, {bool suppress = false}) async {
     if (suppress) {
-      if (kDebugMode) debugPrint('[FCM] foreground notification suppressed (user is on this screen)');
+      debugPrint('[ANDROID_NOTIFICATION] suppressed — user is on this screen');
       return;
     }
+    await render(message, plugin: _plugin);
+  }
+
+  /// Draws [message] as a ZITLAS notification. THE one renderer.
+  ///
+  /// Called from three places, and it has to be the same code in all three or
+  /// the same event looks like a different app depending on what the user was
+  /// doing when it arrived:
+  ///
+  ///   * `onMessage`      — app in the foreground
+  ///   * the BACKGROUND handler — app backgrounded or terminated
+  ///   * (web/iOS keep FCM's own rendering; see push_service.send_to_token)
+  ///
+  /// Android now receives DATA-ONLY messages precisely so this runs in every
+  /// state. Previously the backend sent a `notification` block, which the FCM
+  /// SDK renders itself whenever the app is not in the foreground — the app
+  /// never saw those, so none of the styling below applied in the two states
+  /// where people actually read notifications. That is why they looked stock.
+  ///
+  /// `static` because the background isolate has no FcmService instance and
+  /// cannot reach one: it is a separate Dart isolate with its own memory.
+  static Future<void> render(
+    RemoteMessage message, {
+    FlutterLocalNotificationsPlugin? plugin,
+  }) async {
     final notification = message.notification;
     final data = message.data.cast<String, dynamic>();
     final payload = NotificationPayload.fromData(data);
-    debugPrint('[NOTIFY] received type=${payload.type} '
-        'channel=${channelFor(payload.type)}');
-    final title = notification?.title ?? 'ZITLAS';
-    final body = notification?.body ?? '';
+
+    // Title/body come from `data` on Android (there is no notification block
+    // in a data-only message) and from the notification block on the
+    // platforms that still get one.
+    final title = _str(data['title']) ?? notification?.title ?? 'ZITLAS';
+    final body = _str(data['body']) ?? notification?.body ?? '';
+    debugPrint('[ANDROID_NOTIFICATION] render type=${payload.type} '
+        'channel=${channelFor(payload.type)} hasImage=${data['imageUrl'] != null}');
     if (title.isEmpty && body.isEmpty) return;
 
-    await initLocalNotifications();
+    final p = plugin ?? FlutterLocalNotificationsPlugin();
+    await _prepare(p);
+
+    // The meal photo, when there is one. A meal-review notification showing
+    // the actual plate is the difference between "you have a notification"
+    // and something worth opening.
+    //
+    // Best effort on purpose: this runs in a background isolate on a phone
+    // that may be on a bad connection, so it is capped tightly and ANY
+    // failure falls through to the text-only notification rather than
+    // costing the user the notification altogether.
+    final imageFile = await _cacheImage(_str(data['imageUrl']));
     final channelId = channelFor(payload.type);
     final channel = _channels.firstWhere(
       (c) => c.id == channelId,
@@ -278,7 +365,7 @@ class FcmService {
         .hashCode &
         0x7fffffff;
     try {
-      await _plugin.show(
+      await p.show(
         id: id,
         title: title,
         body: body,
@@ -314,12 +401,28 @@ class FcmService {
             // notification expandable and then renders nothing when expanded
             // — which is how a coach's written feedback vanished at the exact
             // moment the user pulled the notification down to read it.
-            styleInformation: BigTextStyleInformation(
-              body,
-              contentTitle: title,
-              htmlFormatBigText: false,
-              htmlFormatContentTitle: false,
-            ),
+            // Collapsed, the photo sits on the right as the large icon;
+            // expanded, it fills the notification. Falls back to expanded
+            // text when there is no photo or the fetch failed.
+            largeIcon:
+                imageFile == null ? null : FilePathAndroidBitmap(imageFile),
+            styleInformation: imageFile != null
+                ? BigPictureStyleInformation(
+                    FilePathAndroidBitmap(imageFile),
+                    contentTitle: title,
+                    summaryText: body,
+                    htmlFormatContentTitle: false,
+                    htmlFormatSummaryText: false,
+                    // Keeps the thumbnail while collapsed and drops it once
+                    // expanded, so the big picture is not shown twice.
+                    hideExpandedLargeIcon: true,
+                  )
+                : BigTextStyleInformation(
+                    body,
+                    contentTitle: title,
+                    htmlFormatBigText: false,
+                    htmlFormatContentTitle: false,
+                  ),
             // Same tag the backend sets, so a foreground-drawn notification and
             // an OS-drawn one for the same conversation collapse together.
             tag: payload.chatId ?? payload.mealId,
@@ -330,6 +433,40 @@ class FcmService {
       );
     } catch (e) {
       if (kDebugMode) debugPrint('[FCM] foreground show failed: $e');
+    }
+  }
+
+  /// Downloads [url] to a temp file for use as a notification image, or null.
+  ///
+  /// Returns null for ANY problem — no url, a non-image, a slow network, a
+  /// dead link, no temp directory. A notification that fails to arrive
+  /// because its picture would not load is far worse than a text one.
+  static Future<String?> _cacheImage(String? url) async {
+    if (url == null || !url.startsWith('https://')) return null;
+    try {
+      final res = await http
+          .get(Uri.parse(url))
+          .timeout(const Duration(seconds: 6));
+      if (res.statusCode != 200 || res.bodyBytes.isEmpty) {
+        debugPrint('[ANDROID_NOTIFICATION] image fetch status=${res.statusCode}');
+        return null;
+      }
+      // Android rejects an oversized bitmap outright; a meal photo well past
+      // this is not going to render usefully in a tray entry anyway.
+      if (res.bodyBytes.length > 2 * 1024 * 1024) {
+        debugPrint('[ANDROID_NOTIFICATION] image too large '
+            '(${res.bodyBytes.length ~/ 1024}KB) — text only');
+        return null;
+      }
+      final dir = await getTemporaryDirectory();
+      // Named by the url hash so redelivery of the same event reuses the
+      // file instead of filling the cache directory with copies.
+      final file = File('${dir.path}/zitlas_notif_${url.hashCode & 0x7fffffff}.img');
+      await file.writeAsBytes(res.bodyBytes);
+      return file.path;
+    } catch (e) {
+      debugPrint('[ANDROID_NOTIFICATION] image unavailable, sending text only: $e');
+      return null;
     }
   }
 
@@ -491,6 +628,21 @@ class FcmService {
       // say so, and without a timestamp that is indistinguishable from a
       // device which is merely quiet.
       'lastActiveAt': now,
+      // CAPABILITY FLAG — the migration lever for data-only messages.
+      //
+      // The backend sends Android a data-only message so this app can render
+      // it (see push_service.send_to_token). A build that predates
+      // FcmService.render CANNOT render one: its background handler only
+      // logs, so a data-only message produces NO notification at all. Since a
+      // backend deploy does not upgrade anyone's phone, sending data-only to
+      // every Android device would silence every user who has not updated.
+      //
+      // So the DEVICE declares what it can do, and the backend keeps sending
+      // the old `notification` block to anything that does not claim this.
+      // Old installs keep working exactly as they do today, this build gets
+      // the branded notification, and backend and app can ship in either
+      // order. Remove this only once no un-upgraded installs remain.
+      'rendersOwnNotifications': true,
       // `loggedIn` is the session fact; `enabled` is the delivery switch.
       // They are the same today, but a user muting ZITLAS in Settings must
       // be able to clear `enabled` WITHOUT the backend concluding they
@@ -557,8 +709,8 @@ class FcmService {
       await _db.collection('users').doc(uid).set({
         'pushTokens': FieldValue.arrayRemove([token]),
       }, SetOptions(merge: true));
-      debugPrint('[FCM] session ended for $uid on this device '
-          '(token ${_short(token)}, enabled=false)');
+      debugPrint('[FCM] user logout uid=$uid token=${_short(token)}');
+      debugPrint('[FCM] notification session disabled');
     } catch (e) {
       debugPrint('[FCM] unregister failed (non-fatal): $e');
     }

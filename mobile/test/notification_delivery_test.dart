@@ -228,9 +228,15 @@ void main() {
       }
     });
 
-    test('the background handler does not draw its own notification', () {
-      // The OS already draws it from the `notification` block. Drawing a
-      // second one here is a guaranteed duplicate.
+    test('THE BACKGROUND HANDLER DRAWS THE NOTIFICATION', () {
+      // THE ROOT CAUSE OF "IT STILL LOOKS GENERIC".
+      //
+      // This handler used to only log, because the backend sent an FCM
+      // `notification` block and the SDK drew those itself. So every
+      // notification read in the tray — backgrounded or terminated, i.e. all
+      // of them — was rendered by Android with none of the ZITLAS icon,
+      // tone, colour, expanded text or meal photo, no matter what the client
+      // configured. Those settings only ever applied in the foreground.
       final main = File('lib/main.dart');
       if (!main.existsSync()) {
         markTestSkipped('main.dart not found');
@@ -241,9 +247,34 @@ void main() {
         src.indexOf('zitlasFirebaseMessagingBackgroundHandler'),
       );
       final body = handler.substring(0, handler.indexOf('Future<void> main'));
-      expect(body.contains('.show('), isFalse,
-          reason: 'the background isolate must not display a notification — '
-              'the OS already did');
+      expect(body.contains('FcmService.render'), isTrue,
+          reason: 'without this, background and terminated notifications are '
+              'drawn by the FCM SDK and look stock');
+      expect(body.contains('bootstrapFirebase'), isTrue,
+          reason: 'a background isolate starts cold — it does not inherit '
+              "main()'s Firebase initialisation");
+    });
+
+    test('there is exactly ONE renderer, so duplicates are impossible', () {
+      // Foreground and background never both fire for one message, and
+      // Android is sent no notification block for the SDK to draw a second
+      // copy from. That is a structural guarantee, not a carefully avoided
+      // race — which is what the previous "handler must not draw" rule was.
+      final fcm = File('lib/core/notifications/fcm_service.dart');
+      final main = File('lib/main.dart');
+      if (!fcm.existsSync() || !main.existsSync()) {
+        markTestSkipped('sources not reachable from this run');
+        return;
+      }
+      final fcmSrc = fcm.readAsStringSync();
+      // Exactly one call site that actually posts to the tray.
+      expect('.show('.allMatches(fcmSrc).length, 1,
+          reason: 'a second show() is a second notification');
+      // …and both entry points go through it.
+      expect(fcmSrc.contains('await render(message, plugin: _plugin)'), isTrue,
+          reason: 'the foreground path must reuse the shared renderer');
+      expect(main.readAsStringSync().contains('FcmService.render'), isTrue,
+          reason: 'the background path must reuse the shared renderer');
     });
   });
 }

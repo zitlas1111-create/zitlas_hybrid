@@ -64,9 +64,19 @@ def _tokens_for_user(db, user_id: str) -> list[tuple[str, str]]:
                .where("uid", "==", user_id)
                .where("enabled", "==", True))
         for doc in q.stream():
-            token = (doc.to_dict() or {}).get("fcmToken") or doc.id
+            d = doc.to_dict() or {}
+            token = d.get("fcmToken") or doc.id
             if token:
-                out.setdefault(token, "registry")
+                # Platform + capability decide HOW the message is built.
+                # An Android build that declares `rendersOwnNotifications`
+                # gets a data-only message it draws itself; everything else
+                # keeps the FCM `notification` block. See
+                # push_service.send_to_token for why that distinction matters.
+                out.setdefault(token, (
+                    "registry",
+                    d.get("platform") or "unknown",
+                    bool(d.get("rendersOwnNotifications")),
+                ))
     except Exception as e:
         print(f"[NOTIFY] device_tokens lookup failed uid={user_id}: {type(e).__name__}: {e}")
 
@@ -103,7 +113,7 @@ def _tokens_for_user(db, user_id: str) -> list[tuple[str, str]]:
                 # Could not find out. Deliver — a Firestore blip must not read
                 # as "everyone signed out", and the worst case is one extra
                 # notification to a device that was probably still valid.
-                out[token] = "legacy"
+                out[token] = ("legacy", "unknown", False)
                 continue
             if status == REGISTRY_ABSENT:
                 skipped.append((token, "unregistered_device"))
@@ -116,14 +126,22 @@ def _tokens_for_user(db, user_id: str) -> list[tuple[str, str]]:
                 continue
             # Registry-confirmed and active, but only listed in the array —
             # the `enabled == True` query above should already have found it.
-            out[token] = "registry"
+            out[token] = ("registry", "unknown", False)
     except Exception as e:
         print(f"[NOTIFY] pushTokens lookup failed uid={user_id}: {type(e).__name__}: {e}")
 
     for token, why in skipped:
-        print(f"[NOTIFY] skipped uid={user_id} token={_short(token)} reason={why}")
+        print(f"[NOTIFY_TARGET] skipped uid={user_id} token={_short(token)} "
+              f"reason={why}")
 
+    _LAST_SKIPPED[user_id] = [why for _t, why in skipped]
     return list(out.items())
+
+
+#: What the most recent targeting pass rejected, per uid — read only by the
+#: log line in `_push`, which runs immediately after. Not state anything
+#: depends on: a miss just means the count logs as 0.
+_LAST_SKIPPED: dict[str, list[str]] = {}
 
 
 def _short(token: str) -> str:
@@ -244,6 +262,7 @@ def push_only(db, user_id: str, *, title: str, body: str,
     payload.setdefault("type", type or "general")
 
     tokens = _tokens_for_user(db, user_id)
+    skipped_reasons = _LAST_SKIPPED.pop(user_id, [])
 
     # NO VERIFIED DEVICE = NOTHING TO SEND. Said explicitly rather than as a
     # bare tokens=0, because "nobody is signed in on any device" and "the push
@@ -255,12 +274,21 @@ def push_only(db, user_id: str, *, title: str, body: str,
         return {"sent": 0, "failed": 0, "tokens": 0,
                 "reason": "no_active_authenticated_session"}
 
-    registry = sum(1 for _, src in tokens if src == "registry")
+    registry = sum(1 for _, (src, _p, _r) in tokens if src == "registry")
+    # Stated BEFORE the sends, so a targeting mistake is visible in the log
+    # even if every delivery afterwards fails for an unrelated reason.
+    print(f"[NOTIFY_TARGET] uid={user_id} activeTokens={registry} "
+          f"staleTokens={len(skipped_reasons)} targetedTokens={len(tokens)}")
     sent = failed = stale_removed = 0
-    for token, source in tokens:
+    for token, (source, platform, renders_own) in tokens:
         res = push_service.send_to_token(
             token, title, body, payload,
             notification_type=type, collapse_key=collapse_key,
+            # An Android build that draws its own notifications gets a
+            # data-only message; web, iOS and older Android builds need the
+            # FCM `notification` block. The registry is what knows which this
+            # device is — the device itself declares the capability.
+            platform=platform, renders_own=renders_own,
             # FORWARDED, not dropped. `send()`'s callers pass priority="high"
             # for time-critical events; it used to reach only the Firestore
             # document and never the push itself.

@@ -176,6 +176,28 @@ void main() {
           reason: 'interpolating the raw token puts a credential in logcat');
     });
 
+    test('the device declares that it can render its own notifications', () {
+      // THE MIGRATION LEVER. The backend sends a data-only message only to a
+      // device that claims this; everything else keeps the old FCM
+      // notification block. Without the claim, a backend deploy would send
+      // data-only messages to builds whose background handler only logs —
+      // and every un-upgraded user would silently stop getting notifications
+      // altogether. A backend deploy does not upgrade anyone's phone.
+      final src = fcm();
+      if (src.isEmpty) return;
+      final store = src.substring(src.indexOf('Future<void> _storeToken'));
+      expect(store.contains("'rendersOwnNotifications': true"), isTrue,
+          reason: 'this build DOES render its own notifications and must say '
+              'so, or it keeps receiving the un-branded FCM-drawn ones');
+    });
+
+    test('logout is visible in a release log', () {
+      final src = fcm();
+      if (src.isEmpty) return;
+      expect(src.contains('[FCM] user logout'), isTrue);
+      expect(src.contains('[FCM] notification session disabled'), isTrue);
+    });
+
     test('re-login in the same session re-registers', () {
       final src = source('lib/app/app.dart');
       if (src.isEmpty) return;

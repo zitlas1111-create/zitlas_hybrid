@@ -189,6 +189,8 @@ def send_to_token(
     notification_type: str | None = None,
     collapse_key: str | None = None,
     priority: str | None = None,
+    platform: str | None = None,
+    renders_own: bool = False,
 ) -> dict[str, Any]:
     """Send one notification to one device token via FCM HTTP v1.
 
@@ -212,13 +214,45 @@ def send_to_token(
     # The caller's priority is HONOURED here. See is_high_priority().
     high = is_high_priority(notification_type, priority)
 
+    # ANDROID DRAWS ITS OWN NOTIFICATIONS.
+    #
+    # A message carrying a `notification` block is rendered by the FCM SDK
+    # itself whenever the app is backgrounded or terminated — the app never
+    # sees it, and cannot style it. Those are exactly the two states in which
+    # anyone actually looks at the tray, so every bit of ZITLAS identity the
+    # Flutter side applies (expanded text, the meal photo, the brand colour,
+    # grouping) was being applied ONLY in the foreground, where the user is
+    # already looking at the app. That is why the notification kept coming out
+    # looking like a stock Android one no matter what was configured.
+    #
+    # Sending Android a DATA-ONLY message moves rendering into the app for
+    # every state. `zitlasFirebaseMessagingBackgroundHandler` draws it through
+    # flutter_local_notifications, which is the same code path the foreground
+    # already used — so there is now exactly ONE renderer on Android and the
+    # duplicate-notification risk disappears structurally rather than by
+    # being carefully avoided.
+    #
+    # Web and iOS KEEP the notification block: the website's service worker
+    # reads `payload.notification`, and iOS has no equivalent background
+    # rendering hook. Per-token platform comes from the device registry.
+    # BOTH conditions, not just the platform. `renders_own` is what the
+    # DEVICE declared when it registered (fcm_service.dart
+    # `rendersOwnNotifications`). A build that predates FcmService.render
+    # cannot draw a data-only message — its background handler only logs — so
+    # sending one would produce no notification at all. A backend deploy does
+    # not upgrade anyone's phone, so assuming the capability from the platform
+    # alone would silence every user who has not updated the app.
+    android_native = (platform or "").lower() == "android" and renders_own
+
     message: dict[str, Any] = {
         "token": token,
-        "notification": {"title": title, "body": body},
         # Every value must be a string — FCM rejects non-string data values.
         # The Flutter side reads `type` + the id fields out of this to deep-link
-        # (see NotificationRouter.routeFromData).
-        "data": payload_data,
+        # (see NotificationRouter.routeFromData). On Android it ALSO reads the
+        # title/body from here, because there is no notification block to read
+        # them from.
+        "data": ({**payload_data, "title": title, "body": body}
+                 if android_native else payload_data),
         "android": {
             "priority": "high" if high else "normal",
             "notification": {
@@ -257,11 +291,38 @@ def send_to_token(
             "fcm_options": {"link": payload_data.get("url", "/pages/notifications/notifications.html")},
         },
     }
-    # Drop a null tag rather than sending it — FCM rejects explicit nulls.
-    if not message["android"]["notification"].get("tag"):
-        message["android"]["notification"].pop("tag", None)
-    if collapse_key:
-        message["android"]["collapse_key"] = collapse_key
+
+    if android_native:
+        # DATA-ONLY. No `notification` block anywhere in the message, or the
+        # FCM SDK draws it itself and the app never gets the chance.
+        #
+        # `priority: high` is not optional here: a NORMAL-priority data message
+        # is held by Doze until the next maintenance window, so the app would
+        # not wake to draw anything and the notification would arrive minutes
+        # or hours late. A notification-message would still have displayed.
+        # This is the one thing data-only genuinely costs, and high priority is
+        # what buys it back.
+        message["android"] = {"priority": "high"}
+        if collapse_key:
+            message["android"]["collapse_key"] = collapse_key
+        # The channel is chosen by the APP for a data message, but it is sent
+        # anyway so a future client can honour a server-side override without
+        # a new field, and so the log below can state which channel this
+        # notification belongs to.
+        message["data"]["channelId"] = channel
+        message["data"]["androidChannelId"] = channel
+    else:
+        message["notification"] = {"title": title, "body": body}
+        # Drop a null tag rather than sending it — FCM rejects explicit nulls.
+        if not message["android"]["notification"].get("tag"):
+            message["android"]["notification"].pop("tag", None)
+        if collapse_key:
+            message["android"]["collapse_key"] = collapse_key
+
+    print(f"[FCM] dataOnly={str(android_native).lower()} channel={channel} "
+          f"priority={'high' if high else 'normal'} "
+          f"platform={platform or 'unknown'} "
+          f"renderer={'app' if android_native else 'fcm'}")
 
     try:
         r = requests.post(

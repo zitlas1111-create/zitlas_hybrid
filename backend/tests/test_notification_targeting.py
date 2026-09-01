@@ -61,7 +61,12 @@ def legacy(db, uid: str, tokens: list[str]):
 
 
 def tokens_for(db, uid: str) -> dict[str, str]:
-    return dict(notification_service._tokens_for_user(db, uid))
+    """{token: source}. The service also carries each device's PLATFORM and
+    whether it declared it can render its own notifications — the send path
+    uses both to choose between a data-only message and an FCM notification
+    block. Those are asserted in test_notification_delivery.py."""
+    return {tok: src for tok, (src, _platform, _renders_own)
+            in notification_service._tokens_for_user(db, uid)}
 
 
 class TestTheRegistryDecides:

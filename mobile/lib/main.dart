@@ -7,6 +7,7 @@ import 'package:flutter/services.dart';
 import 'app/app.dart';
 import 'app/splash_gate.dart';
 import 'core/config/firebase_bootstrap.dart';
+import 'core/notifications/fcm_service.dart';
 import 'core/steps/step_background_worker.dart';
 import 'core/storage/local_storage_service.dart';
 import 'features/rest_timer/rest_timer_controller.dart';
@@ -18,14 +19,40 @@ import 'features/rest_timer/rest_timer_controller.dart';
 /// what stops tree-shaking from removing it in release builds. Without it,
 /// release builds silently lose background handling.
 ///
-/// Deliberately does almost nothing: this isolate has no widget tree, so
-/// touching UI or navigating from here is invalid. The notification itself is
-/// drawn by the OS from the `notification` block the backend sends, and the tap
-/// is handled later by `onMessageOpenedApp`/`getInitialMessage` in the main
-/// isolate — see NotificationRouter.
+/// THIS is what draws the notification when the app is backgrounded or
+/// terminated — the two states in which people actually read their tray.
+///
+/// It used to only log. The backend sent an FCM `notification` block, so the
+/// FCM SDK drew those itself and the app never saw them: the ZITLAS icon,
+/// tone, colour, expanded text and meal photo were all applied in
+/// [FcmService.render], which only ran in the FOREGROUND. That is precisely
+/// why the notification kept arriving looking like a stock Android one no
+/// matter what was configured. Android now receives DATA-ONLY messages (see
+/// push_service.send_to_token) so this handler runs for every message and
+/// [FcmService.render] is the single renderer in all three states.
+///
+/// Still does NOT navigate: this is a separate Dart isolate with no widget
+/// tree, so touching UI from here is invalid. The tap is handled later by
+/// `onMessageOpenedApp`/`getInitialMessage` in the main isolate — see
+/// NotificationRouter.
+///
+/// Firebase must be initialised here explicitly: a background isolate starts
+/// cold and does not inherit `main()`'s initialisation.
 @pragma('vm:entry-point')
 Future<void> zitlasFirebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  debugPrint('[FCM BG] ${message.messageId} type=${message.data['type']}');
+  debugPrint('[FCM] background message type=${message.data['type']}');
+  // The shared bootstrap, not a second Firebase.initializeApp() — it already
+  // swallows the duplicate-app case and keeps every entry point reading the
+  // same native config.
+  await bootstrapFirebase();
+  try {
+    await FcmService.render(message);
+  } catch (e, st) {
+    // Swallowed only at the very top of a background isolate, where an
+    // uncaught error would take the isolate down with no user-visible signal
+    // at all. The reason is logged rather than hidden.
+    debugPrint('[ANDROID_NOTIFICATION] background render failed: $e\n$st');
+  }
 }
 
 Future<void> main() async {
