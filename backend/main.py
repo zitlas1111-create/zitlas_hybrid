@@ -52,6 +52,7 @@ from routes import recipes
 from routes import expert_ratings
 from routes import creator_recipes
 from routes import entitlements as entitlements_routes
+from routes import trial_report
 from services import rag_service
 
 # ── Directory paths ──────────────────────────────────────────────────────────
@@ -255,15 +256,54 @@ async def lifespan(app: FastAPI):
         _coaching_scheduler.shutdown(wait=False)
 
 
+# ── Interactive API docs: local only ─────────────────────────────────────────
+#
+# /docs, /redoc and /openapi.json publish every route, its exact request
+# schema and its parameters. That is a development asset and a production
+# liability: several endpoints are not yet authenticated, and the schema is
+# precisely what turns a rejected request into an accepted one. Serving the
+# map is not the vulnerability, but it removes the only friction there is.
+#
+# PRODUCTION IS DETECTED FROM RAILWAY'S OWN INJECTED VARIABLES, so this needs
+# no configuration to be correct in either place: Railway sets RAILWAY_* in
+# every deployed container and nothing sets them on a developer's machine, so
+# docs are off in production and on locally, by default, with no .env step.
+#
+# ENABLE_API_DOCS overrides in BOTH directions — "true" re-enables them on a
+# deployed environment (a staging service, say), "false" disables them
+# locally. Same _env_bool spelling launch_config.py already uses.
+_RAILWAY_MARKERS = (
+    "RAILWAY_ENVIRONMENT",
+    "RAILWAY_ENVIRONMENT_NAME",
+    "RAILWAY_PROJECT_ID",
+    "RAILWAY_SERVICE_ID",
+)
+_IS_DEPLOYED = any(os.getenv(name) for name in _RAILWAY_MARKERS)
+
+
+def _docs_enabled() -> bool:
+    raw = os.getenv("ENABLE_API_DOCS")
+    if raw is not None:
+        return raw.strip().lower() in ("1", "true", "yes", "on")
+    return not _IS_DEPLOYED
+
+
+_DOCS_ON = _docs_enabled()
+print(f"[STARTUP] interactive API docs {'ENABLED' if _DOCS_ON else 'DISABLED'} "
+      f"(deployed={_IS_DEPLOYED}); set ENABLE_API_DOCS to override")
+
 # ── App ──────────────────────────────────────────────────────────────────────
+# Passing None is FastAPI's own supported way to switch a docs route off — it
+# is never registered, so the path 404s like any unknown route rather than
+# existing behind a guard. No schema, route, auth or CORS behaviour changes.
 app = FastAPI(
     lifespan=lifespan,
     title="ZITLAS API",
     description="AI-powered weight-loss and nutrition platform — backend API",
     version="2.0.0",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json",
+    docs_url="/docs" if _DOCS_ON else None,
+    redoc_url="/redoc" if _DOCS_ON else None,
+    openapi_url="/openapi.json" if _DOCS_ON else None,
 )
 
 # ── CORS (needed once frontend calls APIs) ───────────────────────────────────
@@ -312,6 +352,11 @@ app.include_router(coaching.router,     prefix="/api/coaching",    tags=["Coachi
 app.include_router(expert_ratings.router, prefix="/api/expert-ratings", tags=["Expert Ratings"])
 app.include_router(creator_recipes.router, prefix="/api/creator-recipes", tags=["Creator Recipes"])
 app.include_router(meal_ai.router,      prefix="/api/meal",        tags=["Meal AI"])
+app.include_router(trial_report.router, prefix="/api/trial-report", tags=["Trial Report"])
+# Plural = the athlete's report HISTORY (summaries). Separate prefix because
+# the singular router's "/{request_id}" would otherwise capture it.
+app.include_router(trial_report.history_router, prefix="/api/trial-reports",
+                   tags=["Trial Report"])
 app.include_router(payment.router,      prefix="/api/payment",     tags=["Payment"])
 app.include_router(admin.router,        prefix="/api/admin",       tags=["Admin"])
 app.include_router(notifications.router, prefix="/api/notifications", tags=["Notifications"])

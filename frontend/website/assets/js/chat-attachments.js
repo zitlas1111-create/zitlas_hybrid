@@ -102,9 +102,16 @@
      now return 404 to the nutritionist reviewing them.
      For those callers a LOUD FAILURE is strictly better than a saved
      record that will not survive: the athlete is told to retry while
-     they still have the photo, instead of being told it worked. Chat
-     attachments keep the fallback — they are read immediately and are
-     not persisted as long-lived references. */
+     they still have the photo, instead of being told it worked.
+
+     CHAT ATTACHMENTS NOW REQUIRE IT TOO. This note previously said chat
+     kept the fallback because its images were "read immediately and not
+     persisted as long-lived references." That was not true: the URL is
+     written into chat_rooms/{id}/messages/{id}.imageUrl, firestore.rules
+     makes those messages IMMUTABLE (`allow update, delete: if false`), and
+     the full history is re-read by onSnapshot every time a chat opens. So
+     a chat image rots into a permanent 404 exactly like a meal check-in
+     did. All three website chat upload sites now pass requireDurable. */
   var _STORAGE_TIMEOUT_MS = 30000;
 
   function _withTimeout(promise, ms, label) {

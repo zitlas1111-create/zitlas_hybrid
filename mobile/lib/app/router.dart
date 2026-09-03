@@ -34,6 +34,8 @@ import '../features/profile/presentation/screens/notification_settings_screen.da
 import '../features/profile/presentation/screens/personal_info_screen.dart';
 import '../features/profile/presentation/screens/profile_screen.dart';
 import '../features/reviews/presentation/screens/reviews_screen.dart';
+import '../features/trial_report/presentation/screens/trial_report_history_screen.dart';
+import '../features/trial_report/presentation/screens/trial_report_screen.dart';
 import '../features/workout/presentation/screens/workout_screen.dart';
 import '../features/zino/data/zino_context_builder.dart';
 import '../features/zino/presentation/screens/zino_screen.dart';
@@ -190,6 +192,26 @@ GoRouter buildRouter(AuthState authState) {
         ),
       ),
       GoRoute(path: '/reviews/:id', builder: (context, state) => const ReviewsScreen()),
+      // Trial Completion Report. Top-level, not inside the tab shell: it is a
+      // full-screen summary of a finished engagement, reached from a
+      // notification or the coaching surface, the same way /membership is.
+      // The path parameter is the ENGAGEMENT id (personal_coaching.requestId),
+      // never the athlete's uid — an athlete has many engagements and each has
+      // its own report.
+      GoRoute(
+        path: '/trial-report/:requestId',
+        builder: (context, state) => TrialReportScreen(
+          requestId: state.pathParameters['requestId'] ?? '',
+        ),
+      ),
+      // Report HISTORY (plural). Separate from the detail route above, which
+      // stays the only way to open one report. History exists because
+      // `personal_coaching/{uid}` is overwritten when a new engagement
+      // starts, leaving earlier reports stored but undiscoverable.
+      GoRoute(
+        path: '/trial-reports',
+        builder: (context, state) => const TrialReportHistoryScreen(),
+      ),
       // "Get Easy ZITLAS Recipe" — top-level (not nested in the Diet tab's
       // shell) so it pushes as a real full-screen page with its own back
       // button, the same way /chat/:roomId and /experts/:id do.

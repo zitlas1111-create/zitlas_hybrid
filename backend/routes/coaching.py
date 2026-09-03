@@ -757,7 +757,8 @@ async def end_coaching(caller: dict = Depends(verify_firebase_token)):
 
         return {"already": False, "coachId": rel.get("coachId"),
                 "coachName": rel.get("coachName"),
-                "athleteName": rel.get("athleteName")}
+                "athleteName": rel.get("athleteName"),
+                "requestId": rel.get("requestId")}
 
     try:
         result = _txn(db.transaction())
@@ -773,6 +774,25 @@ async def end_coaching(caller: dict = Depends(verify_firebase_token)):
     if not result.get("already"):
         athlete_name = result.get("athleteName") or "Your athlete"
         coach_name = result.get("coachName") or "your coach"
+
+        # TRIAL COMPLETION REPORT — after the transaction has committed, so
+        # the engagement is already 'ended' whatever happens here. Additive
+        # only: generate_and_store never raises, and this try/except is the
+        # second guard. Ending coaching must never fail because a summary of
+        # it could not be built. Idempotent with the expiry sweep — both
+        # target trial_reports/{requestId}, which refuses to be overwritten.
+        _request_id = result.get("requestId")
+        if _request_id:
+            try:
+                from services import trial_report_store
+
+                trial_report_store.generate_and_store(athlete_uid, _request_id)
+            except Exception:  # noqa: BLE001 — see comment above
+                print(f"[COACHING END] trial report generation raised "
+                      f"(non-fatal) — athlete={athlete_uid} "
+                      f"request={_request_id}")
+                print(traceback.format_exc())
+
         try:
             notify(db, result.get("coachId"), "Coaching ended",
                    f"{athlete_name} has ended their Personal Coaching with you.",

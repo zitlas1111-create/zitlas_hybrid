@@ -2700,7 +2700,16 @@
         var f = file.files && file.files[0];
         file.value = '';
         if (!f) return;
-        ZitlasChatAttach.upload(f)
+        /* requireDurable: this URL is written into
+           chat_rooms/{id}/messages/{id}.imageUrl, which firestore.rules
+           makes IMMUTABLE (`allow update, delete: if false`), and the whole
+           history is re-read by onSnapshot every time the workspace opens.
+           The ephemeral /uploads/chat/… fallback lives on the container's
+           disk and is gone at the next deploy or crash-restart, leaving a
+           permanent message pointing at a 404 — the exact rot that hit every
+           meal check-in. Failing loudly while the sender still has the file
+           is strictly better than a saved message that cannot survive. */
+        ZitlasChatAttach.upload(f, { pathPrefix: 'chat_uploads', requireDurable: true })
           .then(function (url) { sendChatMessage('', url); })
           .catch(function (e) { toast(e && e.message ? e.message : 'Image upload failed.'); });
       });

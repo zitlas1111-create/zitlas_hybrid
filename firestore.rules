@@ -326,6 +326,27 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // ── trial_reports/{requestId} — Trial Completion Report snapshot ──
+    // Written ONLY by the backend (Admin SDK, services/trial_report_store.py)
+    // when a coaching engagement ends. A client must never be able to
+    // manufacture a "completed trial" report, so every client write is
+    // denied — same posture as wallet_transactions and razorpay_orders.
+    //
+    // READ is granted to the two parties named ON the report itself, matching
+    // weekly_reviews directly above. Deliberately NOT isActiveCoachOf(): the
+    // report exists precisely because the engagement ENDED, at which point
+    // that helper is false by definition and the coach could never read the
+    // record of their own completed engagement.
+    //
+    // The doc id is the requestId, so one engagement has exactly one report
+    // and a second trial cannot overwrite an earlier one's.
+    match /trial_reports/{requestId} {
+      allow read: if signedIn()
+        && (resource.data.athleteId == request.auth.uid
+            || resource.data.coachId == request.auth.uid);
+      allow write: if false;
+    }
+
     // ── meal_snap_logs/{uid}/{date}/{logId} — personal AI log ──
     match /meal_snap_logs/{uid}/{date}/{logId} {
       allow read, write: if isUser(uid);

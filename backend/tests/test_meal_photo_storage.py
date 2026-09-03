@@ -78,24 +78,48 @@ class TestTheWebsiteCallSites:
             assert "requireDurable: true" in c
 
 
-class TestChatIsDeliberatelyUntouched:
-    """Explicitly out of scope: chat images are displayed immediately, not
-    stored as long-lived references."""
+class TestChatAlsoRequiresDurableStorage:
+    """Chat images ARE long-lived references — this class used to assert the
+    opposite and has been inverted deliberately, not weakened.
+
+    The original premise ("chat images are displayed immediately, not stored
+    as long-lived references") was factually wrong, and the repository
+    disproves it three ways:
+
+      * the URL is written into `chat_rooms/{id}/messages/{id}.imageUrl`;
+      * `firestore.rules` makes those messages IMMUTABLE
+        (`allow update, delete: if false`), so a bad URL can never be fixed;
+      * the full history is re-read by `onSnapshot(...).orderBy('timestamp')`
+        every single time a chat is opened.
+
+    On Railway the ephemeral fallback writes to the container's own disk —
+    `backend/uploads/` is gitignored, is absent from the built image, is
+    recreated empty at startup, and no Volume is attached — so every chat
+    image 404s after the next deploy or crash-restart. That is the identical
+    rot the meal check-ins above were fixed for.
+    """
 
     def test_the_ephemeral_endpoint_still_exists(self):
+        """The backend route is untouched — only the callers changed."""
         assert CHAT_ROUTE.exists()
         assert "/upload" in read(CHAT_ROUTE)
 
-    def test_chat_call_sites_do_not_demand_durable_storage(self):
+    def test_chat_call_sites_demand_durable_storage(self):
         for name in ("components/coaching-workspace.js",
                      "pages/coaches/cprofile.js",
                      "pages/experts/expert-dashboard.js"):
             src = read(REPO / "frontend" / "website" / name)
-            for call in re.findall(r"ZitlasChatAttach\.upload\([^;]*?\)", src, re.S):
-                assert "requireDurable" not in call, (
-                    f"{name}: chat's fallback was not meant to change")
+            calls = re.findall(r"ZitlasChatAttach\.upload\([^;]*?\)", src, re.S)
+            assert calls, f"{name}: expected at least one chat upload call"
+            for call in calls:
+                assert "requireDurable: true" in call, (
+                    f"{name}: a chat image URL is persisted into an immutable "
+                    f"Firestore message, so it must never fall back to the "
+                    f"container's ephemeral disk")
 
     def test_the_fallback_branch_is_still_reachable(self):
+        """The fallback itself is NOT removed — other, non-persisted callers
+        may still legitimately use it. Only the chat call sites opt out."""
         src = read(CHAT_ATTACH)
         assert "_uploadToBackend(blob)" in src, "chat lost its fallback entirely"
 

@@ -2475,7 +2475,10 @@ function expertSendImageMessage(file, expert, msgWrap) {
       '</div>';
     if (msgWrap) { msgWrap.appendChild(placeholder); msgWrap.scrollTop = msgWrap.scrollHeight; }
 
-    ZitlasChatAttach.upload(file).then(function(url) {
+    /* requireDurable — see coaching-workspace.js's attach handler. The URL is
+       persisted into the conversation and read back long afterwards, so the
+       ephemeral /uploads/chat/… fallback would rot into a 404. */
+    ZitlasChatAttach.upload(file, { pathPrefix: 'chat_uploads', requireDurable: true }).then(function(url) {
       placeholder.remove();
       var conv = chatGetConversation(_edChatConversationId);
       var grouped = false;

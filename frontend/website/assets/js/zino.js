@@ -625,29 +625,15 @@
           '<div class="zn-chips-row" id="znChipsRow"></div>' +
           '<div class="zn-chat-input-bar">' +
             '<textarea class="zn-chat-input" id="znChatInput" rows="1" placeholder="Ask Zino anything…"></textarea>' +
-            '<button class="zn-chat-send zn-chat-mic" id="znChatMic" aria-label="Record voice message">' +
-              '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>' +
-            '</button>' +
             '<button class="zn-chat-send" id="znChatSend" aria-label="Send">' +
               '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>' +
             '</button>' +
           '</div>' +
         '</div>';
       document.body.appendChild(backdrop);
-      /* Voice-mic visual state (self-contained; injected once so it doesn't
-         need a separate zino.css change). */
-      if (!$('znVoiceStyle')) {
-        var _vs = document.createElement('style');
-        _vs.id = 'znVoiceStyle';
-        _vs.textContent = '.zn-chat-mic{margin-right:6px}' +
-          '.zn-mic--recording{color:#ef4444;animation:znMicPulse 1s ease-in-out infinite}' +
-          '@keyframes znMicPulse{0%,100%{opacity:1}50%{opacity:.35}}';
-        document.head.appendChild(_vs);
-      }
       backdrop.addEventListener('click', function (e) { if (e.target === backdrop) close(); });
       $('znChatClose').addEventListener('click', close);
       $('znChatSend').addEventListener('click', sendCurrentInput);
-      $('znChatMic').addEventListener('click', toggleVoice);
       $('znChatInput').addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendCurrentInput(); }
       });
@@ -731,107 +717,16 @@
       }).then(function () { _busy = false; });
     }
 
-    /* ── Voice Zino (feature parity with the Flutter voice_service) ──
-       Mic capture -> POST /api/voice/stt (transcript) -> POST /api/voice/chat
-       (Zino's reply + spoken mp3, same brain/persona as the text path). All
-       LLM/TTS/STT work stays server-side; the browser only records and plays.
-       Unauthenticated, exactly like the existing /api/ai/zino-chat text call. */
-    var _mediaRecorder = null, _audioChunks = [], _recording = false, _voiceAudio = null;
-
-    function _setMicState(state) {
-      var btn = $('znChatMic');
-      if (!btn) return;
-      btn.classList.toggle('zn-mic--recording', state === 'recording');
-      btn.disabled = state === 'busy';
-      btn.setAttribute('aria-label', state === 'recording' ? 'Stop recording' : 'Record voice message');
-    }
-
-    function toggleVoice() {
-      if (_recording) { _stopRecording(); return; }
-      if (_busy) return;
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia || typeof window.MediaRecorder === 'undefined') {
-        renderBubble('zino', "Voice isn't supported in this browser 😅 You can still type to me.");
-        return;
-      }
-      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
-        _audioChunks = [];
-        var opts = (window.MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported('audio/webm'))
-          ? { mimeType: 'audio/webm' } : undefined;
-        _mediaRecorder = opts ? new MediaRecorder(stream, opts) : new MediaRecorder(stream);
-        _mediaRecorder.ondataavailable = function (e) { if (e.data && e.data.size) _audioChunks.push(e.data); };
-        _mediaRecorder.onstop = function () {
-          stream.getTracks().forEach(function (t) { t.stop(); });
-          _recording = false;
-          _setMicState('busy');
-          var blob = new Blob(_audioChunks, { type: (_mediaRecorder && _mediaRecorder.mimeType) || 'audio/webm' });
-          if (blob.size < 800) { _setMicState('idle'); return; } // too short to be speech
-          _sendVoiceClip(blob);
-        };
-        _mediaRecorder.start();
-        _recording = true;
-        _setMicState('recording');
-      }).catch(function (err) {
-        console.error('[ZINO VOICE] mic unavailable', err);
-        renderBubble('zino', "I couldn't access your microphone. Allow mic access in your browser and try again.");
-      });
-    }
-
-    function _stopRecording() {
-      try {
-        if (_mediaRecorder && _mediaRecorder.state !== 'inactive') _mediaRecorder.stop();
-      } catch (_) { _recording = false; _setMicState('idle'); }
-    }
-
-    function _sendVoiceClip(blob) {
-      if (_busy) { _setMicState('idle'); return; }
-      _busy = true;
-      renderTyping();
-      var fd = new FormData();
-      fd.append('audio', blob, 'voice.webm');
-      fd.append('language', 'hinglish');
-      fetch('/api/voice/stt', { method: 'POST', body: fd })
-        .then(function (r) { return r.ok ? r.json() : Promise.reject(new Error('stt_http_' + r.status)); })
-        .then(function (data) {
-          var transcript = ((data && data.text) || '').trim();
-          if (!transcript) {
-            removeTyping(); _busy = false; _setMicState('idle');
-            renderBubble('zino', "I didn't catch that — try again a little closer to the mic 🎙️");
-            return null;
-          }
-          renderBubble('user', transcript);
-          return fetch('/api/voice/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: transcript, context: ZinoManager.buildContext(), history: _history }),
-          }).then(function (r) {
-            return r.ok ? r.json() : Promise.reject(new Error('chat_http_' + r.status));
-          }).then(function (vc) {
-            removeTyping();
-            var reply = (vc && vc.reply) || "Sorry, I couldn't respond just now — try again?";
-            renderBubble('zino', reply);
-            _history.push({ role: 'user', text: transcript }, { role: 'zino', text: reply });
-            if (_history.length > 20) _history = _history.slice(-20);
-            _persistHistory();
-            if (vc && vc.audio_base64) _playVoice(vc.audio_base64);
-          });
-        })
-        .catch(function (err) {
-          removeTyping();
-          renderBubble('zino', "Hmm, voice isn't working right now 😅 Try again, or type your question instead?");
-          console.error('[ZINO VOICE]', err);
-        })
-        .then(function () { _busy = false; _setMicState('idle'); });
-    }
-
-    function _playVoice(b64) {
-      try {
-        if (_voiceAudio) { try { _voiceAudio.pause(); } catch (_) {} }
-        _voiceAudio = new Audio('data:audio/mpeg;base64,' + b64);
-        // Autoplay may be blocked by the browser; the reply text is already
-        // rendered, so a blocked play is a silent no-op, never an error.
-        _voiceAudio.play().catch(function () {});
-      } catch (_) {}
-    }
+    /* Zino voice/calls were REMOVED from ZITLAS as a product decision.
+       The Flutter client already shipped without them; this block was the
+       website's remaining implementation (mic capture -> /api/voice/stt ->
+       /api/voice/chat -> spoken mp3). Zino TEXT chat is unchanged and
+       remains the only Zino surface. The backend /api/voice/* routes are
+       consequently DEAD CODE -- no shipped client calls them any more -- but
+       they are deliberately left registered for now: deleting server routes
+       is a separate change, and those routes are also covered by the pending
+       unauthenticated-AI-endpoint decision. They should be removed (or
+       authenticated) with that work, not here. */
 
     /* ── Celebrations — real data only ── */
     function checkCelebrations() {

@@ -86,6 +86,37 @@ def sweep_expired_requests() -> int:
     return released
 
 
+def _generate_trial_report(rel: dict) -> None:
+    """Best-effort Trial Completion Report for a just-ended engagement.
+
+    CANNOT BREAK THE LIFECYCLE. Called only after the status transition has
+    committed, imports lazily so a broken import cannot stop the sweep from
+    loading, and swallows everything — `generate_and_store` already declines
+    to raise, and this is the second belt on top of that. A report is a
+    summary of something that already happened; failing to build one must
+    never leave an engagement stuck 'active'.
+
+    Idempotent by construction: `trial_reports/{requestId}` is created inside
+    a transaction that refuses to overwrite, so a second sweep pass over the
+    same engagement is a no-op.
+    """
+    request_id = rel.get("requestId")
+    athlete_uid = rel.get("athleteId")
+    if not request_id or not athlete_uid:
+        print(f"[COACHING SWEEP] no trial report — missing "
+              f"requestId={request_id!r} athleteId={athlete_uid!r}")
+        return
+    try:
+        from services import trial_report_store
+
+        trial_report_store.generate_and_store(athlete_uid, request_id)
+    except Exception as exc:  # noqa: BLE001 — see docstring
+        print(f"[COACHING SWEEP] trial report generation raised "
+              f"(non-fatal, lifecycle already committed) — "
+              f"athlete={athlete_uid} request={request_id}: "
+              f"{type(exc).__name__}: {exc}")
+
+
 def _expire_one_relationship(db, rel_ref):
     @firestore.transactional
     def _txn(tx):
@@ -126,6 +157,15 @@ def _expire_one_relationship(db, rel_ref):
     coach_id = rel.get("coachId")
     coach_name = rel.get("coachName") or "your coach"
     athlete_name = rel.get("athleteName") or "An athlete"
+
+    # TRIAL COMPLETION REPORT — strictly after the status transition above
+    # has already committed, and strictly additive to it. The relationship is
+    # 'expired' by now whatever happens here; generate_and_store() never
+    # raises, so a report that cannot be built leaves the lifecycle correct
+    # and simply logs. No document is written on failure, so the next sweep
+    # pass retries on its own.
+    _generate_trial_report(rel)
+
     if rel.get("coachingType") == "FREE_TRIAL":
         duration = rel.get("trialDurationDays") or "your"
         notify(db, athlete_uid, "Free Trial Ended",

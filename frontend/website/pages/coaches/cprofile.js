@@ -4055,7 +4055,10 @@
       container.appendChild(placeholder);
       container.scrollTop = container.scrollHeight;
 
-      ZitlasChatAttach.upload(file).then(function(url) {
+      /* requireDurable — see coaching-workspace.js's attach handler. The URL
+         is persisted into the conversation and read back long afterwards, so
+         the ephemeral /uploads/chat/… fallback would rot into a 404. */
+      ZitlasChatAttach.upload(file, { pathPrefix: 'chat_uploads', requireDurable: true }).then(function(url) {
         placeholder.remove();
         var grouped = false;
         if (_currentChatCoach) {

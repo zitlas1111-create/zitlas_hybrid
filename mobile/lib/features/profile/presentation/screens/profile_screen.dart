@@ -125,6 +125,16 @@ class _ProfileBody extends StatelessWidget {
                         label: 'Contact Support',
                         onTap: () => context.push('/profile/help-support'),
                       ),
+                      // The only entry point to past coaching reports. Once a
+                      // NEW engagement starts, `personal_coaching/{uid}` is
+                      // overwritten and earlier reports — still stored — have
+                      // no other route into the app.
+                      _SettingsRow(
+                        icon: Icons.assignment_outlined,
+                        label: 'Trial Report History',
+                        subtitle: 'Your completed coaching summaries',
+                        onTap: () => context.push('/trial-reports'),
+                      ),
                       // Manual replay. Deliberately does NOT reset
                       // `zinoTourCompleted` — replaying the walkthrough must
                       // never turn an existing athlete back into a "new user"
