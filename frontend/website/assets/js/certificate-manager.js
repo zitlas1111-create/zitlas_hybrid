@@ -157,7 +157,32 @@
     fd.append('file', file);
     phase('verifying');
     console.log('[CERT] STEP 1 verify started — ' + (file.name || '(unnamed)') + ' ' + file.type + ' ' + file.size + 'B');
-    return fetch('/api/certificates/verify', { method: 'POST', body: fd })
+
+    /* /api/certificates/verify is expert-only (routes/certificates.py's
+       require_expert). This call used to send no Authorization header at
+       all, so EVERY upload died here on 401 missing_token — before
+       _uploadToStorage() and before saveCertificate(), which is why the
+       Storage bucket held zero objects under certificates/ and no
+       expert_certificates document had been written since the route was
+       protected. Same token idiom as _adminFetch() below; deliberately NOT
+       that helper, which sets Content-Type: application/json and would
+       strip the multipart boundary off this FormData body. */
+    var auth = (typeof ZitlasAuth !== 'undefined') ? ZitlasAuth : null;
+    var user = auth && auth.currentUser;
+    if (!user || typeof user.getIdToken !== 'function') {
+      return Promise.reject(new Error('Please sign in again to upload a certificate.'));
+    }
+
+    return user.getIdToken().then(function (token) {
+      /* Authorization ONLY. The browser must set Content-Type itself so it
+         can append the multipart boundary — naming it here breaks the
+         upload. */
+      return fetch('/api/certificates/verify', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token },
+        body: fd,
+      });
+    })
       .then(function (r) {
         if (!r.ok) return r.json().catch(function () { return null; }).then(function (e) {
           throw new Error((e && e.detail) || ('Verification failed (' + r.status + ')'));
