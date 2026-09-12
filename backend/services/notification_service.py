@@ -25,6 +25,16 @@ DEVICE TOKENS — two sources, read together:
     push-notifications.js still writes. Read for backwards compatibility so a
     web-only device keeps working; pruned in place when a token dies.
 
+DELIVERY RECORD. The document is written FIRST and the push attempted SECOND;
+the outcome is then stamped back onto that same document (`pushStatus`,
+`attempts`, `lastError`, `deliveredAt`). Nothing that goes wrong with delivery
+can leave the recipient without the notification — the Notification Centre
+reads the collection, not the push result.
+
+IDEMPOTENCY. A caller that knows the event's identity passes `event_id`. The
+document id is then derived from (event, recipient) and written with
+`create()`, so the same event raised twice is one notification and one push.
+
 NEVER RAISES. A notification is always strictly additive to the event that
 triggered it: a coaching relationship must not fail to activate because FCM
 was unreachable. Every failure is logged and swallowed.
@@ -32,6 +42,7 @@ was unreachable. Every failure is logged and swallowed.
 
 from __future__ import annotations
 
+import hashlib
 import uuid
 from datetime import datetime, timezone
 from typing import Any
@@ -41,6 +52,47 @@ from services import push_service
 
 def _now_iso() -> str:
     return datetime.now(timezone.utc).isoformat()
+
+
+# ── Delivery record ─────────────────────────────────────────────────────────
+#
+#   pending    written; the push has not been attempted yet (or is running)
+#   sent       FCM ACCEPTED it for at least one of the recipient's devices.
+#              Accepted is not displayed — FCM holds it for an offline device
+#              and hands it over on reconnect — but it is the last point the
+#              backend can observe, and `deliveredAt` records that moment.
+#   failed     every targeted device failed. `retryable` says whether trying
+#              again could help (FCM outage / quota / network) or not (a
+#              rejected message or credential that needs fixing first).
+#   no_device  nothing to deliver to: no signed-in device, or every device
+#              the recipient had turned out to be dead.
+#
+# In EVERY state the document itself stays.
+PUSH_PENDING = "pending"
+PUSH_SENT = "sent"
+PUSH_FAILED = "failed"
+PUSH_NO_DEVICE = "no_device"
+
+
+def event_notification_id(event_id: str, user_id: str) -> str:
+    """The document id for ONE event delivered to ONE recipient.
+
+    Deterministic, so the same event raised twice — a double tap, a client
+    retrying after a timeout, the app and a browser tab both reacting — lands
+    on the same document instead of producing a second notification. The
+    recipient is part of the key because one event can legitimately notify
+    two people. Hashed, not concatenated: event ids embed raw document ids.
+    """
+    digest = hashlib.sha256(f"{event_id}\x1f{user_id}".encode("utf-8")).hexdigest()
+    return "notif_" + digest[:24]
+
+
+def _already_exists(exc: Exception) -> bool:
+    """Firestore's `create()` refuses an existing document with 409
+    (google.api_core.exceptions.Conflict / AlreadyExists). Matched by name so
+    this module keeps no import-time dependency on google.api_core."""
+    return (type(exc).__name__ in ("AlreadyExists", "Conflict")
+            or "already exists" in str(exc).lower())
 
 
 def _tokens_for_user(db, user_id: str) -> list[tuple[str, str]]:
@@ -217,33 +269,80 @@ def _prune_token(db, user_id: str, token: str, source: str) -> None:
         print(f"[NOTIFY] prune failed uid={user_id}: {type(e).__name__}: {e}")
 
 
+def _persist(db, user_id: str, *, title: str, message: str, category: str,
+             type: str | None, action: str | None, action_id: str | None,
+             priority: str, notification_id: str | None,
+             event_id: str | None) -> tuple[str | None, str]:
+    """Writes the notification document.
+
+    Returns (id, outcome): 'created', 'duplicate' (this event already produced
+    this recipient's notification) or 'failed'.
+    """
+    if not user_id:
+        return None, "failed"
+    if notification_id:
+        notif_id = notification_id
+    elif event_id:
+        notif_id = event_notification_id(event_id, user_id)
+    else:
+        notif_id = "notif_" + uuid.uuid4().hex[:20]
+    doc = {
+        # Shape shared with notification-center.js and the Flutter
+        # repositories, so both Notification Centres render server-written
+        # and client-written notifications alike.
+        "notificationId": notif_id, "userId": user_id,
+        "title": title, "message": message or "",
+        "category": category, "icon": None, "type": type,
+        "action": action, "actionId": action_id, "expertId": None,
+        "isRead": False, "priority": priority,
+        "createdAt": _now_iso(),
+        # Delivery record — see PUSH_* above.
+        "eventId": event_id,
+        "pushStatus": PUSH_PENDING,
+        "attempts": 0,
+        "lastError": None,
+        "deliveredAt": None,
+    }
+    ref = db.collection("notifications").document(notif_id)
+    try:
+        if event_id and not notification_id:
+            # create(), not set(): an atomic "only if absent". Two concurrent
+            # requests for the same event cannot both win a read-then-write
+            # check, but only one of them can create the document.
+            ref.create(doc)
+        else:
+            ref.set(doc)
+        return notif_id, "created"
+    except Exception as e:
+        if event_id and _already_exists(e):
+            print(f"[NOTIFY] duplicate suppressed eventId={event_id} "
+                  f"uid={user_id} notificationId={notif_id}")
+            return notif_id, "duplicate"
+        print(f"[NOTIFY] persist failed uid={user_id}: {e.__class__.__name__}: {e}")
+        return None, "failed"
+
+
 def persist(db, user_id: str, *, title: str, message: str, category: str = "general",
             type: str | None = None, action: str | None = None,
             action_id: str | None = None, priority: str = "medium",
-            notification_id: str | None = None) -> str | None:
+            notification_id: str | None = None,
+            event_id: str | None = None) -> str | None:
     """Write the in-app notification document ONLY (no push).
 
     Shape is byte-for-byte the one assets/js/notification-center.js's send()
     writes, so the website's notification centre and the Flutter
     NotificationsScreen render server-sent notifications identically to
-    client-sent ones. Returns the id, or None on failure.
+    client-sent ones, plus the delivery record (pushStatus & co.).
+
+    With `event_id` the write is idempotent: the same event for the same
+    recipient returns the EXISTING document's id and writes nothing. Returns
+    the id, or None on failure.
     """
-    if not user_id:
-        return None
-    notif_id = notification_id or ("notif_" + uuid.uuid4().hex[:20])
-    try:
-        db.collection("notifications").document(notif_id).set({
-            "notificationId": notif_id, "userId": user_id,
-            "title": title, "message": message or "",
-            "category": category, "icon": None, "type": type,
-            "action": action, "actionId": action_id, "expertId": None,
-            "isRead": False, "priority": priority,
-            "createdAt": _now_iso(),
-        })
-        return notif_id
-    except Exception as e:
-        print(f"[NOTIFY] persist failed uid={user_id}: {type(e).__name__}: {e}")
-        return None
+    notif_id, _outcome = _persist(
+        db, user_id, title=title, message=message, category=category,
+        type=type, action=action, action_id=action_id, priority=priority,
+        notification_id=notification_id, event_id=event_id)
+    return notif_id
 
 
 def push_only(db, user_id: str, *, title: str, body: str,
@@ -279,7 +378,8 @@ def push_only(db, user_id: str, *, title: str, body: str,
     # even if every delivery afterwards fails for an unrelated reason.
     print(f"[NOTIFY_TARGET] uid={user_id} activeTokens={registry} "
           f"staleTokens={len(skipped_reasons)} targetedTokens={len(tokens)}")
-    sent = failed = stale_removed = 0
+    sent = failed = stale_removed = transient = permanent = 0
+    last_error: str | None = None
     for token, (source, platform, renders_own) in tokens:
         res = push_service.send_to_token(
             token, title, body, payload,
@@ -303,11 +403,14 @@ def push_only(db, user_id: str, *, title: str, body: str,
             # service account lost its FCM scope" — the same number for a
             # dead device and a total outage. Logged per token because a
             # partial failure across a user's devices is the interesting case.
+            code = res.get("error_code") or _fcm_error_code(res.get("detail"))
+            last_error = code
+            retryable = _is_transient(res)
             print(f"[NOTIFY] delivery failed uid={user_id} "
                   f"source={source} token={_short(token)} "
                   f"status={res.get('status')} "
-                  f"code={_fcm_error_code(res.get('detail'))} "
-                  f"dead={bool(res.get('dead_token'))}")
+                  f"code={code} "
+                  f"dead={bool(res.get('dead_token'))} transient={retryable}")
             if res.get("dead_token"):
                 # FCM says this token is permanently gone (UNREGISTERED /
                 # NOT_FOUND) — the app was uninstalled or its data cleared.
@@ -315,6 +418,10 @@ def push_only(db, user_id: str, *, title: str, body: str,
                 # on every single send, forever.
                 _prune_token(db, user_id, token, source)
                 stale_removed += 1
+            elif retryable:
+                transient += 1
+            else:
+                permanent += 1
     # Every number the on-call question needs, in one line: how many devices
     # this account is actually signed in on, how many were addressed, how it
     # went, and how many dead ones were dropped on the way. `activeDevices`
@@ -322,19 +429,80 @@ def push_only(db, user_id: str, *, title: str, body: str,
     # a gap between them would mean a targeting bug, so both are printed.
     print(f"[NOTIFY] type={type or 'general'} uid={user_id} "
           f"activeDevices={registry} tokensTargeted={len(tokens)} "
-          f"sent={sent} failed={failed} staleTokensRemoved={stale_removed} "
+          f"sent={sent} failed={failed} transient={transient} "
+          f"staleTokensRemoved={stale_removed} "
           f"fcmPriority={'high' if push_service.is_high_priority(type, priority) else 'normal'}")
     return {"sent": sent, "failed": failed, "tokens": len(tokens),
-            "activeDevices": registry, "staleTokensRemoved": stale_removed}
+            "activeDevices": registry, "staleTokensRemoved": stale_removed,
+            "transientFailures": transient, "permanentFailures": permanent,
+            "lastError": last_error}
+
+
+def _is_transient(res: dict[str, Any]) -> bool:
+    """Whether a failed send is worth retrying later. Prefers the transport's
+    own verdict and falls back to classifying the HTTP status, for results
+    that predate that field."""
+    if "transient" in res:
+        return bool(res["transient"])
+    if res.get("configured") is False:
+        return True
+    return push_service.is_transient(res.get("status"), res.get("detail"))
+
+
+def delivery_outcome(result: dict[str, Any]) -> dict[str, Any]:
+    """Maps a push_only() result onto the document's delivery record."""
+    tokens = result.get("tokens", 0) or 0
+    if result.get("sent", 0):
+        return {"pushStatus": PUSH_SENT, "deliveredAt": _now_iso(),
+                "lastError": result.get("lastError"), "retryable": False}
+    if not tokens:
+        return {"pushStatus": PUSH_NO_DEVICE,
+                "lastError": result.get("reason") or "no_active_device",
+                "retryable": False}
+    if result.get("transientFailures", 0):
+        return {"pushStatus": PUSH_FAILED,
+                "lastError": result.get("lastError") or "transient_failure",
+                "retryable": True}
+    if result.get("staleTokensRemoved", 0) >= tokens:
+        # Every device FCM was asked about is gone — nothing to retry.
+        return {"pushStatus": PUSH_NO_DEVICE, "lastError": "all_tokens_invalid",
+                "retryable": False}
+    return {"pushStatus": PUSH_FAILED,
+            "lastError": result.get("lastError") or "unknown",
+            "retryable": False}
+
+
+def _record_delivery(db, notif_id: str, outcome: dict[str, Any]) -> None:
+    """Stamps the delivery record onto the notification. Best-effort: a
+    failure here loses the STATUS, never the notification itself."""
+    try:
+        from google.cloud import firestore as gcf
+        attempt: Any = gcf.Increment(1)
+    except Exception:  # noqa: BLE001 — SDK absent in this environment
+        attempt = 1
+    try:
+        db.collection("notifications").document(notif_id).update(
+            {**outcome, "attempts": attempt, "pushUpdatedAt": _now_iso()})
+    except Exception as e:  # noqa: BLE001
+        print(f"[NOTIFY] delivery record update failed id={notif_id}: "
+              f"{type(e).__name__}: {e}")
 
 
 def send(db, user_id: str, title: str, message: str, *,
          category: str = "general", type: str | None = None,
          action: str | None = None, action_id: str | None = None,
          priority: str = "medium", data: dict[str, Any] | None = None,
-         persist_doc: bool = True, collapse_key: str | None = None) -> dict[str, Any]:
+         persist_doc: bool = True, collapse_key: str | None = None,
+         event_id: str | None = None) -> dict[str, Any]:
     """Persist the notification AND push it to every device. The one function
     every route/service should call.
+
+    ORDER IS THE GUARANTEE: the document is written first, the push attempted
+    second, and the outcome stamped back onto the document — so no delivery
+    failure can leave the recipient without the notification.
+
+    `event_id` makes the call idempotent for this recipient: a repeat of the
+    same event finds the existing document and sends nothing.
 
     `data` becomes the FCM payload the app deep-links from. `type`, `action`
     and `actionId` are always injected so the Flutter NotificationRouter and
@@ -344,10 +512,15 @@ def send(db, user_id: str, title: str, message: str, *,
     if not user_id:
         return {"ok": False, "reason": "no_user"}
 
-    notif_id = persist(
-        db, user_id, title=title, message=message, category=category,
-        type=type, action=action, action_id=action_id, priority=priority,
-    ) if persist_doc else None
+    notif_id = None
+    if persist_doc:
+        notif_id, outcome = _persist(
+            db, user_id, title=title, message=message, category=category,
+            type=type, action=action, action_id=action_id, priority=priority,
+            notification_id=None, event_id=event_id)
+        if outcome == "duplicate":
+            return {"ok": True, "duplicate": True, "notificationId": notif_id,
+                    "sent": 0, "failed": 0, "tokens": 0}
 
     payload: dict[str, Any] = dict(data or {})
     payload.setdefault("type", type or "general")
@@ -357,8 +530,21 @@ def send(db, user_id: str, title: str, message: str, *,
         payload.setdefault("actionId", action_id)
     if notif_id:
         payload.setdefault("notificationId", notif_id)
+    if event_id:
+        payload.setdefault("eventId", event_id)
 
-    result = push_only(db, user_id, title=title, body=message, type=type,
-                       data=payload, collapse_key=collapse_key,
-                       priority=priority)
-    return {"ok": True, "notificationId": notif_id, **result}
+    try:
+        result = push_only(db, user_id, title=title, body=message, type=type,
+                           data=payload, collapse_key=collapse_key,
+                           priority=priority)
+    except Exception as e:  # noqa: BLE001 — NEVER RAISES (module doc)
+        # e.__class__, not type(e): `type` is this function's parameter.
+        print(f"[NOTIFY] push raised uid={user_id}: {e.__class__.__name__}: {e}")
+        result = {"sent": 0, "failed": 1, "tokens": 1, "transientFailures": 1,
+                  "lastError": e.__class__.__name__}
+
+    delivery = delivery_outcome(result)
+    if notif_id:
+        _record_delivery(db, notif_id, delivery)
+    return {"ok": True, "notificationId": notif_id,
+            "pushStatus": delivery["pushStatus"], **result}

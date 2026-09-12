@@ -125,6 +125,15 @@
       confirmBtn.textContent = 'Logging out…';
       confirmBtn.disabled = true;
 
+      /* Release this browser's push session FIRST — the terminate() below
+         would otherwise stop the write that marks this device signed out,
+         and the account's notifications would keep arriving here. */
+      try {
+        if (typeof ZitlasAuth !== 'undefined' && typeof ZitlasAuth.releasePushSession === 'function') {
+          await ZitlasAuth.releasePushSession();
+        }
+      } catch (e) { console.warn('[ZITLAS] push release error:', e); }
+
       /* Stop EVERY Firestore listener BEFORE signing out — a listener that
          outlives the session fires permission-denied. Tear the coaching
          workspace down cleanly, then terminate the client to detach the rest. */

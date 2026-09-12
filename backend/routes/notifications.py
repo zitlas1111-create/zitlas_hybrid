@@ -189,6 +189,9 @@ async def notify_meal_checkin(body: CheckinBody, caller: dict = Depends(verify_f
             "athleteId": caller["uid"],
             "coachingId": caller["uid"],
         },
+        # ONE notification per check-in however often this is called — a
+        # retried submit, or the app and a browser tab both reporting it.
+        event_id=f"meal_review_pending_{body.checkinId}",
     )
     return {"success": True, **res}
 
@@ -255,6 +258,9 @@ async def notify_meal_review(body: CheckinBody, caller: dict = Depends(verify_fi
         # twice. `ratingNotifiedAt` above already blocks the second CALL; this
         # makes FCM itself collapse a redelivery of the same event.
         collapse_key=note.data.get("eventId"),
+        # And one DOCUMENT per review event, even if two calls race past the
+        # ratingNotifiedAt check above before either stamps it.
+        event_id=note.data.get("eventId"),
     )
 
     # Stamp AFTER a successful send. A notification failure must never roll

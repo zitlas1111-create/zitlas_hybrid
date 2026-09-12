@@ -71,35 +71,64 @@ ZitlasAuth.setPersistence(firebase.auth.Auth.Persistence.LOCAL);
   auth.__zitlasPushSignOutWrapped = true;
 
   var nativeSignOut = auth.signOut.bind(auth);
+  /* 'uid|token' this page has already tried to release, and whether it
+     worked — so a logout that releases early (below) and then signs out does
+     not write twice, and never retries against a terminated client. */
+  var attemptedFor = null;
+  var releasedFor = null;
+
+  /* Exposed because a logout flow that TERMINATES Firestore to stop its
+     listeners (profile.js, expert-dashboard.js) must release the push session
+     BEFORE doing so. Once firestore().terminate() has run, the write below
+     cannot run at all: it failed silently, and a logged-out user went on
+     receiving that account's notifications in this browser.
+
+     Never rejects and never hangs — a stuck write (offline) gives up after a
+     few seconds, because signing out must always finish. Resolves true once
+     this device has been released. */
+  auth.releasePushSession = function () {
+    try {
+      var uid = auth.currentUser && auth.currentUser.uid;
+      var token = null;
+      try { token = localStorage.getItem('zitlas_push_token'); } catch (_) {}
+
+      if (!uid || !token || typeof ZitlasDB === 'undefined') return Promise.resolve(false);
+      var key = uid + '|' + token;
+      if (attemptedFor === key) return Promise.resolve(releasedFor === key);
+      attemptedFor = key;
+
+      var now = new Date().toISOString();
+      var writes = Promise.all([
+        ZitlasDB.collection('device_tokens').doc(token).set({
+          fcmToken: token,
+          uid: uid,
+          enabled: false,
+          loggedIn: false,
+          signedOutAt: now,
+        }, { merge: true }),
+        ZitlasDB.collection('users').doc(uid).set({
+          pushTokens: firebase.firestore.FieldValue.arrayRemove(token),
+        }, { merge: true }),
+      ]).then(function () {
+        releasedFor = key;
+        console.log('[PUSH] device released from ' + uid + ' before sign-out');
+        return true;
+      }).catch(function (e) {
+        console.warn('[PUSH] sign-out cleanup failed (non-fatal)', e);
+        return false;
+      });
+      return Promise.race([
+        writes,
+        new Promise(function (r) { setTimeout(function () { r(false); }, 4000); }),
+      ]);
+    } catch (e) {
+      console.warn('[PUSH] sign-out cleanup could not run (non-fatal)', e);
+      return Promise.resolve(false);
+    }
+  };
 
   auth.signOut = function () {
-    var uid = auth.currentUser && auth.currentUser.uid;
-    var token = null;
-    try { token = localStorage.getItem('zitlas_push_token'); } catch (_) {}
-
-    if (!uid || !token || typeof ZitlasDB === 'undefined') {
-      return nativeSignOut();
-    }
-
-    var now = new Date().toISOString();
-    var cleanup = Promise.all([
-      ZitlasDB.collection('device_tokens').doc(token).set({
-        fcmToken: token,
-        uid: uid,
-        enabled: false,
-        loggedIn: false,
-        signedOutAt: now,
-      }, { merge: true }),
-      ZitlasDB.collection('users').doc(uid).set({
-        pushTokens: firebase.firestore.FieldValue.arrayRemove(token),
-      }, { merge: true }),
-    ]).then(function () {
-      console.log('[PUSH] device released from ' + uid + ' before sign-out');
-    }).catch(function (e) {
-      console.warn('[PUSH] sign-out cleanup failed (non-fatal)', e);
-    });
-
-    return cleanup.then(nativeSignOut, nativeSignOut);
+    return auth.releasePushSession().then(nativeSignOut, nativeSignOut);
   };
 })(ZitlasAuth);
 

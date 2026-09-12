@@ -51,6 +51,11 @@ def _as_filter(field=None, op=None, value=None, filter=None):
     return (field, op, value)
 
 
+class AlreadyExists(Exception):
+    """Stand-in for google.api_core.exceptions.AlreadyExists — what real
+    Firestore raises when create() finds the document already there."""
+
+
 class FakeDocRef:
     def __init__(self, store, path):
         self._store = store
@@ -78,6 +83,14 @@ class FakeDocRef:
             # sentinels — set(merge=True) on a document that does not exist yet
             # lands here, and that is exactly how a usage counter starts.
             self._store[self._path] = {k: _apply(None, v) for k, v in data.items()}
+
+    def create(self, data):
+        """Atomic "only if absent" — the idempotency primitive. Real Firestore
+        raises AlreadyExists (409); a fake that silently overwrote would let a
+        duplicate-notification bug pass every test."""
+        if self._store.get(self._path) is not None:
+            raise AlreadyExists(f"ALREADY_EXISTS: {self._path}")
+        self._store[self._path] = {k: _apply(None, v) for k, v in data.items()}
 
     def update(self, data):
         if self._path not in self._store or self._store[self._path] is None:

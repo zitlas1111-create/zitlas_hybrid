@@ -88,6 +88,27 @@ ICON_ANDROID = "ic_stat_zitlas"
 #: app's colors.xml and FcmService._brandColor.
 BRAND_COLOR = "#16A34A"
 
+#: Browser-notification icon (the website serves /assets/zino.png).
+WEB_ICON = "/assets/zino.png"
+
+
+def web_tag(data: dict[str, Any] | None) -> str:
+    """The browser-notification `tag` for one event.
+
+    MUST equal `zitlasTag()` in frontend/website/firebase-messaging-sw.js and
+    assets/js/push-notifications.js. A notification message is displayed by
+    the FCM web SDK AND handed to the service worker's own handler; with the
+    SAME tag the browser replaces the first with the second instead of
+    showing two. One tag per EVENT (not one fixed tag) also stops two
+    different notifications from silently replacing each other.
+    """
+    data = data or {}
+    if data.get("chatId"):
+        # One live entry per conversation, like a messaging app.
+        return f"zitlas-chat-{data['chatId']}"
+    key = data.get("eventId") or data.get("notificationId")
+    return f"zitlas-{key or data.get('type') or data.get('category') or 'general'}"
+
 # notification `type` -> channel. Chat is the only HIGH-priority one (it is the
 # only type a user expects to interrupt them, like any messaging app).
 _TYPE_CHANNELS = {
@@ -120,19 +141,72 @@ def channel_for(notification_type: str | None) -> str:
 _DEAD_TOKEN_STATUSES = {"UNREGISTERED", "INVALID_ARGUMENT", "NOT_FOUND"}
 
 
+#: Failures FCM itself calls TEMPORARY — worth trying again later, and never a
+#: reason to touch the device registry.
+_TRANSIENT_HTTP_STATUSES = frozenset({429, 500, 502, 503, 504})
+_TRANSIENT_ERROR_CODES = frozenset({
+    "UNAVAILABLE", "INTERNAL", "QUOTA_EXCEEDED", "RESOURCE_EXHAUSTED",
+    "DEADLINE_EXCEEDED",
+})
+
+
+def _error(detail: Any) -> dict[str, Any]:
+    if not isinstance(detail, dict):
+        return {}
+    err = detail.get("error")
+    return err if isinstance(err, dict) else {}
+
+
+def _error_codes(detail: Any) -> set[str]:
+    """Every machine-readable code in an FCM error body: the top-level status
+    plus each `details[].errorCode`, which is where FCM puts the specific one."""
+    err = _error(detail)
+    codes = {str(err["status"])} if err.get("status") else set()
+    for d in err.get("details", []) or []:
+        if isinstance(d, dict) and d.get("errorCode"):
+            codes.add(str(d["errorCode"]))
+    return codes
+
+
+def error_code(detail: Any) -> str:
+    """The most specific FCM error code — for logs and the delivery record."""
+    err = _error(detail)
+    for d in err.get("details", []) or []:
+        if isinstance(d, dict) and d.get("errorCode"):
+            return str(d["errorCode"])
+    return str(err.get("status") or "unknown")
+
+
 def _is_dead_token(status_code: int, detail: Any) -> bool:
+    """True only when FCM says THIS TOKEN is permanently unusable.
+
+    UNREGISTERED / NOT_FOUND always mean that. INVALID_ARGUMENT does NOT on its
+    own: FCM returns the same status for a malformed MESSAGE (a bad field, a
+    non-string data value). Treating that as a dead token meant a single
+    payload bug would have pruned every device of every recipient. It counts
+    only when FCM's message names the registration token itself ("The
+    registration token is not a valid FCM registration token").
+    """
     if status_code not in (400, 404):
         return False
     try:
-        err = (detail or {}).get("error", {}) if isinstance(detail, dict) else {}
-        if err.get("status") in _DEAD_TOKEN_STATUSES:
+        codes = _error_codes(detail)
+        if codes & {"UNREGISTERED", "NOT_FOUND"}:
             return True
-        for d in err.get("details", []) or []:
-            if isinstance(d, dict) and d.get("errorCode") in _DEAD_TOKEN_STATUSES:
-                return True
+        if "INVALID_ARGUMENT" in codes:
+            message = str(_error(detail).get("message") or "").lower()
+            return "registration token" in message
     except Exception:
         pass
     return False
+
+
+def is_transient(status_code: int | None, detail: Any = None) -> bool:
+    """Whether a failed send is TEMPORARY — an FCM outage, quota, a server
+    error — and so worth retrying later without touching the token."""
+    if status_code in _TRANSIENT_HTTP_STATUSES:
+        return True
+    return bool(_error_codes(detail) & _TRANSIENT_ERROR_CODES)
 
 
 #: Notification types that are TIME-CRITICAL and must punch through Doze.
@@ -205,7 +279,11 @@ def send_to_token(
     delay or coalesce it.
     """
     if not is_configured():
-        return {"ok": False, "configured": False, "detail": last_error([_SCOPE])}
+        # Retryable: missing credentials are a deployment fault a fix cures,
+        # never a property of the device.
+        return {"ok": False, "configured": False, "detail": last_error([_SCOPE]),
+                "dead_token": False, "transient": True,
+                "error_code": "FCM_NOT_CONFIGURED"}
 
     import requests
 
@@ -288,6 +366,14 @@ def send_to_token(
             "payload": {"aps": {"sound": "default", "badge": 1, "thread-id": channel}},
         },
         "webpush": {
+            # A browser cannot play a custom sound for a system notification;
+            # the icon and a per-EVENT tag are what can be set. See web_tag().
+            "notification": {
+                "icon": WEB_ICON,
+                "badge": WEB_ICON,
+                "tag": web_tag(payload_data),
+                "renotify": bool(payload_data.get("chatId")),
+            },
             "fcm_options": {"link": payload_data.get("url", "/pages/notifications/notifications.html")},
         },
     }
@@ -335,11 +421,19 @@ def send_to_token(
         ok = r.status_code == 200
         detail = r.json() if r.headers.get("content-type", "").startswith("application/json") else r.text[:300]
         dead = (not ok) and _is_dead_token(r.status_code, detail)
+        transient = (not ok) and not dead and is_transient(r.status_code, detail)
+        code = None if ok else error_code(detail)
         if not ok:
-            print(f"[PUSH] send failed ({r.status_code}) dead_token={dead}: {str(detail)[:200]}")
+            print(f"[PUSH] send failed ({r.status_code}) code={code} dead_token={dead} "
+                  f"transient={transient}: {str(detail)[:200]}")
         return {"ok": ok, "configured": True, "status": r.status_code,
-                "detail": detail, "dead_token": dead}
+                "detail": detail, "dead_token": dead, "transient": transient,
+                "error_code": code}
     except Exception as e:
+        # No response at all — a timeout, DNS, a dropped connection. Always
+        # temporary as far as the device is concerned, and never proof that a
+        # token is dead.
         print(f"[PUSH] send error: {type(e).__name__}: {e}")
         return {"ok": False, "configured": True, "detail": f"{type(e).__name__}: {e}",
-                "dead_token": False}
+                "dead_token": False, "transient": True,
+                "error_code": type(e).__name__}

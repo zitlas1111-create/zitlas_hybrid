@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/network/api_client.dart';
@@ -19,12 +20,32 @@ class MealCheckinRepository {
     FirebaseFirestore? firestore,
     MealPhotoUploader? uploader,
     ApiClient? api,
+    FirebaseAuth? auth,
   })  : _db = firestore ?? FirebaseFirestore.instance,
         _uploader = uploader ?? MealPhotoUploader(),
-        _api = api ?? ApiClient();
+        // Nullable so the repository falls back to FirebaseAuth.instance
+        // lazily — the same pattern as DietRepository.
+        // ignore: prefer_initializing_formals
+        _auth = auth,
+        _api = api ?? ApiClient() {
+    // EVERY backend call from here verifies its caller: the two push triggers
+    // (/api/notifications/meal-checkin and /meal-review) and the nutrition
+    // estimate (/api/meal/estimate-nutrition). This ApiClient used to carry
+    // no token at all, so each of them was rejected 401 and the failure was
+    // swallowed as "best-effort" — a coach was never pushed about a meal
+    // submitted from the app, nor the athlete about its review.
+    _api.authTokenProvider ??= () async {
+      try {
+        return await (_auth ?? FirebaseAuth.instance).currentUser?.getIdToken();
+      } catch (_) {
+        return null;
+      }
+    };
+  }
 
   final FirebaseFirestore _db;
   final MealPhotoUploader _uploader;
+  final FirebaseAuth? _auth;
   final ApiClient _api;
 
   /// This athlete's check-ins, live. Newest first.

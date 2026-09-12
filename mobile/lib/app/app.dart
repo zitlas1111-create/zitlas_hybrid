@@ -182,6 +182,12 @@ class _ActiveDeviceTouch with WidgetsBindingObserver {
 abstract final class _FcmBootstrap {
   static String? _initializedForUid;
 
+  /// Whether [_initializedForUid] was initialised as an EXPERT. The role can
+  /// resolve after the uid does (`resolvedRole` reads 'user' until the server
+  /// answers), and an expert then has to be initialised again — this time
+  /// WITH the permission prompt, which athletes get from the consent sheet.
+  static bool _initializedAsExpert = false;
+
   /// The signed-in role, kept current so the ONE foreground listener can
   /// drop a mis-targeted push. Client-side containment: the server should
   /// already target the right token, and this makes a mistake invisible
@@ -215,16 +221,26 @@ abstract final class _FcmBootstrap {
       // session that had just tombstoned its token never re-enabled it and
       // that account received no push at all until the process restarted.
       _initializedForUid = null;
+      _initializedAsExpert = false;
       _touch.stop();
       return;
     }
     _role = authState.profile?.resolvedRole;
     final uid = authState.profile?.uid;
-    if (uid == null || uid == _initializedForUid) return;
+    final isExpert = _role == 'expert';
+    if (uid == null) return;
+    if (uid == _initializedForUid && isExpert == _initializedAsExpert) return;
+    final newSession = uid != _initializedForUid;
     _initializedForUid = uid;
-    _service.initForUser(uid).catchError((Object e) {
+    _initializedAsExpert = isExpert;
+    // Experts are asked from HERE. They never pass through the athlete
+    // shell's consent sheet, and on Android a device that has never been
+    // asked reports `denied` — so without this prompt an expert's phone was
+    // never registered for push at all.
+    _service.initForUser(uid, promptIfNeeded: isExpert).catchError((Object e) {
       if (kDebugMode) debugPrint('[FCM] init failed: $e');
     });
+    if (!newSession) return;
     _touch.start(uid, _service);
     // A cold start FROM a notification can only navigate once the session is
     // real AND the splash has released the route.

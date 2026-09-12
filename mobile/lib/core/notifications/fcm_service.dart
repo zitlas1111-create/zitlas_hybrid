@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' show Color;
 
@@ -7,10 +8,85 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart' show openAppSettings;
 
 import '../storage/device_identity.dart';
 import '../storage/local_storage_service.dart';
 import 'notification_payload.dart';
+
+/// Whether ZITLAS may show notifications on this device.
+enum PushPermissionState {
+  /// Not checked yet in this session.
+  unknown,
+
+  /// Allowed, and this device is registered for push.
+  granted,
+
+  /// Not allowed, and never asked on this device — an in-app request will
+  /// still show the system dialog.
+  askable,
+
+  /// Refused, or the ask was dismissed. The app may still try once, but only
+  /// the system settings screen is guaranteed to turn notifications on.
+  blocked,
+}
+
+/// The slice of Firebase Messaging that device registration depends on.
+///
+/// A seam, not an abstraction for its own sake: without it, the rules that
+/// decide whether an expert is ever asked — and whether a device gets
+/// registered at all — could only be checked on a physical phone.
+abstract class PushMessaging {
+  const PushMessaging();
+
+  Future<AuthorizationStatus> permissionStatus();
+  Future<AuthorizationStatus> requestPermission();
+
+  /// iOS needs an APNs token before FCM will issue one.
+  Future<void> prepareForToken();
+  Future<String?> getToken();
+  Stream<String> get onTokenRefresh;
+
+  /// Opens this app's page in the system settings, where notifications are
+  /// switched on once the OS will no longer ask.
+  Future<void> openNotificationSettings();
+}
+
+/// [PushMessaging] backed by the real Firebase Messaging plugin.
+class FirebasePushMessaging extends PushMessaging {
+  const FirebasePushMessaging();
+
+  FirebaseMessaging get _m => FirebaseMessaging.instance;
+
+  @override
+  Future<AuthorizationStatus> permissionStatus() async =>
+      (await _m.getNotificationSettings()).authorizationStatus;
+
+  @override
+  Future<AuthorizationStatus> requestPermission() async =>
+      (await _m.requestPermission(alert: true, badge: true, sound: true))
+          .authorizationStatus;
+
+  @override
+  Future<void> prepareForToken() async {
+    if (!kIsWeb && Platform.isIOS) await _m.getAPNSToken();
+  }
+
+  @override
+  Future<String?> getToken() => _m.getToken();
+
+  @override
+  Stream<String> get onTokenRefresh => _m.onTokenRefresh;
+
+  @override
+  Future<void> openNotificationSettings() async {
+    try {
+      await openAppSettings();
+    } catch (e) {
+      debugPrint('[FCM] could not open system settings: $e');
+    }
+  }
+}
 
 /// FCM token management + foreground notification display.
 ///
@@ -45,11 +121,14 @@ class FcmService {
   FcmService({
     FirebaseFirestore? firestore,
     FlutterLocalNotificationsPlugin? plugin,
+    PushMessaging? messaging,
   })  : _db = firestore ?? FirebaseFirestore.instance,
-        _plugin = plugin ?? FlutterLocalNotificationsPlugin();
+        _plugin = plugin ?? FlutterLocalNotificationsPlugin(),
+        _messaging = messaging ?? const FirebasePushMessaging();
 
   final FirebaseFirestore _db;
   final FlutterLocalNotificationsPlugin _plugin;
+  final PushMessaging _messaging;
 
   static const _stateKey = 'zitlas_push_state'; // mirrors web's STATE_KEY
   static const _snoozeDays = 7;
@@ -470,38 +549,111 @@ class FcmService {
     }
   }
 
+  /// Whether ZITLAS may show notifications on this device right now, so the
+  /// UI can say so and offer the fix (see `PushPermissionBanner`).
+  ///
+  /// Static: the OS permission belongs to the DEVICE, not to an instance, and
+  /// the banner that reads it has no instance of its own.
+  static final ValueNotifier<PushPermissionState> permissionState =
+      ValueNotifier<PushPermissionState>(PushPermissionState.unknown);
+
+  /// The ONE token-rotation subscription in this process.
+  ///
+  /// `onTokenRefresh` is process-wide. Each sign-in used to attach another
+  /// listener and none was ever removed, so after an account switch the
+  /// PREVIOUS account's listener was still attached, trying to re-register
+  /// the device under the account that had signed out.
+  static StreamSubscription<String>? _rotationSub;
+
+  /// Who a rotation registers for — read when the token rotates, not
+  /// captured when the listener was attached, so it always names the account
+  /// signed in NOW (null once signed out).
+  static String? _rotationUid;
+
+  /// The token this process has fully registered, and for whom. Lets
+  /// [touchActive] tell "already registered" from "permission was only just
+  /// granted and nobody has registered this device yet".
+  static String? _registeredToken;
+  static String? _registeredUid;
+
+  static bool _granted(AuthorizationStatus s) =>
+      s == AuthorizationStatus.authorized ||
+      s == AuthorizationStatus.provisional;
+
+  /// Whether this device has EVER put the question to its user — the stored
+  /// state exists. Separates Android's never-asked `denied` from a refusal.
+  bool get _askedBefore =>
+      LocalStorageService.instance.getString(_stateKey) != null;
+
+  PushPermissionState _blockedOrAskable() =>
+      _askedBefore ? PushPermissionState.blocked : PushPermissionState.askable;
+
+  /// Clears the process-wide registration state between tests.
+  @visibleForTesting
+  static Future<void> resetForTest() async {
+    await _rotationSub?.cancel();
+    _rotationSub = null;
+    _rotationUid = null;
+    _registeredToken = null;
+    _registeredUid = null;
+    permissionState.value = PushPermissionState.unknown;
+  }
+
   /// Called once per app session after authentication resolves — NOT at
-  /// splash. Silently no-ops if snoozed this week; never re-prompts once
-  /// permanently denied.
-  Future<void> initForUser(String uid) async {
+  /// splash. Registers this device for [uid] when notifications are allowed,
+  /// and otherwise records why not in [permissionState].
+  ///
+  /// [promptIfNeeded] asks even though the OS reports `denied`, and exists
+  /// for EXPERTS. On Android, firebase_messaging reports a device that has
+  /// never been asked for POST_NOTIFICATIONS as `denied` — Android has no
+  /// "not determined" (FlutterFirebaseMessagingPlugin.getPermissions maps
+  /// "not granted" to 0). The rule used to be "denied → stop", and the only
+  /// other place that asks is the consent sheet in the ATHLETE shell, which
+  /// an expert never enters. So an expert on Android 13+ was never asked and
+  /// never registered: production held zero expert devices. Athletes keep
+  /// the consent sheet as their prompt and pass false — unchanged.
+  ///
+  /// Silently no-ops while snoozed this week, and a permanently refused
+  /// request just comes back `denied` without showing a dialog.
+  Future<void> initForUser(String uid, {bool promptIfNeeded = false}) async {
     await initLocalNotifications();
 
-    final settings = await FirebaseMessaging.instance.getNotificationSettings();
-    if (settings.authorizationStatus == AuthorizationStatus.denied && !kIsWeb) {
-      // Already explicitly denied previously — Android won't re-show its own
-      // dialog either way; nothing to do but stay usable.
-      return;
-    }
-    if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
-      if (_isSnoozed) return;
-      final result = await FirebaseMessaging.instance
-          .requestPermission(alert: true, badge: true, sound: true);
-      if (result.authorizationStatus != AuthorizationStatus.authorized &&
-          result.authorizationStatus != AuthorizationStatus.provisional) {
-        await _setState('snoozed');
-        return;
+    var status = await _messaging.permissionStatus();
+    if (!_granted(status) && !_isSnoozed) {
+      final mayAsk = status == AuthorizationStatus.notDetermined ||
+          (promptIfNeeded &&
+              status == AuthorizationStatus.denied &&
+              !_askedBefore);
+      if (mayAsk) {
+        status = await _messaging.requestPermission();
+        if (!_granted(status)) await _setState('snoozed');
       }
     }
+    if (!_granted(status)) {
+      permissionState.value = _blockedOrAskable();
+      debugPrint('[FCM] notifications not allowed for $uid '
+          '(${permissionState.value.name}) — device not registered');
+      return;
+    }
     await _setState('granted');
+    permissionState.value = PushPermissionState.granted;
     await _registerToken(uid);
-    FirebaseMessaging.instance.onTokenRefresh.listen((token) {
+    _watchRotation(uid);
+  }
+
+  /// Attaches the single rotation listener, or just repoints it at [uid].
+  void _watchRotation(String uid) {
+    _rotationUid = uid;
+    _rotationSub ??= _messaging.onTokenRefresh.listen((token) {
+      final current = _rotationUid;
+      if (current == null) return; // signed out — nobody to register for
       // A rotated token is a NEW document. The comment here used to claim the
       // old one was removed — it was not. `_storeToken` only ever wrote the
       // new row, so every rotation left the previous token behind with
       // `enabled: true`, and it stayed in `users/{uid}.pushTokens` forever.
       // That is how one phone accumulated three "active" tokens and why a
       // send reported tokens=3 for a user with one device.
-      _rotateToken(uid, token).catchError((Object e) {
+      _rotateToken(current, token).catchError((Object e) {
         debugPrint('[FCM] token refresh failed: $e');
       });
     });
@@ -543,18 +695,35 @@ class FcmService {
     }
   }
 
-  /// Refreshes `lastActiveAt` when the app comes to the foreground.
+  /// Runs every time the app returns to the foreground.
   ///
-  /// Registration alone records when a SESSION started, which does not
-  /// distinguish a phone in daily use from one that signed in months ago and
-  /// has not been opened since. Both look identical to a stale-device sweep.
+  /// Two jobs. It keeps `lastActiveAt` current on this device's registry row,
+  /// and it notices notifications being ALLOWED after [initForUser] already
+  /// ran — switched on in system settings, or granted through the athlete
+  /// consent sheet — and registers the device then, instead of at the next
+  /// cold start.
   ///
-  /// Deliberately a single write per foreground, not a heartbeat: the value
-  /// only has to be good enough to sort devices by recency.
+  /// It no longer marks a device `enabled: true` when it cannot show
+  /// notifications. It used to, on every foreground, which created
+  /// half-registered rows (no platform, no capability flag) for devices whose
+  /// owner had refused permission — the backend then counted pushes to them
+  /// as sent while nothing ever appeared.
   Future<void> touchActive(String uid) async {
     try {
-      final token = await FirebaseMessaging.instance.getToken();
+      final status = await _messaging.permissionStatus();
+      if (!_granted(status)) {
+        permissionState.value = _blockedOrAskable();
+        return;
+      }
+      permissionState.value = PushPermissionState.granted;
+      final token = await _messaging.getToken();
       if (token == null) return;
+      if (token != _registeredToken || uid != _registeredUid) {
+        await _setState('granted');
+        await _storeToken(uid, token);
+        _watchRotation(uid);
+        return;
+      }
       await _db.collection('device_tokens').doc(token).set({
         'fcmToken': token,
         'uid': uid,
@@ -562,22 +731,31 @@ class FcmService {
         'lastActiveAt': DateTime.now().toIso8601String(),
       }, SetOptions(merge: true));
     } catch (e) {
-      debugPrint('[FCM] lastActiveAt touch failed (non-fatal): $e');
+      debugPrint('[FCM] foreground touch failed (non-fatal): $e');
     }
   }
 
-  /// Enables notifications from ZITLAS Settings after an earlier decline —
-  /// returns whether they are now permitted.
-  Future<bool> enableFromSettings(String uid) async {
-    final result = await FirebaseMessaging.instance
-        .requestPermission(alert: true, badge: true, sound: true);
-    final ok = result.authorizationStatus == AuthorizationStatus.authorized ||
-        result.authorizationStatus == AuthorizationStatus.provisional;
-    if (ok) {
+  /// "Turn on notifications" — for the banner on the expert dashboard, or any
+  /// other surface explaining why nothing is arriving.
+  ///
+  /// Asks in-app first: iOS shows its dialog once, and Android 13+ shows it
+  /// again unless the user has refused twice. When the OS will not ask, this
+  /// opens the app's system settings — the only place the switch can then be
+  /// flipped — and the next [touchActive], on return to the app, registers
+  /// the device.
+  Future<PushPermissionState> enableFromSettings(String uid) async {
+    final status = await _messaging.requestPermission();
+    if (_granted(status)) {
       await _setState('granted');
+      permissionState.value = PushPermissionState.granted;
       await _registerToken(uid);
+      _watchRotation(uid);
+      return PushPermissionState.granted;
     }
-    return ok;
+    await _setState('snoozed');
+    permissionState.value = PushPermissionState.blocked;
+    await _messaging.openNotificationSettings();
+    return PushPermissionState.blocked;
   }
 
   Future<void> _registerToken(String uid) async {
@@ -585,14 +763,15 @@ class FcmService {
       // On iOS the APNs token must exist before an FCM token can be issued;
       // without this the first getToken() after a fresh install can return
       // null and the device would silently never register.
-      if (!kIsWeb && Platform.isIOS) {
-        await FirebaseMessaging.instance.getAPNSToken();
+      await _messaging.prepareForToken();
+      final token = await _messaging.getToken();
+      if (token == null) {
+        debugPrint('[FCM] no token issued — device not registered');
+        return;
       }
-      final token = await FirebaseMessaging.instance.getToken();
-      if (token == null) return;
       await _storeToken(uid, token);
     } catch (e) {
-      if (kDebugMode) debugPrint('[FCM] token registration failed: $e');
+      debugPrint('[FCM] token registration failed: $e');
     }
   }
 
@@ -657,6 +836,8 @@ class FcmService {
     // Remembered so `onTokenRefresh` can retire this token when FCM rotates
     // it — the SDK hands over only the new value at that point.
     await LocalStorageService.instance.setString(_lastTokenKey, token);
+    _registeredToken = token;
+    _registeredUid = uid;
 
     // Legacy array the website also writes; the backend reads both.
     await _db.collection('users').doc(uid).set({
@@ -690,8 +871,17 @@ class FcmService {
   /// never block logout. The token is ALSO re-owned on the next login, so a
   /// missed cleanup self-corrects the moment anyone signs in again.
   Future<void> unregisterDevice(String uid) async {
+    // Stop re-registering this device for the account that is leaving — see
+    // [_rotationSub]. Cleared first, so a rotation racing the sign-out cannot
+    // resurrect the session being ended.
+    _rotationUid = null;
+    await _rotationSub?.cancel();
+    _rotationSub = null;
+    _registeredToken = null;
+    _registeredUid = null;
+    permissionState.value = PushPermissionState.unknown;
     try {
-      final token = await FirebaseMessaging.instance.getToken();
+      final token = await _messaging.getToken();
       if (token == null) {
         debugPrint('[FCM] unregister skipped: no token on this device');
         return;

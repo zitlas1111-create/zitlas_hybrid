@@ -17,6 +17,8 @@ import 'package:webview_flutter_android/webview_flutter_android.dart';
 import '../../core/config/env.dart';
 import '../../core/network/api_client.dart';
 import '../../core/network/api_exception.dart';
+import '../../core/notifications/fcm_service.dart';
+import '../../core/notifications/presentation/push_permission_banner.dart';
 import '../../core/widgets/zitlas_loading_ring.dart';
 import '../auth/auth_state.dart';
 
@@ -50,6 +52,7 @@ class CoachingWebViewScreen extends StatefulWidget {
     super.key,
     required this.relativePath,
     required this.title,
+    this.showPushBanner = false,
   });
 
   /// Path + query on the backend host (which also serves the website), e.g.
@@ -59,6 +62,12 @@ class CoachingWebViewScreen extends StatefulWidget {
   /// Shown only if the page fails to load (there is no visible app bar in the
   /// success case — the embedded page provides its own header).
   final String title;
+
+  /// Whether to show the "notifications are off" banner above the page.
+  /// Only the expert portal sets it: an expert who cannot be notified misses
+  /// client requests without ever finding out why, and this is the one
+  /// screen every expert opens.
+  final bool showPushBanner;
 
   /// The COMPLETE coach journey — profile browsing, Request Review, Personal
   /// Coach, Razorpay payment, and (once coaching is active) the full coaching
@@ -92,6 +101,7 @@ class CoachingWebViewScreen extends StatefulWidget {
     return const CoachingWebViewScreen(
       relativePath: '/pages/experts/expert-dashboard.html?webview=1',
       title: 'Coach Dashboard',
+      showPushBanner: true,
     );
   }
 
@@ -784,10 +794,27 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
         // website covers it normally.
         backgroundColor: Colors.transparent,
         body: SafeArea(
-          child: _failed ? _errorView() : _webView(),
+          child: _failed
+              ? _errorView()
+              : widget.showPushBanner
+                  ? Column(
+                      children: [
+                        PushPermissionBanner(onEnable: _enablePush),
+                        Expanded(child: _webView()),
+                      ],
+                    )
+                  : _webView(),
         ),
       ),
     );
+  }
+
+  /// The banner's action — asks in-app where the OS still allows it, and
+  /// otherwise opens system settings (see FcmService.enableFromSettings).
+  Future<void> _enablePush() async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    await FcmService().enableFromSettings(uid);
   }
 
   Widget _webView() {

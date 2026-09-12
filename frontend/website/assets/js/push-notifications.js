@@ -5,7 +5,8 @@
  * shows a badge while the app is OPEN) and real device notifications.
  * Pipeline this module owns, end to end:
  *
- *   dashboard visit (logged in, browser supports push)
+ *   a signed-in page that loads this — the athlete dashboard or the expert
+ *   dashboard — once Firebase Auth has restored the session
  *     -> friendly pre-prompt dialog (once — never re-asks after granted)
  *     -> Notification.requestPermission()
  *     -> register /firebase-messaging-sw.js (root scope)
@@ -37,17 +38,49 @@
   function _setState(s) {
     try { localStorage.setItem(STATE_KEY, JSON.stringify(s)); } catch (_) {}
   }
-  function myUid() {
-    if (typeof ZitlasAuth !== 'undefined' && ZitlasAuth.currentUser) return ZitlasAuth.currentUser.uid;
-    try {
-      var fb = JSON.parse(localStorage.getItem('zitlas_firebase_user') || 'null');
-      if (fb && fb.uid) return fb.uid;
-    } catch (_) {}
-    return null;
+  /* The SIGNED-IN Firebase user — and only that.
+
+     This used to fall back to a uid cached in localStorage when the auth SDK
+     had not restored the session yet. That cache can still name a PREVIOUS
+     account on this browser, and a device registered under the wrong uid is
+     either rejected by the security rule (so nobody gets push) or points one
+     account's notifications at a browser somebody else is using. init() now
+     waits for onAuthStateChanged, so a real session always exists here. */
+  function currentUid() {
+    return (typeof ZitlasAuth !== 'undefined' && ZitlasAuth.currentUser)
+      ? ZitlasAuth.currentUser.uid : null;
+  }
+
+  /* The ZITLAS Flutter app shows these pages inside an Android WebView
+     (?webview=1, or the ZitlasWebview channel it injects — the same test
+     webview-bridge.js uses). A WebView cannot receive web push, and the app
+     registers the device natively, so this stays out of the way rather than
+     prompting inside the app. */
+  function inWebView() {
+    return /[?&]webview=1(&|$)/.test((win.location && win.location.search) || '') ||
+      !!win.ZitlasWebview;
+  }
+
+  /* Expert pages get expert wording: an expert is told about CLIENTS. */
+  function isExpertPage() {
+    return /\/pages\/experts\//.test((win.location && win.location.pathname) || '');
+  }
+
+  /* One browser notification per EVENT. MUST match web_tag() in
+     backend/services/push_service.py and zitlasTag() in
+     /firebase-messaging-sw.js. It used to be a fixed 'zitlas-foreground', so
+     every foreground notification silently REPLACED the one before it — two
+     client requests arriving together showed up as one. */
+  function zitlasTag(data) {
+    data = data || {};
+    if (data.chatId) return 'zitlas-chat-' + data.chatId;
+    var key = data.eventId || data.notificationId;
+    return 'zitlas-' + (key || data.type || data.category || 'general');
   }
 
   function supported() {
     return !win.Capacitor &&
+      !inWebView() &&
       typeof Notification !== 'undefined' &&
       'serviceWorker' in navigator &&
       'PushManager' in win &&
@@ -118,31 +151,34 @@
     });
   }
 
-  /* Marks this browser's session inactive. Called on sign-out.
+  /* FCM can issue this browser a NEW token (getToken revalidates on every
+     visit). The previous token's registry row would otherwise stay
+     enabled:true until FCM reported it dead — one browser counted as two
+     devices, with pushes to the old one delivered nowhere. Retired the way
+     the app does it (fcm_service.dart _rotateToken): enabled:false, never a
+     delete, and dropped from the legacy array.
 
-     enabled:false rather than deleting the row: the backend treats a token
-     with NO registry entry as an unverifiable device, so a deleted row is
-     WEAKER than one that positively states the device is signed out. The
-     array entry is removed as well, because nothing else would ever remove
-     it. Best-effort — a failure here must not block signing out. */
-  function markSignedOut(uid, token) {
-    if (!uid || !token || typeof ZitlasDB === 'undefined') return Promise.resolve();
+     Signing OUT is handled in assets/js/firebase-config.js
+     (ZitlasAuth.releasePushSession), because most pages that can sign out
+     do not load this file. */
+  function retireToken(uid, oldToken, newToken) {
     var now = new Date().toISOString();
     return Promise.all([
-      ZitlasDB.collection('device_tokens').doc(token).set({
-        fcmToken: token,
+      ZitlasDB.collection('device_tokens').doc(oldToken).set({
+        fcmToken: oldToken,
         uid: uid,
         enabled: false,
         loggedIn: false,
-        signedOutAt: now,
+        retiredAt: now,
+        retiredFor: String(newToken).slice(0, 12),
       }, { merge: true }),
       ZitlasDB.collection('users').doc(uid).set({
-        pushTokens: firebase.firestore.FieldValue.arrayRemove(token),
+        pushTokens: firebase.firestore.FieldValue.arrayRemove(oldToken),
       }, { merge: true }),
     ]).then(function () {
-      console.log('[PUSH] device marked signed out for ' + uid);
+      console.log('[PUSH] previous token retired for ' + uid);
     }).catch(function (e) {
-      console.warn('[PUSH] sign-out cleanup failed (non-fatal)', e);
+      console.warn('[PUSH] retiring the previous token failed (non-fatal)', e);
     });
   }
 
@@ -162,7 +198,9 @@
     }
   }
 
-  function registerAndStoreToken() {
+  function registerAndStoreToken(uid) {
+    var previous = null;
+    try { previous = localStorage.getItem(TOKEN_KEY); } catch (_) {}
     return navigator.serviceWorker.register('/firebase-messaging-sw.js')
       .then(_waitForActive)
       .then(function (reg) {
@@ -176,31 +214,37 @@
       })
       .then(function (token) {
         if (!token) throw new Error('FCM returned no token');
-        console.log('[PUSH] FCM token:', token.slice(0, 24) + '…');
+        /* A prefix only — a full FCM token is a credential. */
+        console.log('[PUSH] FCM token:', token.slice(0, 12) + '…');
         try { localStorage.setItem(TOKEN_KEY, token); } catch (_) {}
-        var uid = myUid();
-        if (uid && typeof ZitlasDB !== 'undefined') {
-          return storeToken(uid, token).then(function () { return token; });
-        }
-        return token;
+        if (!uid || typeof ZitlasDB === 'undefined') return token;
+        return storeToken(uid, token).then(function () {
+          if (previous && previous !== token) return retireToken(uid, previous, token);
+        }).then(function () { return token; });
       });
   }
 
   /* Foreground messages: FCM only calls this while a ZITLAS tab has focus
      (background/closed is the SW's onBackgroundMessage). Show a system
-     notification through the SW so look & tap behavior match. */
+     notification through the SW so look & tap behavior match. Attached ONCE
+     per page — a second listener would show every message twice. */
+  var _foregroundAttached = false;
   function attachForegroundHandler() {
+    if (_foregroundAttached) return;
+    _foregroundAttached = true;
     try {
       firebase.messaging().onMessage(function (payload) {
-        console.log('[PUSH] foreground message', payload);
         var n = payload.notification || {};
         var data = payload.data || {};
+        console.log('[PUSH] foreground message', data.type || '');
         navigator.serviceWorker.getRegistration('/firebase-messaging-sw.js').then(function (reg) {
           if (!reg) return;
           reg.showNotification(n.title || data.title || 'ZITLAS', {
-            body: n.body || data.message || '',
+            body: n.body || data.body || data.message || '',
             icon: '/assets/zino.png',
-            tag: 'zitlas-foreground',
+            badge: '/assets/zino.png',
+            tag: zitlasTag(data),
+            renotify: !!data.chatId,
             data: { url: data.url || '/pages/notifications/notifications.html' },
           });
         });
@@ -247,7 +291,7 @@
         _setState({ status: 'granted', ts: Date.now() });
         var status = $('pushStatus');
         if (status) status.textContent = '✅ Notifications enabled!';
-        registerAndStoreToken()
+        registerAndStoreToken(currentUid())
           .then(function () { attachForegroundHandler(); })
           .catch(function (e) { console.warn('[PUSH] token setup failed', e); });
         setTimeout(closeDialog, 1100);
@@ -261,20 +305,38 @@
     });
   }
 
+  /* Pre-prompt wording, by audience. Static strings only (never user data),
+     so building the dialog's HTML from them is safe. */
+  function promptCopy() {
+    if (isExpertPage()) {
+      return {
+        title: 'Never miss a client',
+        sub: 'Get notified the moment a client requests coaching or a review, sends a meal for review, or messages you — even when ZITLAS isn’t open.',
+        items: ['New coaching &amp; review requests', 'Meals waiting for your review', 'Client messages &amp; payments'],
+      };
+    }
+    return {
+      title: 'Stay in the loop',
+      sub: 'Get notified the moment your expert reviews your plan, your coach replies, or it’s time to move — even when ZITLAS isn’t open.',
+      items: ['Expert review &amp; coach updates', 'Diet &amp; workout reminders', 'Wallet &amp; request activity'],
+    };
+  }
+
   function showPrePrompt() {
     if ($('pushOverlay')) return;
+    var copy = promptCopy();
     var overlay = document.createElement('div');
     overlay.id = 'pushOverlay';
     overlay.className = 'push-overlay';
     overlay.innerHTML =
       '<div class="push-card" role="dialog" aria-modal="true" aria-label="Enable notifications">' +
         '<span class="push-icon">🔔</span>' +
-        '<h3 class="push-title">Stay in the loop</h3>' +
-        '<p class="push-sub">Get notified the moment your expert reviews your plan, your coach replies, or it’s time to move — even when ZITLAS isn’t open.</p>' +
+        '<h3 class="push-title">' + copy.title + '</h3>' +
+        '<p class="push-sub">' + copy.sub + '</p>' +
         '<ul class="push-list">' +
-          '<li><span class="push-tick">✔</span> Expert review &amp; coach updates</li>' +
-          '<li><span class="push-tick">✔</span> Diet &amp; workout reminders</li>' +
-          '<li><span class="push-tick">✔</span> Wallet &amp; request activity</li>' +
+          copy.items.map(function (i) {
+            return '<li><span class="push-tick">✔</span> ' + i + '</li>';
+          }).join('') +
         '</ul>' +
         '<p class="push-status" id="pushStatus"></p>' +
         '<div class="push-btns">' +
@@ -292,9 +354,9 @@
 
   /* ── Eligibility + boot ────────────────────────────────────────────── */
 
-  function maybeInit() {
+  function maybeInit(uid) {
     if (!supported()) { console.log('[PUSH] web push not supported in this context — skipping'); return; }
-    if (!myUid()) return; /* only after login */
+    if (!uid) return; /* only for a real, restored session */
 
     firebase.messaging.isSupported && !firebase.messaging.isSupported()
       ? console.log('[PUSH] messaging.isSupported() = false — skipping')
@@ -304,10 +366,10 @@
       var perm = Notification.permission;
       if (perm === 'granted') {
         /* Already granted (now or previously): NEVER show the dialog again.
-           Refresh the token silently — getToken rotates/revalidates and
-           arrayUnion is idempotent, so this also handles token refresh. */
+           Refresh the token silently — getToken rotates/revalidates, and a
+           changed token retires the previous one (see retireToken). */
         _setState({ status: 'granted', ts: Date.now() });
-        registerAndStoreToken()
+        registerAndStoreToken(uid)
           .then(function () { attachForegroundHandler(); })
           .catch(function (e) { console.warn('[PUSH] silent token refresh failed', e); });
         return;
@@ -331,10 +393,23 @@
     }
   }
 
+  /* Starts once Firebase Auth has RESTORED the session — onAuthStateChanged
+     fires only after persistence has been read, so the uid used below is the
+     account actually signed in on this page (see currentUid). */
   function init() {
-    /* Small delay so the dashboard paints and the geo prompt (600ms) can
-       claim its slot first. */
-    setTimeout(maybeInit, 2200);
+    if (inWebView()) {
+      console.log('[PUSH] inside the ZITLAS app — the device registers natively');
+      return;
+    }
+    if (typeof ZitlasAuth === 'undefined' || typeof ZitlasAuth.onAuthStateChanged !== 'function') return;
+    var started = false;
+    ZitlasAuth.onAuthStateChanged(function (user) {
+      if (!user || started) return;
+      started = true;
+      /* Small delay so the page paints and the geo prompt (600ms) can claim
+         its slot first. */
+      setTimeout(function () { maybeInit(user.uid); }, 2200);
+    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
@@ -342,7 +417,9 @@
 
   win.ZitlasPush = {
     show: showPrePrompt,
-    getSavedToken: function () { return localStorage.getItem(TOKEN_KEY); },
-    refreshToken: registerAndStoreToken,
+    getSavedToken: function () {
+      try { return localStorage.getItem(TOKEN_KEY); } catch (_) { return null; }
+    },
+    refreshToken: function () { return registerAndStoreToken(currentUid()); },
   };
 })(window);

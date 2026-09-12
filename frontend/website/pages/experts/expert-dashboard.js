@@ -3230,6 +3230,16 @@ function initNavigation() {
    ══════════════════════════════════════════════ */
 
 async function logout() {
+  /* ── 0. Release this browser's push session FIRST. It is an owner-only
+     Firestore write, and step 1 terminates the Firestore client — after that
+     the write cannot run, so a logged-out expert kept receiving their clients'
+     notifications in this browser. Bounded inside releasePushSession. ───── */
+  try {
+    if (typeof ZitlasAuth !== 'undefined' && typeof ZitlasAuth.releasePushSession === 'function') {
+      await ZitlasAuth.releasePushSession();
+    }
+  } catch (e) { console.warn('[ZITLAS] push release error:', e); }
+
   /* ── 1. Stop EVERY Firestore listener BEFORE signing out ──────────────
      A snapshot listener that outlives the auth session immediately fires
      permission-denied, and a snapshot callback running against just-cleared

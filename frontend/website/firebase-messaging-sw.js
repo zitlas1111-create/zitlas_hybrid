@@ -28,17 +28,34 @@ firebase.initializeApp({
 
 var messaging = firebase.messaging();
 
+/* One browser notification per EVENT. MUST equal web_tag() in
+   backend/services/push_service.py — which sets this same tag on the webpush
+   notification — and zitlasTag() in assets/js/push-notifications.js.
+
+   A notification message is displayed by the FCM SDK itself AND passed to
+   the handler below. With identical tags the browser REPLACES the first with
+   the second rather than stacking a duplicate; a tag per event (instead of
+   one per category) also keeps two different events from overwriting each
+   other. Chat groups per conversation and re-alerts on each new message. */
+function zitlasTag(data) {
+  data = data || {};
+  if (data.chatId) return 'zitlas-chat-' + data.chatId;
+  var key = data.eventId || data.notificationId;
+  return 'zitlas-' + (key || data.type || data.category || 'general');
+}
+
 messaging.onBackgroundMessage(function (payload) {
   var n     = payload.notification || {};
   var data  = payload.data || {};
   var title = n.title || data.title || 'ZITLAS';
-  var body  = n.body  || data.message || '';
+  var body  = n.body  || data.body || data.message || '';
 
   self.registration.showNotification(title, {
     body: body,
     icon: '/assets/zino.png',
     badge: '/assets/zino.png',
-    tag: data.tag || 'zitlas-' + (data.category || 'general'),
+    tag: zitlasTag(data),
+    renotify: !!data.chatId,
     data: { url: data.url || '/pages/notifications/notifications.html' },
   });
 });
