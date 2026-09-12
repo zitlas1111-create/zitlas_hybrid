@@ -16,13 +16,29 @@ enum WalletStatus { loading, ready, error }
 /// path ends here as a message plus a retry — nothing throws into the widget
 /// tree, which is what produced a red screen instead of a wallet.
 class WalletController extends ChangeNotifier {
-  WalletController({required this.uid, WalletRepository? repository})
-      : _repository = repository ?? WalletRepository() {
+  WalletController({
+    required this.uid,
+    WalletRepository? repository,
+    WalletAvailability? availability,
+  })  : _repository = repository ?? WalletRepository(),
+        // ignore: prefer_initializing_formals
+        _availability = availability {
     _subscribe();
+    _loadAvailability();
   }
 
   final String uid;
   final WalletRepository _repository;
+  final WalletAvailability? _availability;
+
+  /// The same repository — and so the same authenticated client — that the
+  /// screen's Add Funds flow uses.
+  WalletRepository get repository => _repository;
+
+  /// Whether the Wallet is frozen, as the SERVER says. Frozen until it has
+  /// answered, and for good when no availability source was given — the
+  /// safe direction, and what every pre-existing caller keeps getting.
+  bool walletFrozen = kWalletFrozenByDefault;
 
   StreamSubscription<Wallet>? _sub;
 
@@ -65,6 +81,30 @@ class WalletController extends ChangeNotifier {
     errorMessage = null;
     _notify();
     _subscribe();
+    _loadAvailability();
+  }
+
+  Future<void> _loadAvailability() async {
+    final source = _availability;
+    if (source == null) return;
+    final frozen = await source.isFrozen();
+    if (kDebugMode) debugPrint('[WALLET] server says walletFrozen=$frozen');
+    walletFrozen = frozen;
+    _notify();
+  }
+
+  /// Re-reads the server-written wallet right away — after a CONFIRMED
+  /// top-up, so the new balance and history show without waiting for the
+  /// live stream. The balance is never computed locally.
+  Future<void> refreshBalance() async {
+    try {
+      wallet = await _repository.fetch(uid);
+      status = WalletStatus.ready;
+      errorMessage = null;
+      _notify();
+    } catch (e) {
+      if (kDebugMode) debugPrint('[WALLET] refresh failed: $e');
+    }
   }
 
   /// Starts a real Razorpay order for [amountRupees].

@@ -4,11 +4,10 @@ import 'package:provider/provider.dart';
 
 import '../../../../features/auth/auth_state.dart';
 import '../../../dashboard/presentation/dashboard_visuals.dart';
-import '../../data/razorpay_checkout.dart';
+import '../../add_funds_flow.dart';
 import '../../models/wallet.dart';
 import '../../wallet_controller.dart';
 import '../../wallet_freeze.dart';
-import '../widgets/add_funds_sheet.dart';
 import '../widgets/wallet_transaction_row.dart';
 import 'transaction_history_screen.dart';
 
@@ -22,10 +21,13 @@ import 'transaction_history_screen.dart';
 /// transactions, and a full history. Money is never written from here — see
 /// [WalletRepository] for why.
 class WalletScreen extends StatelessWidget {
-  const WalletScreen({super.key, this.controller});
+  const WalletScreen({super.key, this.controller, this.addFundsFlow});
 
   /// Injectable for tests.
   final WalletController? controller;
+
+  /// Injectable for tests — the real one opens Razorpay's native sheet.
+  final AddFundsFlow? addFundsFlow;
 
   @override
   Widget build(BuildContext context) {
@@ -46,84 +48,83 @@ class WalletScreen extends StatelessWidget {
     if (injected != null) {
       return ChangeNotifierProvider<WalletController>.value(
         value: injected,
-        child: const _WalletBody(),
+        child: _WalletBody(flow: addFundsFlow),
       );
     }
     return ChangeNotifierProvider<WalletController>(
       key: ValueKey(uid),
-      create: (_) => WalletController(uid: uid),
-      child: const _WalletBody(),
+      // Asks the SERVER whether Add Funds is available — the same answer the
+      // website's wallet panel reads.
+      create: (_) => WalletController(uid: uid, availability: WalletAvailability()),
+      child: _WalletBody(flow: addFundsFlow),
     );
   }
 }
 
 class _WalletBody extends StatefulWidget {
-  const _WalletBody();
+  const _WalletBody({this.flow});
+
+  final AddFundsFlow? flow;
 
   @override
   State<_WalletBody> createState() => _WalletBodyState();
 }
 
 class _WalletBodyState extends State<_WalletBody> {
-  RazorpayCheckout? _checkout;
+  AddFundsFlow? _ownFlow;
+  bool _resumeChecked = false;
+
+  /// The injected flow, or one built on the controller's own repository —
+  /// and so on its authenticated client.
+  AddFundsFlow _flow(WalletController controller) =>
+      widget.flow ?? (_ownFlow ??= AddFundsFlow(repository: controller.repository));
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_resumeChecked) return;
+    _resumeChecked = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _resumePendingTopUp());
+  }
 
   @override
   void dispose() {
-    _checkout?.dispose();
+    // The flow defers this itself while a checkout is still open, so a
+    // payment made as this screen was closing is still verified.
+    _ownFlow?.dispose();
     super.dispose();
   }
 
-  /// Amount sheet → real Razorpay order → native checkout → backend verify.
-  ///
-  /// Every step can fail independently and each one reports for itself; none of
-  /// them credits anything locally. The balance on screen only ever changes
-  /// because the live Firestore stream delivered a new server-written wallet.
+  /// A payment Razorpay confirmed but the backend never did — the app was
+  /// closed or offline mid-verification. Finish it now; the backend never
+  /// credits an order twice.
+  Future<void> _resumePendingTopUp() async {
+    if (!mounted) return;
+    final controller = context.read<WalletController>();
+    final outcome = await _flow(controller).resumePending(controller.uid);
+    if (outcome == null || !mounted) return;
+    if (outcome.credited) await controller.refreshBalance();
+    if (mounted) await reportTopUp(context, outcome);
+  }
+
+  /// Amount sheet → real Razorpay order → native checkout → backend verify →
+  /// the SERVER's new balance. See [AddFundsFlow]; nothing is credited here.
   Future<void> _addFunds() async {
-    // Unreachable while frozen — the button is disabled below — but a second
-    // gate here means no future caller can open a recharge that the server
-    // will only refuse.
-    if (kWalletFrozen) {
+    final controller = context.read<WalletController>();
+    // Unreachable while frozen — the button is disabled — but a second gate
+    // means no future caller can open a recharge the server will refuse.
+    if (controller.walletFrozen) {
       _showMessage(kWalletFrozenMessage);
       return;
     }
-    final controller = context.read<WalletController>();
-    final amount = await showAddFundsSheet(context);
-    if (amount == null || !mounted) return;
-
-    final order = await controller.startTopUp(amount);
-    if (!mounted) return;
-    if (order == null) {
-      _showMessage(controller.errorMessage ?? 'Could not start the payment.');
-      return;
-    }
-
-    final auth = context.read<AuthState>().profile;
-    final checkout = _checkout ??= RazorpayCheckout();
-    final result = await checkout.open(
-      order: order,
-      description: 'Wallet recharge',
-      email: auth?.email,
+    final email = context.read<AuthState>().profile?.email;
+    final outcome = await runAddFunds(
+      context,
+      flow: _flow(controller),
+      uid: controller.uid,
+      email: email,
     );
-    if (!mounted) return;
-
-    switch (result.outcome) {
-      case CheckoutOutcome.cancelled:
-        _showMessage('Payment cancelled — nothing was charged.');
-      case CheckoutOutcome.failed:
-        _showMessage(result.message ?? 'The payment could not be completed.');
-      case CheckoutOutcome.success:
-        final balance = await controller.confirmTopUp(
-          orderId: result.orderId!,
-          paymentId: result.paymentId!,
-          signature: result.signature!,
-        );
-        if (!mounted) return;
-        if (balance == null) {
-          _showMessage(controller.errorMessage ?? 'Payment could not be verified.');
-        } else {
-          _showMessage('₹${_thousands(amount.round())} added to your wallet.');
-        }
-    }
+    if (outcome != null && outcome.credited) await controller.refreshBalance();
   }
 
   void _showMessage(String message) {
@@ -161,10 +162,15 @@ class _WalletBodyState extends State<_WalletBody> {
         WalletStatus.ready => RefreshIndicator(
             color: DashboardColors.primary,
             onRefresh: controller.retry,
-            child: _WalletContent(
-              wallet: controller.wallet,
-              busy: controller.paymentInProgress,
-              onAddFunds: _addFunds,
+            child: ValueListenableBuilder<AddFundsPhase>(
+              valueListenable: _flow(controller).phase,
+              builder: (context, phase, _) => _WalletContent(
+                wallet: controller.wallet,
+                frozen: controller.walletFrozen,
+                busy: controller.paymentInProgress || phase != AddFundsPhase.idle,
+                busyLabel: phase == AddFundsPhase.verifying ? 'Verifying…' : 'Starting…',
+                onAddFunds: _addFunds,
+              ),
             ),
           ),
       },
@@ -308,12 +314,16 @@ class _ErrorState extends StatelessWidget {
 class _WalletContent extends StatelessWidget {
   const _WalletContent({
     required this.wallet,
+    required this.frozen,
     required this.busy,
     required this.onAddFunds,
+    this.busyLabel = 'Starting…',
   });
 
   final Wallet wallet;
+  final bool frozen;
   final bool busy;
+  final String busyLabel;
   final Future<void> Function() onAddFunds;
 
   @override
@@ -324,7 +334,7 @@ class _WalletContent extends StatelessWidget {
       children: [
         _BalanceCard(wallet: wallet),
         // The state is stated before any action is offered.
-        if (kWalletFrozen) ...[
+        if (frozen) ...[
           const SizedBox(height: 14),
           const _WalletFrozenNotice(),
         ],
@@ -339,10 +349,10 @@ class _WalletContent extends StatelessWidget {
                 // A disabled action must LOOK disabled: `_QuickAction`
                 // greys itself out on a null onTap, so this is never a
                 // live-looking button that fails on tap.
-                label: kWalletFrozen
+                label: frozen
                     ? 'Add Funds (soon)'
-                    : (busy ? 'Starting…' : 'Add Funds'),
-                onTap: (kWalletFrozen || busy) ? null : onAddFunds,
+                    : (busy ? busyLabel : 'Add Funds'),
+                onTap: (frozen || busy) ? null : onAddFunds,
               ),
             ),
             const SizedBox(width: 10),

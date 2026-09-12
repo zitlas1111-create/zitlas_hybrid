@@ -16,7 +16,7 @@ import 'package:zitlas_mobile/features/payments/wallet_freeze.dart';
 import 'package:zitlas_mobile/features/profile/data/profile_repository.dart';
 import 'package:zitlas_mobile/models/user_model.dart';
 
-/// THE WALLET MOVES NO MONEY THIS RELEASE — AND PREMIUM IS RAZORPAY-ONLY.
+/// WHILE THE SERVER SAYS THE WALLET IS FROZEN, IT MOVES NO MONEY.
 ///
 /// Frozen is not deleted and not hidden. A balance and a transaction history
 /// are the athlete's own records and keep rendering; only the actions that
@@ -29,8 +29,10 @@ import 'package:zitlas_mobile/models/user_model.dart';
 /// in backend/tests/test_wallet_freeze.py.
 void main() {
   group('the freeze flag', () {
-    test('the wallet is frozen for launch', () {
-      expect(kWalletFrozen, isTrue);
+    test('until the server answers, the wallet is shown as frozen', () {
+      // The real answer comes from GET /api/system/trial-mode (see
+      // WalletAvailability). This is only the safe default before it arrives.
+      expect(kWalletFrozenByDefault, isTrue);
     });
 
     test('the message tells the athlete their money is safe', () {
@@ -132,7 +134,7 @@ void main() {
     });
   });
 
-  group('premium is bought from Razorpay, and only from Razorpay', () {
+  group('the Razorpay Premium fallback is server-priced and server-verified', () {
     test('the order request carries a billing period and NO amount', () async {
       // A client that could name its own price could buy Premium for ₹1.
       Map<String, dynamic>? sent;

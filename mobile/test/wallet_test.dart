@@ -476,6 +476,14 @@ Future<void> _settle(WalletController controller) =>
     Future<void>.delayed(const Duration(milliseconds: 40));
 
 class _FailingRepository implements WalletRepository {
+  @override
+  Future<TopUpVerification> verifyTopUp({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async =>
+      throw UnimplementedError();
+
   _FailingRepository(this.error);
   final Object error;
 
@@ -506,6 +514,14 @@ class _FailingRepository implements WalletRepository {
 }
 
 class _FlakyRepository implements WalletRepository {
+  @override
+  Future<TopUpVerification> verifyTopUp({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async =>
+      throw UnimplementedError();
+
   _FlakyRepository({required this.failure, required this.recovered});
   final Object failure;
   final Wallet recovered;
@@ -539,6 +555,14 @@ class _FlakyRepository implements WalletRepository {
 }
 
 class _SlowOrderRepository implements WalletRepository {
+  @override
+  Future<TopUpVerification> verifyTopUp({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async =>
+      throw UnimplementedError();
+
   int orderCalls = 0;
 
   @override

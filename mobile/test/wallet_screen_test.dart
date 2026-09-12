@@ -319,6 +319,14 @@ class _FakeAuthState extends ChangeNotifier implements AuthState {
 }
 
 class _FlakyRepository implements WalletRepository {
+  @override
+  Future<TopUpVerification> verifyTopUp({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async =>
+      throw UnimplementedError();
+
   bool healed = false;
 
   @override
@@ -350,6 +358,14 @@ class _FlakyRepository implements WalletRepository {
 }
 
 class _NeverRepository implements WalletRepository {
+  @override
+  Future<TopUpVerification> verifyTopUp({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async =>
+      throw UnimplementedError();
+
   @override
   Stream<Wallet> watch(String uid) => const Stream<Wallet>.empty();
 

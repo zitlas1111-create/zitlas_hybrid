@@ -17,17 +17,22 @@ const kMaxTopUp = 50000;
 /// Razorpay's own sheet shows the real, live options, and a second cosmetic
 /// picker in front of it would just be a lie about what's being chosen. The
 /// website removed exactly this for the same reason.
-Future<double?> showAddFundsSheet(BuildContext context) {
+///
+/// [initialAmount] pre-fills the amount — for example exactly what Premium
+/// is short by — and the athlete can still change it.
+Future<double?> showAddFundsSheet(BuildContext context, {int? initialAmount}) {
   return showModalBottomSheet<double>(
     context: context,
     isScrollControlled: true,
     backgroundColor: Colors.transparent,
-    builder: (_) => const _AddFundsSheet(),
+    builder: (_) => _AddFundsSheet(initialAmount: initialAmount),
   );
 }
 
 class _AddFundsSheet extends StatefulWidget {
-  const _AddFundsSheet();
+  const _AddFundsSheet({this.initialAmount});
+
+  final int? initialAmount;
 
   @override
   State<_AddFundsSheet> createState() => _AddFundsSheetState();
@@ -37,6 +42,15 @@ class _AddFundsSheetState extends State<_AddFundsSheet> {
   final _custom = TextEditingController();
   int? _selectedPreset;
   String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final initial = widget.initialAmount;
+    if (initial != null) {
+      _custom.text = initial.clamp(kMinTopUp, kMaxTopUp).toString();
+    }
+  }
 
   @override
   void dispose() {

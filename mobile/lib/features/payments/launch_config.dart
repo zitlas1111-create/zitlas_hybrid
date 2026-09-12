@@ -2,10 +2,10 @@
 ///
 ///     | Feature             | Launch State | Payment       |
 ///     |---------------------|--------------|---------------|
-///     | Premium             | ACTIVE       | Razorpay ONLY |
+///     | Premium             | ACTIVE       | Wallet (Razorpay while frozen) |
 ///     | Personal Coaching   | ACTIVE       | FREE          |
 ///     | Expert Verification | FROZEN       | NO PAYMENT    |
-///     | Wallet              | FROZEN       | DISABLED      |
+///     | Wallet              | SERVER-DRIVEN| GET /api/system/trial-mode |
 ///     | Expert Payouts      | FROZEN       | DISABLED      |
 ///
 /// Mirrors `backend/launch_config.py`, the same way `Entitlements.fallback`
@@ -19,8 +19,9 @@
 /// `backend/launch_config.py` — the backend is the one that matters.
 library;
 
-/// Premium — the ONLY paid feature at launch, and Razorpay is its only
-/// payment method. See `membership_screen.dart`.
+/// Premium — the ONLY paid feature at launch. Paid from the ZITLAS Wallet
+/// (topped up through Razorpay); Razorpay directly only while the Wallet is
+/// frozen. See `membership_screen.dart`.
 const bool kPremiumPaymentRequired = true;
 
 /// Personal Coaching is FREE. Not "₹0 at checkout" — there is no checkout.

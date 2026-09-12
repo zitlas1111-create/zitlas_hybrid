@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -8,19 +10,26 @@ import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
 import '../../../profile/data/profile_repository.dart';
 import '../../../profile/models/personal_info.dart';
+import '../../../payments/add_funds_flow.dart';
 import '../../../payments/data/razorpay_checkout.dart';
+import '../../../payments/data/wallet_repository.dart';
+import '../../../payments/presentation/widgets/add_funds_sheet.dart' show kMinTopUp;
+import '../../../payments/presentation/widgets/insufficient_balance_card.dart';
+import '../../premium_wallet_controller.dart';
 import '../../data/entitlements_repository.dart';
 
 /// Native rebuild of `frontend/pages/profile/membership/membership.html` +
 /// `.js` — Membership & Billing. Plan comparison, billing toggle, and
 /// pricing all match the website exactly.
 ///
-/// PREMIUM IS BOUGHT FROM RAZORPAY, AND ONLY FROM RAZORPAY. Upgrade runs the
-/// same three server steps the website runs — create a server-priced order,
-/// open Razorpay's own sheet, hand the signed result back for verification —
-/// so both clients activate Premium through one authoritative backend path
-/// and neither has any activation logic of its own. There is no wallet
-/// option and never has been.
+/// PREMIUM IS PAID FROM THE ZITLAS WALLET — the same rule as the website's
+/// membership.js. Razorpay puts money INTO the wallet (Add Funds); Upgrade
+/// charges the wallet through `POST /api/payment/membership/purchase-with-wallet`
+/// at the server's price. A short wallet shows how much is missing and offers
+/// Add Funds — Razorpay is never opened automatically for Premium. Only while
+/// the server reports the Wallet frozen does Upgrade fall back to the
+/// Razorpay-direct flow (create a server-priced order, open Razorpay, hand the
+/// signed result back for verification), so Premium stays purchasable.
 ///
 /// This screen previously created the order and then told the athlete to go
 /// to the website, because the Razorpay SDK was believed to be unintegrated.
@@ -28,7 +37,17 @@ import '../../data/entitlements_repository.dart';
 /// along — so the flow simply ended one step early and Premium could not be
 /// bought on mobile at all.
 class MembershipScreen extends StatelessWidget {
-  const MembershipScreen({super.key});
+  const MembershipScreen({
+    super.key,
+    this.profileRepository,
+    this.walletRepository,
+    this.addFundsFlow,
+  });
+
+  /// Injectable for tests; the real ones talk to Firestore and the backend.
+  final ProfileRepository? profileRepository;
+  final WalletRepository? walletRepository;
+  final AddFundsFlow? addFundsFlow;
 
   @override
   Widget build(BuildContext context) {
@@ -38,15 +57,25 @@ class MembershipScreen extends StatelessWidget {
     }
     return _MembershipBody(
       uid: uid,
-      repository: ProfileRepository(firestore: FirebaseFirestore.instance, auth: FirebaseAuth.instance),
+      repository: profileRepository ??
+          ProfileRepository(firestore: FirebaseFirestore.instance, auth: FirebaseAuth.instance),
+      walletRepository: walletRepository,
+      addFundsFlow: addFundsFlow,
     );
   }
 }
 
 class _MembershipBody extends StatefulWidget {
-  const _MembershipBody({required this.uid, required this.repository});
+  const _MembershipBody({
+    required this.uid,
+    required this.repository,
+    this.walletRepository,
+    this.addFundsFlow,
+  });
   final String uid;
   final ProfileRepository repository;
+  final WalletRepository? walletRepository;
+  final AddFundsFlow? addFundsFlow;
 
   @override
   State<_MembershipBody> createState() => _MembershipBodyState();
@@ -62,18 +91,44 @@ class _MembershipBodyState extends State<_MembershipBody> {
   /// keeps native event handlers alive until it is told not to.
   RazorpayCheckout? _checkout;
 
+  /// Wallet-first Premium (see the class doc).
+  late final PremiumWalletController _premium;
+
+  /// Add Funds, shared with the Wallet screen. Owned here unless injected.
+  late final AddFundsFlow _flow;
+  bool _ownsFlow = false;
+  bool _addingFunds = false;
+
   @override
   void dispose() {
     _checkout?.dispose();
+    _premium.removeListener(_onPremiumChanged);
+    _premium.dispose();
+    if (_ownsFlow) _flow.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
+    _premium = PremiumWalletController(
+      uid: widget.uid,
+      repository: widget.walletRepository ?? WalletRepository(),
+    )..addListener(_onPremiumChanged);
+    final injected = widget.addFundsFlow;
+    if (injected != null) {
+      _flow = injected;
+    } else {
+      _flow = AddFundsFlow(repository: _premium.repository);
+      _ownsFlow = true;
+    }
     EntitlementsRepository().fetch().then((e) {
       if (mounted) setState(() => _ent = e);
     });
+  }
+
+  void _onPremiumChanged() {
+    if (mounted) setState(() {});
   }
 
   String _billing = 'monthly';
@@ -195,18 +250,30 @@ class _MembershipBodyState extends State<_MembershipBody> {
             'Expert services — FREE (₹0 platform charges)',
             '🚫 No Ads',
           ],
-          buttonLabel: isPremium ? 'Current Plan' : (_submitting ? 'Starting payment…' : 'Upgrade to Premium'),
+          buttonLabel: isPremium ? 'Current Plan' : (_submitting ? 'Processing…' : 'Upgrade to Premium'),
           buttonEnabled: !isPremium && !_submitting,
           premium: true,
           onButtonTap: isPremium ? null : _upgrade,
         ),
+        if (!isPremium) ...[
+          const SizedBox(height: 8),
+          _walletLine(),
+        ],
+        if (!isPremium && _premium.shortfall != null) ...[
+          const SizedBox(height: 12),
+          InsufficientBalanceCard(
+            shortfall: _premium.shortfall!,
+            busy: _addingFunds,
+            onAddFunds: _addFunds,
+          ),
+        ],
         const SizedBox(height: 20),
         _ComparisonTable(billing: _billing, ent: _ent),
         const SizedBox(height: 16),
         const Text(
           'Subscriptions renew automatically. Cancel anytime from this screen. '
-          'All prices are in Indian Rupees (INR). Payments are processed '
-          'securely by Razorpay.',
+          'All prices are in Indian Rupees (INR). Premium is paid from your '
+          'ZITLAS Wallet; add funds securely with Razorpay.',
           style: TextStyle(fontSize: 11, color: ZitlasTokens.textMuted),
         ),
       ],
@@ -238,6 +305,77 @@ class _MembershipBodyState extends State<_MembershipBody> {
     );
   }
 
+  /// Upgrade: pay from the ZITLAS Wallet.
+  ///
+  /// Paid → Premium is active. Short → the insufficient-balance card appears
+  /// with Add Funds, and Razorpay is NOT opened. Frozen (the server says so)
+  /// → the Razorpay-direct fallback below, exactly as the website does.
+  Future<void> _upgrade() async {
+    setState(() => _submitting = true);
+    try {
+      final status = await _premium.purchase(_billing);
+      if (!mounted) return;
+      switch (status) {
+        case PremiumPurchaseStatus.purchased:
+          _say('Premium activated — paid from your ZITLAS Wallet.');
+          final refreshed = await EntitlementsRepository().fetch();
+          if (mounted) setState(() => _ent = refreshed);
+        case PremiumPurchaseStatus.walletFrozen:
+          await _payWithRazorpay();
+        case PremiumPurchaseStatus.failed:
+          _say(_premium.message ?? 'Could not complete the upgrade. Please try again.');
+        case PremiumPurchaseStatus.insufficient:
+        case PremiumPurchaseStatus.idle:
+        case PremiumPurchaseStatus.purchasing:
+          break;
+      }
+    } finally {
+      if (mounted) setState(() => _submitting = false);
+    }
+  }
+
+  /// Add Funds from the insufficient-balance card, pre-filled with exactly
+  /// what Premium is short by. After a CONFIRMED credit the wallet is re-read
+  /// from the server; Premium is not bought automatically.
+  Future<void> _addFunds() async {
+    final short = _premium.shortfall;
+    final email = context.read<AuthState>().profile?.email;
+    final suggested =
+        short == null ? null : math.max(kMinTopUp, short.shortfallRupees.ceil());
+    setState(() => _addingFunds = true);
+    try {
+      final outcome = await runAddFunds(
+        context,
+        flow: _flow,
+        uid: widget.uid,
+        email: email,
+        suggestedAmount: suggested,
+        reportCredited: false,
+      );
+      if (outcome == null || !outcome.credited) return;
+      await _premium.onFundsAdded();
+      if (!mounted) return;
+      _say(_premium.shortfall == null
+          ? 'Funds added. Tap Upgrade to Premium to pay from your wallet.'
+          : 'Funds added, but your wallet is still short — add a little more to continue.');
+    } finally {
+      if (mounted) setState(() => _addingFunds = false);
+    }
+  }
+
+  Widget _walletLine() {
+    final balance = _premium.wallet.available;
+    final shown = balance == balance.roundToDouble()
+        ? balance.toStringAsFixed(0)
+        : balance.toStringAsFixed(2);
+    return Text(
+      'Paid from your ZITLAS Wallet · Balance ₹$shown',
+      key: const Key('premiumWalletLine'),
+      textAlign: TextAlign.center,
+      style: const TextStyle(fontSize: 11.5, color: ZitlasTokens.textMuted),
+    );
+  }
+
   /// Premium page -> server-priced order -> Razorpay checkout -> server-side
   /// verification -> Premium.
   ///
@@ -246,7 +384,7 @@ class _MembershipBodyState extends State<_MembershipBody> {
   /// without granting anything, because the only thing that grants Premium
   /// is the backend's own transaction after it checks the signature, the
   /// order owner and the purpose.
-  Future<void> _upgrade() async {
+  Future<void> _payWithRazorpay() async {
     setState(() => _submitting = true);
     try {
       final order = await widget.repository.createMembershipOrder(_billing);
@@ -285,8 +423,11 @@ class _MembershipBodyState extends State<_MembershipBody> {
   }
 
   void _say(String message) {
+    // A newer message REPLACES an older one instead of queueing behind it —
+    // "Premium activated" must not wait out the previous notice.
     ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(message)));
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 }
 

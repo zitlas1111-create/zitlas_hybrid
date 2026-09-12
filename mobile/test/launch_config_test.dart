@@ -10,7 +10,7 @@ import 'package:zitlas_mobile/features/payments/wallet_freeze.dart';
 ///     | Premium             | ACTIVE       | Razorpay ONLY |
 ///     | Personal Coaching   | ACTIVE       | FREE          |
 ///     | Expert Verification | FROZEN       | NO PAYMENT    |
-///     | Wallet              | FROZEN       | DISABLED      |
+///     | Wallet              | SERVER-DRIVEN| trial-mode    |
 ///     | Expert Payouts      | FROZEN       | DISABLED      |
 ///
 /// These pin the DISPLAYED half. The enforced half — which is the half that
@@ -28,8 +28,10 @@ void main() {
       expect(kExpertVerificationEnabled, isFalse);
     });
 
-    test('the wallet is frozen', () {
-      expect(kWalletFrozen, isTrue);
+    test('the wallet is read from the server, shown frozen until it answers', () {
+      // Not mirrored as a constant: backend WALLET_ENABLED can change without
+      // an app release, so the app asks GET /api/system/trial-mode.
+      expect(kWalletFrozenByDefault, isTrue);
     });
 
     test('expert payouts are frozen', () {
@@ -44,7 +46,7 @@ void main() {
       expect(kExpertServicesPaymentRequired, isFalse);
       expect(kExpertVerificationEnabled, isFalse);
       expect(kExpertPayoutsEnabled, isFalse);
-      expect(kWalletFrozen, isTrue); // WALLET_ENABLED == false
+      expect(kWalletFrozenByDefault, isTrue); // until trial-mode answers
     });
   });
 

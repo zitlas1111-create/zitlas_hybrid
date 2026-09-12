@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
 import '../../../core/network/api_client.dart';
 import '../../../core/network/api_exception.dart';
 import '../models/wallet.dart';
+import '../wallet_freeze.dart';
 
 /// Reads the athlete's real wallet and starts real top-ups.
 ///
@@ -20,11 +22,28 @@ import '../models/wallet.dart';
 ///     log, not the athlete's statement. The statement is the `transactions`
 ///     array on the wallet itself, which is exactly what the website renders.
 class WalletRepository {
-  WalletRepository({FirebaseFirestore? firestore, ApiClient? api})
+  WalletRepository({FirebaseFirestore? firestore, ApiClient? api, FirebaseAuth? auth})
       : _firestore = firestore ?? FirebaseFirestore.instance,
-        _api = api ?? ApiClient();
+        // Nullable so FirebaseAuth.instance is resolved lazily — the same
+        // pattern as DietRepository.
+        // ignore: prefer_initializing_formals
+        _auth = auth,
+        _api = api ?? ApiClient() {
+    // EVERY endpoint below verifies its caller (verify_firebase_token):
+    // create-order, verify, membership/purchase-with-wallet. This ApiClient
+    // used to carry no token at all, so each would have been refused 401 the
+    // moment the Wallet was switched on.
+    _api.authTokenProvider ??= () async {
+      try {
+        return await (_auth ?? FirebaseAuth.instance).currentUser?.getIdToken();
+      } catch (_) {
+        return null;
+      }
+    };
+  }
 
   final FirebaseFirestore _firestore;
+  final FirebaseAuth? _auth;
   final ApiClient _api;
 
   DocumentReference<Map<String, dynamic>> _userDoc(String uid) =>
@@ -84,18 +103,23 @@ class WalletRepository {
       return WalletOrder.fromMap(map);
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[WALLET] create-order FAILED ${e.statusCode}: ${e.body}');
-      throw Exception(_detail(e) ?? 'Could not start the payment. Please try again.');
+      if (_isFrozen(e)) throw const WalletFrozenException();
+      throw Exception(_friendlyError(e, 'Could not start the payment. Please try again.'));
     }
   }
 
   /// `POST /api/payment/verify` — hands Razorpay's signed response to the
-  /// backend, which verifies the HMAC and credits the wallet transactionally.
+  /// backend, which checks the HMAC and credits the wallet in a transaction.
   ///
-  /// The returned balance is the SERVER's, and it is the only balance the app
-  /// will ever show. Verification failing after money left the athlete's
-  /// account is the one case where the message must point at support rather
-  /// than at "try again".
-  Future<double> verifyPayment({
+  /// Three honest outcomes, because they need three different answers:
+  ///   * the server CONFIRMED the credit — a [TopUpVerification]. A repeat for
+  ///     an order already paid comes back `alreadyCredited` with the unchanged
+  ///     balance: a retried verification never credits twice.
+  ///   * the server REFUSED the payment — [VerificationRejected]. Retrying
+  ///     cannot help; the message points at support with the payment id.
+  ///   * no answer, or a server fault — [VerificationUnconfirmed]. Retrying
+  ///     with the SAME Razorpay details is safe, and is the fix.
+  Future<TopUpVerification> verifyTopUp({
     required String orderId,
     required String paymentId,
     required String signature,
@@ -107,26 +131,49 @@ class WalletRepository {
         'razorpay_payment_id': paymentId,
         'razorpay_signature': signature,
       });
-      final map = (res as Map).cast<String, dynamic>();
+      final map = res is Map ? res.cast<String, dynamic>() : const <String, dynamic>{};
       if (map['success'] != true) {
         if (kDebugMode) debugPrint('[WALLET] verify rejected: $map');
-        throw Exception(
-          'Payment could not be verified. If money was deducted, contact support '
-          'with your payment ID — it has not been lost.',
-        );
+        throw VerificationRejected(paymentId: paymentId);
       }
-      final balance = (map['balance'] as num?)?.toDouble() ?? 0;
+      final verified = TopUpVerification(
+        balance: (map['balance'] as num?)?.toDouble() ?? 0,
+        amountRupees: (map['amount'] as num?)?.toDouble(),
+        alreadyCredited: map['already'] == true,
+      );
       if (kDebugMode) {
-        debugPrint('[WALLET] verified — server balance=$balance already=${map['already']}');
+        debugPrint('[WALLET] verified — server balance=${verified.balance} '
+            'already=${verified.alreadyCredited}');
       }
-      return balance;
+      return verified;
     } on ApiException catch (e) {
       if (kDebugMode) debugPrint('[WALLET] verify FAILED ${e.statusCode}: ${e.body}');
-      throw Exception(
-        'Payment could not be verified. If money was deducted, contact support '
-        'with your payment ID — it has not been lost.',
-      );
+      if (_isFrozen(e)) {
+        throw VerificationUnconfirmed(paymentId: paymentId, walletFrozen: true);
+      }
+      final retryable = e.isNetworkError ||
+          e.isServerError ||
+          e.statusCode == 401 ||
+          e.statusCode == 408 ||
+          e.statusCode == 429;
+      if (retryable) throw VerificationUnconfirmed(paymentId: paymentId);
+      throw VerificationRejected(paymentId: paymentId);
     }
+  }
+
+  /// [verifyTopUp], reduced to the confirmed SERVER balance — the only
+  /// balance the app will ever show.
+  Future<double> verifyPayment({
+    required String orderId,
+    required String paymentId,
+    required String signature,
+  }) async {
+    final verified = await verifyTopUp(
+      orderId: orderId,
+      paymentId: paymentId,
+      signature: signature,
+    );
+    return verified.balance;
   }
 
   /// `POST /api/payment/membership/purchase-with-wallet` — buys Premium with
@@ -181,8 +228,11 @@ class WalletRepository {
       if (kDebugMode) {
         debugPrint('[WALLET] premium purchase FAILED ${e.statusCode}: ${e.body}');
       }
+      // Nothing was charged. The caller falls back to paying with Razorpay
+      // directly, exactly as the website does while the Wallet is frozen.
+      if (_isFrozen(e)) throw const WalletFrozenException();
       throw Exception(
-        _detail(e) ?? 'Could not complete the upgrade. Please try again.',
+        _friendlyError(e, 'Could not complete the upgrade. Please try again.'),
       );
     }
   }
@@ -192,6 +242,88 @@ class WalletRepository {
     if (body is Map && body['detail'] != null) return body['detail'].toString();
     return null;
   }
+
+  /// `503 {"detail": {"error": "wallet_frozen", ...}}` — the backend's answer
+  /// to any wallet money movement while the Wallet is frozen.
+  static bool _isFrozen(ApiException e) =>
+      e.statusCode == 503 && (_detail(e) ?? '').contains('wallet_frozen');
+
+  /// An error an athlete can act on. Never a raw status line or a
+  /// structured detail printed as `{error: ...}`.
+  static String _friendlyError(ApiException e, String fallback) {
+    if (e.isNetworkError) {
+      return e.message.toLowerCase().contains('timeout')
+          ? 'That took too long. Please try again.'
+          : "Can't reach ZITLAS right now. Check your connection and try again.";
+    }
+    if (e.statusCode == 401) return 'Your session has expired. Please sign in again.';
+    final detail = _detail(e);
+    if (detail == 'invalid_amount') return 'Enter a valid amount to add.';
+    if (detail != null && !detail.startsWith('{') && detail.length < 160) return detail;
+    return fallback;
+  }
+}
+
+/// The Wallet is frozen server-side; nothing was charged or credited.
+class WalletFrozenException implements Exception {
+  const WalletFrozenException();
+
+  @override
+  String toString() => kWalletFrozenMessage;
+}
+
+/// The backend REFUSED this payment's verification (bad signature, an order
+/// that is not this athlete's, not a top-up). Retrying cannot help.
+class VerificationRejected implements Exception {
+  const VerificationRejected({required this.paymentId});
+
+  final String paymentId;
+
+  @override
+  String toString() =>
+      'Payment could not be verified. If money was deducted, contact support '
+      'with payment ID $paymentId — it has not been lost.';
+}
+
+/// The backend could not be asked, or failed while answering. The payment
+/// itself may well have succeeded, and retrying with the SAME Razorpay
+/// details is safe: an order already credited answers `already: true` and is
+/// never credited twice.
+class VerificationUnconfirmed implements Exception {
+  const VerificationUnconfirmed({required this.paymentId, this.walletFrozen = false});
+
+  final String paymentId;
+
+  /// The Wallet was frozen between the order and the verification.
+  final bool walletFrozen;
+
+  @override
+  String toString() => walletFrozen
+      ? 'Your payment went through, but the Wallet is temporarily unavailable, '
+          'so it has not been added yet. It is safe — contact support with '
+          'payment ID $paymentId if it does not appear.'
+      : "We couldn't confirm your payment yet. Your money is safe — retry to "
+          "finish adding it; you won't be charged twice. If it doesn't appear, "
+          'contact support with payment ID $paymentId.';
+}
+
+/// A wallet credit the backend CONFIRMED.
+@immutable
+class TopUpVerification {
+  const TopUpVerification({
+    required this.balance,
+    required this.alreadyCredited,
+    this.amountRupees,
+  });
+
+  /// The SERVER's balance after the credit.
+  final double balance;
+
+  /// What was credited, as recorded on the order — not what was typed.
+  final double? amountRupees;
+
+  /// A repeat of a verification already applied; nothing was added twice.
+  final bool alreadyCredited;
 }
 
 /// The wallet did not cover the price. Carries both figures so the UI can say
