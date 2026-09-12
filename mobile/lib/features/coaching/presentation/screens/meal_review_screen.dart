@@ -375,6 +375,19 @@ class _CheckinCardState extends State<_CheckinCard> {
                     ),
                   ],
                 ),
+                // What the ATHLETE said the meal is — beside the photo, so the
+                // coach never has to open anything else to find out.
+                if (c.mealContext != null) ...[
+                  const SizedBox(height: 5),
+                  Text(
+                    '📷 “${c.mealContext!.description}”',
+                    style: const TextStyle(
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w700,
+                      color: ZitlasTokens.textPrimary,
+                    ),
+                  ),
+                ],
                 if (c.foodRecognition.isNotEmpty || c.hasEstimate) ...[
                   const SizedBox(height: 4),
                   Text(

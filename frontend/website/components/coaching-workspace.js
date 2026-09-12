@@ -2282,6 +2282,24 @@
       '" alt="' + esc(alt || 'meal') + '">';
   }
 
+  /* What the athlete said the meal is (meal_checkins.mealContext), or '' for
+     a check-in sent before "What is this meal?" existed. USER-WRITTEN text:
+     always escaped, never trusted, never interpreted. */
+  function _cwMealDesc(c) {
+    var m = c && c.mealContext;
+    if (!m || typeof m !== 'object') return '';
+    if (typeof m.description === 'string' && m.description.trim()) return m.description.trim();
+    var parts = (Array.isArray(m.items) ? m.items : []).filter(function (i) {
+      return typeof i === 'string' && i.trim();
+    }).map(function (i) { return i.trim(); });
+    if (typeof m.custom === 'string' && m.custom.trim()) parts.push(m.custom.trim());
+    return parts.join(' + ');
+  }
+  function _cwMealDescMarkup(c) {
+    var d = _cwMealDesc(c);
+    return d ? '<span class="cw-review-meal-desc">📷 “' + esc(d) + '”</span>' : '';
+  }
+
   function renderCheckins() {
     var body = $('cwBody');
     var today = _todayName();
@@ -2359,6 +2377,7 @@
         _cwPhotoMarkup(c.imageUrl, 'cw-review-thumb', c.mealName) +
         '<div class="cw-review-info">' +
           '<span class="cw-review-title">' + esc(cap(c.mealType)) + ' — ' + esc(c.mealName || '') + '</span>' +
+          _cwMealDescMarkup(c) +
           '<span class="cw-review-sub">' + esc(c.day) + ' · ' + esc(fmtTime(c.timestamp)) +
             (S.opts.role === 'coach' ? '' : (c.reaction ? ' · ' + esc(REACTION_LABEL[c.reaction] || '') : '')) +
           '</span>' +
@@ -2449,6 +2468,7 @@
   function openCheckinHistorySheet(c) {
     var body =
       '<p class="cw-sheet-title">' + esc(cap(c.mealType)) + ' — ' + esc(c.day) + '</p>' +
+      _cwMealDescMarkup(c) +
       _cwPhotoMarkup(c.imageUrl, 'cw-review-img-lg', c.mealName) +
       (c.status === 'reviewed'
         ? '<div class="pc-checkin-feedback">' +
@@ -2535,6 +2555,7 @@
     var d = S.reviewDraft;
     openSheet(
       '<p class="cw-sheet-title">' + esc(cap(c.mealType)) + ' — ' + esc(c.athleteName || 'Athlete') + '</p>' +
+      _cwMealDescMarkup(c) +
       '<p class="cw-sheet-sub">' + esc(c.day) + ' · ' + esc(fmtTime(c.timestamp)) + '</p>' +
       _cwPhotoMarkup(c.imageUrl, 'cw-review-img-lg', c.mealName) +
       RATING_DIMENSIONS.map(function (dim) {

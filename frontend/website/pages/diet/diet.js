@@ -2615,10 +2615,45 @@
     });
   }
 
+  /* "What is this meal?" — the foods offered as one tap. The SAME list, in
+     the same order, as kMealQuickItems in the app
+     (mobile/lib/features/coaching/models/meal_context.dart). */
+  var MEAL_QUICK_ITEMS = ['Biryani', 'Chicken', 'Paratha', 'Rice', 'Dal',
+    'Eggs', 'Salad', 'Roti', 'Vegetables', 'Paneer'];
+  /* Same ceiling as the app's kMealCustomMaxLength: a meal NAME, not an essay. */
+  var MEAL_CUSTOM_MAX = 200;
+
+  /* The athlete's answer → meal_checkins.mealContext, or the one thing to
+     fix first. MUST match buildMealContext() in the app:
+       { items, custom, description: items (+ custom) joined by ' + ', source: 'user' }
+     Duplicates dropped case-insensitively; "Other" with nothing typed is
+     refused, never guessed; the custom name is trimmed, otherwise exact. */
+  function _pcBuildMealContext(draft) {
+    var items = [];
+    (draft.items || []).forEach(function (s) {
+      var t = String(s == null ? '' : s).trim();
+      if (!t) return;
+      var dup = items.some(function (i) { return i.toLowerCase() === t.toLowerCase(); });
+      if (!dup) items.push(t);
+    });
+    var custom = draft.otherOn ? String(draft.custom == null ? '' : draft.custom).trim() : '';
+    if (draft.otherOn && !custom) return { error: 'Enter a meal name, or unselect Other.' };
+    if (custom.length > MEAL_CUSTOM_MAX) {
+      return { error: 'Keep the meal name within ' + MEAL_CUSTOM_MAX + ' characters.' };
+    }
+    if (!items.length && !custom) return { error: 'Pick what this meal is, or type it in.' };
+    var parts = items.slice();
+    if (custom && !items.some(function (i) { return i.toLowerCase() === custom.toLowerCase(); })) {
+      parts.push(custom);
+    }
+    return { context: { items: items, custom: custom || null, description: parts.join(' + '), source: 'user' } };
+  }
+
   /* capture="environment" opens the device camera directly on mobile
      (no gallery step); desktop browsers fall back to their file picker,
-     which is the closest the web platform allows. */
-  function openMealCheckinCamera(meal) {
+     which is the closest the web platform allows.
+     `draft` carries the "What is this meal?" answer across Change Photo. */
+  function openMealCheckinCamera(meal, draft) {
     var input = document.getElementById('pcCameraInput');
     if (!input) {
       input = document.createElement('input');
@@ -2634,28 +2669,90 @@
       input.value = '';
       if (f) {
         console.log('[MEAL CHECKIN] IMAGE SELECTED —', f.name, f.type, f.size + 'B');
-        _pcOpenCheckinPreview(f, meal);
+        _pcOpenCheckinPreview(f, meal, draft);
       }
     };
     input.click();
   }
 
-  function _pcOpenCheckinPreview(file, meal) {
+  /* Photo preview + "What is this meal?". NOTHING is uploaded until Send to
+     Coach; closing the sheet sends nothing. A failed send keeps the sheet —
+     and the answer — open for a retry. */
+  function _pcOpenCheckinPreview(file, meal, draft) {
+    draft = draft || { items: [], otherOn: false, custom: '' };
     var url = URL.createObjectURL(file);
     _pcOpenSheet(
-      '<p class="cw-sheet-title">Send ' + esc(meal.meal_name || 'Meal') + ' to Coach</p>' +
+      '<p class="cw-sheet-title">What is this meal?</p>' +
+      '<p class="cw-sheet-sub">Tell your coach what you\'re eating.</p>' +
+      '<p class="cw-meal-slot">' + esc(meal.meal_name || 'Meal') + '</p>' +
       '<img src="' + url + '" class="cw-review-img-lg" alt="Meal preview">' +
+      '<div class="cw-meal-chips" id="pcMealChips"></div>' +
+      '<div class="cw-meal-selected" id="pcMealSelected"></div>' +
+      '<div class="cw-meal-other-wrap" id="pcMealOtherWrap" hidden>' +
+        '<label class="cw-meal-other-label" for="pcMealOther">Enter meal name</label>' +
+        '<input class="cw-input cw-meal-other" id="pcMealOther" type="text" maxlength="' + MEAL_CUSTOM_MAX + '" ' +
+          'placeholder="e.g. Chicken biryani, Poha, Idli sambar" autocomplete="off">' +
+      '</div>' +
+      '<p class="cw-meal-error" id="pcMealError" role="alert"></p>' +
       '<div class="cw-save-bar" style="position:static;background:none">' +
-        '<button class="cw-ghost-btn" id="pcRetake">Retake</button>' +
-        '<button class="cw-save-btn" id="pcSendCheckin">Send</button>' +
+        '<button class="cw-ghost-btn" id="pcRetake">Change Photo</button>' +
+        '<button class="cw-save-btn" id="pcSendCheckin">Send to Coach</button>' +
       '</div>'
     );
+    var other = document.getElementById('pcMealOther');
+    other.value = draft.custom || '';
+
+    function setError(msg) {
+      var e = document.getElementById('pcMealError');
+      if (e) e.textContent = msg || '';
+    }
+    function toggle(item) {
+      setError('');
+      if (item === 'Other') {
+        draft.otherOn = !draft.otherOn;
+        render();
+        if (draft.otherOn) other.focus();
+        return;
+      }
+      var i = draft.items.indexOf(item);
+      if (i === -1) draft.items.push(item); else draft.items.splice(i, 1);
+      render();
+    }
+    function render() {
+      var chips = document.getElementById('pcMealChips');
+      chips.innerHTML = MEAL_QUICK_ITEMS.concat(['Other']).map(function (item) {
+        var on = item === 'Other' ? !!draft.otherOn : draft.items.indexOf(item) !== -1;
+        return '<button type="button" class="cw-meal-chip' + (on ? ' selected' : '') + '" ' +
+          'aria-pressed="' + on + '" data-pc-meal="' + esc(item) + '">' + (on ? '✓ ' : '') + esc(item) + '</button>';
+      }).join('');
+      var sel = document.getElementById('pcMealSelected');
+      sel.innerHTML = draft.items.length
+        ? '<span class="cw-meal-selected-label">Selected:</span>' + draft.items.map(function (item) {
+            return '<button type="button" class="cw-meal-selected-chip" data-pc-meal-remove="' + esc(item) +
+              '" aria-label="Remove ' + esc(item) + '">' + esc(item) + ' ×</button>';
+          }).join('')
+        : '';
+      document.getElementById('pcMealOtherWrap').hidden = !draft.otherOn;
+      chips.querySelectorAll('[data-pc-meal]').forEach(function (b) {
+        b.addEventListener('click', function () { toggle(b.getAttribute('data-pc-meal')); });
+      });
+      sel.querySelectorAll('[data-pc-meal-remove]').forEach(function (b) {
+        b.addEventListener('click', function () { toggle(b.getAttribute('data-pc-meal-remove')); });
+      });
+    }
+    other.addEventListener('input', function () { draft.custom = other.value; setError(''); });
+    render();
+
     document.getElementById('pcRetake').addEventListener('click', function () {
-      URL.revokeObjectURL(url);
-      openMealCheckinCamera(meal);
+      /* A new photo, the same meal: the answer so far rides along. The old
+         preview URL is left alone so a cancelled re-pick still shows it. */
+      openMealCheckinCamera(meal, draft);
     });
     document.getElementById('pcSendCheckin').addEventListener('click', function () {
-      _pcSendCheckin(file, meal, url);
+      draft.custom = other.value;
+      var built = _pcBuildMealContext(draft);
+      if (built.error) { setError(built.error); return; }
+      _pcSendCheckin(file, meal, url, built.context);
     });
   }
 
@@ -2703,7 +2800,7 @@
     ]);
   }
 
-  function _pcSendCheckin(file, meal, previewUrl) {
+  function _pcSendCheckin(file, meal, previewUrl, mealContext) {
     console.log('[MEAL CHECKIN] MEAL CHECKIN STARTED —', meal.meal_name, '| file:', file.name, file.size + 'B');
     var btn = document.getElementById('pcSendCheckin');
     if (typeof ZitlasChatAttach === 'undefined') {
@@ -2740,6 +2837,9 @@
         foodRecognition:   estimate ? estimate.foodRecognition   : null,
         confidenceScore:   estimate ? estimate.confidenceScore   : null,
       };
+      /* What the athlete said the meal is — user context, stored as sent.
+         Only added when present, so a check-in without it keeps its old shape. */
+      if (mealContext) doc.mealContext = mealContext;
       console.log('[MEAL CHECKIN] submitting', doc);
       // No REST endpoint here — the athlete's browser writes DIRECTLY to
       // Firestore (client SDK), enforced by firestore.rules' meal_checkins
@@ -2783,8 +2883,12 @@
     }).catch(function (e) {
       console.error('[MEAL_SNAP_WEBSITE_SUBMIT] responseStatus=FAILED responseBody=' + ((e && (e.code || e.message)) || e));
       console.error('[MEAL CHECKIN] PIPELINE FAILED —', (e && e.message) || e, e);
-      showToast(e && e.message ? e.message : 'Could not send — try again.');
-      if (btn) { btn.disabled = false; btn.textContent = 'Send'; }
+      var why = e && e.message ? e.message : 'Could not send — try again.';
+      showToast(why);
+      /* The sheet stays open with the answer intact: retry is one tap. */
+      var errEl = document.getElementById('pcMealError');
+      if (errEl) errEl.textContent = why;
+      if (btn) { btn.disabled = false; btn.textContent = 'Send to Coach'; }
     });
   }
 

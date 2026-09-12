@@ -786,3 +786,35 @@
 
 /* The status chip carries the actual value, e.g. "Rated 4.0★". */
 .cw-review-status--done { white-space: nowrap; }
+
+/* ── "What is this meal?" (athlete) and the answer on the coach's card ──
+   Chips follow .cw-day-pill so the step matches the rest of the workspace. */
+.cw-meal-chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0 8px; }
+.cw-meal-chip {
+  padding: 8px 14px; border-radius: 999px;
+  border: 1px solid rgba(30,41,59,0.1); background: rgba(255,255,255,0.85);
+  font-size: 13px; font-weight: 700; color: var(--text-sec, #64748B); cursor: pointer;
+}
+.cw-meal-chip.selected {
+  background: linear-gradient(135deg, #6BA539, #578A2C);
+  border-color: transparent; color: #fff;
+  box-shadow: 0 6px 16px rgba(35,75,53,0.25);
+}
+.cw-meal-selected {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  margin-bottom: 8px; font-size: 12px; color: var(--text-sec, #64748B);
+}
+.cw-meal-selected:empty { display: none; }
+.cw-meal-selected-chip {
+  padding: 4px 10px; border-radius: 999px;
+  border: 1px solid rgba(35,75,53,0.3); background: rgba(35,75,53,0.1);
+  color: #234B35; font-size: 12px; font-weight: 700; cursor: pointer;
+}
+.cw-meal-other-label { display: block; margin: 2px 0 4px; font-size: 12px; font-weight: 700; color: var(--text-sec, #64748B); }
+.cw-meal-slot { margin: -2px 0 10px; font-size: 12px; color: var(--text-sec, #64748B); }
+.cw-meal-other { margin-bottom: 6px; }
+.cw-meal-error { min-height: 1em; margin: 2px 0 8px; font-size: 12px; color: #B45309; }
+.cw-review-meal-desc {
+  display: block; margin-top: 3px; font-size: 12.5px; font-weight: 700;
+  color: var(--text, #1E293B); overflow-wrap: anywhere;
+}

@@ -8,6 +8,7 @@ import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../../core/utils/safe_image.dart';
 import '../../../coaching/models/meal_checkin.dart';
 import '../../diet_controller.dart';
+import 'meal_confirm_sheet.dart';
 
 /// 📷 Snap Meal — visible ONLY to an athlete with an active Personal Coach.
 ///
@@ -21,11 +22,15 @@ class MealSnapRow extends StatelessWidget {
     required this.controller,
     required this.mealName,
     required this.athleteName,
+    this.pickPhoto,
   });
 
   final DietController controller;
   final String mealName;
   final String athleteName;
+
+  /// Injectable for tests; the real one is the device camera / gallery.
+  final Future<File?> Function(ImageSource source)? pickPhoto;
 
   @override
   Widget build(BuildContext context) {
@@ -53,8 +58,34 @@ class MealSnapRow extends StatelessWidget {
     );
   }
 
+  /// Photo → "What is this meal?" → Send to Coach, through the EXISTING
+  /// check-in path. Nothing is uploaded until the athlete confirms; upload
+  /// errors are shown inside the sheet, which keeps their answer for a retry.
   Future<void> _snap(BuildContext context) async {
-    final source = await showModalBottomSheet<ImageSource>(
+    final messenger = ScaffoldMessenger.of(context);
+    final sent = await runMealPhotoFlow(
+      context,
+      mealName: mealName,
+      chooseSource: () => _chooseSource(context),
+      pickPhoto: pickPhoto ?? _pickFromDevice,
+      send: (photo, mealContext) => controller.submitMealPhoto(
+        photo: photo,
+        mealName: mealName,
+        athleteName: athleteName,
+        mealContext: mealContext,
+      ),
+    );
+    if (!sent) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(const SnackBar(
+        content: Text('📷 Sent to your coach for review.'),
+        duration: Duration(seconds: 3),
+      ));
+  }
+
+  Future<ImageSource?> _chooseSource(BuildContext context) {
+    return showModalBottomSheet<ImageSource>(
       context: context,
       backgroundColor: ZitlasTokens.bgCard,
       shape: const RoundedRectangleBorder(
@@ -80,9 +111,9 @@ class MealSnapRow extends StatelessWidget {
         ),
       ),
     );
-    if (source == null || !context.mounted) return;
+  }
 
-    final messenger = ScaffoldMessenger.of(context);
+  static Future<File?> _pickFromDevice(ImageSource source) async {
     // 2000px is a deliberate FIRST pass — the uploader compresses to 1600px
     // afterwards. Capturing at full sensor resolution first would mean reading
     // a 12MB file off disk just to throw most of it away.
@@ -92,20 +123,7 @@ class MealSnapRow extends StatelessWidget {
       maxHeight: 2000,
       imageQuality: 90,
     );
-    if (picked == null) return;
-
-    final error = await controller.submitMealPhoto(
-      photo: File(picked.path),
-      mealName: mealName,
-      athleteName: athleteName,
-    );
-
-    messenger
-      ..hideCurrentSnackBar()
-      ..showSnackBar(SnackBar(
-        content: Text(error ?? '📷 Sent to your coach for review.'),
-        duration: Duration(seconds: error == null ? 3 : 6),
-      ));
+    return picked == null ? null : File(picked.path);
   }
 }
 

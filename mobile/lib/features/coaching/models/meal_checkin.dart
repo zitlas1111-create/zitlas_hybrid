@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/util/json_coerce.dart';
+import 'meal_context.dart';
 
 /// The coach's verdict on a meal.
 ///
@@ -74,6 +75,7 @@ class MealCheckin {
     this.estimatedFat,
     this.foodRecognition = const [],
     this.confidenceScore,
+    this.mealContext,
   });
 
   final String checkinId;
@@ -130,6 +132,10 @@ class MealCheckin {
   final List<String> foodRecognition;
   final num? confidenceScore;
 
+  /// What the athlete said the meal is ("What is this meal?"). Null for
+  /// check-ins sent before that step existed — those render as they always did.
+  final MealContext? mealContext;
+
   bool get isPending => status == 'pending';
   bool get isReviewed => status == 'reviewed';
   bool get hasEstimate => estimatedCalories != null || estimatedProtein != null;
@@ -160,6 +166,8 @@ class MealCheckin {
         'estimatedFat': estimatedFat,
         'foodRecognition': foodRecognition.isEmpty ? null : foodRecognition,
         'confidenceScore': confidenceScore,
+        // Only when there is one: a check-in without it keeps its old shape.
+        if (mealContext != null) 'mealContext': mealContext!.toMap(),
       };
 
   static MealCheckin? fromMap(Map<String, dynamic>? m) {
@@ -200,6 +208,7 @@ class MealCheckin {
             if (f is String && f.trim().isNotEmpty) f.trim(),
       ],
       confidenceScore: asNum(m['confidenceScore']),
+      mealContext: MealContext.fromMap(m['mealContext']),
     );
   }
 

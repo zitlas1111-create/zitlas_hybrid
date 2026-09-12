@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../../core/network/api_client.dart';
 import '../models/meal_checkin.dart';
+import '../models/meal_context.dart';
 import 'meal_photo_uploader.dart';
 
 /// `meal_checkins/{checkinId}` — photographed meals and the coach's reviews.
@@ -97,6 +98,7 @@ class MealCheckinRepository {
     required String coachId,
     required String mealName,
     required String day,
+    MealContext? mealContext,
     DateTime? now,
   }) async {
     final at = now ?? DateTime.now();
@@ -147,6 +149,9 @@ class MealCheckinRepository {
             if (f is String && f.trim().isNotEmpty) f.trim(),
       ],
       confidenceScore: estimate == null ? null : asNumOrNull(estimate['confidence_score']),
+      // The athlete's own answer to "What is this meal?" — user context,
+      // stored as sent and never classified or rewritten.
+      mealContext: mealContext,
     );
 
     // A successful photo upload does NOT mean the review record was created —

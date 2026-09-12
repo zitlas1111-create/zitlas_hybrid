@@ -12,6 +12,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 import '../coaching/data/coaching_plan_repository.dart';
 import '../coaching/data/meal_checkin_repository.dart';
+import '../coaching/models/meal_context.dart';
 import '../coaching/models/coach_diet_plan.dart';
 import '../coaching/models/meal_checkin.dart';
 import '../dashboard/data/health_status_store.dart';
@@ -337,6 +338,7 @@ class DietController extends ChangeNotifier {
     required File photo,
     required String mealName,
     required String athleteName,
+    MealContext? mealContext,
   }) async {
     final coachId = activeCoachId;
     if (coachId == null) {
@@ -353,6 +355,7 @@ class DietController extends ChangeNotifier {
         coachId: coachId,
         mealName: mealName,
         day: _weekdayName(DateTime.now()),
+        mealContext: mealContext,
       );
       return null;
     } catch (e) {
