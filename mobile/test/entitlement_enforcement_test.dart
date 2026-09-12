@@ -197,7 +197,8 @@ void main() {
 
     test('premium is 5 / unlimited / 27 at ₹149', () {
       final premium = Entitlements.fallback.premium;
-      expect(premium.goalReset, 5);
+      expect(premium.goalReset, 5,
+          reason: 'premium goal resets are 5/week, not unlimited');
       expect(premium.mealSwap, isNull, reason: 'unlimited is a sentinel');
       expect(premium.recipe, 27);
       expect(Entitlements.fallback.premiumPriceInr, 149);

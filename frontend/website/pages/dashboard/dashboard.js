@@ -446,14 +446,20 @@
     document.body.style.overflow = '';
   }
 
-  /* Reserve one goal reset from the server-side weekly allowance.
+  /* Perform the goal reset SERVER-SIDE, allowance and all.
 
-     Returns {ok:true} or {ok:false, message}. FAILS CLOSED on 401/429 —
-     the whole point of the endpoint is that a client cannot reset without
-     being counted. A transport failure is the one case that fails OPEN:
-     the backend records the reset when it can, and blocking a paying user
-     from resetting their goal because the network blipped is worse than
-     the rare uncounted reset. */
+     Was: POST /api/entitlements/consume, then this client cleared the
+     goal-scoped fields itself. That made the limit ADVISORY — the reset was
+     a local write the backend never saw, so a client that skipped the call,
+     ignored the 429, or simply had the request fail (this function used to
+     `return {ok:true}` on a transport error) reset as often as it liked.
+
+     Now POST /api/user/goal-reset claims the allowance AND clears the fields
+     in one request, so skipping it skips the reset rather than the limit.
+
+     FAILS CLOSED throughout, including on transport errors: nothing was
+     cleared if the call never arrived, and reporting success would show the
+     athlete a reset that did not happen. */
   async function consumeGoalReset() {
     if (typeof getIdToken !== 'function') {
       return { ok: false, message: 'Please sign in again to reset your goal.' };
@@ -466,17 +472,19 @@
 
     let resp;
     try {
-      resp = await fetch('/api/entitlements/consume', {
+      resp = await fetch('/api/user/goal-reset', {
         method: 'POST',
         headers: {
           'Content-Type':  'application/json',
           'Authorization': 'Bearer ' + token,
         },
-        body: JSON.stringify({ feature: 'goal_reset' }),
       });
     } catch (e) {
-      console.warn('[ENTITLEMENTS] goal_reset reservation unreachable —', e);
-      return { ok: true };
+      console.warn('[ENTITLEMENTS] goal reset unreachable —', e);
+      return {
+        ok: false,
+        message: 'Could not reset your goal just now — please try again.',
+      };
     }
 
     if (resp.ok) {
@@ -501,8 +509,11 @@
     if (resp.status === 401 || resp.status === 403) {
       return { ok: false, message: 'Please sign in again to reset your goal.' };
     }
-    console.warn('[ENTITLEMENTS] goal_reset reservation failed —', resp.status);
-    return { ok: true };
+    console.warn('[ENTITLEMENTS] goal reset failed —', resp.status);
+    return {
+      ok: false,
+      message: 'Could not reset your goal just now — please try again.',
+    };
   }
 
   function initResetGoalModal() {

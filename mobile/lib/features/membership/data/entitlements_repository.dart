@@ -68,6 +68,9 @@ class Entitlements {
   static const fallback = Entitlements(
     tier: 'free',
     free: PlanLimits(goalReset: 2, mealSwap: 70, recipe: 7),
+    // Mirrors services/entitlements.py's _DEFAULT_LIMITS exactly: Premium
+    // goal resets are 5/week (a higher ceiling than Basic's 2), NOT unlimited.
+    // Only mealSwap is null == UNLIMITED on Premium.
     premium: PlanLimits(goalReset: 5, mealSwap: null, recipe: 27),
     premiumPriceInr: 149,
   );
@@ -111,18 +114,60 @@ class EntitlementsRepository {
   final ApiClient _api;
   final FirebaseAuth? _auth;
 
+  /// Reset this athlete's goal — quota check AND mutation, in one request.
+  ///
+  /// REPLACES consume('goal_reset') + a client-side Firestore write. That pair
+  /// made the limit ADVISORY: the reset was performed by this app, and
+  /// `/consume` was only a courtesy call made first. An app that skipped it,
+  /// ignored the 429, or simply had the request fail (the transport path below
+  /// fails OPEN) reset as often as it liked.
+  ///
+  /// `POST /api/user/goal-reset` claims the allowance and clears the
+  /// goal-scoped fields with the Admin SDK in the same request, so skipping
+  /// the call no longer skips the limit — it skips the reset.
+  ///
+  /// FAILS CLOSED throughout, including on transport errors: nothing was
+  /// cleared if the call did not reach the server, so reporting success would
+  /// be a lie the athlete would see as a reset that did not happen.
+  Future<ConsumeOutcome> resetGoal() async {
+    try {
+      await _api.post('/api/user/goal-reset');
+      return const ConsumeOutcome.allowed();
+    } on ApiException catch (e) {
+      if (e.statusCode == 429) {
+        final detail = e.body is Map ? (e.body as Map)['detail'] : null;
+        final tier = detail is Map ? detail['tier'] : null;
+        final limit = detail is Map ? detail['limit'] : null;
+        return ConsumeOutcome.denied(
+          tier == 'free'
+              ? 'You have used all ${limit ?? 2} goal resets for this week. '
+                    'Upgrade to Premium for 5 a week.'
+              : 'Goal reset limit reached for this week.',
+        );
+      }
+      if (e.isUnauthorized) {
+        return const ConsumeOutcome.denied(
+          'Please sign in again to reset your goal.',
+        );
+      }
+      return const ConsumeOutcome.denied(
+        'Could not reset your goal just now — please try again.',
+      );
+    } catch (_) {
+      return const ConsumeOutcome.denied(
+        'Could not reset your goal just now — please try again.',
+      );
+    }
+  }
+
   /// Reserve one unit of a metered feature, server-side.
   ///
-  /// EXISTS BECAUSE A GOAL RESET HAS NO OTHER SERVER CALL. A reset is written
-  /// straight to Firestore by this client, so there is nothing else for the
-  /// backend to gate on — the client asks for the unit first and honours the
-  /// answer. The count itself lives in `usage_weekly` keyed to the verified
-  /// uid, so reinstalling the app or clearing its data does not restore a
-  /// spent allowance.
+  /// Retained for metered features whose work this client still performs
+  /// itself. NOT used for goal resets any more — see [resetGoal].
   ///
   /// FAILS CLOSED on 429 and 401. A transport failure is the one case that
-  /// fails OPEN: blocking an athlete from resetting their goal because the
-  /// network blipped is worse than the occasional uncounted reset.
+  /// fails OPEN: blocking an athlete because the network blipped is worse
+  /// than the occasional uncounted unit.
   Future<ConsumeOutcome> consume(String feature) async {
     try {
       await _api.post('/api/entitlements/consume', body: {'feature': feature});

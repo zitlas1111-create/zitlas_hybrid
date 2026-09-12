@@ -650,19 +650,16 @@ class DashboardController extends ChangeNotifier {
 
   /// Reset the goal, if the weekly allowance permits it.
   ///
-  /// METERED: free 2/week, premium 5/week. The unit is reserved BEFORE the
-  /// Firestore write, and a refusal aborts the reset entirely — otherwise
-  /// the limit would be advisory, since the reset is a client-side write the
-  /// backend never sees.
+  /// METERED SERVER-SIDE: free 2/week, premium unlimited. The backend both
+  /// claims the allowance and performs the clear, in one request — this app
+  /// no longer writes the cleared fields itself. That is what makes the limit
+  /// real rather than advisory: previously the reset was a local Firestore
+  /// write the backend never saw, so skipping the quota call skipped the
+  /// quota, not the reset.
   ///
   /// Returns the outcome so the caller can show the real reason; a denied
   /// reset must never look like a silent no-op.
-  Future<ConsumeOutcome> resetGoal() async {
-    final outcome = await _entitlements.consume('goal_reset');
-    if (!outcome.allowed) return outcome;
-    await _repository.resetGoal(uid);
-    return outcome;
-  }
+  Future<ConsumeOutcome> resetGoal() => _entitlements.resetGoal();
 
   void _safeNotify() {
     if (!_disposed) notifyListeners();

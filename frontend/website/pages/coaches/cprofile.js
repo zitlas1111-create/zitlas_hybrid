@@ -168,10 +168,126 @@
     }).join('');
   }
 
-  function renderReviews(coach) {
+  /* ══════════════════════════════════════════
+     EXPERT REVIEWS — read through the public API, never from Firestore
+  ══════════════════════════════════════════ */
+
+  /* How many reviews the section shows before "View All" is pressed. */
+  var REVIEW_PREVIEW_COUNT = 3;
+
+  /* Avatar tints, cycled so consecutive reviewers look distinct. The API
+     returns no colour (every reviewer is "Verified ZITLAS Client"), so this
+     is presentation only and carries no meaning. */
+  var REVIEW_AVATAR_COLORS = [
+    'var(--primary)', '#3A8F8B', '#6B5878', '#F28C28', '#4F9D69',
+  ];
+
+  /* GET /api/expert-ratings/expert/{id} — the ONLY way this page may read
+     reviews.
+
+     firestore.rules restricts `expert_ratings` reads to the athlete and the
+     expert on the document, deliberately: the raw docs store before/after
+     photo URLs whether or not the athlete consented to publishing them. The
+     endpoint strips the unconsented ones server-side. A browser-side
+     Firestore query would therefore be both DENIED for a profile visitor and
+     wrong in principle. The endpoint is public — no token, no credentials.
+
+     NEVER REJECTS. Reviews are one section of a profile; a ratings outage
+     must not take the whole page down, so every failure resolves to an empty
+     list. The timeout exists for the same reason — `init()` waits on this
+     before rendering, so a hanging request would otherwise hang the page. */
+  function _fetchExpertReviews(expertId) {
+    var empty = { count: 0, reviews: [], failed: true };
+    if (!expertId) return Promise.resolve({ count: 0, reviews: [] });
+
+    var request = fetch('/api/expert-ratings/expert/' + encodeURIComponent(expertId))
+      .then(function(res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.json();
+      })
+      .then(function(data) {
+        var rows = (data && Array.isArray(data.reviews)) ? data.reviews : [];
+        var adapted = rows.map(_adaptReview).filter(Boolean);
+        return {
+          count: (data && typeof data.count === 'number') ? data.count : adapted.length,
+          reviews: adapted,
+        };
+      });
+
+    var timeout = new Promise(function(resolve) {
+      setTimeout(function() { resolve(empty); }, 8000);
+    });
+
+    return Promise.race([request, timeout]).catch(function(e) {
+      /* Status/message only — never the response body, the expert id or any
+         reviewer detail. */
+      console.warn('[EXPERT PROFILE] reviews unavailable —', (e && e.message) || 'request failed');
+      return empty;
+    });
+  }
+
+  /* One API row -> the shape renderReviews() already renders. */
+  function _adaptReview(r, i) {
+    if (!r || typeof r !== 'object') return null;
+    var name = (typeof r.athleteName === 'string' && r.athleteName.trim())
+      ? r.athleteName.trim() : 'Verified ZITLAS Client';
+    var rating = Number(r.rating);
+    return {
+      name:     name,
+      initials: _reviewInitials(name),
+      color:    REVIEW_AVATAR_COLORS[i % REVIEW_AVATAR_COLORS.length],
+      date:     _reviewDate(r.createdAt),
+      text:     (typeof r.reviewText === 'string') ? r.reviewText : '',
+      rating:   (isFinite(rating) && rating > 0) ? Math.min(5, rating) : 0,
+    };
+  }
+
+  function _reviewInitials(name) {
+    var parts = String(name || '').trim().split(/\s+/).filter(Boolean);
+    if (!parts.length) return 'ZC';
+    return parts.map(function(w) { return w[0] || ''; })
+      .slice(0, 2).join('').toUpperCase() || 'ZC';
+  }
+
+  /* "3 weeks ago" from an ISO stamp. Returns '' — never a guess — when the
+     stamp is missing or unparseable; renderReviews prints nothing rather
+     than inventing a date. */
+  function _reviewDate(iso) {
+    var t = iso ? Date.parse(iso) : NaN;
+    if (!t || isNaN(t)) return '';
+    var days = Math.floor((Date.now() - t) / 86400000);
+    if (days <= 0)  return 'today';
+    if (days === 1) return 'yesterday';
+    if (days < 7)   return days + ' days ago';
+    if (days < 14)  return 'a week ago';
+    if (days < 60)  return Math.floor(days / 7) + ' weeks ago';
+    if (days < 365) return Math.floor(days / 30) + ' months ago';
+    var years = Math.floor(days / 365);
+    return years === 1 ? 'a year ago' : years + ' years ago';
+  }
+
+  /* Real 5→1 star counts from the fetched reviews, so the bars describe the
+     reviews actually on the page. renderRatingBars used to synthesise a
+     72/18/6/3/1 split from the review COUNT when no distribution was
+     supplied — a plausible-looking shape that was never measured. */
+  function _ratingDistribution(reviews) {
+    var dist = [0, 0, 0, 0, 0];              // index 0 = 5★ … index 4 = 1★
+    (reviews || []).forEach(function(r) {
+      var stars = Math.round(Number(r && r.rating) || 0);
+      if (stars >= 1 && stars <= 5) dist[5 - stars] += 1;
+    });
+    return dist;
+  }
+
+  function renderReviews(coach, limit) {
     var list = document.getElementById('reviewsList');
     if (!list) return;
-    (coach.reviews || []).slice(0, 3).forEach(function(r) {
+    /* Cleared first: this runs again when "View All" expands the section,
+       and appending would otherwise duplicate the preview cards. */
+    list.innerHTML = '';
+    var all = coach.reviews || [];
+    var shown = (typeof limit === 'number') ? all.slice(0, limit) : all;
+    shown.forEach(function(r) {
       var stars = '★'.repeat(Math.round(r.rating)) + '☆'.repeat(5 - Math.round(r.rating));
       var card = document.createElement('div');
       card.className = 'cp-review-card';
@@ -182,7 +298,7 @@
             '<span class="cp-review-name">' + esc(r.name) + '</span>' +
             '<div class="cp-review-info-row">' +
               '<span class="cp-review-stars">' + stars + '</span>' +
-              '<span class="cp-review-date">' + esc(r.date || '2 weeks ago') + '</span>' +
+              '<span class="cp-review-date">' + esc(r.date || '') + '</span>' +
             '</div>' +
           '</div>' +
         '</div>' +
@@ -194,14 +310,14 @@
   function renderRatingBars(coach) {
     var el = document.getElementById('ratingBars');
     if (!el) return;
-    var total = coach.reviewCount || 1;
-    var dist = coach.ratingDist || [
-      Math.round(total * 0.72),
-      Math.round(total * 0.18),
-      Math.round(total * 0.06),
-      Math.round(total * 0.03),
-      Math.round(total * 0.01),
-    ];
+    /* Measured, never synthesised. `ratingDist` is computed from the reviews
+       this page actually fetched (see _ratingDistribution). The old fallback
+       invented a 72/18/6/3/1 split from the review count alone, which looked
+       like data and was not. An expert with no reviews now shows empty bars
+       rather than a fabricated shape. */
+    var dist = coach.ratingDist || [0, 0, 0, 0, 0];
+    var counted = dist.reduce(function(a, b) { return a + b; }, 0);
+    var total = counted || 1;   /* divisor guard only — never a fake count */
     var labels = ['5 ★', '4 ★', '3 ★', '2 ★', '1 ★'];
     el.innerHTML = dist.map(function(count, i) {
       var pct = Math.round((count / total) * 100);
@@ -329,7 +445,8 @@
     setText('coachName',    coach.name);
     setText('coachRole',    coach.role);
     setText('coachRating',  coach.rating);
-    setText('coachReviews', '(' + coach.reviewCount + ' reviews)');
+    setText('coachReviews', '(' + (coach.reviewCount || 0) +
+      ((coach.reviewCount === 1) ? ' review)' : ' reviews)'));
     setText('coachExp',     coach.experience);
     setText('cpHdrName',    coach.firstName || (coach.name || '').split(' ')[0]);
     setText('cpLang',       coach.languages || 'EN, HI');
@@ -337,7 +454,10 @@
     setText('cpCallRate',   '₹' + (coach.callRate || (coach.fee + 30)));
     setText('cpStickyAmt',  '₹' + (coach.chatRate || coach.fee) + '/min');
     setText('cpRbVal',      coach.rating);
-    setText('reviewTotalCount', String(coach.reviewCount));
+    /* The real count from GET /api/expert-ratings/expert/{id}. The markup
+       ships this span empty so a placeholder number can never flash before
+       the API answers. */
+    setText('reviewTotalCount', String(coach.reviewCount || 0));
     setText('aboutText',    coach.about);
 
     /* Pricing display — from this expert's Pricing & Services page, or
@@ -407,7 +527,7 @@
     /* Sections */
     renderMetrics(coach);
     renderExpertise(coach);
-    renderReviews(coach);
+    renderReviews(coach, REVIEW_PREVIEW_COUNT);
     renderRatingBars(coach);
     renderGallery(coach);
     renderServices(coach);
@@ -4169,9 +4289,36 @@
   /* ══════════════════════════════════════════
      VIEW ALL BUTTONS
   ══════════════════════════════════════════ */
-  function initViewAlls() {
-    var reviewsBtn = document.getElementById('viewAllReviews');
-    if (reviewsBtn) reviewsBtn.addEventListener('click', function() { showToast('All reviews — coming soon'); });
+  /* "View All N Reviews" expands the list in place — the simplest thing that
+     fits the page: same section, same card markup, same styles, one more
+     call to the renderer with no limit. No modal, no route, no second UI.
+
+     This used to be `showToast('All reviews — coming soon')`, which was the
+     entire handler: the reviews were never fetched and the button did
+     nothing. */
+  function initViewAlls(coach) {
+    var btn = document.getElementById('viewAllReviews');
+    if (!btn) return;
+
+    var all = (coach && coach.reviews) || [];
+
+    /* Nothing to expand: no reviews at all, or every one is already on
+       screen. Hidden rather than disabled — a dead control invites a click
+       that cannot do anything. */
+    if (all.length <= REVIEW_PREVIEW_COUNT) {
+      btn.style.display = 'none';
+      return;
+    }
+
+    btn.style.display = '';
+    var expanded = false;
+    btn.addEventListener('click', function() {
+      expanded = !expanded;
+      renderReviews(coach, expanded ? null : REVIEW_PREVIEW_COUNT);
+      btn.textContent = expanded
+        ? 'Show Less'
+        : 'View All ' + all.length + ' Reviews';
+    });
   }
 
   /* ══════════════════════════════════════════
@@ -5119,7 +5266,27 @@
     if (baseCoach) renderMetrics(ZitlasExpertProfile.applyToCoach(baseCoach));
   }
 
-  function _initWithCoach(coach, params) {
+  /* `reviewsPromise` is started in init() the moment the expert id is known,
+     so it runs CONCURRENTLY with the Firestore expert read rather than after
+     it — the page waits on the slower of the two, not on their sum.
+     Attaching the result before populatePage() means the review section,
+     the rating bars and the counts are rendered once, from real data, with
+     no placeholder pass and no second render.
+
+     _fetchExpertReviews never rejects and is capped by a timeout, so a slow
+     or broken ratings API degrades this to an empty review section instead
+     of blocking the profile. */
+  function _initWithCoach(coach, params, reviewsPromise) {
+    var pending = reviewsPromise || _fetchExpertReviews(coach && coach.id);
+    return pending.then(function(data) {
+      coach.reviews     = (data && data.reviews) || [];
+      coach.reviewCount = (data && typeof data.count === 'number') ? data.count : 0;
+      coach.ratingDist  = _ratingDistribution(coach.reviews);
+      _renderProfile(coach, params);
+    });
+  }
+
+  function _renderProfile(coach, params) {
     populatePage(coach);
     initVerifiedCertificates(coach);
     initContextModal(coach);
@@ -5132,7 +5299,7 @@
     initReadMore();
     initStickyBottom();
     initScrollHeader();
-    initViewAlls();
+    initViewAlls(coach);
     initBottomNav();
     initStatCountUp(coach);
 
@@ -5253,9 +5420,15 @@
       return;
     }
 
+    /* Start the reviews fetch NOW so it overlaps the expert read below
+       instead of queueing behind it. Never rejects — see
+       _fetchExpertReviews. Created once and threaded through every
+       _initWithCoach path, so the API is called exactly once per page load. */
+    var reviewsPromise = _fetchExpertReviews(expertId);
+
     if (typeof ZitlasDB === 'undefined') {
       var _local = _findLocalExpert(expertId);
-      if (_local) { _initWithCoach(_local, params); return; }
+      if (_local) { _initWithCoach(_local, params, reviewsPromise); return; }
       showToast('Could not connect to database. Please try again.');
       setTimeout(function() { window.location.href = 'coaches.html'; }, 1800);
       return;
@@ -5273,11 +5446,11 @@
       }
       var coach = _normalizeExpertToCoach(doc);
       console.log('[EXPERT PROFILE] Firebase expert:', coach);
-      _initWithCoach(coach, params);
+      _initWithCoach(coach, params, reviewsPromise);
     }).catch(function(err) {
       console.warn('[EXPERT PROFILE] Firebase error:', err);
       var _local = _findLocalExpert(expertId);
-      if (_local) { _initWithCoach(_local, params); return; }
+      if (_local) { _initWithCoach(_local, params, reviewsPromise); return; }
       showToast('Failed to load expert profile.');
       setTimeout(function() { window.location.href = 'coaches.html'; }, 1800);
     });

@@ -339,6 +339,14 @@ class _FlakyRepository implements WalletRepository {
     required String signature,
   }) async =>
       throw Exception('offline');
+
+  @override
+  Future<WalletPurchaseResult> purchasePremiumWithWallet({
+    String billing = 'monthly',
+    String? idempotencyKey,
+  }) async =>
+      throw UnimplementedError(
+          'not exercised by this double — see wallet_premium_test.dart');
 }
 
 class _NeverRepository implements WalletRepository {
@@ -358,4 +366,12 @@ class _NeverRepository implements WalletRepository {
     required String signature,
   }) =>
       Completer<double>().future;
+
+  @override
+  Future<WalletPurchaseResult> purchasePremiumWithWallet({
+    String billing = 'monthly',
+    String? idempotencyKey,
+  }) async =>
+      throw UnimplementedError(
+          'not exercised by this double — see wallet_premium_test.dart');
 }

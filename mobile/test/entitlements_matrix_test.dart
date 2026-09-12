@@ -39,7 +39,8 @@ void main() {
 
     test('premium limits are 5 / unlimited / 27', () {
       final e = Entitlements.fromMap(payload());
-      expect(e.premium.goalReset, 5);
+      expect(e.premium.goalReset, 5,
+          reason: 'premium goal resets are 5/week, not unlimited');
       expect(e.premium.recipe, 27);
       expect(e.premium.mealSwap, isNull, reason: 'unlimited is a null sentinel');
     });

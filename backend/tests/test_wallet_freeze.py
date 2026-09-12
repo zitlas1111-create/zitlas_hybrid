@@ -64,11 +64,38 @@ def client():
     return TestClient(app)
 
 
-# ── 1. The wallet is frozen ────────────────────────────────────────────────
+# ── 1. The freeze MECHANISM ────────────────────────────────────────────────
+#
+# The wallet is now ENABLED for launch: it is the internal payment balance
+# (Razorpay -> wallet -> Premium). The freeze SWITCH is deliberately kept, and
+# these tests keep proving it works, so refreezing stays a one-env-var
+# operation rather than a code change nobody has exercised.
+#
+# Each test below forces the freeze ON explicitly instead of relying on the
+# global default — the same posture tests/test_payment.py takes when it forces
+# it OFF to exercise the wallet mechanism.
+
+@pytest.fixture(autouse=True)
+def _frozen(monkeypatch):
+    """Force the freeze ON for this file.
+
+    BOTH flags are required: wallet_config.assert_wallet_unfrozen checks its
+    own WALLET_FROZEN first, then delegates to
+    launch_config.assert_wallet_enabled, which reads launch_config's
+    WALLET_ENABLED. Patching only one leaves the other permitting the call.
+    """
+    import launch_config
+    monkeypatch.setattr(wallet_config, "WALLET_FROZEN", True)
+    monkeypatch.setattr(launch_config, "WALLET_ENABLED", False)
+
 
 class TestWalletFrozen:
-    def test_the_switch_is_on_for_launch(self):
-        assert wallet_config.WALLET_FROZEN is True
+    def test_the_switch_defaults_to_enabled_now(self, monkeypatch):
+        """Production default: the wallet is live. The switch still exists."""
+        monkeypatch.undo()
+        import launch_config
+        assert launch_config.WALLET_ENABLED is True
+        assert wallet_config.WALLET_FROZEN is False
 
     def test_adding_money_is_refused(self, db, client):
         res = client.post("/api/payment/create-order", json={"amount": 500})

@@ -75,8 +75,20 @@ EXPERT_VERIFICATION_ENABLED: bool = _env_bool("EXPERT_VERIFICATION_ENABLED", Fal
 EXPERT_VERIFICATION_PAYMENT_REQUIRED: bool = _env_bool(
     "EXPERT_VERIFICATION_PAYMENT_REQUIRED", False)
 
-#: Wallet — frozen. Data preserved, operations refused.
-WALLET_ENABLED: bool = _env_bool("WALLET_ENABLED", False)
+#: Wallet — ENABLED. It is the internal payment balance:
+#:     Razorpay -> Add Funds -> wallet      (POST /api/payment/create-order + /verify)
+#:     wallet   -> ₹149      -> Premium     (POST /api/payment/membership/purchase-with-wallet)
+#:
+#: This was False ("frozen") while the wallet was not ready. Turning it on
+#: enables exactly TWO paths — wallet top-up and the wallet-funded Premium
+#: purchase. It does NOT start charging for anything else: coaching escrow and
+#: expert-service charges sit behind PERSONAL_COACHING_PAYMENT_REQUIRED and
+#: PLATFORM_CHARGES_FREE, which price them at ₹0, and their wallet guards are
+#: only reached on a non-zero amount.
+#:
+#: TO REFREEZE WITHOUT A DEPLOY: set WALLET_ENABLED=false in the environment.
+#: Every refusal path, message and test is still in place.
+WALLET_ENABLED: bool = _env_bool("WALLET_ENABLED", True)
 
 #: Expert payouts / withdrawals — frozen. The 80/20 split constant stays in
 #: services/coaching_service.py for V2; nothing executes it at launch.

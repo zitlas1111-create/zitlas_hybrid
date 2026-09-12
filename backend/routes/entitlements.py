@@ -79,8 +79,9 @@ async def consume(body: ConsumeRequest,
                     "consumable": sorted(CONSUMABLE)},
         )
 
-    allowance = entitlements.require(uid, feature)   # raises 429 when spent
-    entitlements.record(uid, feature)
-
-    after = entitlements.check(uid, feature)
-    return {"ok": True, "feature": feature, "allowance": after.as_dict()}
+    # ONE atomic claim, not require()+record(). Those were two round trips:
+    # both of two simultaneous requests could read used=1 against a limit of
+    # 2, both pass, and both then increment — three resets from a two-reset
+    # allowance. reserve() decides and writes inside a single transaction.
+    allowance = entitlements.reserve(uid, feature)   # raises 429 when spent
+    return {"ok": True, "feature": feature, "allowance": allowance.as_dict()}

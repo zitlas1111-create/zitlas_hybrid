@@ -495,6 +495,14 @@ class _FailingRepository implements WalletRepository {
     required String signature,
   }) async =>
       throw error;
+
+  @override
+  Future<WalletPurchaseResult> purchasePremiumWithWallet({
+    String billing = 'monthly',
+    String? idempotencyKey,
+  }) async =>
+      throw UnimplementedError(
+          'not exercised by this double — see wallet_premium_test.dart');
 }
 
 class _FlakyRepository implements WalletRepository {
@@ -520,6 +528,14 @@ class _FlakyRepository implements WalletRepository {
     required String signature,
   }) async =>
       throw failure;
+
+  @override
+  Future<WalletPurchaseResult> purchasePremiumWithWallet({
+    String billing = 'monthly',
+    String? idempotencyKey,
+  }) async =>
+      throw UnimplementedError(
+          'not exercised by this double — see wallet_premium_test.dart');
 }
 
 class _SlowOrderRepository implements WalletRepository {
@@ -550,4 +566,12 @@ class _SlowOrderRepository implements WalletRepository {
     required String signature,
   }) async =>
       500;
+
+  @override
+  Future<WalletPurchaseResult> purchasePremiumWithWallet({
+    String billing = 'monthly',
+    String? idempotencyKey,
+  }) async =>
+      throw UnimplementedError(
+          'not exercised by this double — see wallet_premium_test.dart');
 }

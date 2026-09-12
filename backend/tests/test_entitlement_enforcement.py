@@ -26,12 +26,13 @@ import os
 import sys
 
 import pytest
+from google.cloud import firestore
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tests.fake_firestore import FakeClient              # noqa: E402
+from tests.fake_firestore import FakeClient, fake_transactional              # noqa: E402
 from services import entitlements as ent                 # noqa: E402
 import routes.ai as ai_routes                            # noqa: E402
 import routes.entitlements as ent_routes                 # noqa: E402
@@ -63,6 +64,8 @@ def db(monkeypatch):
     client.collection("users").document(PREMIUM_UID).set(
         {"membership": {"plan": "premium", "active": True}})
     monkeypatch.setattr(ent.firestore_service, "get_client", lambda: client)
+    # entitlements.reserve() claims the allowance inside a real transaction.
+    monkeypatch.setattr(firestore, "transactional", fake_transactional)
     return client
 
 
@@ -204,10 +207,12 @@ class TestGoalResetLimit:
         assert third.json()["detail"]["limit"] == 2
 
     def test_premium_gets_exactly_five(self, db):
+        """Premium is a HIGHER limit (5), not an unlimited one."""
         client = _app(PREMIUM_UID)
-        for _ in range(5):
+        for i in range(5):
             assert client.post("/api/entitlements/consume",
-                               json={"feature": "goal_reset"}).status_code == 200
+                               json={"feature": "goal_reset"}
+                               ).status_code == 200, f"blocked on reset {i + 1}"
         sixth = client.post("/api/entitlements/consume", json={"feature": "goal_reset"})
         assert sixth.status_code == 429
         assert sixth.json()["detail"]["limit"] == 5

@@ -129,11 +129,108 @@ class WalletRepository {
     }
   }
 
+  /// `POST /api/payment/membership/purchase-with-wallet` — buys Premium with
+  /// the balance the athlete already holds.
+  ///
+  /// RAZORPAY IS NOT INVOLVED. This is the second of the two payment flows:
+  ///     Razorpay -> Add Funds -> wallet      (createOrder + verifyPayment)
+  ///     wallet   -> ₹149      -> Premium     (this)
+  /// A funded wallet must never open a checkout sheet.
+  ///
+  /// [idempotencyKey] should be generated ONCE per button press and reused on
+  /// retry, so a double-tap or a resent request charges only once. The server
+  /// treats a repeat as a no-op and returns the original result.
+  ///
+  /// Throws [InsufficientWalletBalance] when the balance does not cover the
+  /// price — a distinct type so the UI can offer Add Funds rather than a
+  /// generic failure. Nothing is deducted and Premium is not activated on
+  /// that path.
+  Future<WalletPurchaseResult> purchasePremiumWithWallet({
+    String billing = 'monthly',
+    String? idempotencyKey,
+  }) async {
+    if (kDebugMode) debugPrint('[WALLET] premium purchase billing=$billing');
+    try {
+      final res = await _api.post(
+        '/api/payment/membership/purchase-with-wallet',
+        body: {'billing': billing, 'idempotencyKey': ?idempotencyKey},
+      );
+      final map = (res as Map).cast<String, dynamic>();
+      final balance = (map['balance'] as num?)?.toDouble() ?? 0;
+      if (kDebugMode) {
+        debugPrint('[WALLET] premium purchased — balance=$balance '
+            'already=${map['already']}');
+      }
+      return WalletPurchaseResult(
+        balance: balance,
+        alreadyPurchased: map['already'] == true,
+      );
+    } on ApiException catch (e) {
+      if (e.statusCode == 402) {
+        final detail = e.body is Map ? (e.body as Map)['detail'] : null;
+        final required = detail is Map ? (detail['required'] as num?) : null;
+        final available = detail is Map ? (detail['available'] as num?) : null;
+        if (kDebugMode) {
+          debugPrint('[WALLET] insufficient — need $required have $available');
+        }
+        throw InsufficientWalletBalance(
+          requiredPaise: required?.toInt() ?? 0,
+          availablePaise: available?.toInt() ?? 0,
+        );
+      }
+      if (kDebugMode) {
+        debugPrint('[WALLET] premium purchase FAILED ${e.statusCode}: ${e.body}');
+      }
+      throw Exception(
+        _detail(e) ?? 'Could not complete the upgrade. Please try again.',
+      );
+    }
+  }
+
   static String? _detail(ApiException e) {
     final body = e.body;
     if (body is Map && body['detail'] != null) return body['detail'].toString();
     return null;
   }
+}
+
+/// The wallet did not cover the price. Carries both figures so the UI can say
+/// exactly how much is needed instead of a bare "insufficient balance".
+class InsufficientWalletBalance implements Exception {
+  const InsufficientWalletBalance({
+    required this.requiredPaise,
+    required this.availablePaise,
+  });
+
+  final int requiredPaise;
+  final int availablePaise;
+
+  double get requiredRupees => requiredPaise / 100.0;
+  double get availableRupees => availablePaise / 100.0;
+
+  /// How much more the athlete needs to add, never negative.
+  double get shortfallRupees =>
+      ((requiredPaise - availablePaise).clamp(0, requiredPaise)) / 100.0;
+
+  @override
+  String toString() =>
+      'Your wallet balance is too low. Please add funds to continue.';
+}
+
+/// The outcome of a successful wallet-funded Premium purchase.
+@immutable
+class WalletPurchaseResult {
+  const WalletPurchaseResult({
+    required this.balance,
+    required this.alreadyPurchased,
+  });
+
+  /// The SERVER's balance after the debit — the only balance the app shows.
+  final double balance;
+
+  /// True when the request was a repeat of one already applied (same
+  /// idempotency key); nothing was charged a second time.
+  final bool alreadyPurchased;
 }
 
 /// A Razorpay order as returned by `POST /api/payment/create-order`.

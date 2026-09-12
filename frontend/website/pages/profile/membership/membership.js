@@ -10,7 +10,19 @@
   var GOAL_RESETS_KEY    = 'zitlas_weekly_goal_resets';
   var MEAL_SWAPS_KEY     = 'zitlas_weekly_meal_swaps';
 
-  /* ── Plan limits ── */
+  /* ── Plan limits ──
+     DEAD, AND DELIBERATELY NOT THE SOURCE OF TRUTH. Nothing calls
+     canResetGoal / canSwapMeal / recordGoalReset / recordMealSwap any more —
+     verified by grep across the whole website. They are the pre-server-side
+     localStorage counters, and their numbers have ALREADY drifted from what
+     the backend actually enforces (free is 2 goal resets and 70 meal swaps,
+     premium is unlimited on both — see services/entitlements.py).
+
+     The real limits come from GET /api/entitlements and are rendered through
+     fmtLimit() below; enforcement is server-side in
+     services/entitlements.py::reserve(). Do NOT wire these back up — a
+     second counter on the user's own device is exactly what the server-side
+     allowance replaced, and these numbers would contradict it. */
   var LIMITS = {
     basic:   { goalResets: 3,        mealSwaps: 5 },
     premium: { goalResets: 5,        mealSwaps: 25 },
@@ -232,8 +244,136 @@
 
       var billing = _billing === 'yearly' ? 'yearly' : 'monthly';
       btn.disabled = true;
-      btn.textContent = 'Starting payment…';
 
+      /* If the Wallet is frozen (server-driven — GET /api/system/trial-mode),
+         there is no balance to spend from, so Premium falls back to buying
+         directly from Razorpay. This keeps Premium purchasable if the wallet
+         is ever refrozen by flipping WALLET_ENABLED. */
+      if (_walletFrozen()) {
+        _payWithRazorpay(billing);
+        return;
+      }
+
+      /* WALLET FIRST. The ZITLAS Wallet is the internal payment balance:
+         Razorpay puts money IN, and the wallet pays for Premium. So the
+         upgrade tries to charge the balance the athlete already holds, and
+         Razorpay is never opened when that succeeds.
+
+         On 402 (insufficient) NOTHING was charged and Premium was not
+         activated — the athlete is told how much is missing and offered
+         Add Funds. Razorpay is NOT launched automatically: topping up is an
+         explicit choice, not a surprise checkout sheet. */
+      btn.textContent = 'Paying from wallet…';
+      _payWithWallet(billing, function onNeedsFunds(detail) {
+        _showInsufficientBalance(detail, billing);
+        _resetBtn();
+      });
+      return;
+    });
+
+    /* Charges the wallet. Calls `onNeedsFunds(detail)` when the balance is
+       short; every other failure is reported in place. */
+    function _payWithWallet(billing, onNeedsFunds) {
+      getIdToken().then(function (token) {
+        return fetch('/api/payment/membership/purchase-with-wallet', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+          /* One key per button press, reused if the request is retried, so a
+             double-tap cannot be charged twice. */
+          body: JSON.stringify({ billing: billing, idempotencyKey: _purchaseKey() }),
+        });
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          return { status: res.status, data: data };
+        });
+      }).then(function (result) {
+        if (result.status === 200) {
+          showToast('✅ Premium activated — paid from your wallet.');
+          setTimeout(function () { window.location.reload(); }, 1200);
+          return;
+        }
+        if (result.status === 402) {
+          onNeedsFunds((result.data && result.data.detail) || {});
+          return;
+        }
+        console.error('[MEMBERSHIP] wallet purchase failed', result);
+        showToast('Could not complete the upgrade — please try again.');
+        _resetBtn();
+      }).catch(function (e) {
+        console.error('[MEMBERSHIP] wallet purchase failed', e);
+        showToast('Could not complete the upgrade — please try again.');
+        _resetBtn();
+      });
+    }
+
+    /* Server-driven, exactly like components/wallet.js reads it. Defaults to
+       NOT frozen: the wallet endpoint answers 503 wallet_frozen on its own if
+       it really is, which is handled above, whereas wrongly assuming frozen
+       would skip the wallet for someone who has the money. */
+    function _walletFrozen() {
+      try {
+        if (typeof ZitlasPayment !== 'undefined' &&
+            typeof ZitlasPayment.isWalletFrozen === 'function') {
+          return ZitlasPayment.isWalletFrozen();
+        }
+      } catch (_) {}
+      return false;
+    }
+
+    /* One idempotency token per press of the Upgrade button. */
+    function _purchaseKey() {
+      if (!_purchaseKey._value) {
+        _purchaseKey._value = 'web_' + Date.now() + '_' +
+          Math.random().toString(36).slice(2, 8);
+      }
+      return _purchaseKey._value;
+    }
+
+    /* Tells the athlete exactly how short they are and offers Add Funds.
+       Deliberately does NOT open Razorpay by itself. */
+    function _showInsufficientBalance(detail, billing) {
+      var requiredRs = typeof detail.requiredRupees === 'number'
+        ? detail.requiredRupees : (detail.required || 0) / 100;
+      var availableRs = typeof detail.availableRupees === 'number'
+        ? detail.availableRupees : (detail.available || 0) / 100;
+      var shortRs = Math.max(0, requiredRs - availableRs);
+
+      showToast(
+        'Insufficient wallet balance — your wallet has ₹' + availableRs.toFixed(2) +
+        ' and Premium costs ₹' + requiredRs.toFixed(2) + '. ' +
+        'Please add funds to continue (₹' + shortRs.toFixed(2) + ' more).',
+        6000
+      );
+      _offerAddFunds(shortRs);
+    }
+
+    /* Surfaces an explicit Add Funds action. The Wallet owns the top-up
+       (and its own Razorpay flow); this only sends the athlete there. */
+    function _offerAddFunds(shortRs) {
+      try {
+        if (typeof ZitlasWallet !== 'undefined' &&
+            typeof ZitlasWallet.openAddFunds === 'function') {
+          ZitlasWallet.openAddFunds(shortRs);
+          return;
+        }
+        if (typeof ZitlasWallet !== 'undefined' &&
+            typeof ZitlasWallet.open === 'function') {
+          ZitlasWallet.open();
+          return;
+        }
+      } catch (e) {
+        console.warn('[MEMBERSHIP] could not open the wallet sheet', e);
+      }
+      window.location.href = '/pages/profile/profile.html#wallet';
+    }
+
+    /* Razorpay-direct Premium purchase. RETAINED and still server-verified —
+       it is the path for buying Premium without first funding the wallet, and
+       the endpoint it calls is unchanged. It is no longer what the Upgrade
+       button reaches first. */
+    function _payWithRazorpay(billing) {
+      btn.disabled = true;
+      btn.textContent = 'Starting payment…';
       getIdToken().then(function (token) {
         return fetch('/api/payment/membership/create-order', {
           method: 'POST',
@@ -271,7 +411,7 @@
         showToast('Could not start payment — please try again.');
         _resetBtn();
       });
-    });
+    }
 
     function _verifyMembershipPayment(razorpayResponse, resetBtn) {
       btn.textContent = 'Verifying payment…';

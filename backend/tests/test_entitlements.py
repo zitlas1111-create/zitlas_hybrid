@@ -22,12 +22,13 @@ import sys
 from datetime import datetime, timedelta, timezone
 
 import pytest
+from google.cloud import firestore
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from tests.fake_firestore import FakeClient            # noqa: E402
+from tests.fake_firestore import FakeClient, fake_transactional            # noqa: E402
 from services import entitlements as ent               # noqa: E402
 from services.auth_service import verify_firebase_token  # noqa: E402
 import routes.entitlements as ent_routes               # noqa: E402
@@ -40,12 +41,18 @@ PREMIUM_UID = "premium_athlete"
 @pytest.fixture
 def db(monkeypatch):
     """Firestore fake wired into the entitlement service, with one free and
-    one premium athlete already on file."""
+    one premium athlete already on file.
+
+    `firestore.transactional` is swapped for the fake's drop-in because
+    `entitlements.reserve()` claims an allowance inside a real transaction —
+    the same patch test_coaching.py and test_trial_report_store.py already use.
+    """
     client = FakeClient()
     client.collection("users").document(FREE_UID).set({"membership": {"plan": "free"}})
     client.collection("users").document(PREMIUM_UID).set(
         {"membership": {"plan": "premium", "active": True}})
     monkeypatch.setattr(ent.firestore_service, "get_client", lambda: client)
+    monkeypatch.setattr(firestore, "transactional", fake_transactional)
     return client
 
 
@@ -65,6 +72,8 @@ class TestMatrix:
 
     def test_premium_limits(self):
         limits = ent.limits_for(ent.TIER_PREMIUM)
+        # 5/week — a higher ceiling than Basic's 2, NOT unlimited. Only
+        # MEAL_SWAP is unmetered on Premium.
         assert limits[ent.GOAL_RESET] == 5
         assert limits[ent.RECIPE] == 27
         assert limits[ent.MEAL_SWAP] is ent.UNLIMITED
@@ -107,9 +116,19 @@ class TestGoalResets:
 
     def test_premium_gets_five_then_is_blocked(self, db):
         for i in range(5):
-            assert ent.check(PREMIUM_UID, ent.GOAL_RESET).allowed, f"change {i+1}"
+            assert ent.check(PREMIUM_UID, ent.GOAL_RESET).allowed, f"reset {i + 1}"
             spend(PREMIUM_UID, ent.GOAL_RESET, 1)
         assert not ent.check(PREMIUM_UID, ent.GOAL_RESET).allowed  # 6th
+
+    def test_premium_reserve_grants_exactly_five(self, db):
+        """Premium is metered too — the atomic claim must stop at 5."""
+        for i in range(5):
+            assert ent.reserve(PREMIUM_UID, ent.GOAL_RESET).used == i + 1
+        with pytest.raises(HTTPException) as exc:
+            ent.reserve(PREMIUM_UID, ent.GOAL_RESET)
+        assert exc.value.status_code == 429
+        assert exc.value.detail["limit"] == 5
+        assert exc.value.detail["tier"] == ent.TIER_PREMIUM
 
 
 class TestMealSwaps:

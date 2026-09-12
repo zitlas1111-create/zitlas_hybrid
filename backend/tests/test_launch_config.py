@@ -64,8 +64,12 @@ class TestTheMatrix:
         assert lc.EXPERT_VERIFICATION_ENABLED is False
         assert lc.EXPERT_VERIFICATION_PAYMENT_REQUIRED is False
 
-    def test_wallet_is_frozen(self):
-        assert lc.WALLET_ENABLED is False
+    def test_wallet_is_enabled(self):
+        """The wallet is now the internal payment balance:
+        Razorpay -> Add Funds -> wallet -> ₹149 -> Premium.
+        It was frozen while it was not ready; the freeze SWITCH remains and is
+        still exercised by tests/test_wallet_freeze.py."""
+        assert lc.WALLET_ENABLED is True
 
     def test_expert_payouts_are_frozen(self):
         assert lc.EXPERT_PAYOUTS_ENABLED is False
@@ -91,7 +95,7 @@ class TestTheMatrix:
         assert body["premium"]["provider"] == "razorpay"
         assert body["personalCoaching"]["paymentRequired"] is False
         assert body["personalCoaching"]["price"] == 0
-        assert body["wallet"]["enabled"] is False
+        assert body["wallet"]["enabled"] is True
         assert body["expertVerification"]["enabled"] is False
         assert body["expertPayouts"]["enabled"] is False
 
@@ -222,16 +226,26 @@ class TestFrozenFeatures:
             lc.assert_expert_verification_open()
         assert excinfo.value.detail["error"] == "expert_verification_frozen"
 
-    def test_wallet_deposit_is_unavailable(self):
-        """CASE 7."""
+    def test_wallet_deposit_is_available(self):
+        """CASE 7, inverted: deposits are how money enters the wallet now."""
+        lc.assert_wallet_enabled("wallet_recharge")      # must not raise
+
+    def test_the_freeze_guard_still_refuses_when_disabled(self, monkeypatch):
+        """The switch is kept and still works — refreezing is one env var."""
+        monkeypatch.setattr(lc, "WALLET_ENABLED", False)
         with pytest.raises(HTTPException) as excinfo:
             lc.assert_wallet_enabled("wallet_recharge")
         assert excinfo.value.status_code == 503
         assert excinfo.value.detail["error"] == "wallet_frozen"
 
-    def test_wallet_withdrawal_is_unavailable(self):
-        """CASE 8. Withdrawal has no endpoint either — the guard covers the
-        operation by name so one cannot be added silently."""
+    def test_withdrawal_still_has_no_endpoint(self, monkeypatch):
+        """CASE 8. Enabling the wallet did NOT add a withdrawal path — money
+        goes IN (Razorpay) and is SPENT (Premium); it never comes back out.
+        There is no /withdraw route, and the guard still covers the operation
+        by name so one cannot appear silently while frozen."""
+        import routes.payment as pr
+        assert not [r for r in dir(pr) if "withdraw" in r.lower()]
+        monkeypatch.setattr(lc, "WALLET_ENABLED", False)
         with pytest.raises(HTTPException):
             lc.assert_wallet_enabled("wallet_withdraw", 100.0)
 

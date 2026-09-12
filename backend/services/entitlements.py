@@ -71,6 +71,10 @@ _DEFAULT_LIMITS: dict[str, dict[str, int | None]] = {
         RECIPE: 7,
     },
     TIER_PREMIUM: {
+        # 5 per week — a HIGHER ceiling than Basic's 2, NOT an unlimited one.
+        # The published plan reads "Goal Set/Resets: 5 per week". MEAL_SWAP is
+        # the only Premium entitlement that is genuinely unmetered, so
+        # "higher limits" must never be reinterpreted here as "no limit".
         GOAL_RESET: 5,
         MEAL_SWAP: UNLIMITED,
         RECIPE: 27,
@@ -177,10 +181,16 @@ def _membership_is_premium(membership: dict | None) -> bool:
         return False
     if membership.get("active") is False:
         return False
+    # `is not None`, NOT a truthiness test. `if expiry:` skipped the whole
+    # check for an EMPTY-STRING expiry (and for 0), so a membership carrying
+    # `premium_expiry_date: ""` was granted premium FOREVER — the exact
+    # fail-open the block below exists to prevent. A field that is present but
+    # unusable must fail closed; only a genuinely ABSENT field means "no
+    # expiry was ever recorded" (see below).
     expiry = membership.get("premium_expiry_date")
-    if expiry:
+    if expiry is not None:
         try:
-            when = datetime.fromisoformat(str(expiry).replace("Z", "+00:00"))
+            when = datetime.fromisoformat(str(expiry).strip().replace("Z", "+00:00"))
             if when.tzinfo is None:
                 when = when.replace(tzinfo=timezone.utc)
             if when <= datetime.now(timezone.utc):
@@ -189,6 +199,12 @@ def _membership_is_premium(membership: dict | None) -> bool:
             # An unparseable expiry must not silently grant premium forever.
             print(f"[ENTITLEMENTS] unparseable premium_expiry_date={expiry!r} — treating as free")
             return False
+    # NO `premium_expiry_date` KEY AT ALL still counts as premium. That is the
+    # long-standing behaviour of this function and of every premium fixture in
+    # the suite, and it is a PRODUCT decision (comped/grandfathered accounts)
+    # rather than a bug — `/api/payment/membership/verify` always writes a real
+    # expiry, so a purchased membership can never reach this path. Changing it
+    # would silently demote any hand-created account and needs product sign-off.
     return True
 
 
@@ -345,6 +361,130 @@ def require(uid: str, feature: str, *, now: datetime | None = None,
             **allowance.as_dict(),
         },
     )
+
+
+def reserve(uid: str, feature: str, *, now: datetime | None = None,
+            tier: str | None = None) -> Allowance:
+    """Atomically claim ONE unit of `feature`, or raise 429. Never over-grants.
+
+    WHY THIS EXISTS SEPARATELY FROM require()+record(). Those are two round
+    trips: `require` READS the counter, `record` WRITES it. Two requests that
+    arrive together both read `used=1` against a limit of 2, both pass, and
+    both then increment — the athlete gets THREE resets out of a two-per-week
+    allowance. `record`'s atomic Increment prevents a lost update; it cannot
+    prevent this, because the decision was already made before either write.
+
+    Here the read and the write happen inside ONE Firestore transaction, so
+    the second writer is retried by the SDK against the committed counter and
+    correctly sees the allowance spent.
+
+    FAILS CLOSED, unlike `record()`. `record` deliberately swallows errors
+    because it runs AFTER an operation the athlete already received. This runs
+    BEFORE, and is the only thing standing between a free user and unlimited
+    use — so an unreachable Firestore denies the request instead of waving it
+    through.
+
+    Returns the Allowance as it stands AFTER the successful claim.
+    """
+    resolved = tier or tier_for_uid(uid)
+    limit = limits_for(resolved).get(feature)
+    key = week_key(now)
+    resets = next_reset(now)
+
+    # Unlimited tiers never touch the counter — nothing to contend over, and
+    # a premium user must not be blocked by a Firestore outage.
+    if limit is None:
+        return Allowance(tier=resolved, feature=feature, limit=None,
+                         used=int(read_usage(uid, now=now).get(feature, 0)),
+                         week=key, resets_at=resets)
+
+    db = firestore_service.get_client()
+    if db is None or not uid:
+        print(f"[ENTITLEMENTS] reserve DENIED (no Firestore/uid) "
+              f"uid={uid!r} feature={feature}")
+        raise HTTPException(
+            status_code=503,
+            detail={"error": "entitlement_unavailable", "feature": feature},
+        )
+
+    from google.cloud import firestore as gcf
+
+    ref = db.collection(USAGE_COLLECTION).document(_usage_doc_id(uid, key))
+
+    @gcf.transactional
+    def _claim(tx) -> int:
+        snap = ref.get(transaction=tx)
+        data = (snap.to_dict() or {}) if snap.exists else {}
+        raw = data.get(feature, 0)
+        used = int(raw) if isinstance(raw, (int, float)) else 0
+        if used >= limit:
+            return -1                      # spent — signalled, not raised,
+        tx.set(ref, {                      # so the transaction is not retried
+            feature: used + 1,
+            "uid": uid,
+            "week": key,
+            "updatedAt": datetime.now(timezone.utc).isoformat(),
+        }, merge=True)
+        return used + 1
+
+    try:
+        after = _claim(db.transaction())
+    except Exception as e:  # noqa: BLE001 — see docstring: fail closed.
+        print(f"[ENTITLEMENTS] reserve FAILED uid={uid} {feature}: "
+              f"{type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail={"error": "entitlement_unavailable", "feature": feature},
+        ) from e
+
+    if after < 0:
+        print(f"[ENTITLEMENTS] {feature} limit reached uid={uid} tier={resolved} "
+              f"used={limit}/{limit} week={key}")
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "limit_reached",
+                **Allowance(tier=resolved, feature=feature, limit=limit,
+                            used=limit, week=key, resets_at=resets).as_dict(),
+            },
+        )
+
+    return Allowance(tier=resolved, feature=feature, limit=limit,
+                     used=after, week=key, resets_at=resets)
+
+
+def release(uid: str, feature: str, *, now: datetime | None = None) -> None:
+    """Give back one unit claimed by `reserve()` when the operation failed.
+
+    Only for callers that reserve BEFORE doing work and then discover the work
+    could not be done. Never raises, and never drops the counter below zero.
+    """
+    db = firestore_service.get_client()
+    if db is None or not uid:
+        return
+    from google.cloud import firestore as gcf
+
+    key = week_key(now)
+    ref = db.collection(USAGE_COLLECTION).document(_usage_doc_id(uid, key))
+
+    @gcf.transactional
+    def _give_back(tx) -> None:
+        snap = ref.get(transaction=tx)
+        data = (snap.to_dict() or {}) if snap.exists else {}
+        raw = data.get(feature, 0)
+        used = int(raw) if isinstance(raw, (int, float)) else 0
+        if used <= 0:
+            return
+        tx.set(ref, {feature: used - 1,
+                     "updatedAt": datetime.now(timezone.utc).isoformat()},
+               merge=True)
+
+    try:
+        _give_back(db.transaction())
+    except Exception as e:  # noqa: BLE001 — a lost refund is a metering
+        # inaccuracy, never a reason to fail an operation already reported.
+        print(f"[ENTITLEMENTS] release failed uid={uid} {feature}: "
+              f"{type(e).__name__}: {e}")
 
 
 def uid_from_authorization(authorization: str | None) -> str | None:

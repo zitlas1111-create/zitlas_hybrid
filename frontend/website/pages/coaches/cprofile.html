@@ -404,8 +404,14 @@
   </div>
   <div class="cp-rating-bars" id="ratingBars"></div>
   <div class="cp-reviews-list" id="reviewsList"></div>
-  <button class="cp-view-all-btn" id="viewAllReviews">
-    View All <span id="reviewTotalCount">128</span> Reviews
+  <!-- Hidden until the real count arrives from
+       GET /api/expert-ratings/expert/{id}, and revealed by initViewAlls()
+       only when there are more reviews than the preview shows. The count
+       span ships EMPTY: it used to contain a hardcoded "128", which flashed
+       a fabricated total before the data loaded and stayed visible for every
+       expert whose reviews never loaded at all. -->
+  <button class="cp-view-all-btn" id="viewAllReviews" style="display:none">
+    View All <span id="reviewTotalCount"></span> Reviews
   </button>
 </section>
 

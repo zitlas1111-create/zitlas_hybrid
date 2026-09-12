@@ -27,7 +27,7 @@ from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, HTTPException
 from google.cloud import firestore
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 import trial_config
 import launch_config
@@ -41,25 +41,72 @@ router = APIRouter()
 _PLATFORM_FEE_PERCENT = 0.10
 
 
+def _parse_expiry(membership: dict | None) -> datetime | None:
+    """`premium_expiry_date` as an aware UTC datetime, or None if unusable.
+
+    Shared by the premium check and the renewal maths so "when does this
+    membership end" is answered in exactly one place.
+    """
+    if not isinstance(membership, dict):
+        return None
+    raw = membership.get("premium_expiry_date")
+    if not raw:
+        return None
+    try:
+        when = datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    except (ValueError, TypeError):
+        return None
+    return when if when.tzinfo else when.replace(tzinfo=timezone.utc)
+
+
 def _membership_is_premium(membership: dict | None) -> bool:
     """Mirror of payment-service.js _membershipIsPremium — premium & unexpired."""
     if not membership or not isinstance(membership, dict):
         return False
     if membership.get("plan") != "premium" or not membership.get("active"):
         return False
-    exp = membership.get("premium_expiry_date")
-    if exp:
-        try:
-            if datetime.fromisoformat(str(exp).replace("Z", "+00:00")) <= _now():
-                return False
-        except Exception:
-            pass
+    raw = membership.get("premium_expiry_date")
+    # `is not None`, not truthiness — an empty-string expiry used to skip this
+    # check entirely and grant premium forever. Mirrors
+    # services/entitlements.py::_membership_is_premium exactly.
+    if raw is not None:
+        expiry = _parse_expiry(membership)
+        # FAIL CLOSED on an unparseable stamp. This used to `except: pass`,
+        # which granted premium FOREVER to any membership whose expiry could
+        # not be read — the opposite of services/entitlements.py's rule for
+        # the same field, and a silent way to never expire.
+        if expiry is None:
+            print(f"[PAYMENT] unparseable premium_expiry_date={raw!r} — treating as free")
+            return False
+        if expiry <= _now():
+            return False
     return True
 
 # ── Premium Membership pricing (SERVER-authoritative — the client sends
 #    only 'monthly'|'yearly'; the price can never be manipulated) ──
 MEMBERSHIP_PRICES_RUPEES = {"monthly": 149, "yearly": 999}
 MEMBERSHIP_DURATION_DAYS = {"monthly": 30, "yearly": 365}
+
+#: What a razorpay_orders row was created FOR. Each verifier accepts only its
+#: own purpose, so the two money flows can never cross:
+#:   Razorpay -> wallet      (wallet_topup, verified by POST /verify)
+#:   wallet   -> Premium     (no Razorpay order at all)
+#:   Razorpay -> Premium     (membership, verified by POST /membership/verify)
+PURPOSE_WALLET_TOPUP = "wallet_topup"
+PURPOSE_MEMBERSHIP = "membership"
+
+
+def _paise(rupees: float | int) -> int:
+    """Rupees -> integer paise, rounded to the nearest paise.
+
+    MONEY DECISIONS ARE MADE IN INTEGERS. The stored wallet balance is a float
+    in rupees (legacy schema, deliberately not migrated here — see the wallet
+    purchase endpoint), but no float comparison is ever allowed to decide
+    whether an athlete can afford something: `0.1 + 0.2 >= 0.3` is False in
+    binary floating point, and that is exactly the class of bug that refuses a
+    purchase somebody can actually afford.
+    """
+    return int(round(float(rupees) * 100))
 
 
 def _now() -> datetime:
@@ -87,6 +134,17 @@ class VerifyBody(BaseModel):
 
 class MembershipOrderBody(BaseModel):
     billing: str  # 'monthly' | 'yearly' — price resolved server-side
+
+
+class WalletMembershipBody(BaseModel):
+    billing: str  # 'monthly' | 'yearly' — price resolved server-side
+
+    #: Optional client-generated token that makes a repeated submission a
+    #: no-op. Supply ONE per user action (generated when the button is
+    #: pressed, reused on retry), never per HTTP attempt. Without it every
+    #: request is a genuine, separate purchase — which is correct, because
+    #: buying two months back to back is a real thing an athlete may do.
+    idempotencyKey: str | None = Field(default=None, max_length=128)
 
 
 class ChargeBody(BaseModel):
@@ -155,7 +213,15 @@ async def create_order(body: CreateOrderBody, caller: dict = Depends(verify_fire
     db = _db()
     db.collection("razorpay_orders").document(order["order_id"]).set({
         "orderId": order["order_id"], "uid": uid, "amountPaise": order["amount"],
-        "currency": order["currency"], "status": "created", "createdAt": _now().isoformat(),
+        "currency": order["currency"], "status": "created",
+        # PURPOSE IS NOW STAMPED. Wallet top-up orders previously carried no
+        # `purpose` at all, while membership orders carried "membership" — and
+        # /verify below never looked at the field. A ₹149 MEMBERSHIP order
+        # could therefore be redeemed here as ₹149 of WALLET CREDIT by calling
+        # the wallet verifier instead of the membership one. Stamping the
+        # purpose and checking it on both verifiers closes that.
+        "purpose": PURPOSE_WALLET_TOPUP,
+        "createdAt": _now().isoformat(),
     })
 
     print(f"[PAYMENT CREATE-ORDER] order recorded — orderId={order['order_id']} amountPaise={order['amount']}")
@@ -193,6 +259,15 @@ async def verify_payment(body: VerifyBody, caller: dict = Depends(verify_firebas
         order = order_snap.to_dict()
         if order.get("uid") != uid:
             raise HTTPException(status_code=403, detail="not_your_order")
+        # A MEMBERSHIP ORDER MUST NEVER CREDIT THE WALLET. Orders created
+        # before `purpose` was stamped carry no field at all; those are wallet
+        # recharges by construction (this was the only endpoint that made
+        # them), so a missing purpose is accepted and anything else is not.
+        purpose = order.get("purpose")
+        if purpose is not None and purpose != PURPOSE_WALLET_TOPUP:
+            print(f"[PAYMENT VERIFY] refused — order {body.razorpay_order_id} "
+                  f"has purpose={purpose!r}, not a wallet top-up")
+            raise HTTPException(status_code=400, detail="not_a_wallet_topup_order")
         if order.get("status") == "paid":
             # Idempotent retry (double-fire of the success handler, etc.) —
             # not an error, and must NOT credit a second time. Still returns
@@ -312,7 +387,10 @@ async def verify_membership_payment(body: VerifyBody, caller: dict = Depends(ver
 
     @firestore.transactional
     def _txn(tx):
+        # ALL READS FIRST — Firestore forbids a read after a write in the same
+        # transaction, and the renewal maths below needs the CURRENT membership.
         order_snap = order_ref.get(transaction=tx)
+        user_snap = user_ref.get(transaction=tx)
         if not order_snap.exists:
             raise HTTPException(status_code=404, detail="order_not_found")
         order = order_snap.to_dict()
@@ -322,12 +400,31 @@ async def verify_membership_payment(body: VerifyBody, caller: dict = Depends(ver
             raise HTTPException(status_code=400, detail="not_a_membership_order")
         if order.get("status") == "paid":
             # Idempotent retry — return the membership already written.
-            existing = (user_ref.get(transaction=tx).to_dict() or {}).get("membership") or {}
+            existing = (user_snap.to_dict() or {}).get("membership") or {}
             return {"already": True, "membership": existing}
 
         billing = order.get("billing") or "monthly"
         start = _now()
-        expiry = start + timedelta(days=MEMBERSHIP_DURATION_DAYS.get(billing, 30))
+        period = timedelta(days=MEMBERSHIP_DURATION_DAYS.get(billing, 30))
+
+        # RENEWAL EXTENDS, IT DOES NOT RESTART. This was `start + period`,
+        # which silently DESTROYED whatever the athlete had left: renewing on
+        # 10 Oct with an expiry of 15 Oct moved them to 9 Nov instead of
+        # 14 Nov, throwing away five paid days. The new expiry is measured
+        # from whichever is LATER — now, or the expiry they already hold — so
+        # renewing early can only ever add time.
+        #
+        # An expiry in the past (renewing after lapsing) falls back to `start`,
+        # so a long-lapsed user gets a full fresh period rather than a window
+        # back-dated into history.
+        anchor = start
+        prior_expiry = _parse_expiry((user_snap.to_dict() or {}).get("membership"))
+        if prior_expiry is not None and prior_expiry > start:
+            anchor = prior_expiry
+            print(f"[MEMBERSHIP VERIFY] renewal extends existing entitlement — "
+                  f"uid={uid} priorExpiry={prior_expiry.isoformat()} "
+                  f"newExpiry={(anchor + period).isoformat()}")
+        expiry = anchor + period
         membership = {
             "plan": "premium",
             "billing": billing,
@@ -369,6 +466,187 @@ async def verify_membership_payment(body: VerifyBody, caller: dict = Depends(ver
         raise HTTPException(status_code=500, detail=f"membership_activation_failed: {type(e).__name__}: {e}")
 
     print(f"[MEMBERSHIP VERIFY] premium activated — uid={uid} already={result.get('already')}")
+    return {"success": True, **result}
+
+
+# ══════════════════════════════════════════════════════════════════════
+# PREMIUM PAID FROM THE ZITLAS WALLET
+#
+# The second of the two payment flows, and the one Razorpay is NOT part of:
+#
+#     Razorpay -> wallet     (POST /create-order + POST /verify)
+#     wallet   -> Premium    (this endpoint — no Razorpay, no checkout)
+#
+# When the balance covers the price the athlete must never see a Razorpay
+# sheet; the money they already hold is what pays. Razorpay is reached only
+# by explicitly choosing Add Funds.
+# ══════════════════════════════════════════════════════════════════════
+
+@router.post("/membership/purchase-with-wallet")
+async def purchase_membership_with_wallet(
+    body: WalletMembershipBody, caller: dict = Depends(verify_firebase_token)
+):
+    """Buy Premium with the caller's wallet balance. One atomic transaction.
+
+    THE TWO INVARIANTS, both enforced inside a single Firestore transaction so
+    neither can hold without the other:
+        * Premium is never activated without the wallet actually being charged.
+        * The wallet is never charged without Premium actually being activated.
+
+    PRICE IS SERVER-SIDE. The client sends only 'monthly' | 'yearly'; it never
+    names an amount, so a manipulated body cannot buy Premium cheaply.
+
+    BALANCE COMPARISON IS INTEGER. The stored balance is a float in rupees
+    (legacy schema), but the affordability decision and the subtraction happen
+    in integer paise and are written back rounded — a float `>=` could refuse
+    a purchase the athlete can afford, or leave dust like 0.9999999 behind.
+
+    RESERVED FUNDS ARE RESPECTED. Coaching escrow parks money in
+    `wallet.reserved`; spendable money is balance - reserved, exactly as
+    routes/coaching.py computes it. Premium cannot be bought with money that
+    is already committed elsewhere.
+
+    NEVER GOES NEGATIVE: the transaction re-reads the balance and refuses
+    before subtracting, so two concurrent requests cannot both pass. The
+    second is retried by Firestore against the committed balance and either
+    succeeds on the remaining funds or returns 402 — it can never overdraw.
+
+    EXACT DOUBLE-SUBMIT SUPPRESSION needs `idempotencyKey`: with one, a
+    repeated submission returns the first result and charges nothing. Without
+    one, two deliberate purchases are two purchases, which is correct —
+    renewals stack.
+    """
+    uid = caller["uid"]
+    billing = (body.billing or "").strip().lower()
+    if billing not in MEMBERSHIP_PRICES_RUPEES:
+        raise HTTPException(status_code=400, detail="invalid_billing_period")
+
+    price_rupees = MEMBERSHIP_PRICES_RUPEES[billing]
+    price_paise = _paise(price_rupees)
+    period = timedelta(days=MEMBERSHIP_DURATION_DAYS[billing])
+
+    # Spending wallet money is a wallet MONEY MOVEMENT, so it answers to the
+    # same freeze switch every other debit does.
+    wallet_config.assert_wallet_unfrozen("wallet_debit_membership", price_rupees)
+
+    db = _db()
+    user_ref = db.collection("users").document(uid)
+    key = (body.idempotencyKey or "").strip()
+    txn_id = (f"mem_{uid}_{key}" if key
+              else f"mem_{uid}_{int(time.time() * 1000)}")
+    ledger_ref = db.collection("wallet_transactions").document(txn_id)
+
+    @firestore.transactional
+    def _txn(tx):
+        # ── ALL READS FIRST ──────────────────────────────────────────────
+        user_snap = user_ref.get(transaction=tx)
+        ledger_snap = ledger_ref.get(transaction=tx)
+
+        # Same idempotency shape the Razorpay verifier uses: an already-written
+        # ledger row means this exact purchase happened, so do it no further.
+        if ledger_snap.exists:
+            existing = (user_snap.to_dict() or {}).get("membership") or {}
+            wallet_now = (user_snap.to_dict() or {}).get("wallet") or {}
+            return {"already": True, "membership": existing,
+                    "balance": float(wallet_now.get("balance", 0) or 0)}
+
+        data = user_snap.to_dict() or {}
+        wallet = dict(data.get("wallet") or {})
+        balance_paise = _paise(wallet.get("balance", 0) or 0)
+        reserved_paise = _paise(wallet.get("reserved", 0) or 0)
+        available_paise = balance_paise - reserved_paise
+
+        if available_paise < price_paise:
+            # 402 Payment Required: authorised, understood, simply not funded.
+            # NOTHING is written on this path — no deduction, no membership,
+            # no ledger row, no expiry change.
+            print(f"[MEMBERSHIP WALLET] insufficient — uid={uid} "
+                  f"available={available_paise} required={price_paise}")
+            raise HTTPException(status_code=402, detail={
+                "error": "insufficient_wallet_balance",
+                "required": price_paise,
+                "available": max(0, available_paise),
+                "currency": "INR",
+                "requiredRupees": price_rupees,
+                "availableRupees": round(max(0, available_paise) / 100.0, 2),
+            })
+
+        start = _now()
+
+        # Identical anchor rule to the Razorpay path — renewing early extends
+        # from the existing expiry and can only ever add time.
+        anchor = start
+        prior_expiry = _parse_expiry(data.get("membership"))
+        if prior_expiry is not None and prior_expiry > start:
+            anchor = prior_expiry
+        expiry = anchor + period
+
+        new_balance_paise = balance_paise - price_paise
+        wallet["balance"] = round(new_balance_paise / 100.0, 2)
+        wallet["total_spent"] = round(
+            (_paise(wallet.get("total_spent", 0) or 0) + price_paise) / 100.0, 2)
+        transactions = list(wallet.get("transactions", []))
+        transactions.append({
+            "id": txn_id, "type": "debit", "amount": price_rupees,
+            "description": f"ZITLAS Premium ({billing})",
+            "date": start.isoformat(),
+        })
+        wallet["transactions"] = transactions
+
+        membership = {
+            "plan": "premium",
+            "billing": billing,
+            "premium_plan": billing,
+            "active": True,
+            "started_at": start.isoformat(),
+            "premium_start_date": start.isoformat(),
+            "premium_expiry_date": expiry.isoformat(),
+            "payment_id": txn_id,
+            "order_id": None,          # no Razorpay order — wallet-funded
+            "payment_status": "paid",
+            "payment_method": "wallet",
+        }
+
+        # ── WRITES ───────────────────────────────────────────────────────
+        # One set(): the debit and the activation land together or not at all.
+        tx.set(user_ref, {
+            "wallet": wallet,
+            "membership": membership,
+            "membershipUpdatedAt": start.isoformat(),
+        }, merge=True)
+
+        tx.set(ledger_ref, {
+            "transactionId": txn_id,
+            "serviceType": "membership_purchase",
+            "userId": uid,
+            "amount": price_rupees,
+            "amountPaise": price_paise,
+            "direction": "debit",
+            "billing": billing,
+            "method": "wallet",
+            "walletBefore": round(balance_paise / 100.0, 2),
+            "walletAfter": wallet["balance"],
+            "premiumExpiry": expiry.isoformat(),
+            "status": "success",
+            "createdAt": start.isoformat(),
+        })
+
+        return {"already": False, "membership": membership,
+                "balance": wallet["balance"],
+                "charged": price_rupees, "transactionId": txn_id}
+
+    try:
+        result = _txn(db.transaction())
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"[MEMBERSHIP WALLET] unexpected failure — uid={uid}: {type(e).__name__}: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"membership_wallet_purchase_failed: {type(e).__name__}: {e}")
+
+    print(f"[MEMBERSHIP WALLET] premium activated — uid={uid} "
+          f"already={result.get('already')} balance={result.get('balance')}")
     return {"success": True, **result}
 
 
