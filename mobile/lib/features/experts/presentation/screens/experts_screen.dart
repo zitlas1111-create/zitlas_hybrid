@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../../core/utils/safe_image.dart';
+import '../../../coaching_programs/coaching_programs.dart';
 import '../../data/experts_repository.dart';
 import '../../data/pending_rating_prompt.dart';
 import '../../experts_controller.dart';
@@ -20,21 +21,30 @@ const _specialties = ['All', 'Weight Loss', 'Muscle Gain', 'PCOS', 'Diabetes', '
 /// same as the website — no localStorage fallback since this app never had
 /// that cache to begin with).
 class ExpertsScreen extends StatelessWidget {
-  const ExpertsScreen({super.key});
+  const ExpertsScreen({super.key, this.repository, this.ratingPrompt});
+
+  /// Injectable for tests — the app reads the live `experts` collection.
+  final ExpertsRepository? repository;
+
+  /// Injectable for tests — the app asks the backend whether a rating is owed.
+  final PendingRatingPrompt? ratingPrompt;
 
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider<ExpertsController>(
       create: (_) => ExpertsController(
-        repository: ExpertsRepository(firestore: FirebaseFirestore.instance, auth: FirebaseAuth.instance),
+        repository: repository ??
+            ExpertsRepository(firestore: FirebaseFirestore.instance, auth: FirebaseAuth.instance),
       ),
-      child: const _ExpertsBody(),
+      child: _ExpertsBody(ratingPrompt: ratingPrompt),
     );
   }
 }
 
 class _ExpertsBody extends StatefulWidget {
-  const _ExpertsBody();
+  const _ExpertsBody({this.ratingPrompt});
+
+  final PendingRatingPrompt? ratingPrompt;
 
   @override
   State<_ExpertsBody> createState() => _ExpertsBodyState();
@@ -47,7 +57,7 @@ class _ExpertsBodyState extends State<_ExpertsBody> {
   /// contextual — and it is the one surface where being asked about a coach
   /// you just finished with does not feel like an interruption of something
   /// else. `PendingRatingPrompt` still owns whether to ask at all.
-  final _prompt = PendingRatingPrompt();
+  late final PendingRatingPrompt _prompt = widget.ratingPrompt ?? PendingRatingPrompt();
 
   /// Once per mount. Without this, popping back to this tab would re-run
   /// the check and could re-open a sheet the athlete just dismissed.
@@ -262,9 +272,10 @@ class _ExpertCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(kZitlasRadiusMd),
         // Coach Profile — and the entire coach journey that follows it — is
         // INTENTIONALLY the Website's cprofile.html in ONE continuous WebView
-        // session, not the native ExpertProfileScreen. The quick-action
-        // buttons below open the SAME WebView with `action=` so the website's
-        // own existing deep-link handling (cprofile.js) auto-opens that flow.
+        // session, not the native ExpertProfileScreen. Request Review and Chat
+        // open the SAME WebView with `action=` so the website's own deep-link
+        // handling (cprofile.js) auto-opens that flow. Personal Coach is the
+        // exception: it opens the native Personal Coaching Programs screen.
         onTap: () => context.push('/coach-profile/${expert.id}'),
         child: Container(
           padding: const EdgeInsets.all(14),
@@ -375,7 +386,9 @@ class _ExpertCard extends StatelessWidget {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         side: BorderSide(color: ZitlasTokens.sageGreen.withValues(alpha: 0.4)),
                       ),
-                      onPressed: () => context.push('/coach-profile/${expert.id}?action=coach'),
+                      // Personal Coaching starts on the Programs screen (Phase 1)
+                      // — no longer the website's Diet / Training / Complete picker.
+                      onPressed: () => context.push(coachingProgramsLocation(expertId: expert.id)),
                       child: const Text('Personal Coach', style: TextStyle(fontSize: 12.5, color: ZitlasTokens.primary, fontWeight: FontWeight.w700)),
                     ),
                   ),

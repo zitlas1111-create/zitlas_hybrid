@@ -1,6 +1,12 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart' show SetOptions;
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:zitlas_mobile/core/network/api_client.dart';
 import 'package:zitlas_mobile/features/coaching/data/coaching_plan_repository.dart';
 import 'package:zitlas_mobile/features/coaching/models/coach_diet_plan.dart';
 import 'package:zitlas_mobile/features/coaching/presentation/screens/coach_diet_editor_screen.dart';
@@ -12,8 +18,9 @@ import 'package:zitlas_mobile/features/expert_dashboard/data/food_search_reposit
 ///
 /// What matters here is that the coach's work is safe and the athlete's
 /// preferences are never out of sight: edits stay local until Publish, the
-/// athlete's allergies are on screen while the week is being written, and
-/// nothing silently blocks the coach.
+/// athlete's allergies are on screen while the week is being written, nothing
+/// silently blocks the coach — and a publish on top of a NEWER plan (another
+/// device, the website) is refused and can be reloaded, never overwritten.
 void main() {
   const profile = DietProfile(
     dietPreference: DietPreference.vegetarian,
@@ -24,13 +31,46 @@ void main() {
     mealsPerDay: 4,
   );
 
+  /// Stand-in for POST /api/coaching-plans/{id}/diet — the base-version check,
+  /// then the plan. (The real endpoint also checks the coach, snapshots the
+  /// version and notifies: backend/tests/test_coaching_plans.py.)
+  ApiClient endpoint(FakeFirebaseFirestore db) => ApiClient(
+        httpClient: MockClient((req) async {
+          final body = jsonDecode(req.body) as Map<String, dynamic>;
+          final ref = db.collection('coaching_plans').doc('athlete_1');
+          final current = ((await ref.get()).data()?['dietVersion'] as num?)?.toInt() ?? 0;
+          if (body['baseVersion'] != current) {
+            return http.Response(
+              jsonEncode({
+                'detail': {'error': 'stale_version', 'baseVersion': body['baseVersion'], 'currentVersion': current},
+              }),
+              409,
+            );
+          }
+          await ref.set(
+            {'coachId': 'coach_1', 'diet': body['diet'], 'dietVersion': current + 1},
+            SetOptions(merge: true),
+          );
+          return http.Response(jsonEncode({'success': true, 'dietVersion': current + 1}), 200);
+        }),
+        baseUrl: 'https://api.test',
+      );
+
+  ApiClient answering(int status, Object? detail) => ApiClient(
+        httpClient: MockClient((_) async => http.Response(jsonEncode({'detail': detail}), status)),
+        baseUrl: 'https://api.test',
+      );
+
   Future<CoachingPlanRepository> pumpEditor(
     WidgetTester tester, {
     CoachDietPlan? initial,
     DietProfile athleteProfile = profile,
+    FakeFirebaseFirestore? db,
+    ApiClient? api,
+    int baseVersion = 0,
   }) async {
-    final db = FakeFirebaseFirestore();
-    final repo = CoachingPlanRepository(firestore: db);
+    final store = db ?? FakeFirebaseFirestore();
+    final repo = CoachingPlanRepository(firestore: store, apiClient: api ?? endpoint(store));
     await tester.pumpWidget(MaterialApp(
       home: CoachDietEditorScreen(
         athleteId: 'athlete_1',
@@ -40,12 +80,31 @@ void main() {
         planType: 'complete',
         initialPlan: initial ?? const CoachDietPlan(),
         athleteProfile: athleteProfile,
+        baseVersion: baseVersion,
         repository: repo,
         foodRepository: FoodSearchRepository(),
       ),
     ));
     await tester.pumpAndSettle();
     return repo;
+  }
+
+  CoachDietPlan oneMeal(String food) => CoachDietPlan(days: [
+        CoachDietDay(day: 'Monday', meals: [
+          CoachMeal(id: 'm0', name: 'Breakfast', options: [CoachMealOption(name: food)]),
+        ]),
+      ]);
+
+  Future<void> duplicateFirstMeal(WidgetTester tester) async {
+    await tester.tap(find.byIcon(Icons.more_vert_rounded).first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Duplicate meal'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> publish(WidgetTester tester) async {
+    await tester.tap(find.text('Publish'));
+    await tester.pumpAndSettle();
   }
 
   group('the editor opens ready to work', () {
@@ -131,10 +190,7 @@ void main() {
       // to them meal by meal.
       final repo = await pumpEditor(tester);
 
-      await tester.tap(find.byIcon(Icons.more_vert_rounded).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Duplicate meal'));
-      await tester.pumpAndSettle();
+      await duplicateFirstMeal(tester);
 
       expect((await repo.fetch('athlete_1')).exists, isFalse,
           reason: 'nothing reaches Firestore before Publish');
@@ -145,32 +201,106 @@ void main() {
       expect(button.onPressed, isNotNull, reason: 'but Publish is now live');
     });
 
-    testWidgets('Publish writes the plan, a version and a notification',
-        (tester) async {
-      final repo = await pumpEditor(
-        tester,
-        initial: CoachDietPlan(days: [
-          CoachDietDay(day: 'Monday', meals: [
-            const CoachMeal(id: 'm0', name: 'Breakfast', options: [
-              CoachMealOption(name: 'Poha'),
-            ]),
-          ]),
-        ]),
-      );
+    testWidgets('Publish goes through the backend and the plan is live', (tester) async {
+      final repo = await pumpEditor(tester, initial: oneMeal('Poha'));
 
-      await tester.tap(find.byIcon(Icons.more_vert_rounded).first);
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Duplicate meal'));
-      await tester.pumpAndSettle();
-
-      await tester.tap(find.text('Publish'));
-      await tester.pumpAndSettle();
+      await duplicateFirstMeal(tester);
+      await publish(tester);
 
       final doc = await repo.fetch('athlete_1');
       expect(doc.exists, isTrue);
       expect(doc.dietVersion, 1);
-      expect((await repo.watchVersions('athlete_1', type: 'diet').first).length, 1);
       expect(find.textContaining('Published to Rohit'), findsOneWidget);
+    });
+
+    testWidgets('a second publish from the same editor builds on the first', (tester) async {
+      final repo = await pumpEditor(tester, initial: oneMeal('Poha'));
+
+      await duplicateFirstMeal(tester);
+      await publish(tester);
+      await duplicateFirstMeal(tester);
+      await publish(tester);
+
+      expect((await repo.fetch('athlete_1')).dietVersion, 2,
+          reason: 'the editor moves its base forward — no false conflict');
+    });
+
+    testWidgets('a publish on top of a newer plan is refused, and the latest can be loaded',
+        (tester) async {
+      // Another device already published v5; this editor opened on v4.
+      final db = FakeFirebaseFirestore();
+      await db.collection('coaching_plans').doc('athlete_1').set({
+        'coachId': 'coach_1',
+        'dietVersion': 5,
+        'diet': oneMeal('Newer Upma').toMap(),
+      });
+      final repo = await pumpEditor(tester, db: db, baseVersion: 4, initial: oneMeal('Poha'));
+
+      await duplicateFirstMeal(tester);
+      await publish(tester);
+
+      expect(find.text('A newer plan was published'), findsOneWidget);
+      expect(find.textContaining('NOT published'), findsOneWidget);
+      final stored = await repo.fetch('athlete_1');
+      expect(stored.dietVersion, 5);
+      expect(stored.diet.days.first.meals.first.options.first.name, 'Newer Upma',
+          reason: 'nothing was overwritten');
+
+      await tester.tap(find.text('Load latest'));
+      await tester.pumpAndSettle();
+      expect(find.text('Newer Upma'), findsOneWidget);
+      expect(find.text('Poha'), findsNothing);
+
+      // Rebased on v5: the next publish goes through.
+      await duplicateFirstMeal(tester);
+      await publish(tester);
+      expect((await repo.fetch('athlete_1')).dietVersion, 6);
+      expect(find.textContaining('Published to Rohit'), findsOneWidget);
+    });
+
+    testWidgets('keeping the draft after a conflict publishes nothing', (tester) async {
+      final db = FakeFirebaseFirestore();
+      await db.collection('coaching_plans').doc('athlete_1').set({
+        'coachId': 'coach_1',
+        'dietVersion': 5,
+        'diet': oneMeal('Newer Upma').toMap(),
+      });
+      final repo = await pumpEditor(tester, db: db, baseVersion: 4, initial: oneMeal('Poha'));
+
+      await duplicateFirstMeal(tester);
+      await publish(tester);
+      await tester.tap(find.text('Keep my draft'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Poha'), findsWidgets, reason: 'the draft is still on screen');
+      final stored = await repo.fetch('athlete_1');
+      expect(stored.dietVersion, 5);
+      expect(stored.diet.days.first.meals.first.options.first.name, 'Newer Upma');
+    });
+
+    testWidgets('a refused publish says why and offers no retry', (tester) async {
+      final repo = await pumpEditor(
+        tester,
+        api: answering(403, 'coaching_not_active'),
+        initial: oneMeal('Poha'),
+      );
+
+      await duplicateFirstMeal(tester);
+      await publish(tester);
+
+      expect(find.text('This coaching has ended — the plan was NOT published.'), findsOneWidget);
+      expect(find.text('Retry'), findsNothing);
+      expect((await repo.fetch('athlete_1')).exists, isFalse);
+    });
+
+    testWidgets('a server failure says so and can be retried', (tester) async {
+      await pumpEditor(tester, api: answering(500, null), initial: oneMeal('Poha'));
+
+      await duplicateFirstMeal(tester);
+      await publish(tester);
+
+      expect(find.textContaining("couldn't publish"), findsOneWidget);
+      expect(find.text('Retry'), findsOneWidget);
     });
   });
 

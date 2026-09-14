@@ -1,0 +1,205 @@
+{
+  "_about": "THE shared diet precedence matrix. Run by BOTH tests/js/diet-precedence-parity.test.mjs (website, frontend/website/assets/js/diet-precedence.js) and mobile/test/diet_precedence_parity_test.dart (app, lib/features/diet/diet_precedence.dart). A value \"$NAME\" is replaced by defs.NAME; {\"$ref\": \"NAME\", ...} is defs.NAME with the other keys laid over it. Expected: coach | expert | ai | ai_master | none.",
+  "defs": {
+    "NOW": "2026-09-13T12:00:00Z",
+    "REL_ACTIVE": {
+      "status": "active",
+      "coachId": "coach_1",
+      "planType": "diet",
+      "startDate": "2026-09-03T12:00:00Z",
+      "endDate": "2026-09-20T12:00:00Z"
+    },
+    "COACH_PLAN": {
+      "coachId": "coach_1",
+      "dietVersion": 4,
+      "dietUpdatedAt": "2026-09-05T09:00:00Z",
+      "diet": {
+        "planId": "plan_A",
+        "days": [
+          {"day": "Monday", "meals": [
+            {"id": "breakfast", "name": "Breakfast", "time": "08:00",
+             "options": [{"name": "Poha + buttermilk", "calories": 350, "protein": 12}]}
+          ]}
+        ]
+      }
+    },
+    "AI_DAYS": {
+      "days": [
+        {"day": "Monday", "meals": [
+          {"meal_name": "Breakfast", "foods": ["Oats", "Banana"], "calories": 320, "protein_g": 10}
+        ]}
+      ]
+    },
+    "AI_WRAPPER": {
+      "originalDietPlan": "$AI_DAYS",
+      "currentDietPlan": "$AI_DAYS",
+      "expertModifications": {},
+      "isExpertPlan": false,
+      "planId": "plan_A"
+    },
+    "EXPERT_WRAPPER": {
+      "originalDietPlan": "$AI_DAYS",
+      "currentDietPlan": "$AI_DAYS",
+      "expertModifications": {"0": {"breakfast": {"modified": true, "newMeal": {"foods": ["Idli"]}}}},
+      "isExpertPlan": true,
+      "planSource": "expert_reviewed",
+      "reviewedAt": "2026-09-12T09:00:00Z",
+      "planId": "plan_A"
+    },
+    "MASTER": {"planId": "plan_A", "plan": "$AI_DAYS"}
+  },
+  "cases": [
+    {"name": "active coaching diet with an AI plan -> coach",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE", "coachingPlan": "$COACH_PLAN",
+               "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "coach"},
+
+    {"name": "active coaching diet outranks an accepted expert review",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE", "coachingPlan": "$COACH_PLAN",
+               "dietPlan": "$EXPERT_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "coach"},
+
+    {"name": "active coaching diet with NO AI plan and no live planId -> coach",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE", "coachingPlan": "$COACH_PLAN",
+               "dietPlan": null, "dietPlanMaster": null, "livePlanId": null},
+     "expected": "coach"},
+
+    {"name": "coaching diet with a null planId is not hidden",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE",
+               "coachingPlan": {"$ref": "COACH_PLAN", "diet": {"planId": null, "days": [
+                 {"day": "Monday", "meals": [{"id": "b", "name": "Breakfast", "options": [{"name": "Upma"}]}]}]}},
+               "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "coach"},
+
+    {"name": "coaching diet stamped while the live planId is absent -> coach",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE", "coachingPlan": "$COACH_PLAN",
+               "dietPlan": null, "livePlanId": null},
+     "expected": "coach"},
+
+    {"name": "BOTH planIds present and different -> the coaching diet is retired",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE", "coachingPlan": "$COACH_PLAN",
+               "dietPlan": {"$ref": "AI_WRAPPER", "planId": "plan_B"}, "livePlanId": "plan_B"},
+     "expected": "ai"},
+
+    {"name": "a previous coach's leftover plan is not the current coach's",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE",
+               "coachingPlan": {"$ref": "COACH_PLAN", "coachId": "coach_OLD"},
+               "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "ai"},
+
+    {"name": "a coaching diet with no meals yet does not replace the plan",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE",
+               "coachingPlan": {"$ref": "COACH_PLAN", "diet": {"planId": "plan_A", "days": [{"day": "Monday", "meals": []}]}},
+               "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "ai"},
+
+    {"name": "ended coaching falls back to the expert-reviewed plan",
+     "state": {"now": "$NOW", "relationship": {"$ref": "REL_ACTIVE", "status": "ended"},
+               "coachingPlan": "$COACH_PLAN", "dietPlan": "$EXPERT_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "expert"},
+
+    {"name": "an expired program (status expired) falls back to the expert-reviewed plan",
+     "state": {"now": "$NOW", "relationship": {"$ref": "REL_ACTIVE", "status": "expired"},
+               "coachingPlan": "$COACH_PLAN", "dietPlan": "$EXPERT_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "expert"},
+
+    {"name": "active status but past its end date -> not coaching any more",
+     "state": {"now": "$NOW", "relationship": {"$ref": "REL_ACTIVE", "endDate": "2026-09-10T12:00:00Z"},
+               "coachingPlan": "$COACH_PLAN", "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "ai"},
+
+    {"name": "endDateTs is read when present",
+     "state": {"now": "$NOW", "relationship": {"$ref": "REL_ACTIVE", "endDateTs": "2026-09-13T11:59:00Z"},
+               "coachingPlan": "$COACH_PLAN", "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "ai"},
+
+    {"name": "a legacy relationship with no end date is still active",
+     "state": {"now": "$NOW", "relationship": {"status": "active", "coachId": "coach_1", "planType": "complete"},
+               "coachingPlan": "$COACH_PLAN", "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "coach"},
+
+    {"name": "training-only coaching never owns the diet",
+     "state": {"now": "$NOW", "relationship": {"$ref": "REL_ACTIVE", "planType": "training"},
+               "coachingPlan": "$COACH_PLAN", "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "ai"},
+
+    {"name": "a free trial's null planType is full coverage",
+     "state": {"now": "$NOW", "relationship": {"$ref": "REL_ACTIVE", "planType": null},
+               "coachingPlan": "$COACH_PLAN", "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "coach"},
+
+    {"name": "no coaching: the expert-reviewed plan",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": "$EXPERT_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "expert"},
+
+    {"name": "an expert plan stamped for a different goal is never shown",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": {"$ref": "EXPERT_WRAPPER", "planId": "plan_OLD"}, "livePlanId": "plan_A"},
+     "expected": "none"},
+
+    {"name": "an unstamped expert layer cannot prove its goal",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": {"$ref": "EXPERT_WRAPPER", "planId": null}, "livePlanId": "plan_A"},
+     "expected": "none"},
+
+    {"name": "an expert plan whose live planId is absent is kept",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": "$EXPERT_WRAPPER", "livePlanId": null},
+     "expected": "expert"},
+
+    {"name": "no coaching, no review: the AI wrapper",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "ai"},
+
+    {"name": "an unstamped AI wrapper is the AI plan",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": {"$ref": "AI_WRAPPER", "planId": null}, "livePlanId": "plan_A"},
+     "expected": "ai"},
+
+    {"name": "a legacy flat AI plan",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": "$AI_DAYS", "livePlanId": null},
+     "expected": "ai"},
+
+    {"name": "only the master recovery copy",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": null, "dietPlanMaster": "$MASTER", "livePlanId": "plan_A"},
+     "expected": "ai_master"},
+
+    {"name": "a flat-shaped master is read too",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": null, "dietPlanMaster": {"$ref": "AI_DAYS", "planId": "plan_A"}, "livePlanId": "plan_A"},
+     "expected": "ai_master"},
+
+    {"name": "a master for a different goal is not recovered",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": null, "dietPlanMaster": {"$ref": "MASTER", "planId": "plan_OLD"}, "livePlanId": "plan_A"},
+     "expected": "none"},
+
+    {"name": "nothing at all",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": null, "dietPlanMaster": null, "livePlanId": null},
+     "expected": "none"},
+
+    {"name": "a stale local cache is never an input",
+     "state": {"now": "$NOW", "relationship": null, "coachingPlan": null,
+               "dietPlan": "$AI_WRAPPER", "livePlanId": "plan_A",
+               "localCache": "$EXPERT_WRAPPER"},
+     "expected": "ai"},
+
+    {"name": "a NEWER expert review does not unseat the active coaching diet (no clock comparison)",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE",
+               "coachingPlan": {"$ref": "COACH_PLAN", "dietUpdatedAt": "2026-09-01T00:00:00Z"},
+               "dietPlan": {"$ref": "EXPERT_WRAPPER", "reviewedAt": "2026-09-13T11:00:00Z"},
+               "livePlanId": "plan_A"},
+     "expected": "coach"},
+
+    {"name": "a newer coaching version is still the coaching diet",
+     "state": {"now": "$NOW", "relationship": "$REL_ACTIVE",
+               "coachingPlan": {"$ref": "COACH_PLAN", "dietVersion": 9, "dietUpdatedAt": "2026-09-13T11:00:00Z"},
+               "dietPlan": "$EXPERT_WRAPPER", "livePlanId": "plan_A"},
+     "expected": "coach"}
+  ]
+}

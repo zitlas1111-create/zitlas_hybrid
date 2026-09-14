@@ -1,0 +1,30 @@
+{
+  "description": "Expert review history (review_requests.mealChangeHistory) in every stored shape. Both clients must read each record as `expected`: the website's normalizeHistoryEntry() in assets/js/diet-review.js (tests/js/diet-review.test.mjs) and the app's MealChangeEntry.fromMap (mobile/test/diet_accept_parity_test.dart). New writes use the canonical flat shape.",
+  "labels": ["canonical flat", "older oldMeal/newMeal", "snake_case"],
+  "records": [
+    {
+      "dayIndex": 1, "dayLabel": "Tuesday", "mealName": "Lunch",
+      "oldFoods": ["Rajma", "Rice"], "newFoods": ["Rajma", "Brown rice", "Curd"],
+      "oldCalories": 550, "newCalories": 560, "oldProtein": 20, "newProtein": 26,
+      "reason": "More protein", "modifiedBy": "Dr. Meera", "modifiedAt": "2026-09-12T10:00:00.000Z"
+    },
+    {
+      "dayIndex": 1, "dayLabel": "Tuesday",
+      "oldMeal": {"meal_name": "Lunch", "foods": ["Rajma", "Rice"], "calories": 550, "protein_g": 20},
+      "newMeal": {"meal_name": "Lunch", "foods": ["Rajma", "Brown rice", "Curd"], "calories": 560, "protein_g": 26, "notes": "More protein"},
+      "modifiedBy": "Dr. Meera", "modifiedAt": "2026-09-12T10:00:00.000Z"
+    },
+    {
+      "day_index": 1, "dayName": "Tuesday", "meal_name": "Lunch",
+      "old_foods": ["Rajma", "Rice"], "new_foods": ["Rajma", "Brown rice", "Curd"],
+      "old_calories": 550, "new_calories": 560, "old_protein": 20, "new_protein": 26,
+      "reason": "More protein", "modified_by": "Dr. Meera", "modified_at": "2026-09-12T10:00:00.000Z"
+    }
+  ],
+  "expected": {
+    "dayIndex": 1, "dayLabel": "Tuesday", "mealName": "Lunch", "mealKey": "lunch",
+    "oldFoods": ["Rajma", "Rice"], "newFoods": ["Rajma", "Brown rice", "Curd"],
+    "oldCalories": 550, "newCalories": 560, "oldProtein": 20, "newProtein": 26,
+    "reason": "More protein", "modifiedBy": "Dr. Meera", "modifiedAt": "2026-09-12T10:00:00.000Z"
+  }
+}

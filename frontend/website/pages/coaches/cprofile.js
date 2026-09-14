@@ -1991,107 +1991,43 @@
     try { localStorage.setItem('zitlas_diet_plan', JSON.stringify(storage)); } catch (_) {}
   }
 
+  /* Accept goes through the SERVER, like diet.js's saveDietStorage():
+     users/{uid}.dietPlan via cloud sync, which every page and the app hydrate
+     from. The old localStorage-only accept was silently undone by the next
+     hydrate. Rejects when the server did not take the write. */
+  function _cpPersistDietStorage(storage) {
+    if (typeof ZitlasCloudSync === 'undefined' || typeof ZitlasCloudSync.saveStrict !== 'function') {
+      return Promise.reject(new Error('cloud_sync_unavailable'));
+    }
+    return ZitlasCloudSync.saveStrict('dietPlan', storage);
+  }
+
+  function _cpMarkReviewAccepted(review) {
+    var all = [];
+    try { all = JSON.parse(localStorage.getItem('expert_plan_reviews') || '[]'); } catch (_) {}
+    var i = all.findIndex(function (r) { return r.id === review.id; });
+    if (i !== -1) {
+      all[i].athleteAccepted = true;
+      all[i].acceptedAt = all[i].acceptedAt || new Date().toISOString();
+      try { localStorage.setItem('expert_plan_reviews', JSON.stringify(all)); } catch (_) {}
+    }
+    if (typeof ZitlasDB !== 'undefined' && review.id) {
+      ZitlasDB.collection('review_requests').doc(review.id)
+        .update({ athleteAccepted: true, acceptedAt: new Date().toISOString() })
+        .catch(function (e) { console.warn('[RC ACCEPT] could not mark the review accepted', e); });
+    }
+  }
+
   /* Build the {originalDietPlan, currentDietPlan, expertModifications, isExpertPlan} schema
      from an expert review object. Uses mealChangeHistory if present; falls back to _edited flags. */
   function _buildDietStorageFromReview(review) {
-    var _expName    = review.expertName || review.expert_name || 'Expert';
-    var _reviewedAt = review.reviewedAt || new Date().toISOString();
-
-    /* Resolve original plan — unwrap if it was stored in new-schema format */
-    var _contextPlan = review.planData || null;
-    if (_contextPlan && (_contextPlan.originalDietPlan || _contextPlan.currentDietPlan)) {
-      _contextPlan = _contextPlan.originalDietPlan || _contextPlan.currentDietPlan;
-    }
-    var _originalPlan = _contextPlan || null;
-
-    /* Build expertModifications */
-    var _mods    = {};
-    var _history = review.mealChangeHistory || review.meal_change_history || [];
-
-    if (_history.length > 0) {
-      _history.forEach(function (change) {
-        var _dk      = String(change.dayIndex != null ? change.dayIndex : (change.day_index != null ? change.day_index : 0));
-        var _rawName = change.mealName || change.meal_name || change.name || '';
-        var _mk      = _cpMealKey(_rawName);
-        if (!_mods[_dk]) _mods[_dk] = {};
-        _mods[_dk][_mk] = {
-          modified:   true,
-          modifiedBy: change.modifiedBy || change.modified_by || _expName,
-          modifiedAt: change.modifiedAt || change.modified_at || _reviewedAt,
-          oldMeal: { foods: change.oldFoods || change.old_foods || [], calories: change.oldCalories || null, protein_g: change.oldProtein || null },
-          newMeal: { foods: change.newFoods || change.new_foods || [], calories: change.newCalories || null, protein_g: change.newProtein || null },
-        };
-      });
-    }
-
-    /* Always scan reviewedDietPlan for _edited meals.
-       Creates entries for meals missed by mealChangeHistory, and fixes empty newFoods
-       from history entries (reviewedDietPlan is authoritative for what the expert changed). */
-    if (review.reviewedDietPlan) {
-      var reviewedPlan = review.reviewedDietPlan;
-      console.log('[REVIEWED PLAN]', reviewedPlan);
-      var _revDays  = reviewedPlan.days || [];
-      var _origDays = _originalPlan ? (_originalPlan.days || []) : [];
-      _revDays.forEach(function (revDay, dayIdx) {
-        console.log('[DAY]', revDay);
-        console.log('[MEALS]', revDay.meals);
-        console.log('[TYPE]', typeof revDay.meals);
-        console.log('[IS ARRAY]', Array.isArray(revDay.meals));
-        var _revMealsArr = _cpMealsToArray(revDay.meals);
-        _revMealsArr.forEach(function (revMeal) {
-          if (!revMeal._edited) return;
-          var _mealName = revMeal.meal_name || revMeal.name || '';
-          var _dk       = String(dayIdx);
-          var _mk       = revMeal._mealKey || _cpMealKey(_mealName);
-          var _origDay  = _origDays[dayIdx];
-          var _origMeal = _origDay ? _cpFindMealByKey(_origDay.meals, _mk) : null;
-          if (!_mods[_dk]) _mods[_dk] = {};
-          if (!_mods[_dk][_mk]) {
-            /* Entry not built from history — create from _edited flag */
-            _mods[_dk][_mk] = {
-              modified:   true,
-              modifiedBy: _expName,
-              modifiedAt: _reviewedAt,
-              oldMeal: _origMeal
-                ? { foods: _origMeal.foods || [], calories: _origMeal.calories || null, protein_g: _origMeal.protein_g || null }
-                : { foods: [] },
-              newMeal: { foods: revMeal.foods || [], calories: revMeal.calories || null, protein_g: revMeal.protein_g || null },
-            };
-          } else {
-            /* Entry exists from history — fix foods if history had empty newFoods */
-            if (!_mods[_dk][_mk].newMeal) _mods[_dk][_mk].newMeal = {};
-            if (!_mods[_dk][_mk].newMeal.foods || !_mods[_dk][_mk].newMeal.foods.length) {
-              _mods[_dk][_mk].newMeal.foods = revMeal.foods || [];
-            }
-            if (!_mods[_dk][_mk].newMeal.calories && revMeal.calories) {
-              _mods[_dk][_mk].newMeal.calories = revMeal.calories;
-            }
-            if (!_mods[_dk][_mk].newMeal.protein_g && revMeal.protein_g) {
-              _mods[_dk][_mk].newMeal.protein_g = revMeal.protein_g;
-            }
-          }
-        });
-      });
-    }
-
-    return {
-      originalDietPlan:    _originalPlan || review.reviewedDietPlan,
-      currentDietPlan:     _originalPlan || review.reviewedDietPlan,
-      expertModifications: _mods,
-      isExpertPlan:        true,
-      expertName:          _expName,
-      expertId:            review.expertId || null,
-      expertNotes:         review.expertNotes || null,
-      reviewedAt:          _reviewedAt,
-      reviewStatus:        'completed',
-      planSource:          'expert_reviewed',
-      reviewId:            review.id || null,
-      version:             review.version || 1,
-      lastUpdated:         new Date().toISOString(),
-      /* Goal-identity stamp — diet.js refuses to render an expert layer
-         that can't prove it belongs to the current plan generation. */
-      planId:              review.planId || localStorage.getItem('zitlas_plan_id') || null,
-    };
+    /* LOSSLESS — assets/js/diet-review.js stores the COMPLETE reviewed plan
+       (renamed/added/deleted meals, macros, timing, notes, day fields). The
+       old per-meal-name reconstruction dropped all of those. */
+    if (typeof ZitlasDietReview === 'undefined') return null;
+    return ZitlasDietReview.buildAcceptedStorage(review, {
+      currentPlanId: localStorage.getItem('zitlas_plan_id') || null,
+    });
   }
 
   function _cpSaveWorkoutStorage(storage) {
@@ -2421,8 +2357,37 @@
             console.error("WORKOUT ACCEPT ERROR", _err);
           }
         } else {
+          /* DIET: persisted to the SERVER before anything says "applied". */
           var _builtStorage = _buildDietStorageFromReview(review);
-          _cpSaveDietStorage(_builtStorage);
+          var _livePlanId = localStorage.getItem('zitlas_plan_id') || null;
+          if (review.planId && _livePlanId && review.planId !== _livePlanId) {
+            showToast('⚠️ This review was for a previous plan — ask your expert to review your current plan.');
+            return;
+          }
+          if (!_builtStorage) { showToast('⚠️ This review has no plan to apply.'); return; }
+          if (!_builtStorage.planId && _livePlanId) _builtStorage.planId = _livePlanId;
+          if (!_builtStorage.planId) {
+            /* Nothing to stamp it with — both clients would discard it on the
+               next load (shared precedence rule), so it is not written. */
+            showToast("⚠️ This review can't be matched to your current plan, so it wasn't applied — ask your expert to review your latest plan.");
+            return;
+          }
+          var _prevRaw = localStorage.getItem('zitlas_diet_plan');
+          acceptBtn.disabled = true;
+          _cpPersistDietStorage(_builtStorage).then(function () {
+            _cpMarkReviewAccepted(review);
+            closeComparisonSheet();
+            showToast('✅ Expert\'s plan has been applied to your profile.');
+            updateVerifyBtnState(coach);
+          }, function (e) {
+            console.error('[RC ACCEPT] the plan was NOT saved', e);
+            try {
+              if (_prevRaw === null) localStorage.removeItem('zitlas_diet_plan');
+              else localStorage.setItem('zitlas_diet_plan', _prevRaw);
+            } catch (_) {}
+            showToast('⚠️ Couldn\'t save the expert\'s plan — check your connection and try again.');
+          }).then(function () { acceptBtn.disabled = false; });
+          return;
         }
 
         /* Mark athlete_accepted — always runs */
@@ -3905,7 +3870,7 @@
                     try {
                       console.log('build diet input', _merged);
                       var _dSt = _buildDietStorageFromReview(_merged);
-                      _cpSaveDietStorage(_dSt);
+                      if (_dSt) _cpSaveDietStorage(_dSt);
                       console.log('[REVIEW] diet applied');
                     } catch (e) { console.warn('[REVIEW] diet auto-apply failed', e); }
                   }
@@ -4455,6 +4420,28 @@
      expert Accepts (accepted) → athlete pays → personal_coaching
      relationship (active). Declines notify the athlete; no payment
      happens before expert acceptance. */
+  /* PERSONAL COACHING PROGRAMS — Phase 1 entry hand-off.
+     Inside the Flutter app, Personal Coaching now starts on the app's NATIVE
+     Programs screen (10-Day / 1-Month / 3-Month), not this page's Diet /
+     Training / Complete plan sheet. When the app says it has that screen —
+     `nativePrograms=1`, added by CoachingWebViewScreen.coachProfile — the tap
+     is handed to Flutter over the ZitlasWebview channel and true is returned.
+     Otherwise (a normal browser, or an older app build without the screen)
+     it returns false and the existing sheet opens exactly as before, so the
+     button can never go dead. No request, payment or Firestore write here. */
+  function _cpHandOffToNativePrograms(expertId) {
+    try {
+      var qs = (window.location && window.location.search) || '';
+      if (!/[?&]nativePrograms=1(&|$)/.test(qs)) return false;
+      var ch = window.ZitlasWebview;
+      if (!ch || typeof ch.postMessage !== 'function') return false;
+      ch.postMessage('open-programs:' + (expertId || ''));
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
   function initPersonalCoaching(coach) {
     var backdrop    = document.getElementById('coachingBackdrop');
     var stepPlans   = document.getElementById('coachingStepPlans');
@@ -4814,9 +4801,16 @@
         });
       });
     }
-    /* "Continue with Personal Coaching" on the Trial Ended screen reuses
-       the existing paid plan-picker sheet — no new flow needed. */
-    if (trialContinuePaidBtn) trialContinuePaidBtn.addEventListener('click', openCoachingSheet);
+    /* Every way INTO Personal Coaching goes through here: inside the app it
+       opens the native Programs screen (see _cpHandOffToNativePrograms);
+       anywhere else, the existing plan-picker sheet. */
+    function openCoachingEntry() {
+      if (_cpHandOffToNativePrograms(coach.id)) return;
+      openCoachingSheet();
+    }
+    /* "Continue with Personal Coaching" on the Trial Ended screen uses the
+       same entry — no new flow needed. */
+    if (trialContinuePaidBtn) trialContinuePaidBtn.addEventListener('click', openCoachingEntry);
 
     /* Plan card selection → summary */
     if (backdrop) {
@@ -4862,7 +4856,7 @@
           showToast('You already have a coaching request with ' + (other.expertName || 'another expert') + '.');
           return;
         }
-        openCoachingSheet();
+        openCoachingEntry();
       });
     });
 

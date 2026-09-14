@@ -9,6 +9,8 @@ import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../auth/auth_state.dart';
 import '../../data/diet_repository.dart';
 import '../../diet_controller.dart';
+import '../../../coaching/models/coach_diet_plan.dart';
+import '../../models/diet_day.dart';
 import '../../models/diet_meal.dart';
 import '../../models/meal_slot.dart';
 import '../widgets/recipe_source_sheet.dart';
@@ -93,7 +95,7 @@ class _DietBody extends StatelessWidget {
                     ),
                   ),
                   Expanded(
-                    child: _DietContent(controller: controller, userName: userName),
+                    child: DietContent(controller: controller, userName: userName),
                   ),
                 ],
               ),
@@ -105,8 +107,10 @@ class _DietBody extends StatelessWidget {
   }
 }
 
-class _DietContent extends StatelessWidget {
-  const _DietContent({required this.controller, required this.userName});
+/// The Diet tab's content for one controller — public so each of its states
+/// (including the coach-only view) can be widget-tested.
+class DietContent extends StatelessWidget {
+  const DietContent({super.key, required this.controller, required this.userName});
 
   final DietController controller;
   final String userName;
@@ -119,6 +123,12 @@ class _DietContent extends StatelessWidget {
 
     final plan = controller.effectivePlan;
     if (plan == null || !plan.hasDays) {
+      // Coached WITHOUT an AI plan: the coaching diet IS the diet — never
+      // "No Plan Yet" (shared precedence, same as the website).
+      final coachDiet = controller.activeCoachDiet;
+      if (coachDiet != null) {
+        return _CoachOnlyDiet(controller: controller, plan: coachDiet, userName: userName);
+      }
       return DietEmptyState(onStartAssessment: () => context.push('/assessment'));
     }
 
@@ -303,6 +313,43 @@ class _RecoveryDietBanner extends StatelessWidget {
           style: const TextStyle(fontSize: 12.5, color: ZitlasTokens.textPrimary, height: 1.4),
         ),
       ),
+    );
+  }
+}
+
+/// An athlete coached without an AI plan: the coaching diet on its own — the
+/// same day selector and coach card (with Meal Snap) as the normal screen.
+class _CoachOnlyDiet extends StatelessWidget {
+  const _CoachOnlyDiet({required this.controller, required this.plan, required this.userName});
+
+  final DietController controller;
+  final CoachDietPlan plan;
+  final String userName;
+
+  @override
+  Widget build(BuildContext context) {
+    final dayIndex = controller.selectedDayIndex.clamp(0, plan.days.length - 1);
+    return ListView(
+      key: const Key('dietCoachOnly'),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+      children: [
+        DietDaySelector(
+          days: [for (final d in plan.days) DietDay(day: d.day)],
+          selectedIndex: dayIndex,
+          onSelect: controller.selectDay,
+        ),
+        const SizedBox(height: 16),
+        CoachDietCard(
+          plan: plan,
+          dayIndex: dayIndex,
+          coachName: controller.coachPlan?.coachName ?? 'Your coach',
+          updatedAt: controller.coachPlan?.dietUpdatedAt,
+          selections: controller.coachPlan?.selections ?? const {},
+          onSelect: controller.selectCoachMealOption,
+          controller: controller,
+          athleteName: userName,
+        ),
+      ],
     );
   }
 }

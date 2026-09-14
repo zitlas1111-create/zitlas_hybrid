@@ -9,9 +9,13 @@ pattern, unlike routes/coaching.py's HTTP routes, which fail closed with a
 
   sweep_expired_requests()      — 48h PENDING REQUEST expiry. Releases a
                                    reservation the expert never responded to.
-  sweep_expired_relationships() — 30-day ACTIVE SUBSCRIPTION expiry. Flips
-                                   an active personal_coaching relationship
-                                   to 'expired' once its endDateTs passes.
+  sweep_expired_relationships() — ACTIVE RELATIONSHIP expiry. Flips an
+                                   active personal_coaching relationship to
+                                   'expired' once its endDateTs passes, and
+                                   marks the Personal Coaching Program it
+                                   belongs to (if any) 'completed'. Nothing
+                                   else is touched: coaching_plans, its
+                                   versions, meal check-ins and chat stay.
 
 These are different lifecycle stages of the same feature and must not be
 confused: a request can expire before any coach ever accepts it (this is
@@ -26,9 +30,12 @@ no-op, so there's no race between a human decision and the sweep.
 
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from google.cloud import firestore
 from google.cloud.firestore_v1.base_query import FieldFilter
 
+from services import coaching_programs as cp
 from services import firestore_service
 from services.coaching_service import notify, now, release_reservation_txn
 
@@ -86,6 +93,39 @@ def sweep_expired_requests() -> int:
     return released
 
 
+def _as_dt(raw):
+    if isinstance(raw, datetime):
+        return raw if raw.tzinfo else raw.replace(tzinfo=timezone.utc)
+    if isinstance(raw, str) and raw:
+        try:
+            parsed = datetime.fromisoformat(raw.replace("Z", "+00:00"))
+        except ValueError:
+            return None
+        return parsed if parsed.tzinfo else parsed.replace(tzinfo=timezone.utc)
+    return None
+
+
+def _duration_days(rel: dict) -> int | None:
+    """How long this engagement actually ran for — the program's own
+    `durationDays` (10 / 30 / 90), else computed from its dates. Never a
+    hard-coded 30: a 10-day program must not be told it had 30 days."""
+    try:
+        days = int(rel.get("durationDays"))
+        if days > 0:
+            return days
+    except (TypeError, ValueError):
+        pass
+    start = _as_dt(rel.get("startDate"))
+    end = _as_dt(rel.get("endDateTs")) or _as_dt(rel.get("endDate"))
+    if start and end and end > start:
+        return max(1, round((end - start).total_seconds() / 86400))
+    return None
+
+
+def _is_program(rel: dict) -> bool:
+    return bool(rel.get("programRequestId")) or rel.get("source") == "coaching_program"
+
+
 def _generate_trial_report(rel: dict) -> None:
     """Best-effort Trial Completion Report for a just-ended engagement.
 
@@ -100,7 +140,9 @@ def _generate_trial_report(rel: dict) -> None:
     a transaction that refuses to overwrite, so a second sweep pass over the
     same engagement is a no-op.
     """
-    request_id = rel.get("requestId")
+    # A Personal Coaching Program is identified by its programRequestId; a
+    # legacy engagement by its escrow requestId.
+    request_id = rel.get("programRequestId") or rel.get("requestId")
     athlete_uid = rel.get("athleteId")
     if not request_id or not athlete_uid:
         print(f"[COACHING SWEEP] no trial report — missing "
@@ -144,10 +186,30 @@ def _expire_one_relationship(db, rel_ref):
                 and (req_snap.to_dict() or {}).get("athleteId") == rel.get("athleteId")
             )
 
+        # The Personal Coaching Program this relationship belongs to, if any —
+        # read here, with the other reads, and completed in the same commit.
+        program_ref = None
+        complete_program = False
+        program_request_id = rel.get("programRequestId")
+        if program_request_id:
+            program_ref = db.collection(cp.REQUESTS_COLLECTION).document(program_request_id)
+            program_snap = program_ref.get(transaction=tx)
+            program = (program_snap.to_dict() if program_snap.exists else None) or {}
+            complete_program = (
+                program_snap.exists
+                and program.get("athleteId") == rel.get("athleteId")
+                and program.get("status") == cp.STATUS_ACTIVE
+            )
+
         _now = now()
         tx.update(rel_ref, {"status": "expired", "expiredAt": _now.isoformat()})
         if close_request and req_ref is not None:
             tx.update(req_ref, {"status": "expired", "updatedAt": _now.isoformat()})
+        if complete_program and program_ref is not None:
+            # Only the lifecycle fields: price, payment and dates stay as paid.
+            tx.update(program_ref, {"status": cp.STATUS_COMPLETED,
+                                    "completedAt": _now.isoformat(),
+                                    "updatedAt": _now.isoformat()})
         return rel
 
     rel = _txn(db.transaction())
@@ -175,19 +237,31 @@ def _expire_one_relationship(db, rel_ref):
         notify(db, coach_id, "Free Trial Ended",
                f"{athlete_name}'s free trial has ended.",
                category="expert", type="coaching_subscription_expired", action="expert_dashboard")
+    elif _is_program(rel):
+        days = _duration_days(rel)
+        length = f"{days}-day " if days else ""
+        notify(db, athlete_uid, "Program Completed",
+               f"Your {length}Personal Coaching Program with {coach_name} is complete. "
+               "Your plan and coaching history stay in your account — start a new "
+               "program anytime to continue.",
+               category="expert", type="coaching_program_completed", action="coaches")
+        notify(db, coach_id, "Program Completed",
+               f"{athlete_name}'s {length}Personal Coaching Program is complete.",
+               category="expert", type="coaching_program_completed", action="expert_dashboard")
     else:
+        days = _duration_days(rel) or 30
         notify(db, athlete_uid, "Coaching Ended",
-               "Your 30-day Personal Coaching with " + coach_name +
+               f"Your {days}-day Personal Coaching with {coach_name}"
                " has ended. You're back on the AI-only plan — renew anytime to continue.",
                category="expert", type="coaching_subscription_expired", action="coaches")
         notify(db, coach_id, "Coaching Ended",
-               athlete_name + "'s 30-day coaching subscription has ended.",
+               f"{athlete_name}'s {days}-day coaching subscription has ended.",
                category="expert", type="coaching_subscription_expired", action="expert_dashboard")
 
 
 def sweep_expired_relationships() -> int:
     """Returns the number of ACTIVE relationships flipped to 'expired'
-    because their 30-day endDateTs has passed. See module docstring for how
+    because their endDateTs has passed. See module docstring for how
     this differs from sweep_expired_requests(). Safe to call when Firestore
     isn't configured."""
     db = firestore_service.get_client()
@@ -208,5 +282,5 @@ def sweep_expired_relationships() -> int:
             print(f"[COACHING SWEEP] failed to expire relationship {doc.id}: {type(e).__name__}: {e}")
 
     if expired:
-        print(f"[COACHING SWEEP] expired {expired} coaching relationship(s) past their 30-day term")
+        print(f"[COACHING SWEEP] expired {expired} coaching relationship(s) past their end date")
     return expired

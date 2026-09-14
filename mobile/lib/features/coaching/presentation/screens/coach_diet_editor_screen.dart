@@ -32,7 +32,7 @@ class CoachDietEditorScreen extends StatefulWidget {
     required this.planType,
     required this.initialPlan,
     required this.athleteProfile,
-    this.athletePlanId,
+    this.baseVersion = 0,
     this.repository,
     this.foodRepository,
   });
@@ -48,7 +48,10 @@ class CoachDietEditorScreen extends StatefulWidget {
   /// (Step 6). Drives every compliance flag on this screen.
   final DietProfile athleteProfile;
 
-  final String? athletePlanId;
+  /// The `dietVersion` [initialPlan] was read at. The backend compares it
+  /// with the stored version on every publish, so an editor opened on an
+  /// older plan can never silently overwrite a newer one.
+  final int baseVersion;
   final CoachingPlanRepository? repository;
   final FoodSearchRepository? foodRepository;
 
@@ -64,6 +67,10 @@ class _CoachDietEditorScreenState extends State<CoachDietEditorScreen> {
   int _dayIndex = 0;
   bool _dirty = false;
   bool _saving = false;
+
+  /// The stored version the draft is based on — sent with every publish and
+  /// moved forward by each successful one.
+  late int _base = widget.baseVersion;
 
   /// Budget/diet/allergen tags for foods added through search, keyed by lower
   /// case name. The dataset knows these; a plan document does not carry them,
@@ -314,17 +321,17 @@ class _CoachDietEditorScreenState extends State<CoachDietEditorScreen> {
     if (_saving) return;
     setState(() => _saving = true);
     try {
-      await _repo.saveDiet(
+      // Through the backend: it checks this is the athlete's active coach,
+      // refuses a publish on top of a newer version, and notifies the
+      // athlete only after the plan is saved.
+      final saved = await _repo.saveDiet(
         athleteId: widget.athleteId,
-        athleteName: widget.athleteName,
-        coachId: widget.coachId,
-        coachName: widget.coachName,
-        planType: widget.planType,
         diet: _draft,
-        athletePlanId: widget.athletePlanId,
+        baseVersion: _base,
       );
       if (!mounted) return;
       setState(() {
+        _base = saved;
         _dirty = false;
         _saving = false;
       });
@@ -333,14 +340,61 @@ class _CoachDietEditorScreenState extends State<CoachDietEditorScreen> {
         ..showSnackBar(SnackBar(
           content: Text('✅ Published to ${widget.athleteName}'),
         ));
+    } on CoachPlanConflictException catch (e) {
+      if (!mounted) return;
+      setState(() => _saving = false);
+      await _showConflict(e);
     } catch (e) {
       if (!mounted) return;
       setState(() => _saving = false);
+      final retryable = e is! CoachPlanSaveException || e.isRetryable;
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(SnackBar(
-          content: Text('Could not publish: ${_friendly(e)}'),
-          action: SnackBarAction(label: 'Retry', onPressed: _save),
+          content: Text(e is CoachPlanSaveException ? e.message : 'Could not publish: ${_friendly(e)}'),
+          action: retryable ? SnackBarAction(label: 'Retry', onPressed: _save) : null,
+        ));
+    }
+  }
+
+  /// Another device published first. Nothing was written; the draft stays on
+  /// screen until the coach chooses to load the newer plan.
+  Future<void> _showConflict(CoachPlanConflictException e) async {
+    final reload = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: ZitlasTokens.bgCard,
+        title: const Text('A newer plan was published'),
+        content: Text(e.message),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Keep my draft')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Load latest')),
+        ],
+      ),
+    );
+    if (reload == true && mounted) await _loadLatest();
+  }
+
+  /// Replaces the draft with the stored plan and rebases on its version.
+  Future<void> _loadLatest() async {
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      final doc = await _repo.fetch(widget.athleteId);
+      if (!mounted) return;
+      setState(() {
+        _draft = doc.diet.hasDays ? doc.diet : CoachDietPlan.emptyWeek();
+        _base = doc.dietVersion;
+        _dayIndex = _dayIndex.clamp(0, _draft.days.length - 1);
+        _dirty = false;
+      });
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(SnackBar(content: Text('Loaded the latest plan (v${doc.dietVersion}).')));
+    } catch (_) {
+      messenger
+        ..hideCurrentSnackBar()
+        ..showSnackBar(const SnackBar(
+          content: Text('Could not load the latest plan — check your connection.'),
         ));
     }
   }

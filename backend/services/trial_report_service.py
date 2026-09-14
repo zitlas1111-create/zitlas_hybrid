@@ -1005,11 +1005,16 @@ def _load_engagement(db, athlete_uid: str, request_id: str,
             f"no personal_coaching document for athlete {athlete_uid!r}")
 
     stored_request_id = rel.get("requestId")
-    if stored_request_id != request_id:
+    # A Personal Coaching Program's relationship carries its own id in
+    # `programRequestId` (routes/coaching_programs.py) and no escrow
+    # `requestId`; either identity names the engagement.
+    program_request_id = rel.get("programRequestId")
+    if not request_id or request_id not in (stored_request_id, program_request_id):
         raise EngagementUnavailable(
             f"engagement {request_id!r} is not the athlete's current "
             f"relationship (that document holds requestId="
-            f"{stored_request_id!r}). personal_coaching/{{athleteId}} is "
+            f"{stored_request_id!r}, programRequestId={program_request_id!r}). "
+            f"personal_coaching/{{athleteId}} is "
             f"overwritten on each new accept, so this engagement's dates no "
             f"longer exist. Refusing to substitute a different engagement."
         )

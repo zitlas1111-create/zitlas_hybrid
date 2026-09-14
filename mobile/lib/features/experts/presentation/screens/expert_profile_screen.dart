@@ -7,12 +7,12 @@ import 'package:provider/provider.dart';
 import '../../../../core/theme/zitlas_tokens.dart';
 import '../../../../core/utils/safe_image.dart';
 import '../../../auth/auth_state.dart';
+import '../../../coaching_programs/coaching_programs.dart';
 import '../../../expert_dashboard/models/expert_models.dart';
 import '../../data/experts_repository.dart';
 import '../../expert_profile_controller.dart';
 import '../../models/expert_listing.dart';
 import '../widgets/request_review_sheet.dart';
-import '../widgets/personal_coaching_sheet.dart';
 // NOTE: this whole screen is DORMANT — the entire coach journey (profile,
 // Request Review, Personal Coach, payment, active coaching workspace) is now
 // ONE continuous Website session in CoachingWebViewScreen.coachProfile
@@ -134,7 +134,8 @@ class _ExpertProfileBodyState extends State<_ExpertProfileBody> {
         showRequestReviewSheet(context, controller: controller);
         break;
       case 'coach':
-        showPersonalCoachingSheet(context, controller: controller);
+        // Personal Coaching starts on the Programs screen (Phase 1).
+        context.push(coachingProgramsLocation(expertId: controller.expertId));
         break;
       case 'ask':
         _openChat(context, controller);
@@ -337,7 +338,7 @@ class _Ctas extends StatelessWidget {
             child: OutlinedButton.icon(
               icon: const Icon(Icons.school_rounded, size: 16),
               label: const Text('Personal Coach'),
-              onPressed: () => showPersonalCoachingSheet(context, controller: controller),
+              onPressed: () => context.push(coachingProgramsLocation(expertId: controller.expertId)),
               style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 12), side: const BorderSide(color: ZitlasTokens.borderSub)),
             ),
           ),

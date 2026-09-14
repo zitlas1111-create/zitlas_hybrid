@@ -4238,161 +4238,168 @@ async function savePlanEdits(reviewId, card, expert) {
   try { all = JSON.parse(localStorage.getItem('expert_plan_reviews') || '[]'); } catch (_) {}
   var idx = all.findIndex(function(r) { return r.id === reviewId; });
 
-  /* ROOT CAUSE OF "Complete Review does nothing": this used to be
-     `if (idx === -1) return;` — a bare, silent return whenever the review was
-     not in THIS device's localStorage cache. No log, no toast, no error: the
-     expert clicked Complete Review and absolutely nothing happened.
-
-     The cache is only populated by the dashboard's Firestore snapshot handler,
-     so it is empty on a fresh device or session, after a storage clear, and in
-     the Flutter WebView (which keeps its own separate storage). Firestore —
-     not localStorage — is the authority for the review, so fall back to it
-     instead of giving up. */
+  /* Firestore — not this device's localStorage cache — is the authority for
+     the review, so an uncached review (fresh device/session, the app's
+     WebView) is fetched rather than silently ignored. */
   if (idx === -1) {
     console.warn('[REVIEW COMPLETE] not in local cache — fetching from Firestore', reviewId);
     if (typeof ZitlasDB === 'undefined') {
-      console.error('[REVIEW COMPLETE] FAILURE code=no_firestore message=review not cached and Firestore unavailable');
       edShowToast('⚠ Could not load this review. Check your connection and try again.');
-      return;
+      return false;
     }
     try {
       var snap = await ZitlasDB.collection('review_requests').doc(reviewId).get();
       if (!snap.exists) {
-        console.error('[REVIEW COMPLETE] FAILURE code=not_found message=review_requests/' + reviewId + ' does not exist');
         edShowToast('⚠ This review no longer exists.');
-        return;
+        return false;
       }
       all.push(Object.assign({ id: snap.id }, snap.data()));
       idx = all.length - 1;
-      console.log('[REVIEW COMPLETE] recovered review from Firestore', reviewId);
     } catch (e) {
       console.error('[REVIEW COMPLETE] FAILURE code=' + (e && e.code) + ' message=' + (e && e.message));
       edShowToast('⚠ Could not load this review. Check your connection and try again.');
-      return;
+      return false;
     }
   }
 
   var _rev = all[idx];
-  var _origForDiff = _rev.planData;
-
-  /* Detect workout review — normalise: old reviews used planReviewType, new ones reviewType */
   var _revType = _rev.reviewType || _rev.planReviewType || '';
   var _isWorkoutReview = _revType === 'workout' ||
-    (_revType === '' && card._editedWorkoutPlan !== undefined);
+    (_revType === '' && !!card && card._editedWorkoutPlan !== undefined);
 
-  console.log("SAVE PLAN EDITS CARD", card);
-  console.log("EDITED WORKOUT", card._editedWorkoutPlan);
-  console.log("REVIEW BEFORE SAVE", _rev);
-  console.log("REVIEW OBJECT", _rev);
-  console.log("[savePlanEdits] reviewType:", _rev.reviewType, "| planReviewType:", _rev.planReviewType, "| _revType:", _revType, "| _isWorkoutReview:", _isWorkoutReview);
+  /* A DIET review completes through the authoritative server apply. */
+  if (!_isWorkoutReview) return _completeDietReview(reviewId, all, idx, card, expert);
 
-  if (_isWorkoutReview) {
-    if (_origForDiff && (_origForDiff.originalWorkoutPlan || _origForDiff.currentWorkoutPlan)) {
-      _origForDiff = _origForDiff.originalWorkoutPlan || _origForDiff.currentWorkoutPlan;
-    }
-    var workoutChangeHistory = buildWorkoutChangeHistory(_origForDiff, card._editedWorkoutPlan, expert.name);
-    console.log("WORKOUT HISTORY", workoutChangeHistory);
-    _rev.reviewedWorkoutPlan  = card._editedWorkoutPlan || null;
-    _rev.workoutChangeHistory = workoutChangeHistory;
-  } else {
-    if (_origForDiff && (_origForDiff.originalDietPlan || _origForDiff.currentDietPlan)) {
-      _origForDiff = _origForDiff.originalDietPlan || _origForDiff.currentDietPlan;
-    }
-    var mealChangeHistory = buildMealChangeHistory(_origForDiff, card._editedPlan, expert.name);
-    console.log("[REVIEW BEFORE SAVE]", _rev);
-    console.log("[REVIEW planData]", _rev.planData);
-    console.log("[REVIEW reviewedDietPlan]", card._editedPlan);
-    console.log("[REVIEW mealChangeHistory]", mealChangeHistory);
-    _rev.reviewedDietPlan  = card._editedPlan;
-    _rev.mealChangeHistory = mealChangeHistory;
+  var _origForDiff = _rev.planData;
+  if (_origForDiff && (_origForDiff.originalWorkoutPlan || _origForDiff.currentWorkoutPlan)) {
+    _origForDiff = _origForDiff.originalWorkoutPlan || _origForDiff.currentWorkoutPlan;
   }
-
-  console.log('reviewId', reviewId);
-  console.log('review', _rev);
-  console.log('status before update', _rev.status);
+  _rev.reviewedWorkoutPlan  = (card && card._editedWorkoutPlan) || null;
+  _rev.workoutChangeHistory = buildWorkoutChangeHistory(_origForDiff, card && card._editedWorkoutPlan, expert.name);
 
   var _prevStatus = _rev.status;
-  _rev.status      = 'review_completed';
-  _rev.reviewedAt  = new Date().toISOString();
-  _rev.completedAt = new Date().toISOString();
-  _rev.expertId    = expert.id;
-  _rev.expertName  = expert.name;
-
+  var _ts = new Date().toISOString();
+  _rev.status = 'review_completed'; _rev.reviewedAt = _ts; _rev.completedAt = _ts;
+  _rev.expertId = expert.id; _rev.expertName = expert.name;
   try { localStorage.setItem('expert_plan_reviews', JSON.stringify(all)); } catch (_) {}
 
-  /* Sync completed review to Firestore so athlete's device can pick up the update */
-  if (typeof ZitlasDB !== 'undefined') {
-    var _fsUpdate = {
-      status:      'review_completed',
-      reviewedAt:  _rev.reviewedAt,
-      completedAt: _rev.completedAt,
-      expertId:    _rev.expertId,
-      expertName:  _rev.expertName,
-    };
-    if (_isWorkoutReview) {
-      _fsUpdate.reviewedWorkoutPlan  = _rev.reviewedWorkoutPlan  || null;
-      _fsUpdate.workoutChangeHistory = _rev.workoutChangeHistory || [];
-    } else {
-      _fsUpdate.reviewedDietPlan  = _rev.reviewedDietPlan  || null;
-      _fsUpdate.mealChangeHistory = _rev.mealChangeHistory || [];
-    }
-    console.log('writing to firestore...');
-    /* Temporary diagnostic — remove once the athlete-side stale-status
-       investigation is closed. */
-    console.log('[REVIEW COMPLETE]',
-      'requestId=' + reviewId,
-      'previousStatus=' + _prevStatus,
-      'newStatus=' + _fsUpdate.status);
-    console.log('[REVIEW COMPLETE] updating review status');
-    try {
-      /* `.update()` (not `.set()`) on purpose: it fails loudly if the document
-         does not exist, rather than creating a partial review that no athlete
-         listener would ever match. */
-      await ZitlasDB.collection('review_requests').doc(reviewId).update(_fsUpdate);
-      console.log('[REVIEW COMPLETE] status update success', reviewId);
-    } catch (e) {
-      /* ROOT CAUSE OF "expert changes never reach the user": this was
-         caught, logged as a warning, and then the success toast fired anyway
-         — so a rejected or failed write looked identical to a successful one.
-         The expert saw "✅ Review saved" while the athlete's Diet never
-         changed, because the only copy of the edit was in the expert's own
-         localStorage. Fail visibly and leave the card actionable so the
-         expert can retry. */
-      console.error('[REVIEW COMPLETE] FAILURE code=' + (e && e.code) +
-                    ' message=' + (e && e.message));
-      _rev.status = _prevStatus;   // roll the local echo back
-      try { localStorage.setItem('expert_plan_reviews', JSON.stringify(all)); } catch (_) {}
-      edShowToast('⚠ Could not send the review — the user has NOT received it. Please retry.');
-      if (card && card._saveChangesBtn) {
-        card._saveChangesBtn.disabled = false;
-        card._saveChangesBtn.textContent = 'Complete Review';
-      }
-      return;
-    }
-  } else {
-    console.error('[REVIEW COMPLETE] FAILURE code=no_firestore ' +
-                  'message=review saved locally only; the user will never receive it');
+  if (typeof ZitlasDB === 'undefined') {
     edShowToast('⚠ Could not send the review — you appear to be offline.');
-    return;
+    return false;
   }
-  var _updatedReview = (JSON.parse(localStorage.getItem('expert_plan_reviews') || '[]') || []).find(function(r) { return r.id === reviewId; }) || null;
-  console.log("REVIEW AFTER SAVE", _updatedReview);
-  console.log("[STORED REVIEW] reviewedWorkoutPlan present:", !!(_updatedReview && _updatedReview.reviewedWorkoutPlan));
-  console.log("[STORED REVIEW] workoutChangeHistory length:", _updatedReview && _updatedReview.workoutChangeHistory ? _updatedReview.workoutChangeHistory.length : 0);
-
-  edShowToast('✅ Review saved — user will be notified.');
-
-  if (card) {
-    var badge = card.querySelector('.erc-badge');
-    var sb = statusBadge('review_completed');
-    if (badge) { badge.textContent = sb.label; badge.className = 'erc-badge ' + sb.cls; }
-    card.dataset.prStatus = 'review_completed';
-    if (card._saveChangesBtn) {
-      card._saveChangesBtn.textContent = '✅ Changes Saved';
-      card._saveChangesBtn.disabled = true;
-      card._saveChangesBtn.classList.remove('ed-save-active');
+  try {
+    /* `.update()` (not `.set()`): fails loudly if the document is gone. */
+    await ZitlasDB.collection('review_requests').doc(reviewId).update({
+      status: 'review_completed', reviewedAt: _ts, completedAt: _ts,
+      expertId: expert.id, expertName: expert.name,
+      reviewedWorkoutPlan:  _rev.reviewedWorkoutPlan || null,
+      workoutChangeHistory: _rev.workoutChangeHistory || [],
+    });
+  } catch (e) {
+    console.error('[REVIEW COMPLETE] FAILURE code=' + (e && e.code) + ' message=' + (e && e.message));
+    _rev.status = _prevStatus;   // roll the local echo back
+    try { localStorage.setItem('expert_plan_reviews', JSON.stringify(all)); } catch (_) {}
+    edShowToast('⚠ Could not send the review — the user has NOT received it. Please retry.');
+    if (card && card._saveChangesBtn) {
+      card._saveChangesBtn.disabled = false;
+      card._saveChangesBtn.textContent = 'Complete Review';
     }
+    return false;
   }
+  edShowToast('✅ Review saved — user will be notified.');
+  _markPlanReviewCardCompleted(card);
+  return true;
+}
+
+function _markPlanReviewCardCompleted(card) {
+  if (!card) return;
+  var badge = card.querySelector('.erc-badge');
+  var sb = statusBadge('review_completed');
+  if (badge) { badge.textContent = sb.label; badge.className = 'erc-badge ' + sb.cls; }
+  card.dataset.prStatus = 'review_completed';
+  if (card._saveChangesBtn) {
+    card._saveChangesBtn.textContent = '✅ Changes Saved';
+    card._saveChangesBtn.disabled = true;
+    card._saveChangesBtn.classList.remove('ed-save-active');
+  }
+}
+
+/* DIET REVIEW COMPLETION — the one honest path (same order as modify-diet.js):
+     1. the expert's edited plan is saved on the review (status untouched);
+     2. the athlete's plan is applied SERVER-SIDE (POST /api/review/apply);
+     3. only then is the review marked completed.
+   Each failure leaves the review pending, retryable, and says why. Success
+   is shown only for what the server confirmed (assets/js/diet-review.js). */
+async function _completeDietReview(reviewId, all, idx, card, expert) {
+  var _rev = all[idx];
+  var btn = card && card._saveChangesBtn;
+  function fail(message) {
+    edShowToast(message);
+    if (btn) { btn.disabled = false; btn.textContent = 'Complete Review'; }
+    return false;
+  }
+  if (typeof ZitlasDB === 'undefined') return fail('⚠ Could not send the review — you appear to be offline.');
+  if (typeof ZitlasDietReview === 'undefined') {
+    return fail('⚠ Could not complete the review — please reload the page and retry.');
+  }
+
+  var original = _rev.planData;
+  if (original && (original.originalDietPlan || original.currentDietPlan)) {
+    original = original.originalDietPlan || original.currentDietPlan;
+  }
+  var edited = (card && (card._editedPlan || card._editedDietPlan)) || _rev.reviewedDietPlan || null;
+  var history = edited ? buildMealChangeHistory(original, edited, expert.name) : [];
+  var nowIso = new Date().toISOString();
+  if (btn) { btn.disabled = true; btn.textContent = 'Completing…'; }
+
+  try {
+    await ZitlasDB.collection('review_requests').doc(reviewId).update({
+      reviewedDietPlan: edited, mealChangeHistory: history,
+      expertId: expert.id, expertName: expert.name, savedAt: nowIso,
+    });
+  } catch (e) {
+    console.error('[REVIEW COMPLETE] edit save FAILED code=' + (e && e.code) + ' message=' + (e && e.message));
+    return fail('⚠ Could not save your changes — the user has NOT received them. Please retry.');
+  }
+
+  var outcome = 'not_applicable';
+  if (edited && edited.days && edited.days.length) {
+    var wrapper = ZitlasDietReview.buildAcceptedStorage(Object.assign({}, _rev, {
+      id: reviewId, reviewedDietPlan: edited, expertId: expert.id,
+      expertName: expert.name, reviewedAt: nowIso,
+    }), { nowIso: nowIso });
+    var result = await ZitlasDietReview.applyReviewedDiet({
+      reviewId: reviewId, athleteUid: _rev.userId || _rev.athleteId || null, wrapper: wrapper,
+    });
+    outcome = result.outcome;
+    console.log('[REVIEW COMPLETE] server apply -> ' + outcome + ' (HTTP ' + result.status + ')');
+    if (!ZitlasDietReview.isCompletable(outcome)) return fail(ZitlasDietReview.APPLY_MESSAGES[outcome]);
+  }
+  var isApplied = outcome === 'applied';
+
+  try {
+    await ZitlasDB.collection('review_requests').doc(reviewId).update({
+      status: 'review_completed', reviewedAt: nowIso, completedAt: nowIso,
+      expertId: expert.id, expertName: expert.name,
+      autoApplied: isApplied, autoAppliedAt: isApplied ? nowIso : null,
+      athleteAccepted: isApplied,
+    });
+  } catch (e) {
+    console.error('[REVIEW COMPLETE] status FAILED code=' + (e && e.code) + ' message=' + (e && e.message));
+    return fail(isApplied
+      ? '⚠ The plan is live on the user\'s account, but the review could not be marked complete. Please retry.'
+      : '⚠ Could not complete the review — please retry.');
+  }
+
+  Object.assign(_rev, {
+    reviewedDietPlan: edited, mealChangeHistory: history, status: 'review_completed',
+    reviewedAt: nowIso, completedAt: nowIso, expertId: expert.id, expertName: expert.name,
+    autoApplied: isApplied, athleteAccepted: isApplied,
+  });
+  try { localStorage.setItem('expert_plan_reviews', JSON.stringify(all)); } catch (_) {}
+  edShowToast(ZitlasDietReview.APPLY_MESSAGES[outcome]);
+  _markPlanReviewCardCompleted(card);
+  return true;
 }
 
 /* Completion UI for a workout review. Extracted so it can be called ONLY from
@@ -4579,6 +4586,16 @@ function initPlanReviewCardInteractions(card, review, expert) {
       console.log("CARD EDITED WORKOUT", card._editedWorkoutPlan);
       console.log("CARD HISTORY", card._workoutChangeHistory);
 
+      /* A DIET review (or one this device has not cached) completes through
+         savePlanEdits -> the server apply -> status last. Nothing below may
+         mark it completed on its own — that raced the apply and reported a
+         review as done whether or not the athlete's plan was ever applied. */
+      var _cCached = _cIdx !== -1 ? _cAllRevs[_cIdx] : null;
+      if (!_cCached || (_cCached.reviewType || _cCached.planReviewType || '') !== 'workout') {
+        savePlanEdits(prId, card, expert);
+        return;
+      }
+
       if (_cIdx !== -1) {
         var _cRev = _cAllRevs[_cIdx];
         var _cType = _cRev.reviewType || _cRev.planReviewType || '';
@@ -4601,9 +4618,6 @@ function initPlanReviewCardInteractions(card, review, expert) {
           _cRev.reviewedWorkoutPlan  = _cReviewedPlan;
           _cRev.workoutChangeHistory = _cHistory;
           _cRev.athleteAccepted      = false;
-        } else {
-          /* Diet review — use the existing savePlanEdits path */
-          savePlanEdits(prId, card, expert);
         }
 
         var _cPrevStatus = _cRev.status;
@@ -4725,39 +4739,45 @@ function initPrSuggestModal() {
       var ctx   = _prSuggestCtx;
       if (!ctx.reviewId) return;
 
-      savePlanReviewStatus(ctx.reviewId, 'review_completed', { expertNotes: notes || null });
-      if (typeof ZitlasDB !== 'undefined') {
-        ZitlasDB.collection('review_requests').doc(ctx.reviewId)
-          .update({ status: 'review_completed', expertNotes: notes || null, completedAt: new Date().toISOString() })
-          .catch(function(e) { console.warn('[REVIEW] suggest-complete Firestore write failed:', e); });
+      /* Feedback is shown as sent only once Firestore has it — a failed write
+         used to be swallowed after the card already said "Feedback Sent". */
+      if (typeof ZitlasDB === 'undefined') {
+        edShowToast('⚠ Could not send feedback — you appear to be offline.');
+        return;
       }
-
-      if (ctx.card) {
-        var badge = ctx.card.querySelector('.erc-badge');
-        var sb = statusBadge('completed');
-        if (badge) { badge.textContent = sb.label; badge.className = 'erc-badge ' + sb.cls; }
-        var actions = ctx.card.querySelector('.erc-actions');
-        if (actions) actions.innerHTML = '<span class="erc-approved-stamp" style="color:var(--ai-accent)">✏️ Feedback Sent</span>';
-        ctx.card.dataset.prStatus = 'completed';
-        if (notes) {
-          var noteEl = ctx.card.querySelector('.erc-expert-note');
-          if (!noteEl) {
-            var typeRow = ctx.card.querySelector('.ed-pr-type-row');
-            if (typeRow) {
-              var nd = document.createElement('div');
-              nd.className = 'erc-expert-note';
-              nd.innerHTML = '<span class="erc-expert-note-label">Your Feedback:</span> ' + esc(notes);
-              typeRow.insertAdjacentElement('afterend', nd);
+      ZitlasDB.collection('review_requests').doc(ctx.reviewId)
+        .update({ status: 'review_completed', expertNotes: notes || null, completedAt: new Date().toISOString() })
+        .then(function() {
+          savePlanReviewStatus(ctx.reviewId, 'review_completed', { expertNotes: notes || null });
+          if (ctx.card) {
+            var badge = ctx.card.querySelector('.erc-badge');
+            var sb = statusBadge('completed');
+            if (badge) { badge.textContent = sb.label; badge.className = 'erc-badge ' + sb.cls; }
+            var actions = ctx.card.querySelector('.erc-actions');
+            if (actions) actions.innerHTML = '<span class="erc-approved-stamp" style="color:var(--ai-accent)">✏️ Feedback Sent</span>';
+            if (notes) {
+              var noteEl = ctx.card.querySelector('.erc-expert-note');
+              if (!noteEl) {
+                var typeRow = ctx.card.querySelector('.ed-pr-type-row');
+                if (typeRow) {
+                  var nd = document.createElement('div');
+                  nd.className = 'erc-expert-note';
+                  nd.innerHTML = '<span class="erc-expert-note-label">Your Feedback:</span> ' + esc(notes);
+                  typeRow.insertAdjacentElement('afterend', nd);
+                }
+              } else {
+                noteEl.innerHTML = '<span class="erc-expert-note-label">Your Feedback:</span> ' + esc(notes);
+              }
             }
-          } else {
-            noteEl.innerHTML = '<span class="erc-expert-note-label">Your Feedback:</span> ' + esc(notes);
+            ctx.card.dataset.prStatus = 'changes_suggested';
           }
-        }
-        ctx.card.dataset.prStatus = 'changes_suggested';
-      }
-
+          edShowToast('✏️ Feedback sent to user.');
+        })
+        .catch(function(e) {
+          console.warn('[REVIEW] suggest-complete Firestore write failed:', e);
+          edShowToast('⚠ Could not send feedback — the user has NOT received it. Please retry.');
+        });
       closePrModal();
-      edShowToast('✏️ Feedback sent to user.');
     });
   }
 }
@@ -5169,12 +5189,14 @@ function _prCompleteReviewFromChat(review, expert) {
       all[idx].workoutChangeHistory = wHistory;
       all[idx].athleteAccepted      = false;
     }
-  } else {
-    if (_prEditCard && (_prEditCard._editedDietPlan || _prEditCard._hasEdits)) {
-      savePlanEdits(review.id, _prEditCard, expert);
-      /* savePlanEdits already writes to localStorage, re-read */
-      try { all = JSON.parse(localStorage.getItem('expert_plan_reviews') || '[]'); idx = all.findIndex(function(r) { return r.id === review.id; }); } catch (_) {}
-    }
+  } else if (_prEditCard && (_prEditCard._editedDietPlan || _prEditCard._hasEdits)) {
+    /* An edited DIET review completes through savePlanEdits -> the server
+       apply -> status last. The chat message follows only once that has
+       actually happened (savePlanEdits has already shown any failure). */
+    savePlanEdits(review.id, _prEditCard, expert).then(function (done) {
+      if (done) _prFinishChatCompletion(fresh, expert, rtype, true);
+    });
+    return;
   }
 
   var _rcTs = new Date().toISOString();
@@ -5206,10 +5228,22 @@ function _prCompleteReviewFromChat(review, expert) {
     console.log('[COMPLETE REVIEW] payload', _fsPayload);
     console.log('[COMPLETE REVIEW] before firestore update');
     ZitlasDB.collection('review_requests').doc(fresh.id).update(_fsPayload)
-      .then(function() { console.log('[COMPLETE REVIEW] firestore update success'); })
-      .catch(function(err) { console.error('[COMPLETE REVIEW] firestore update failed', err); });
+      .then(function() {
+        console.log('[COMPLETE REVIEW] firestore update success');
+        _prFinishChatCompletion(fresh, expert, rtype, false);
+      })
+      .catch(function(err) {
+        console.error('[COMPLETE REVIEW] firestore update failed', err);
+        edShowToast('⚠ Could not complete the review — the user has NOT received it. Please retry.');
+      });
+    return;
   }
+  edShowToast('⚠ Could not complete the review — you appear to be offline.');
+}
 
+/* The chat completion message and tool reset — only once the review is
+   actually stored. `quiet` keeps the more specific toast already shown. */
+function _prFinishChatCompletion(fresh, expert, rtype, quiet) {
   /* Send completion message in chat */
   var convId    = fresh.chatId || expert.id;
   var rTypeLabel = rtype === 'workout' ? 'workout' : 'diet';
@@ -5227,7 +5261,7 @@ function _prCompleteReviewFromChat(review, expert) {
   _edCurrentReview = null;
   _prEditCard      = null;
 
-  edShowToast('✅ Review sent to user.');
+  if (!quiet) edShowToast('✅ Review sent to user.');
   renderInbox(expert);
 }
 

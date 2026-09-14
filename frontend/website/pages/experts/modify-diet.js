@@ -82,120 +82,37 @@
      every existing reader (buildEffectivePlan, planId fail-closed
      validation, expert badges, swap flow) works unchanged. */
   function buildAppliedDietWrapper(rev, edited, history, expertName, nowIso) {
-    var original = rev.planData || null;
-    if (original && (original.originalDietPlan || original.currentDietPlan)) {
-      original = original.currentDietPlan || original.originalDietPlan;
-    }
-    var mods = {};
-    (history || []).forEach(function (h) {
-      var dk = String(h.dayIndex != null ? h.dayIndex : 0);
-      var mk = h.mealKey || _mealKeyOf(h.mealName);
-      if (!mods[dk]) mods[dk] = {};
-      mods[dk][mk] = {
-        modified:   true,
-        modifiedBy: h.modifiedBy || expertName,
-        modifiedAt: h.modifiedAt || nowIso,
-        oldMeal: {
-          foods:     normalizeFoods(h.oldMeal && h.oldMeal.foods),
-          calories:  (h.oldMeal && h.oldMeal.calories)  || null,
-          protein_g: (h.oldMeal && h.oldMeal.protein_g) || null,
-        },
-        newMeal: {
-          foods:     normalizeFoods(h.newMeal && h.newMeal.foods),
-          calories:  (h.newMeal && h.newMeal.calories)  || null,
-          protein_g: (h.newMeal && h.newMeal.protein_g) || null,
-        },
-      };
-    });
-    return {
-      originalDietPlan:    original || edited,
-      /* currentDietPlan carries the expert's edits baked in — content is
-         correct even for a meal the change-history diff missed; applying
-         mods on top of it is idempotent and only adds the ✏️ badges. */
-      currentDietPlan:     edited,
-      expertModifications: mods,
-      isExpertPlan:        true,
-      expertName:          expertName,
-      expertId:            rev.expertId || null,
-      expertNotes:         getExpertNotes() || null,
-      reviewedAt:          nowIso,
-      /* Explicit review metadata on the single source of truth — every
-         consumer can answer "whose plan is this and what state is it in"
-         from this one document alone. */
-      reviewStatus:        'completed',
-      planSource:          'expert_reviewed',
-      reviewId:            rev.id || null,
-      version:             (rev.version || 1),
-      lastUpdated:         nowIso,
-      /* Goal-identity stamp — athlete-side readers fail closed on this,
-         so a review completed after the athlete regenerated their plan
-         retires silently instead of resurrecting a dead goal's plan. */
-      planId:              rev.planId || null,
-    };
+    /* LOSSLESS: the COMPLETE reviewed plan becomes currentDietPlan — the same
+       wrapper the athlete's own Accept builds (assets/js/diet-review.js), so
+       renamed/added/deleted meals, macros, timing and notes all survive and
+       nothing is rebuilt by matching meal names. */
+    return ZitlasDietReview.buildAcceptedStorage(
+      Object.assign({}, rev, { reviewedDietPlan: edited, expertName: expertName, reviewedAt: nowIso }),
+      { nowIso: nowIso, expertNotes: getExpertNotes() || null });
   }
 
+  /* The athlete's active plan is a CROSS-USER write, so it runs SERVER-SIDE:
+     POST /api/review/apply re-verifies (from the stored review_requests doc)
+     that the caller is the assigned expert, and applies the planId gate —
+     a review for a plan the athlete has since replaced is NOT written; the
+     athlete's own planId-gated Accept then owns delivery.
+
+     Resolves to {outcome, status}: applied | planid_mismatch |
+     not_applicable | auth | forbidden | network | server — the completion
+     flow below only marks the review done for the first three. */
   function applyReviewedDietToAthlete(rev, expertName, nowIso) {
     var athleteUid = rev.userId || null;
     var edited     = rev.reviewedDietPlan;
-    if (typeof ZitlasDB === 'undefined') return Promise.resolve(false);
-    if (!athleteUid) {
-      /* Legacy request created before userId stamping — can't address the
-         athlete's user doc. The review itself still syncs; the athlete
-         can accept it from their Diet page banner. */
-      console.warn('[MODIFY-DIET] auto-apply skipped — review has no userId (legacy request)', reviewId);
-      return Promise.resolve(false);
+    if (!athleteUid || !edited || !edited.days || !edited.days.length) {
+      /* Legacy request without userId, or nothing to apply: the server is
+         not asked, and the athlete's Accept banner delivers the review. */
+      console.warn('[MODIFY-DIET] server apply not applicable', reviewId,
+        athleteUid ? 'no reviewed days' : 'no userId (legacy request)');
+      return Promise.resolve({ outcome: 'not_applicable', status: null });
     }
-    if (!edited || !edited.days || !edited.days.length) {
-      console.warn('[MODIFY-DIET] auto-apply skipped — no reviewedDietPlan days', reviewId);
-      return Promise.resolve(false);
-    }
-    /* ══ APPLY-GATE (root-cause fix for "diet plan disappears") ══
-       Auto-apply may run ONLY when this review provably belongs to the
-       athlete's CURRENT plan generation: both planIds present AND equal,
-       verified against the athlete's LIVE users/{uid} doc at THIS moment
-       (not the page-load snapshot — the athlete may have regenerated
-       while the expert was editing).
-
-       Without this gate, completing an OLD request (or one created with
-       planId:null before the athlete's device had hydrated) OVERWROTE
-       users/{uid}.dietPlan — the master copy — with a wrapper the
-       athlete-side validator then judged stale and DELETED, leaving the
-       user with "No Plan Yet" as if they never generated anything.
-
-       Skipping is always safe: athleteAccepted stays false, so the
-       athlete-side Accept-banner fallback owns delivery — and that path
-       is itself planId-gated, so a current-goal review still surfaces
-       while a dead-goal review simply never renders. The master plan is
-       untouched either way. */
-    /* Auto-apply is a CROSS-USER write (expert → athlete's users/{uid}.dietPlan),
-       which production Security Rules deny (users writes are owner-only). It now
-       runs SERVER-SIDE via POST /api/review/apply, which re-verifies (from the
-       stored review_requests doc) that the caller is the assigned expert AND
-       enforces the SAME planId apply-gate before writing via the Admin SDK. If
-       it can't apply (planId mismatch, or backend/Firestore unavailable), the
-       master plan is left untouched and the planId-gated athlete-side accept
-       flow owns delivery — exactly the prior fallback contract. */
     var wrapper = buildAppliedDietWrapper(rev, edited, rev.mealChangeHistory, expertName, nowIso);
-    var auth = (typeof ZitlasAuth !== 'undefined') ? ZitlasAuth : null;
-    var user = auth && auth.currentUser;
-    if (!user || typeof user.getIdToken !== 'function') return Promise.resolve(false);
-    return user.getIdToken().then(function (token) {
-      return fetch('/api/review/apply', {
-        method: 'POST',
-        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reviewId: rev.reviewId || rev.id, athleteUid: athleteUid,
-          planType: 'diet', wrapper: wrapper }),
-      });
-    }).then(function (res) {
-      return res.json().catch(function () { return {}; }).then(function (data) {
-        var applied = res.status === 200 && data.success && data.applied === true;
-        console.log('[MODIFY-DIET] server apply →', res.status, data);
-        return applied;
-      });
-    }).catch(function (e) {
-      console.error('[MODIFY-DIET] server apply failed (master plan untouched)', e);
-      return false;
-    });
+    return ZitlasDietReview.applyReviewedDiet({
+      reviewId: rev.reviewId || rev.id, athleteUid: athleteUid, wrapper: wrapper });
   }
 
   /* Mirrors diet.js's _mealKey() exactly — must produce identical keys so
@@ -481,15 +398,24 @@
         if (!newMeal._edited) return;
         var mealKey  = newMeal._mealKey || _mealKeyOf(newMeal.meal_name);
         var origMeal = origMeals[mealKey] || {};
+        /* Canonical history record — the same flat shape expert-dashboard.js
+           and the app write, and every reader expects. (Older records carry
+           oldMeal/newMeal objects; assets/js/diet-review.js reads both.) */
         history.push({
-          dayIndex:   di,
-          dayName:    newDay.day || ('Day ' + (di + 1)),
-          mealKey:    mealKey,
-          mealName:   newMeal.meal_name || mealKeyName(mealKey),
-          modifiedBy: expertName || 'Expert',
-          modifiedAt: new Date().toISOString(),
-          oldMeal:    origMeal,
-          newMeal:    newMeal,
+          dayIndex:    di,
+          dayLabel:    newDay.day || ('Day ' + (di + 1)),
+          mealIndex:   newMealsArr.indexOf(newMeal),
+          mealKey:     mealKey,
+          mealName:    newMeal.meal_name || mealKeyName(mealKey),
+          oldFoods:    normalizeFoods(origMeal.foods),
+          newFoods:    normalizeFoods(newMeal.foods),
+          oldCalories: origMeal.calories != null ? origMeal.calories : null,
+          newCalories: newMeal.calories != null ? newMeal.calories : null,
+          oldProtein:  origMeal.protein_g != null ? origMeal.protein_g : null,
+          newProtein:  newMeal.protein_g != null ? newMeal.protein_g : null,
+          reason:      newMeal.notes || null,
+          modifiedBy:  expertName || 'Expert',
+          modifiedAt:  new Date().toISOString(),
         });
       });
     });
@@ -676,8 +602,9 @@
         isCompletingReview = false;
         completeBtn.disabled = false;
         completeBtn.textContent = 'Save & Complete Review';
-        showToast('⚠️ Unable to complete the review. Your changes were not ' +
-                  'fully saved. Please try again.');
+        showToast((err && err.userMessage) ||
+                  ('⚠️ Unable to complete the review. Your changes were not ' +
+                   'fully saved. Please try again.'));
       }
 
       var docRef = ZitlasDB.collection('review_requests').doc(reviewId);
@@ -703,8 +630,20 @@
         console.log('[REVIEW COMPLETE] updating athlete plan');
         var fresh = getReview(reviewId) || review;
         return applyReviewedDietToAthlete(fresh, expertName, nowIso);
-      }).then(function (applied) {
-        console.log('[REVIEW COMPLETE] athlete plan update success applied=' + !!applied);
+      }).then(function (result) {
+        var outcome = (result && result.outcome) || 'server';
+        console.log('[REVIEW COMPLETE] athlete plan apply -> ' + outcome +
+                    ' (HTTP ' + (result && result.status) + ')');
+        if (!ZitlasDietReview.isCompletable(outcome)) {
+          /* Auth / network / backend failure: the review is NOT completed —
+             the status write below never runs, so it stays pending and
+             retryable, and the expert is told exactly why. */
+          var applyErr = new Error('apply_' + outcome);
+          applyErr.code = outcome;
+          applyErr.userMessage = ZitlasDietReview.APPLY_MESSAGES[outcome];
+          throw applyErr;
+        }
+        var applied = outcome === 'applied';
 
         /* 3. Status LAST — the review is not completed until the plan and the
               athlete's copy are both stored. */
@@ -721,8 +660,9 @@
              the Accept banner would be redundant. Not applied -> leave it
              false so the athlete's Accept fallback still delivers it. */
           athleteAccepted: !!applied,
-        }).then(function () { return applied; });
-      }).then(function (applied) {
+        }).then(function () { return outcome; });
+      }).then(function (outcome) {
+        var applied = outcome === 'applied';
         console.log('[REVIEW COMPLETE] status update success');
         console.log('[REVIEW COMPLETE] completedAt saved ' + nowIso);
         patchReview(reviewId, {
@@ -758,7 +698,7 @@
 
         console.log('[REVIEW COMPLETE] SUCCESS');
         markCompletedUi();
-        showToast('✓ Review completed successfully.');
+        showToast(ZitlasDietReview.APPLY_MESSAGES[outcome] || '✓ Review completed.');
         /* STEP 8 — deliberately NO navigation. The expert stays on this review
            and leaves under their own steam. The old flow stashed
            `ed_open_chat` and redirected to the dashboard, which then opened

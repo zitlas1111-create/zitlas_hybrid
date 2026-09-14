@@ -1,6 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 
+import '../../../core/network/api_client.dart';
+import '../../../core/network/api_exception.dart';
 import '../../../core/util/json_coerce.dart';
 import '../models/coach_diet_plan.dart';
 import '../models/coach_plan_version.dart';
@@ -14,12 +17,23 @@ import '../models/coach_plan_version.dart';
 /// which is precisely why regenerating one can never overwrite the other.
 ///
 /// Every save also appends to `versions/` — the coach plan is never
-/// overwritten in place without a snapshot of what it replaced.
+/// overwritten in place without a snapshot of what it replaced. A DIET
+/// publish is written by the backend ([saveDiet]); training is still written
+/// from here.
 class CoachingPlanRepository {
-  CoachingPlanRepository({FirebaseFirestore? firestore})
-      : _db = firestore ?? FirebaseFirestore.instance;
+  CoachingPlanRepository({FirebaseFirestore? firestore, ApiClient? apiClient})
+      : _db = firestore ?? FirebaseFirestore.instance,
+        _apiOverride = apiClient;
 
   final FirebaseFirestore _db;
+  final ApiClient? _apiOverride;
+  ApiClient? _liveApi;
+
+  /// The signed-in user's ID token, read per request — never at construction.
+  ApiClient get _api =>
+      _apiOverride ??
+      (_liveApi ??= ApiClient()
+        ..authTokenProvider = () async => FirebaseAuth.instance.currentUser?.getIdToken());
 
   DocumentReference<Map<String, dynamic>> _planDoc(String athleteId) =>
       _db.collection('coaching_plans').doc(athleteId);
@@ -41,63 +55,56 @@ class CoachingPlanRepository {
     return CoachingPlanDoc.fromMap(snap.data());
   }
 
-  /// Publishes the coach's diet to the athlete.
+  /// Publishes the coach's diet — through the backend, never a client write.
   ///
-  /// One `set(merge)` on the plan doc, then a version snapshot, then the
-  /// athlete's notification — in that order, so the athlete is never told
-  /// about a plan that failed to save. The version write and the notification
-  /// are both best-effort: neither is allowed to make a successful publish
-  /// look like a failure.
+  /// `POST /api/coaching-plans/{athleteId}/diet` (backend/routes/coaching_plans.py)
+  /// is the one authority, for the app and the website's coaching workspace
+  /// alike. It checks the caller is this athlete's active, assigned coach on
+  /// an engagement that covers diet (and, for a Personal Coaching Program,
+  /// that the program is paid and active); compares [baseVersion] — the
+  /// `dietVersion` this edit started from — with the stored one; writes the
+  /// plan and its version snapshot in ONE transaction, stamped with the
+  /// athlete's current planId; and only after that commit notifies the
+  /// athlete. Coach identity, version and planId are decided server-side.
   ///
-  /// [athletePlanId] stamps which athlete plan generation this was authored
-  /// against. Pass the CURRENT `users/{uid}.planId`; consumers fail closed on
-  /// a mismatch so a plan written for an abandoned goal retires itself.
-  Future<void> saveDiet({
+  /// Returns the saved `dietVersion`. Throws [CoachPlanConflictException]
+  /// when another device published first (nothing was written) and
+  /// [CoachPlanSaveException] for every other refusal or failure — a publish
+  /// that did not happen is never reported as one that did.
+  Future<int> saveDiet({
     required String athleteId,
-    required String athleteName,
-    required String coachId,
-    required String coachName,
-    required String planType,
     required CoachDietPlan diet,
-    String? athletePlanId,
+    required int baseVersion,
   }) async {
-    final now = DateTime.now();
-    final current = await fetch(athleteId);
-    final version = current.dietVersion + 1;
-    final stamped = diet.copyWith(planId: athletePlanId);
-
     if (kDebugMode) {
-      debugPrint('[COACH PLAN] saving diet v$version for $athleteId '
-          '(${stamped.days.length} days, planId=$athletePlanId)');
+      debugPrint('[COACH PLAN] publishing diet for $athleteId on v$baseVersion '
+          '(${diet.days.length} days)');
     }
-
-    await _planDoc(athleteId).set({
-      'athleteId': athleteId,
-      'athleteName': athleteName,
-      'coachId': coachId,
-      'coachName': coachName,
-      'planType': planType,
-      'diet': stamped.toMap(),
-      'dietUpdatedAt': now.toIso8601String(),
-      'dietVersion': version,
-    }, SetOptions(merge: true));
-
-    await _snapshotVersion(
-      athleteId: athleteId,
-      type: 'diet',
-      data: stamped.toMap(),
-      version: version,
-      savedBy: coachName,
-      now: now,
-    );
-
-    await _notifyAthlete(
-      athleteId: athleteId,
-      title: '🥗 $coachName updated your diet plan',
-      message: 'Tap to see what changed.',
-      type: 'diet_update',
-      action: 'diet',
-    );
+    final dynamic res;
+    try {
+      res = await _api.post(
+        '/api/coaching-plans/${Uri.encodeComponent(athleteId)}/diet',
+        body: {'diet': diet.toMap(), 'baseVersion': baseVersion},
+      );
+    } on ApiException catch (e) {
+      final body = e.body;
+      final detail = body is Map ? body['detail'] : null;
+      if (e.statusCode == 409) {
+        throw CoachPlanConflictException(
+          currentVersion: detail is Map ? asNum(detail['currentVersion'])?.toInt() : null,
+        );
+      }
+      throw CoachPlanSaveException.fromApi(e);
+    }
+    final version = res is Map && res['success'] == true ? asNum(res['dietVersion'])?.toInt() : null;
+    if (version == null) {
+      // A 2xx that does not confirm the save is not a save.
+      throw const CoachPlanSaveException(
+        "The server didn't confirm the publish — reload to check before trying again.",
+        code: 'unconfirmed',
+      );
+    }
+    return version;
   }
 
   /// Training mirror of [saveDiet]. `training` is passed as the raw website
@@ -179,6 +186,11 @@ class CoachingPlanRepository {
   /// Deliberately not a destructive rewind: rolling back is itself an edit the
   /// athlete is entitled to see, and the revision being replaced stays in the
   /// history. Nothing is ever deleted.
+  ///
+  /// A diet restore goes through [saveDiet]. The coach picked this revision
+  /// from the live history, so the base is the version stored right now
+  /// unless the caller passes the one it was showing — the website's restore
+  /// does the same.
   Future<void> restoreVersion({
     required String athleteId,
     required String athleteName,
@@ -187,7 +199,8 @@ class CoachingPlanRepository {
     required String planType,
     required CoachPlanVersion version,
     String? athletePlanId,
-  }) {
+    int? baseVersion,
+  }) async {
     if (version.type == 'training') {
       return saveTraining(
         athleteId: athleteId,
@@ -199,14 +212,11 @@ class CoachingPlanRepository {
         athletePlanId: athletePlanId,
       );
     }
-    return saveDiet(
+    final base = baseVersion ?? (await fetch(athleteId)).dietVersion;
+    await saveDiet(
       athleteId: athleteId,
-      athleteName: athleteName,
-      coachId: coachId,
-      coachName: coachName,
-      planType: planType,
       diet: CoachDietPlan.fromMap(version.data),
-      athletePlanId: athletePlanId,
+      baseVersion: base,
     );
   }
 
@@ -359,4 +369,64 @@ class CoachingPlanDoc {
 
   static DateTime? _date(Object? raw) =>
       raw is String ? DateTime.tryParse(raw)?.toLocal() : null;
+}
+
+/// Another device published a newer diet first. NOTHING was written and the
+/// newer plan is untouched — load it before editing again.
+class CoachPlanConflictException implements Exception {
+  const CoachPlanConflictException({this.currentVersion});
+
+  final int? currentVersion;
+
+  String get message => 'A newer version of this diet'
+      '${currentVersion != null ? ' (v$currentVersion)' : ''} was published from '
+      'another device. Your changes were NOT published — load the latest version '
+      'to continue.';
+
+  @override
+  String toString() => message;
+}
+
+/// The backend refused, or could not complete, a diet publish. NOTHING was
+/// published; [message] is written for the coach.
+class CoachPlanSaveException implements Exception {
+  const CoachPlanSaveException(this.message, {this.code, this.statusCode});
+
+  factory CoachPlanSaveException.fromApi(ApiException e) {
+    final body = e.body;
+    final detail = body is Map ? body['detail'] : null;
+    final String? code = detail is String
+        ? detail
+        : (detail is Map && detail['error'] is String ? detail['error'] as String : null);
+    final status = e.statusCode;
+    final String message;
+    if (status == null) {
+      message = 'No connection — the plan was NOT published. Check your connection and try again.';
+    } else if (status == 401) {
+      message = 'Your session has expired — sign in again. The plan was NOT published.';
+    } else if (status == 403) {
+      message = switch (code) {
+        'coaching_not_active' || 'program_not_active' =>
+          'This coaching has ended — the plan was NOT published.',
+        'plan_does_not_cover_diet' =>
+          "This coaching plan doesn't include diet — the plan was NOT published.",
+        _ => "You are not this athlete's active coach — the plan was NOT published.",
+      };
+    } else if (status >= 500) {
+      message = "The server couldn't publish the plan — it was NOT published. Please try again.";
+    } else {
+      message = 'This plan could not be published (${code ?? status}).';
+    }
+    return CoachPlanSaveException(message, code: code, statusCode: status);
+  }
+
+  final String message;
+  final String? code;
+  final int? statusCode;
+
+  /// Worth a "Retry": the connection or the server failed; nobody refused.
+  bool get isRetryable => statusCode == null || statusCode! >= 500 || code == 'unconfirmed';
+
+  @override
+  String toString() => message;
 }

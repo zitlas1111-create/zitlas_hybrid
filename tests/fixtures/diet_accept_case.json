@@ -1,0 +1,119 @@
+{
+  "description": "ONE lossless expert-review Accept case, shared by the website (tests/js/diet-review.test.mjs -> assets/js/diet-review.js buildAcceptedStorage) and the app (mobile/test/diet_accept_parity_test.dart -> DietController.acceptExpertReview). Both clients must store exactly expected.currentDietPlan and expected.expertModifications, and both must render expected.effectiveMealNames from that wrapper. Covers a renamed meal, an added meal, a deleted meal, carbs/fats/timing/notes, day- and plan-level fields, and an older review whose meals are an object keyed by meal name.",
+  "livePlanId": "plan-live",
+  "nowIso": "2026-09-13T09:00:00.000Z",
+  "review": {
+    "id": "rev_accept_1",
+    "status": "review_completed",
+    "reviewType": "diet",
+    "userId": "athlete-1",
+    "expertId": "expert-7",
+    "expertName": "Dr. Meera",
+    "expertNotes": "More protein at breakfast and after training.",
+    "planId": "plan-live",
+    "reviewedAt": "2026-09-12T10:00:00.000Z",
+    "planData": {
+      "planId": "plan-live",
+      "days": [
+        {
+          "day": "Monday",
+          "meals": [
+            {"meal_name": "Breakfast", "time": "08:00", "foods": ["Poha", "Tea"], "calories": 350, "protein_g": 10, "carbs_g": 55, "fat_g": 9},
+            {"meal_name": "Lunch", "time": "13:00", "foods": ["Dal", "Rice", "Salad"], "calories": 500, "protein_g": 18, "carbs_g": 70, "fat_g": 12},
+            {"meal_name": "Snack", "time": "17:00", "foods": ["Biscuits"], "calories": 150, "protein_g": 2},
+            {"meal_name": "Dinner", "time": "20:30", "foods": ["2 Roti", "Mixed sabzi"], "calories": 450, "protein_g": 14, "carbs_g": 60, "fat_g": 15}
+          ]
+        },
+        {
+          "day": "Tuesday",
+          "meals": [
+            {"meal_name": "Breakfast", "time": "08:00", "foods": ["Upma"], "calories": 300, "protein_g": 8},
+            {"meal_name": "Lunch", "time": "13:00", "foods": ["Rajma", "Rice"], "calories": 550, "protein_g": 20}
+          ]
+        }
+      ]
+    },
+    "reviewedDietPlan": {
+      "planId": "plan-live",
+      "daily_calories": 1900,
+      "hydration": "3 litres",
+      "days": [
+        {
+          "day": "Monday",
+          "focus": "High protein",
+          "meals": [
+            {"meal_name": "Egg Bhurji Breakfast", "time": "08:00", "foods": ["2 eggs bhurji", "1 multigrain toast"], "calories": 380, "protein_g": 24, "carbs_g": 30, "fat_g": 16, "notes": "Swap poha for eggs", "_edited": true, "_modifiedBy": "Dr. Meera"},
+            {"meal_name": "Lunch", "time": "13:00", "foods": ["Dal", "Rice", "Salad"], "calories": 500, "protein_g": 18, "carbs_g": 70, "fat_g": 12},
+            {"meal_name": "Dinner", "time": "20:30", "foods": ["2 Roti", "Mixed sabzi"], "calories": 450, "protein_g": 14, "carbs_g": 60, "fat_g": 15},
+            {"meal_name": "Post-workout", "time": "18:30", "foods": ["Whey shake", "1 banana"], "calories": 250, "protein_g": 28, "carbs_g": 30, "fat_g": 3, "notes": "Within 30 minutes of training"}
+          ]
+        },
+        {
+          "day": "Tuesday",
+          "meals": {
+            "breakfast": {"meal_name": "Breakfast", "time": "08:00", "foods": ["Upma"], "calories": 300, "protein_g": 8},
+            "lunch": {"meal_name": "Lunch", "time": "13:00", "foods": ["Rajma", "Brown rice", "Curd"], "calories": 560, "protein_g": 26, "carbs_g": 75}
+          }
+        }
+      ]
+    }
+  },
+  "expected": {
+    "planId": "plan-live",
+    "currentDietPlan": {
+      "planId": "plan-live",
+      "daily_calories": 1900,
+      "hydration": "3 litres",
+      "days": [
+        {
+          "day": "Monday",
+          "focus": "High protein",
+          "meals": [
+            {"meal_name": "Egg Bhurji Breakfast", "time": "08:00", "foods": ["2 eggs bhurji", "1 multigrain toast"], "calories": 380, "protein_g": 24, "carbs_g": 30, "fat_g": 16, "notes": "Swap poha for eggs", "_edited": true, "_modifiedBy": "Dr. Meera"},
+            {"meal_name": "Lunch", "time": "13:00", "foods": ["Dal", "Rice", "Salad"], "calories": 500, "protein_g": 18, "carbs_g": 70, "fat_g": 12},
+            {"meal_name": "Dinner", "time": "20:30", "foods": ["2 Roti", "Mixed sabzi"], "calories": 450, "protein_g": 14, "carbs_g": 60, "fat_g": 15},
+            {"meal_name": "Post-workout", "time": "18:30", "foods": ["Whey shake", "1 banana"], "calories": 250, "protein_g": 28, "carbs_g": 30, "fat_g": 3, "notes": "Within 30 minutes of training"}
+          ]
+        },
+        {
+          "day": "Tuesday",
+          "meals": [
+            {"meal_name": "Breakfast", "time": "08:00", "foods": ["Upma"], "calories": 300, "protein_g": 8},
+            {"meal_name": "Lunch", "time": "13:00", "foods": ["Rajma", "Brown rice", "Curd"], "calories": 560, "protein_g": 26, "carbs_g": 75}
+          ]
+        }
+      ]
+    },
+    "expertModifications": {
+      "0": {
+        "egg_bhurji_breakfast": {
+          "modified": true,
+          "modifiedBy": "Dr. Meera",
+          "modifiedAt": "2026-09-12T10:00:00.000Z",
+          "oldMeal": {"foods": []},
+          "newMeal": {"foods": ["2 eggs bhurji", "1 multigrain toast"], "calories": 380, "protein_g": 24}
+        },
+        "post_workout": {
+          "modified": true,
+          "modifiedBy": "Dr. Meera",
+          "modifiedAt": "2026-09-12T10:00:00.000Z",
+          "oldMeal": {"foods": []},
+          "newMeal": {"foods": ["Whey shake", "1 banana"], "calories": 250, "protein_g": 28}
+        }
+      },
+      "1": {
+        "lunch": {
+          "modified": true,
+          "modifiedBy": "Dr. Meera",
+          "modifiedAt": "2026-09-12T10:00:00.000Z",
+          "oldMeal": {"foods": ["Rajma", "Rice"], "calories": 550, "protein_g": 20},
+          "newMeal": {"foods": ["Rajma", "Brown rice", "Curd"], "calories": 560, "protein_g": 26}
+        }
+      }
+    },
+    "effectiveMealNames": [
+      ["Egg Bhurji Breakfast", "Lunch", "Dinner", "Post-workout"],
+      ["Breakfast", "Lunch"]
+    ]
+  }
+}

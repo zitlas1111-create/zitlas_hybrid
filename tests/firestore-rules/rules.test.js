@@ -181,6 +181,78 @@ describe('experts — verified/approved tamper', () => {
   });
 });
 
+describe('experts — programPricing is backend-only (Personal Coaching Programs)', () => {
+  const PRICING = { '10_day': { pricePaise: 49900, currency: 'INR', updatedAt: '2026-09-01T00:00:00Z' } };
+  const seedPricing = () => testEnv.withSecurityRulesDisabled(async (ctx) => {
+    await ctx.firestore().doc(`experts/${C}`).set({ programPricing: PRICING }, { merge: true });
+  });
+
+  it('self CANNOT write programPricing (the API validates it)', async () => {
+    await assertFails(asC().doc(`experts/${C}`).update({ programPricing: PRICING }));
+  });
+  it('self CANNOT sneak programPricing in with a merge-set', async () => {
+    await assertFails(asC().doc(`experts/${C}`).set({ programPricing: PRICING }, { merge: true }));
+  });
+  it('a new expert doc CANNOT be created with programPricing', async () => {
+    const N = 'newExpertN';
+    await assertFails(testEnv.authenticatedContext(N).firestore().doc(`experts/${N}`)
+      .set({ uid: N, role: 'expert', programPricing: PRICING }));
+  });
+  it('self CANNOT change or remove existing programPricing', async () => {
+    await seedPricing();
+    await assertFails(asC().doc(`experts/${C}`).update({ 'programPricing.10_day.pricePaise': 1 }));
+    await assertFails(asC().doc(`experts/${C}`).update({ programPricing: deleteField() }));
+  });
+  it('an athlete CANNOT touch an expert\'s programPricing', async () => {
+    await seedPricing();
+    await assertFails(asA().doc(`experts/${C}`).update({ programPricing: {} }));
+  });
+  it('once priced, the expert CAN still save profile fields and legacy pricing', async () => {
+    await seedPricing();
+    await assertSucceeds(asC().doc(`experts/${C}`)
+      .set({ speciality: 'Nutrition', pricing: { coachingDietPrice: 499 } }, { merge: true }));
+  });
+  it('athletes CAN read program prices (marketplace)', async () => {
+    await seedPricing();
+    await assertSucceeds(asA().doc(`experts/${C}`).get());
+  });
+});
+
+describe('coaching_program_requests — backend only', () => {
+  beforeEach(async () => {
+    await testEnv.withSecurityRulesDisabled(async (ctx) => {
+      await ctx.firestore().doc('coaching_program_requests/cpr1').set({
+        requestId: 'cpr1', athleteId: A, expertId: C, programId: '10_day',
+        pricePaise: 49900, status: 'pending_expert_acceptance', paymentStatus: 'unpaid',
+      });
+    });
+  });
+
+  it('the athlete CANNOT create a request directly', async () => {
+    await assertFails(asA().doc('coaching_program_requests/cpr2').set({
+      requestId: 'cpr2', athleteId: A, expertId: C, pricePaise: 1,
+      status: 'pending_expert_acceptance', paymentStatus: 'unpaid',
+    }));
+  });
+  it('the athlete and the expert read it through the API, not Firestore', async () => {
+    await assertFails(asA().doc('coaching_program_requests/cpr1').get());
+    await assertFails(asC().doc('coaching_program_requests/cpr1').get());
+  });
+  it('the expert CANNOT accept or decline by writing the document', async () => {
+    await assertFails(asC().doc('coaching_program_requests/cpr1').update({ status: 'accepted' }));
+    await assertFails(asC().doc('coaching_program_requests/cpr1').update({ status: 'declined' }));
+  });
+  it('nobody can change the price or mark it paid', async () => {
+    await assertFails(asA().doc('coaching_program_requests/cpr1').update({ pricePaise: 1 }));
+    await assertFails(asA().doc('coaching_program_requests/cpr1').update({ paymentStatus: 'paid' }));
+    await assertFails(asC().doc('coaching_program_requests/cpr1').update({ paymentStatus: 'paid' }));
+  });
+  it('nobody can delete it', async () => {
+    await assertFails(asA().doc('coaching_program_requests/cpr1').delete());
+    await assertFails(asC().doc('coaching_program_requests/cpr1').delete());
+  });
+});
+
 describe('expert_certificates — verification tamper', () => {
   it('non-admin owner CANNOT self-verify a certificate', async () => {
     await assertFails(asC().doc(`expert_certificates/cert1`).update({ verificationStatus: 'verified' }));

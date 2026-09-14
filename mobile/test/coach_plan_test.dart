@@ -1,15 +1,24 @@
+import 'dart:convert';
+
+import 'package:cloud_firestore/cloud_firestore.dart' show SetOptions;
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+import 'package:zitlas_mobile/core/network/api_client.dart';
 import 'package:zitlas_mobile/features/coaching/data/coaching_plan_repository.dart';
 import 'package:zitlas_mobile/features/coaching/models/coach_diet_plan.dart';
 import 'package:zitlas_mobile/features/coaching/models/protein_variety.dart';
 
 /// Coach-authored plans.
 ///
-/// The properties that matter are the ones that keep a coach's work safe: the
-/// AI plan and the coach plan are different documents so neither can overwrite
-/// the other, every publish leaves a restorable snapshot, and a plan authored
-/// against an abandoned goal retires itself instead of quietly prescribing.
+/// A DIET publish is the backend's job: `POST /api/coaching-plans/{id}/diet`
+/// (backend/routes/coaching_plans.py). Who may publish, the version check,
+/// the transactional history and the athlete's notification are pinned in
+/// backend/tests/test_coaching_plans.py. This file pins the app's half — the
+/// exact request, that the app writes nothing itself, that every refusal is
+/// an honest failure — and, against a stand-in for the endpoint, the read
+/// side: history, restore, the live listener and the goal-reset guard.
 void main() {
   const athlete = 'athlete_1';
   const coach = 'coach_1';
@@ -33,87 +42,165 @@ void main() {
     );
   }
 
-  Future<void> save(
-    CoachingPlanRepository repo,
-    CoachDietPlan plan, {
-    String? planId,
-  }) {
-    return repo.saveDiet(
-      athleteId: athlete,
-      athleteName: 'Rohit',
-      coachId: coach,
-      coachName: 'Coach Rahul',
-      planType: 'complete',
-      diet: plan,
-      athletePlanId: planId,
+  http.Response reply(Object? body, int status) => http.Response(jsonEncode(body), status);
+
+  /// A repository whose backend is [respond]; every request is recorded.
+  ({CoachingPlanRepository repo, List<http.Request> calls}) backed(
+    FakeFirebaseFirestore db,
+    Future<http.Response> Function(http.Request req) respond,
+  ) {
+    final calls = <http.Request>[];
+    final api = ApiClient(
+      httpClient: MockClient((req) {
+        calls.add(req);
+        return respond(req);
+      }),
+      baseUrl: 'https://api.test',
     );
+    return (repo: CoachingPlanRepository(firestore: db, apiClient: api), calls: calls);
   }
 
-  group('publishing a coach diet', () {
-    test('writes coaching_plans, NOT the athlete\'s AI plan', () async {
+  /// Stand-in for the endpoint's observable effects: the base-version check,
+  /// then the plan and one version snapshot. (The real one also verifies the
+  /// coach and notifies the athlete — tested on the backend.)
+  Future<http.Response> Function(http.Request) endpoint(FakeFirebaseFirestore db) {
+    return (req) async {
+      final body = jsonDecode(req.body) as Map<String, dynamic>;
+      final ref = db.collection('coaching_plans').doc(athlete);
+      final current = ((await ref.get()).data()?['dietVersion'] as num?)?.toInt() ?? 0;
+      if (body['baseVersion'] != current) {
+        return reply({
+          'detail': {'error': 'stale_version', 'baseVersion': body['baseVersion'], 'currentVersion': current},
+        }, 409);
+      }
+      final version = current + 1;
+      final savedAt = DateTime.utc(2026, 9, 13, 9, version).toIso8601String();
+      await ref.set({
+        'athleteId': athlete,
+        'coachId': coach,
+        'coachName': 'Coach Rahul',
+        'planType': 'complete',
+        'diet': body['diet'],
+        'dietVersion': version,
+        'dietUpdatedAt': savedAt,
+      }, SetOptions(merge: true));
+      await ref.collection('versions').doc('diet_${1789300000000 + version}_v$version').set({
+        'type': 'diet',
+        'data': body['diet'],
+        'version': version,
+        'savedAt': savedAt,
+        'savedBy': 'Coach Rahul',
+      });
+      return reply({'success': true, 'dietVersion': version, 'dietUpdatedAt': savedAt, 'notified': true}, 200);
+    };
+  }
+
+  Future<int> publish(CoachingPlanRepository repo, Map<String, List<String>> foods, int base) =>
+      repo.saveDiet(athleteId: athlete, diet: planWith(foods), baseVersion: base);
+
+  group('publishing a coach diet — through the backend', () {
+    test('POSTs the diet and the version it started from to the authoritative endpoint', () async {
+      final b = backed(FakeFirebaseFirestore(), (_) async => reply({'success': true, 'dietVersion': 4}, 200));
+
+      final saved = await publish(b.repo, {'Monday': ['Paneer Bhurji']}, 3);
+
+      expect(saved, 4);
+      final req = b.calls.single;
+      expect(req.method, 'POST');
+      expect(req.url.toString(), 'https://api.test/api/coaching-plans/athlete_1/diet');
+      final body = jsonDecode(req.body) as Map<String, dynamic>;
+      expect(body.keys, unorderedEquals(['diet', 'baseVersion']),
+          reason: 'coach identity, the new version and the planId are decided by the server');
+      expect(body['baseVersion'], 3);
+      expect(body['diet']['days'][0]['meals'][0]['options'][0]['name'], 'Paneer Bhurji');
+    });
+
+    test('the app writes NOTHING itself — no plan, version, notification or AI-plan change', () async {
       final db = FakeFirebaseFirestore();
       await db.collection('users').doc(athlete).set({
         'dietPlan': {'originalDietPlan': {'days': ['ai-generated']}},
       });
+      final b = backed(db, (_) async => reply({'success': true, 'dietVersion': 1}, 200));
 
-      await save(CoachingPlanRepository(firestore: db), planWith({'Monday': ['Paneer Bhurji']}));
+      await publish(b.repo, {'Monday': ['Dal']}, 0);
 
-      final coachDoc = await db.collection('coaching_plans').doc(athlete).get();
-      expect(coachDoc.exists, isTrue);
-      expect(coachDoc.data()!['diet'], isNotNull);
-
-      // The AI plan is untouched — this is the whole of "AI never overwrites
-      // coach modifications", and its converse.
+      final plan = db.collection('coaching_plans').doc(athlete);
+      expect((await plan.get()).exists, isFalse);
+      expect((await plan.collection('versions').get()).docs, isEmpty);
+      expect((await db.collection('notifications').get()).docs, isEmpty,
+          reason: 'the server notifies the athlete, after its commit');
       final user = await db.collection('users').doc(athlete).get();
       expect(user.data()!['dietPlan']['originalDietPlan']['days'], ['ai-generated']);
     });
 
-    test('carries the coach identity the athlete will see', () async {
-      final db = FakeFirebaseFirestore();
-      await save(CoachingPlanRepository(firestore: db), planWith({'Monday': ['Dal']}));
+    test('409 — another device published first: a conflict carrying the current version', () async {
+      final b = backed(FakeFirebaseFirestore(), (_) async => reply({
+            'detail': {'error': 'stale_version', 'baseVersion': 2, 'currentVersion': 5},
+          }, 409));
 
-      final data = (await db.collection('coaching_plans').doc(athlete).get()).data()!;
-      expect(data['coachId'], coach);
-      expect(data['coachName'], 'Coach Rahul');
-      expect(data['athleteId'], athlete);
-      expect(data['planType'], 'complete');
-      expect(data['dietUpdatedAt'], isNotNull);
+      await expectLater(
+        publish(b.repo, {'Monday': ['Dal']}, 2),
+        throwsA(isA<CoachPlanConflictException>()
+            .having((e) => e.currentVersion, 'currentVersion', 5)
+            .having((e) => e.message, 'message', contains('NOT published'))),
+      );
     });
 
-    test('the version number increments on every publish', () async {
+    for (final (status, detail, says, retryable) in <(int, Object?, String, bool)>[
+      (403, 'not_assigned_coach', "not this athlete's active coach", false),
+      (403, {'error': 'no_coaching_relationship'}, "not this athlete's active coach", false),
+      (403, 'coaching_not_active', 'coaching has ended', false),
+      (403, {'error': 'program_not_active'}, 'coaching has ended', false),
+      (403, 'plan_does_not_cover_diet', "doesn't include diet", false),
+      (401, 'Invalid token', 'session has expired', false),
+      (400, 'invalid_diet_days', 'could not be published (invalid_diet_days)', false),
+      (413, 'diet_too_large', 'could not be published (diet_too_large)', false),
+      (500, null, "couldn't publish", true),
+      (503, 'firestore_unavailable', "couldn't publish", true),
+    ]) {
+      test('HTTP $status $detail is an honest failure, never a publish', () async {
+        final db = FakeFirebaseFirestore();
+        final b = backed(db, (_) async => reply({'detail': detail}, status));
+
+        await expectLater(
+          publish(b.repo, {'Monday': ['Dal']}, 0),
+          throwsA(isA<CoachPlanSaveException>()
+              .having((e) => e.statusCode, 'statusCode', status)
+              .having((e) => e.message, 'message', contains(says))
+              .having((e) => e.isRetryable, 'isRetryable', retryable)),
+        );
+        expect((await db.collection('coaching_plans').doc(athlete).get()).exists, isFalse);
+      });
+    }
+
+    test('no connection is an honest, retryable failure', () async {
+      final api = ApiClient(
+        httpClient: MockClient((_) async => throw http.ClientException('offline')),
+        baseUrl: 'https://api.test',
+      );
+      final repo = CoachingPlanRepository(firestore: FakeFirebaseFirestore(), apiClient: api);
+
+      await expectLater(
+        publish(repo, {'Monday': ['Dal']}, 0),
+        throwsA(isA<CoachPlanSaveException>()
+            .having((e) => e.statusCode, 'statusCode', isNull)
+            .having((e) => e.isRetryable, 'isRetryable', isTrue)
+            .having((e) => e.message, 'message', contains('NOT published'))),
+      );
+    });
+
+    test('a 200 that does not confirm the save is not reported as one', () async {
+      final b = backed(FakeFirebaseFirestore(), (_) async => reply({'ok': true}, 200));
+      await expectLater(
+        publish(b.repo, {'Monday': ['Dal']}, 0),
+        throwsA(isA<CoachPlanSaveException>().having((e) => e.code, 'code', 'unconfirmed')),
+      );
+    });
+
+    test('training publishes are unchanged: written, versioned and notified from here', () async {
       final db = FakeFirebaseFirestore();
       final repo = CoachingPlanRepository(firestore: db);
 
-      await save(repo, planWith({'Monday': ['Dal']}));
-      expect((await repo.fetch(athlete)).dietVersion, 1);
-
-      await save(repo, planWith({'Monday': ['Rajma']}));
-      expect((await repo.fetch(athlete)).dietVersion, 2);
-
-      await save(repo, planWith({'Monday': ['Chole']}));
-      expect((await repo.fetch(athlete)).dietVersion, 3);
-    });
-
-    test('the athlete is notified, in the shape the website writes', () async {
-      final db = FakeFirebaseFirestore();
-      await save(CoachingPlanRepository(firestore: db), planWith({'Monday': ['Dal']}));
-
-      final notes = await db.collection('notifications').get();
-      expect(notes.docs.length, 1);
-      final n = notes.docs.first.data();
-      expect(n['userId'], athlete);
-      expect(n['title'], contains('Coach Rahul'));
-      expect(n['title'], contains('diet'));
-      expect(n['type'], 'diet_update');
-      expect(n['action'], 'diet', reason: 'tapping it must open the diet screen');
-      expect(n['isRead'], isFalse);
-    });
-
-    test('training publishes notify separately and version separately', () async {
-      final db = FakeFirebaseFirestore();
-      final repo = CoachingPlanRepository(firestore: db);
-
-      await save(repo, planWith({'Monday': ['Dal']}));
       await repo.saveTraining(
         athleteId: athlete,
         athleteName: 'Rohit',
@@ -128,47 +215,45 @@ void main() {
       );
 
       final doc = await repo.fetch(athlete);
-      expect(doc.dietVersion, 1);
-      expect(doc.trainingVersion, 1, reason: 'the two plans version independently');
+      expect(doc.trainingVersion, 1);
       expect(doc.hasTraining, isTrue);
-
+      expect(doc.dietVersion, 0, reason: 'the two plans version independently');
+      expect((await repo.watchVersions(athlete, type: 'training').first).length, 1);
       final types = (await db.collection('notifications').get())
           .docs
           .map((d) => d.data()['type'])
           .toList();
-      expect(types, containsAll(['diet_update', 'training_update']));
+      expect(types, ['training_update']);
     });
   });
 
   group('version history — nothing is ever overwritten', () {
-    test('every publish leaves a restorable snapshot', () async {
+    test('every publish leaves a restorable snapshot, newest first', () async {
       final db = FakeFirebaseFirestore();
-      final repo = CoachingPlanRepository(firestore: db);
+      final b = backed(db, endpoint(db));
 
-      await save(repo, planWith({'Monday': ['Original AI-based']}));
-      await save(repo, planWith({'Monday': ['Coach revision 1']}));
-      await save(repo, planWith({'Monday': ['Coach revision 2']}));
+      var v = await publish(b.repo, {'Monday': ['Original AI-based']}, 0);
+      v = await publish(b.repo, {'Monday': ['Coach revision 1']}, v);
+      v = await publish(b.repo, {'Monday': ['Coach revision 2']}, v);
 
-      final versions = await repo.watchVersions(athlete, type: 'diet').first;
+      expect(v, 3);
+      final versions = await b.repo.watchVersions(athlete, type: 'diet').first;
       expect(versions.length, 3);
       expect(versions.first.version, 3, reason: 'newest first');
       expect(versions.last.version, 1);
-      expect(versions.every((v) => v.isDiet), isTrue);
+      expect(versions.every((x) => x.isDiet), isTrue);
       expect(versions.first.savedBy, 'Coach Rahul');
     });
 
-    test('a restore is saved FORWARD, keeping the replaced revision visible',
-        () async {
+    test('a restore is saved FORWARD, on top of the version stored now', () async {
       final db = FakeFirebaseFirestore();
-      final repo = CoachingPlanRepository(firestore: db);
+      final b = backed(db, endpoint(db));
+      final v = await publish(b.repo, {'Monday': ['Paneer Bhurji']}, 0);
+      await publish(b.repo, {'Monday': ['Chicken Curry']}, v);
 
-      await save(repo, planWith({'Monday': ['Paneer Bhurji']}));
-      await save(repo, planWith({'Monday': ['Chicken Curry']}));
-
-      final versions = await repo.watchVersions(athlete, type: 'diet').first;
-      final first = versions.firstWhere((v) => v.version == 1);
-
-      await repo.restoreVersion(
+      final first = (await b.repo.watchVersions(athlete, type: 'diet').first)
+          .firstWhere((x) => x.version == 1);
+      await b.repo.restoreVersion(
         athleteId: athlete,
         athleteName: 'Rohit',
         coachId: coach,
@@ -177,21 +262,49 @@ void main() {
         version: first,
       );
 
-      final doc = await repo.fetch(athlete);
+      expect((jsonDecode(b.calls.last.body) as Map)['baseVersion'], 2,
+          reason: 'rebased on what is stored, not on the revision being restored');
+      final doc = await b.repo.fetch(athlete);
       expect(doc.diet.days.first.meals.first.options.first.name, 'Paneer Bhurji');
       expect(doc.dietVersion, 3, reason: 'a rollback is itself an edit');
 
       // The revision that was rolled back is still in the history.
-      final after = await repo.watchVersions(athlete, type: 'diet').first;
+      final after = await b.repo.watchVersions(athlete, type: 'diet').first;
       expect(after.length, 3);
-      expect(after.any((v) => v.version == 2), isTrue);
+      expect(after.any((x) => x.version == 2), isTrue);
+    });
+
+    test('a restore from a stale view conflicts instead of overwriting', () async {
+      final db = FakeFirebaseFirestore();
+      final b = backed(db, endpoint(db));
+      final v = await publish(b.repo, {'Monday': ['Paneer Bhurji']}, 0);
+      await publish(b.repo, {'Monday': ['Chicken Curry']}, v);
+      final first = (await b.repo.watchVersions(athlete, type: 'diet').first)
+          .firstWhere((x) => x.version == 1);
+
+      await expectLater(
+        b.repo.restoreVersion(
+          athleteId: athlete,
+          athleteName: 'Rohit',
+          coachId: coach,
+          coachName: 'Coach Rahul',
+          planType: 'complete',
+          version: first,
+          baseVersion: 1,
+        ),
+        throwsA(isA<CoachPlanConflictException>().having((e) => e.currentVersion, 'currentVersion', 2)),
+      );
+
+      final doc = await b.repo.fetch(athlete);
+      expect(doc.dietVersion, 2);
+      expect(doc.diet.days.first.meals.first.options.first.name, 'Chicken Curry');
     });
 
     test('diet and training histories can be read separately', () async {
       final db = FakeFirebaseFirestore();
-      final repo = CoachingPlanRepository(firestore: db);
-      await save(repo, planWith({'Monday': ['Dal']}));
-      await repo.saveTraining(
+      final b = backed(db, endpoint(db));
+      await publish(b.repo, {'Monday': ['Dal']}, 0);
+      await b.repo.saveTraining(
         athleteId: athlete,
         athleteName: 'Rohit',
         coachId: coach,
@@ -200,39 +313,40 @@ void main() {
         training: {'days': []},
       );
 
-      expect((await repo.watchVersions(athlete, type: 'diet').first).length, 1);
-      expect((await repo.watchVersions(athlete, type: 'training').first).length, 1);
-      expect((await repo.watchVersions(athlete).first).length, 2);
+      expect((await b.repo.watchVersions(athlete, type: 'diet').first).length, 1);
+      expect((await b.repo.watchVersions(athlete, type: 'training').first).length, 1);
+      expect((await b.repo.watchVersions(athlete).first).length, 2);
     });
   });
 
   group('goal-reset protection (fail closed)', () {
-    test('a plan authored against the current generation is live', () async {
+    /// A plan as the endpoint stores it: stamped with the athlete's planId of
+    /// the moment it was published.
+    Future<CoachingPlanDoc> stamped(String? planId) async {
       final db = FakeFirebaseFirestore();
-      final repo = CoachingPlanRepository(firestore: db);
-      await save(repo, planWith({'Monday': ['Dal']}), planId: 'plan_v1');
+      await db.collection('coaching_plans').doc(athlete).set({
+        'coachId': coach,
+        'planType': 'complete',
+        'dietVersion': 1,
+        'diet': planWith({'Monday': ['Dal']}).copyWith(planId: planId).toMap(),
+      });
+      return CoachingPlanRepository(firestore: db).fetch(athlete);
+    }
 
-      expect((await repo.fetch(athlete)).isStaleFor('plan_v1'), isFalse);
+    test('a plan authored against the current generation is live', () async {
+      expect((await stamped('plan_v1')).isStaleFor('plan_v1'), isFalse);
     });
 
     test('a plan authored against an abandoned goal is stale', () async {
       // The athlete reset their goal, so users/{uid}.planId moved on. The
       // coach plan must retire rather than keep prescribing for a goal that
       // no longer exists.
-      final db = FakeFirebaseFirestore();
-      final repo = CoachingPlanRepository(firestore: db);
-      await save(repo, planWith({'Monday': ['Dal']}), planId: 'plan_v1');
-
-      expect((await repo.fetch(athlete)).isStaleFor('plan_v2'), isTrue);
+      expect((await stamped('plan_v1')).isStaleFor('plan_v2'), isTrue);
     });
 
     test('an unstamped plan is not treated as stale', () async {
       // Plans written before the stamp existed must keep working.
-      final db = FakeFirebaseFirestore();
-      final repo = CoachingPlanRepository(firestore: db);
-      await save(repo, planWith({'Monday': ['Dal']}));
-
-      expect((await repo.fetch(athlete)).isStaleFor('plan_v2'), isFalse);
+      expect((await stamped(null)).isStaleFor('plan_v2'), isFalse);
     });
   });
 
@@ -259,14 +373,14 @@ void main() {
   group('the athlete sees changes without refreshing', () {
     test('a publish arrives on the live listener', () async {
       final db = FakeFirebaseFirestore();
-      final repo = CoachingPlanRepository(firestore: db);
+      final b = backed(db, endpoint(db));
       final seen = <CoachingPlanDoc>[];
-      final sub = repo.watch(athlete).listen(seen.add);
+      final sub = b.repo.watch(athlete).listen(seen.add);
 
       await Future<void>.delayed(const Duration(milliseconds: 30));
       expect(seen.last.exists, isFalse);
 
-      await save(repo, planWith({'Monday': ['Paneer Bhurji']}));
+      await publish(b.repo, {'Monday': ['Paneer Bhurji']}, 0);
       await Future<void>.delayed(const Duration(milliseconds: 60));
 
       expect(seen.last.exists, isTrue);
@@ -276,9 +390,9 @@ void main() {
   });
 
   group('the plan round-trips through the website\'s shape', () {
-    test('a full week survives save and reload unchanged', () async {
+    test('a full week survives publish and reload unchanged', () async {
       final db = FakeFirebaseFirestore();
-      final repo = CoachingPlanRepository(firestore: db);
+      final b = backed(db, endpoint(db));
       final original = CoachDietPlan(days: [
         CoachDietDay(day: 'Monday', meals: [
           const CoachMeal(id: 'meal_0', name: 'Breakfast', time: '08:00', options: [
@@ -288,8 +402,8 @@ void main() {
         ]),
       ]);
 
-      await save(repo, original);
-      final reloaded = (await repo.fetch(athlete)).diet;
+      await b.repo.saveDiet(athleteId: athlete, diet: original, baseVersion: 0);
+      final reloaded = (await b.repo.fetch(athlete)).diet;
 
       final meal = reloaded.days.first.meals.first;
       expect(meal.id, 'meal_0');

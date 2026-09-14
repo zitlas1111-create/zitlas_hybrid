@@ -64,6 +64,7 @@
     dayIdx: 0,             /* viewer/editor selected day */
     unsubs: [],
     dietDraft: null, dietDirty: false, dietDraftSeeded: false, dietEditGen: 0,
+    dietBaseVersion: null, dietConflict: false, /* see saveDiet */
     trainDraft: null, trainDirty: false, trainDraftSeeded: false, trainEditGen: 0,
     mealReqs: [],
     checkins: [],
@@ -151,6 +152,7 @@
     var label = {
       saving: 'Saving…', saved: '✓ Saved',
       error: '⚠ Save failed — retrying…', locked: '🔒 Coaching ended',
+      conflict: '⚠ Newer version saved elsewhere', rejected: '⚠ Not saved',
     }[state] || '';
     el.textContent = label;
     el.className = 'cw-save-status cw-save-status--' + state;
@@ -351,6 +353,7 @@
     S.pendingCheckinId = opts.initialCheckinId || null;
     S.dayIdx = todayIdx();
     S.dietDraft = null; S.dietDirty = false; S.dietDraftSeeded = false; S.dietEditGen = 0;
+    S.dietBaseVersion = null; S.dietConflict = false;
     S.trainDraft = null; S.trainDirty = false; S.trainDraftSeeded = false; S.trainEditGen = 0;
     S.plan = null; S.planLoaded = false; S.mealReqs = []; S.chatMsgs = [];
     S.athlete = null; S.athleteLoaded = false;
@@ -513,6 +516,12 @@
           ' current=' + (_st ? coachPlanIsCurrent(_st) : false) +
           ' trainingUpdatedAt=' + (S.plan && S.plan.trainingUpdatedAt) +
           ' trainingVersion=' + (S.plan && S.plan.trainingVersion));
+        /* A clean editor follows the server: when another tab/device has
+           published a newer diet and nothing here is unsaved, re-seed from it
+           (and its version) instead of editing a stale copy. */
+        if (S.dietDraft && !S.dietDirty && !S.saving && _dietVersionOf(S.plan) !== S.dietBaseVersion) {
+          S.dietDraft = null;
+        }
         renderHeader();
         /* Never clobber an editor mid-edit; viewers always refresh */
         if (S.tab === 'diet' && !S.dietDirty) renderTab();
@@ -703,6 +712,19 @@
   function coachPlanIsCurrent(p) {
     var aid = athleteCtx().planId;
     return !!(p && aid && p.planId === aid);
+  }
+  /* The DIET uses the shared rule (assets/js/diet-precedence.js, identical in
+     the app): a coach diet is current unless BOTH planIds are present and
+     differ — so a plan published without a stamp (athlete with no AI plan,
+     or an older save) is edited, not silently replaced by a fresh seed.
+     Training keeps coachPlanIsCurrent above. */
+  function coachDietPlanIsCurrent(p) {
+    var aid = athleteCtx().planId;
+    return !!p && !(p.planId && aid && p.planId !== aid);
+  }
+  function _dietVersionOf(plan) {
+    var n = Number(plan && plan.dietVersion);
+    return isFinite(n) && n > 0 ? Math.floor(n) : 0;
   }
 
   /* ══════════════════════════════════════════════
@@ -1316,11 +1338,14 @@
        as absent so the coach re-seeds from the LATEST AI plan instead of
        continuing to edit a dead goal's plan. Old versions stay in the
        versions history. */
-    var hasRemote = !!(remote && remote.days && remote.days.length && coachPlanIsCurrent(remote));
+    var hasRemote = !!(remote && remote.days && remote.days.length && coachDietPlanIsCurrent(remote));
     /* A saved coach plan always beats an unsaved auto-seed (e.g. saved
        from another device between snapshots). */
     if (S.dietDraft && S.dietDraftSeeded && !S.dietDirty && hasRemote) S.dietDraft = null;
     if (S.dietDraft) return;
+    /* Whatever the draft is seeded from, it is edited against the version
+       stored NOW — the base the server checks on save (409 if it moved). */
+    S.dietBaseVersion = _dietVersionOf(S.plan);
     if (hasRemote) {
       S.dietDraft = JSON.parse(JSON.stringify(remote));
       S.dietDraftSeeded = false;
@@ -1404,12 +1429,18 @@
         '</div>';
     }).join('');
 
+    var conflictBanner = S.dietConflict
+      ? '<div class="cw-req-banner">⚠ This diet was updated on another device, so your changes ' +
+        'were NOT published over it. Load the latest version, then edit again.' +
+        '<br><button class="cw-save-btn" id="cwDietReload" style="margin-top:8px">Load latest version</button></div>'
+      : '';
     var seededNote = (S.dietDraftSeeded && !S.dietDirty)
       ? '<div class="cw-req-banner">🤖 Preloaded from the user’s AI-generated diet plan — review, adjust anything, then Save to publish your version.</div>'
       : '';
 
     body.innerHTML =
       dayPillsHtml(S.dietDraft.days, S.dayIdx, pendingByDay) +
+      conflictBanner +
       seededNote +
       medGuidanceBanner('diet') +
       reqBanner +
@@ -1423,6 +1454,8 @@
       '</div>';
 
     wireDayPills(body, renderDietEditor);
+    var reloadBtn = $('cwDietReload');
+    if (reloadBtn) reloadBtn.addEventListener('click', _loadLatestDiet);
 
     function markDirty() {
       if (!S.dietDirty) {
@@ -1487,6 +1520,8 @@
   function saveDiet(isAuto) {
     if (!S.dietDraft) return;
     if (!canEditDiet()) { _setSaveStatus('diet', 'locked'); return; }
+    /* A 409 already told us this draft is behind the server — never retry it. */
+    if (S.dietConflict) { _setSaveStatus('diet', 'conflict'); return; }
     if (S.saving) {
       /* Another save (diet or training — S.saving is a single shared
          single-flight guard) is already in flight. Don't drop this change:
@@ -1502,7 +1537,6 @@
     _setSaveStatus('diet', 'saving');
 
     var now = new Date().toISOString();
-    var docRef = d.collection('coaching_plans').doc(S.opts.athleteId);
     var pendingReqs = S.mealReqs.filter(function (r) { return r.status === 'pending'; });
     var draft = S.dietDraft;
     /* Snapshot the edit generation at save-start. dietDraft is mutated
@@ -1519,59 +1553,58 @@
        on mismatch, so it silently retires if the athlete resets. */
     draft.planId = athleteCtx().planId || null;
 
-    var savedVersion;
-    /* Version bump moved inside the transaction — reads the LIVE server
-       document instead of the locally cached S.plan, which could be stale
-       by the time this fires (debounced auto-save makes overlapping saves
-       a normal occurrence, not just a rare double-click). */
-    d.runTransaction(function (tx) {
-      return tx.get(docRef).then(function (snap) {
-        var cur = snap.exists ? snap.data() : {};
-        savedVersion = (cur.dietVersion || 0) + 1;
-        tx.set(docRef, {
-          athleteId: S.opts.athleteId, athleteName: S.opts.athleteName || 'Athlete',
-          coachId: S.opts.coachId, coachName: S.opts.coachName || 'Coach',
-          planType: S.opts.planType || 'complete',
-          diet: draft, dietUpdatedAt: now, dietVersion: savedVersion,
-        }, { merge: true });
-      });
-    }).then(function () {
-      /* Version snapshot for history / restore */
-      return docRef.collection('versions').doc('diet_' + Date.now()).set({
-        type: 'diet', data: draft, version: savedVersion,
-        savedAt: now, savedBy: S.opts.coachName || 'Coach',
-      });
-    }).then(function () {
-      /* Resolve any pending Ask-Expert requests — the athlete just got new options */
-      pendingReqs.forEach(function (r) {
-        d.collection('coaching_meal_requests').doc(r.requestId)
-          .update({ status: 'replied', repliedAt: now }).catch(function () {});
-      });
-      notify(S.opts.athleteId,
-        pendingReqs.length
-          ? '✅ Your coach replied with new meal options.'
-          : '🥗 ' + (S.opts.coachName || 'Your coach') + ' updated your diet plan.',
-        'diet_update');
-      var stillCurrent = S.dietEditGen === startGen;
-      if (stillCurrent) { S.dietDirty = false; S.dietDraftSeeded = false; }
-      S.saving = false;
-      console.log('[CW] diet saved v' + savedVersion + (isAuto ? ' (auto)' : '') +
-        (stillCurrent ? '' : ' (newer edits pending)'));
-      if (stillCurrent) _setSaveStatus('diet', 'saved');
-      if (isAuto) {
-        /* No renderDietEditor() here — a full re-render replaces
-           #cwBody.innerHTML and would steal focus/cursor out from under the
-           coach if they've resumed typing elsewhere by the time this
-           debounced round-trip resolves. Only the manual-click path
-           re-renders. If a newer edit landed mid-save (stillCurrent is
-           false), the button/status are left exactly as that newer
-           markDirty() call already set them — its own scheduleAutoSave
-           timer is independent and still pending, so nothing is dropped. */
-        if (stillCurrent && btn) { btn.disabled = true; btn.textContent = 'Saved ✓'; }
-      } else {
-        toast('✅ Diet plan published to ' + (S.opts.athleteName || 'the athlete'));
-        renderDietEditor();
+    var baseVersion = (typeof S.dietBaseVersion === 'number') ? S.dietBaseVersion : _dietVersionOf(S.plan);
+    /* AUTHORITATIVE SAVE — POST /api/coaching-plans/{athleteId}/diet. The
+       server checks this is the athlete's active, assigned coach (and the
+       paid program behind it), compares baseVersion with the stored
+       dietVersion (409 when another tab/device saved first), writes the plan
+       and a version snapshot in one transaction, then sends the athlete the
+       plan-updated notification. Nothing here says "saved" before it has. */
+    _postCoachDiet(S.opts.athleteId, draft, baseVersion).then(function (r) {
+      if (r.status === 200 && r.data && r.data.success) {
+        var savedVersion = r.data.dietVersion;
+        S.dietBaseVersion = savedVersion;
+        /* Resolve any pending Ask-Expert requests — the athlete just got new options */
+        pendingReqs.forEach(function (req) {
+          d.collection('coaching_meal_requests').doc(req.requestId)
+            .update({ status: 'replied', repliedAt: now }).catch(function () {});
+        });
+        /* The diet-updated notification is sent by the server after the
+           commit; only the meal-request reply is announced from here. */
+        if (pendingReqs.length) notify(S.opts.athleteId, '✅ Your coach replied with new meal options.', 'diet_update');
+        var stillCurrent = S.dietEditGen === startGen;
+        if (stillCurrent) { S.dietDirty = false; S.dietDraftSeeded = false; }
+        S.saving = false;
+        console.log('[CW] diet saved v' + savedVersion + (isAuto ? ' (auto)' : '') +
+          (stillCurrent ? '' : ' (newer edits pending)'));
+        if (stillCurrent) _setSaveStatus('diet', 'saved');
+        if (isAuto) {
+          /* No renderDietEditor() here — a full re-render would steal focus
+             from a coach who has resumed typing. See markDirty(). */
+          if (stillCurrent && btn) { btn.disabled = true; btn.textContent = 'Saved ✓'; }
+        } else {
+          toast('✅ Diet plan published to ' + (S.opts.athleteName || 'the athlete'));
+          renderDietEditor();
+        }
+        return;
       }
+      S.saving = false;
+      if (r.status === 409) { _dietConflict(r.data && r.data.detail); return; }
+      var detail = r.data && r.data.detail;
+      var code = typeof detail === 'string' ? detail : ((detail && detail.error) || '');
+      console.error('[CW] diet save refused', r.status, detail);
+      if (!r.status || r.status >= 500) throw new Error('server_' + r.status);
+      _setSaveStatus('diet', 'rejected');
+      if (r.status === 401) {
+        toast('Your session has expired — sign in again. The plan was NOT saved.', 5000);
+      } else if (r.status === 403) {
+        toast(code === 'coaching_not_active' || code === 'program_not_active'
+          ? 'This coaching has ended — the plan was NOT saved.'
+          : 'You are not this athlete\'s active coach — the plan was NOT saved.', 5000);
+      } else {
+        toast('The plan could not be saved (' + (code || r.status) + ').', 5000);
+      }
+      if (!isAuto && btn) { btn.disabled = false; btn.textContent = 'Save Diet Plan'; }
     }).catch(function (e) {
       S.saving = false;
       console.error('[CW] diet save failed', e);
@@ -1583,6 +1616,43 @@
         if (btn) { btn.disabled = false; btn.textContent = 'Save Diet Plan'; }
       }
     });
+  }
+
+  function _postCoachDiet(athleteId, diet, baseVersion) {
+    if (typeof getIdToken !== 'function') return Promise.reject(new Error('no_auth'));
+    return getIdToken().then(function (token) {
+      return fetch('/api/coaching-plans/' + encodeURIComponent(athleteId) + '/diet', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ diet: diet, baseVersion: baseVersion }),
+      });
+    }).then(function (res) {
+      return res.json().catch(function () { return {}; }).then(function (data) {
+        return { status: res.status, data: data };
+      });
+    });
+  }
+
+  /* 409 — another tab or device published a newer diet. Nothing was written
+     and the newer plan is untouched. Auto-save stops (it could only conflict
+     again) until the expert loads the latest version. */
+  function _dietConflict(detail) {
+    S.dietConflict = true;
+    _cancelAutoSave('diet');
+    _setSaveStatus('diet', 'conflict');
+    var cur = detail && detail.currentVersion;
+    toast('⚠ A newer version of this diet (v' + (cur != null ? cur : '?') + ') was saved on ' +
+      'another device. Your changes were NOT saved — load the latest version to continue.', 7000);
+    if (S.tab === 'diet') renderDietEditor();
+  }
+
+  function _loadLatestDiet() {
+    S.dietConflict = false;
+    S.dietDraft = null;
+    S.dietDirty = false;
+    S.dietDraftSeeded = false;
+    renderDietEditor();
+    toast('Latest version loaded.');
   }
 
   /* ══════════════════════════════════════════════
@@ -2197,7 +2267,11 @@
           b.addEventListener('click', function () {
             var v = vers[+b.dataset.cwRestore];
             if (!v || !v.data) return;
-            if (type === 'diet') { S.dietDraft = JSON.parse(JSON.stringify(v.data)); S.dietDirty = true; }
+            if (type === 'diet') {
+              S.dietDraft = JSON.parse(JSON.stringify(v.data)); S.dietDirty = true;
+              /* Restored ON TOP of the version stored now. */
+              S.dietBaseVersion = _dietVersionOf(S.plan); S.dietConflict = false;
+            }
             else { S.trainDraft = JSON.parse(JSON.stringify(v.data)); S.trainDirty = true; }
             closeSheet();
             toast('Version v' + (v.version || '?') + ' loaded — press Save to publish.');

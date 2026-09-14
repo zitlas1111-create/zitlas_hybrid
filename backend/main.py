@@ -41,6 +41,8 @@ from routes import review
 from routes import system
 from routes import certificates
 from routes import coaching
+from routes import coaching_programs
+from routes import coaching_plans
 from routes import meal_ai
 from routes import payment
 from routes import admin
@@ -349,6 +351,13 @@ app.include_router(system.router,     prefix="/api/system",     tags=["System"])
 app.include_router(chat.router,       prefix="/api/chat",       tags=["Chat"])
 app.include_router(certificates.router, prefix="/api/certificates", tags=["Certificates"])
 app.include_router(coaching.router,     prefix="/api/coaching",    tags=["Coaching"])
+# Personal Coaching Programs (Phase 2): program pricing + requests. No payment,
+# no activation — separate from the /api/coaching escrow on purpose.
+app.include_router(coaching_programs.router, prefix="/api/coaching-programs",
+                   tags=["Coaching Programs"])
+# The authoritative expert coaching-diet save (baseVersion-checked).
+app.include_router(coaching_plans.router, prefix="/api/coaching-plans",
+                   tags=["Coaching Plans"])
 app.include_router(expert_ratings.router, prefix="/api/expert-ratings", tags=["Expert Ratings"])
 app.include_router(creator_recipes.router, prefix="/api/creator-recipes", tags=["Creator Recipes"])
 app.include_router(meal_ai.router,      prefix="/api/meal",        tags=["Meal AI"])

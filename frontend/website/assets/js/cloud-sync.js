@@ -320,6 +320,29 @@
       .catch(function (e) { console.warn('[CLOUD SYNC] save failed for', cloudKey, e); });
   }
 
+  /* save(), but the returned promise REJECTS when the cloud write fails
+     (save() only logs). For the few writes whose success the user is told
+     about — accepting an expert's plan — where "saved" must mean the server
+     has it, not just this device's cache. */
+  function saveStrict(cloudKey, value) {
+    var lsKey = FIELD_MAP[cloudKey] || SCALAR_FIELD_MAP[cloudKey];
+    if (lsKey) {
+      try {
+        if (value === null) localStorage.removeItem(lsKey);
+        else localStorage.setItem(lsKey, typeof value === 'string' && SCALAR_FIELD_MAP[cloudKey]
+          ? value : JSON.stringify(value));
+      } catch (_) {}
+    }
+    if (_BACKEND_ONLY_FIELDS[cloudKey]) return Promise.reject(new Error('backend_only_field'));
+    var d = db();
+    var uid = myUid();
+    if (!d || !uid) return Promise.reject(new Error('not_signed_in'));
+    var patch = {};
+    patch[cloudKey] = value;
+    patch[cloudKey + 'UpdatedAt'] = new Date().toISOString();
+    return d.collection('users').doc(uid).set(patch, { merge: true });
+  }
+
   /* Cloud-only write — skips the local mirror entirely. For callers (like
      the personal-info form) that already persist their own localStorage
      copy with fields (e.g. a photo) deliberately excluded from the cloud
@@ -426,6 +449,7 @@
     hydrateOnLoad: hydrateOnLoad,
     attachRealtime: attachRealtime,
     save: save,
+    saveStrict: saveStrict,
     saveCloudOnly: saveCloudOnly,
     saveBulk: saveBulk,
     clearGoalData: clearGoalData,

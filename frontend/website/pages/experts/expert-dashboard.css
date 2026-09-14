@@ -3030,3 +3030,31 @@ a      { text-decoration: none; color: inherit; }
   .ep-modal          { border-radius: 24px; border-bottom: 1px solid rgba(var(--primary-rgb),0.16); max-height: 88dvh; }
 }
 
+/* ── Personal Coaching Program Requests (program-requests.js) ──
+   The cards reuse the coaching-request card (.ed-user-card / .ed-chip /
+   .pc-req-actions); only this block's header and its separation from the
+   existing Pending / Active / Past Clients inbox below are new. */
+.cpr-block {
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--border);
+}
+.cpr-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.cpr-head .ed-section-label { margin-bottom: 0; }
+.cpr-refresh {
+  margin-left: auto;
+  padding: 4px 6px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sec);
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.cpr-refresh:hover { color: var(--text); }
+.cpr-card .erc-btn:disabled { opacity: 0.6; cursor: default; }

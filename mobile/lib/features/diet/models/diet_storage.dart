@@ -30,6 +30,8 @@ class DietStorage {
     this.version,
     this.lastUpdated,
     this.planId,
+    this.originalRaw,
+    this.currentRaw,
   });
 
   final DietPlanContent originalDietPlan;
@@ -52,6 +54,13 @@ class DietStorage {
   /// must never be shown or silently kept.
   final String? planId;
 
+  /// The plans EXACTLY as they were read (or are to be written). Kept so every
+  /// round-trip is lossless: fields the models do not model — a meal's
+  /// timing notes, an expert's custom day fields — are never dropped when this
+  /// wrapper is saved again (a planId stamp, an accept, another device).
+  final Map<String, dynamic>? originalRaw;
+  final Map<String, dynamic>? currentRaw;
+
   static bool isNewSchema(Map<String, dynamic>? m) =>
       m != null && m['originalDietPlan'] != null && m['currentDietPlan'] != null;
 
@@ -69,9 +78,13 @@ class DietStorage {
       mods[dayIdx] = perMeal;
     });
 
+    final originalRaw = (m['originalDietPlan'] as Map?)?.cast<String, dynamic>();
+    final currentRaw = (m['currentDietPlan'] as Map?)?.cast<String, dynamic>();
     return DietStorage(
-      originalDietPlan: DietPlanContent.fromMap((m['originalDietPlan'] as Map?)?.cast<String, dynamic>()),
-      currentDietPlan: DietPlanContent.fromMap((m['currentDietPlan'] as Map?)?.cast<String, dynamic>()),
+      originalDietPlan: DietPlanContent.fromMap(originalRaw),
+      currentDietPlan: DietPlanContent.fromMap(currentRaw),
+      originalRaw: originalRaw,
+      currentRaw: currentRaw,
       expertModifications: mods,
       isExpertPlan: m['isExpertPlan'] == true,
       expertName: m['expertName'] as String?,
@@ -94,8 +107,8 @@ class DietStorage {
     });
 
     return {
-      'originalDietPlan': originalDietPlan.toMap(),
-      'currentDietPlan': currentDietPlan.toMap(),
+      'originalDietPlan': originalRaw ?? originalDietPlan.toMap(),
+      'currentDietPlan': currentRaw ?? currentDietPlan.toMap(),
       'expertModifications': modsMap,
       'isExpertPlan': isExpertPlan,
       'expertName': expertName,
@@ -200,6 +213,10 @@ class DietStorage {
       version: version,
       lastUpdated: DateTime.now().toIso8601String(),
       planId: planId ?? this.planId,
+      originalRaw: originalRaw,
+      // A replaced current plan is authoritative as modelled; an unchanged
+      // one keeps its exact stored map.
+      currentRaw: currentDietPlan == null ? currentRaw : null,
     );
   }
 }

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
@@ -26,6 +27,7 @@ import 'models/diet_plan_content.dart';
 import 'models/diet_review_request.dart';
 import 'models/diet_storage.dart';
 import 'models/expert_meal_modification.dart';
+import 'diet_precedence.dart';
 
 const _weekdayNames = [
   'monday',
@@ -167,6 +169,7 @@ class DietController extends ChangeNotifier {
     _relSub = _experts.watchMyCoachingRelationship(uid).listen(
       (rel) {
         coachRelationship = rel;
+        _maybeAutoSelectDay();
         _safeNotify();
         _watchCheckins();
       },
@@ -181,6 +184,7 @@ class DietController extends ChangeNotifier {
     _coachPlanSub = _coachingPlans.watch(uid).listen(
       (doc) {
         coachPlan = doc;
+        _maybeAutoSelectDay();
         _safeNotify();
       },
       onError: (Object e) {
@@ -372,79 +376,43 @@ class DietController extends ChangeNotifier {
         'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
       ][d.weekday - 1];
 
-  /// Whether a coach-authored plan may own this athlete's diet AT ALL.
-  ///
-  /// Byte-for-byte the website's `_pcShowsCoachPlan()` in diet.js: the
-  /// relationship must be ACTIVE and must actually cover diet. Kept identical
-  /// so the two clients can never disagree about which plan an athlete is on.
-  bool get _coachDietRelationshipActive {
-    final rel = coachRelationship;
-    if (rel == null || !rel.isActive) return false;
-    // A FREE TRIAL stores planType = null (routes/coaching.py sets
-    // `plan_type_val = None` for FREE_TRIAL, and /accept copies it onto the
-    // relationship). The coach side already treats null as full coverage —
-    // `CoachingPlanRepository.canEditDiet` includes `planType == null` — which
-    // is why a nutritionist could publish a diet this gate then refused to
-    // render. Kept byte-identical in meaning to the website's
-    // `_pcShowsCoachPlan()` so the two clients cannot disagree.
-    final type = rel.planType ?? 'complete';
-    return type == 'diet' || type == 'complete';
-  }
+  static String? _nonEmpty(String? v) => (v == null || v.trim().isEmpty) ? null : v.trim();
 
-  /// The coach's diet, but ONLY when it should actually be shown.
-  ///
-  /// Fails closed on three independent conditions:
-  ///  * the coaching relationship is not ACTIVE — see below;
-  ///  * a plan authored against a DIFFERENT `planId` — the athlete reset their
-  ///    goal, so that prescription is for a goal nobody has any more;
-  ///  * a plan with no meals in it — a coach who has opened the editor but not
-  ///    published anything must not blank out the athlete's AI plan.
-  ///
-  /// THE RELATIONSHIP CHECK IS THE BUG FIX. This getter previously consulted
-  /// only the plan document, never the relationship, so once coaching ended the
-  /// coach's diet kept rendering forever — the athlete had no route back to
-  /// their own AI/expert-reviewed plan. The `coachPlan` listener is attached
-  /// unconditionally and the athlete can always read their OWN
-  /// `coaching_plans/{uid}` document, so nothing upstream ever stops supplying
-  /// it; this is the only place that can decide it is no longer active.
-  ///
-  /// The training side already gated on the relationship
-  /// (`_coachOverrideActive` → `showsCoachTrainingPlan`), which is exactly why
-  /// Training behaved correctly after coaching ended while Diet did not.
+  /// The coach's diet, but ONLY when it is the athlete's CURRENT diet under THE
+  /// shared precedence rule (`diet_precedence.dart` — identical to the
+  /// website's `assets/js/diet-precedence.js`, pinned by the same fixture):
+  /// relationship active and not past its end date, covering diet (a free
+  /// trial's null planType is full coverage), at least one meal, written by
+  /// the current coach, and not stamped for a DIFFERENT plan generation.
+  /// A null planId — or no AI plan at all — does not hide it.
   ///
   /// Deactivation is a VISIBILITY decision only: the `coaching_plans` document
   /// is never written or deleted here, so history stays intact for audit and a
   /// renewed engagement can publish over it.
-  ///
-  /// When this is null the existing AI/expert-reviewed plan renders exactly as
-  /// before — that plan is never touched by this code path.
   CoachDietPlan? get activeCoachDiet {
     final doc = coachPlan;
     if (doc == null || !doc.exists) return null;
-    if (!doc.diet.hasDays) return null;
-
-    if (!_coachDietRelationshipActive) {
+    final rel = coachRelationship;
+    final input = DietPrecedenceInput(
+      now: DateTime.now(),
+      livePlanId: _nonEmpty(livePlanId),
+      hasRelationship: rel != null,
+      relStatus: rel?.status,
+      relCoachId: _nonEmpty(rel?.coachId),
+      relPlanType: _nonEmpty(rel?.planType),
+      relEnd: rel?.endDate,
+      hasCoachPlan: true,
+      coachPlanCoachId: _nonEmpty(doc.coachId),
+      coachPlanPlanId: _nonEmpty(doc.diet.planId),
+      coachMealCount: doc.diet.days.fold<int>(0, (n, d) => n + d.meals.length),
+    );
+    if (!coachDietActive(input)) {
       if (kDebugMode) {
-        final rel = coachRelationship;
-        debugPrint('[DIET PLAN SELECT] REJECTED COACH PLAN — COACHING ENDED '
+        debugPrint('[DIET PLAN SELECT] coach plan not current '
             '(status=${rel?.status}, planType=${rel?.planType}, '
-            'isActive=${rel?.isActive})');
-        debugPrint('[DIET PLAN SELECT] FALLBACK TO AI/EXPERT PLAN');
+            'coach=${doc.coachId}/${rel?.coachId}, planId=${doc.diet.planId}/$livePlanId)');
       }
       return null;
-    }
-
-    if (doc.isStaleFor(livePlanId)) {
-      if (kDebugMode) {
-        debugPrint('[DIET] coach plan retired — authored for ${doc.diet.planId}, '
-            'live plan is $livePlanId');
-      }
-      return null;
-    }
-
-    if (kDebugMode) {
-      debugPrint('[DIET PLAN SELECT] coach plan ACTIVE '
-          '(planId=${doc.diet.planId}, coachId=${coachRelationship?.coachId})');
     }
     return doc.diet;
   }
@@ -562,7 +530,9 @@ class DietController extends ChangeNotifier {
       final masterPlanId = master['planId'] as String?;
       if (masterPlanId != null && livePlanId != null && masterPlanId != livePlanId) return;
 
-      final plan = DietPlanContent.fromMap(master);
+      // Written as {planId, plan: {days}} (ai-coach.js); a flat copy is read too.
+      final planMap = master['plan'] is Map ? (master['plan'] as Map).cast<String, dynamic>() : master;
+      final plan = DietPlanContent.fromMap(planMap);
       if (!plan.hasDays) return;
 
       final recovered = DietStorage.fromLegacyFlatPlan(plan, planId: livePlanId ?? masterPlanId);
@@ -581,11 +551,15 @@ class DietController extends ChangeNotifier {
   /// never yanks the athlete back to "today" after they've picked a day.
   void _maybeAutoSelectDay() {
     if (_dayAutoSelected) return;
-    final days = effectivePlan?.days;
-    if (days == null || days.isEmpty) return;
+    final aiDays = effectivePlan?.days;
+    // An athlete coached WITHOUT an AI plan still lands on today.
+    final names = (aiDays != null && aiDays.isNotEmpty)
+        ? [for (final d in aiDays) d.day]
+        : [for (final d in activeCoachDiet?.days ?? const <CoachDietDay>[]) d.day];
+    if (names.isEmpty) return;
     _dayAutoSelected = true;
     final todayName = _weekdayNames[(DateTime.now().weekday - 1) % 7];
-    final idx = days.indexWhere((d) => d.day.toLowerCase() == todayName);
+    final idx = names.indexWhere((d) => d.toLowerCase() == todayName);
     selectedDayIndex = idx >= 0 ? idx : 0;
   }
 
@@ -818,89 +792,52 @@ class DietController extends ChangeNotifier {
     }
   }
 
-  /// `acceptExpertPlan()`/`_buildDietStorageFromReview()` — rebuilds the
-  /// wrapper from a completed review: `expertModifications` come primarily
-  /// from `mealChangeHistory`, then a scan over `reviewedDietPlan` for any
-  /// `_edited` meal missed by history (or whose `newFoods` came back empty)
-  /// fills the gap. `currentDietPlan` is reset to `originalDietPlan` — the
-  /// expert layer is applied on top at render time by `buildEffectivePlan()`,
-  /// never baked directly into `currentDietPlan`.
+  /// Accept an expert-reviewed plan — LOSSLESS.
+  ///
+  /// The COMPLETE reviewed plan is stored as `currentDietPlan`, exactly as the
+  /// expert saved it (`reviewedDietPlanRaw`), so renamed / added / deleted
+  /// meals, carbs, fats, timing, notes and day fields all survive — nothing is
+  /// rebuilt by matching meal names. `expertModifications` only drives the
+  /// "Modified by Expert" badges: each entry's newMeal IS the reviewed meal, so
+  /// [DietStorage.buildEffectivePlan] changes nothing. The website's
+  /// `buildAcceptedStorage()` (assets/js/diet-review.js) builds the same
+  /// wrapper, and both write `users/{uid}.dietPlan` — the document both read.
   Future<void> acceptExpertReview(DietReviewRequest review) async {
+    final reviewedRaw = review.reviewedDietPlanRaw;
+    final reviewed = review.reviewedDietPlan;
+    if (reviewedRaw == null || reviewed == null || !reviewed.hasDays) {
+      throw const DietAcceptException('This review has no plan to apply.');
+    }
+    if (review.planId != null && livePlanId != null && review.planId != livePlanId) {
+      throw const DietAcceptException(
+          'This review was for a previous plan — ask your expert to review your current plan.');
+    }
+    if (review.planId == null && livePlanId == null) {
+      // Nothing to stamp the plan with. Both clients discard an expert plan
+      // that cannot prove which goal it belongs to (the shared precedence
+      // rule), so writing it would look applied and then vanish.
+      throw const DietAcceptException(
+          "This review can't be matched to your current plan, so it wasn't applied — "
+          'ask your expert to review your latest plan.');
+    }
     final existing = dietStorage;
-    final DietPlanContent original;
-    if (existing != null && existing.originalDietPlan.hasDays) {
-      original = existing.originalDietPlan;
-    } else if (review.originalPlanData != null && review.originalPlanData!.hasDays) {
-      original = review.originalPlanData!;
-    } else {
-      original = review.reviewedDietPlan ?? const DietPlanContent();
-    }
-
-    final mods = <String, Map<String, ExpertMealModification>>{};
-    for (final entry in review.mealChangeHistory) {
-      final dayKey = entry.dayIndex.toString();
-      mods.putIfAbsent(dayKey, () => {});
-      mods[dayKey]![entry.mealKey] = ExpertMealModification(
-        modified: true,
-        modifiedBy: entry.modifiedBy ?? review.expertName,
-        modifiedAt: entry.modifiedAt ?? review.reviewedAt?.toIso8601String(),
-        oldMeal: {
-          'foods': entry.oldFoods,
-          'calories': entry.oldCalories,
-          'protein_g': entry.oldProtein,
-        },
-        newMeal: {
-          'foods': entry.newFoods,
-          'calories': entry.newCalories,
-          'protein_g': entry.newProtein,
-        },
-      );
-    }
-
-    final reviewedPlan = review.reviewedDietPlan;
-    if (reviewedPlan != null) {
-      for (var dayIdx = 0; dayIdx < reviewedPlan.days.length; dayIdx++) {
-        final day = reviewedPlan.days[dayIdx];
-        for (final meal in day.meals) {
-          if (!meal.edited) continue;
-
-          final dayKey = dayIdx.toString();
-          final existingMod = mods[dayKey]?[meal.mealKey];
-          final existingNewFoods = existingMod?.newMeal?['foods'];
-          final hasUsableNewFoods = existingNewFoods is List && existingNewFoods.isNotEmpty;
-          if (hasUsableNewFoods) continue;
-
-          DietMeal? originalMeal;
-          if (dayIdx < original.days.length) {
-            for (final m in original.days[dayIdx].meals) {
-              if (m.mealKey == meal.mealKey) {
-                originalMeal = m;
-                break;
-              }
-            }
-          }
-
-          mods.putIfAbsent(dayKey, () => {});
-          mods[dayKey]![meal.mealKey] = ExpertMealModification(
-            modified: true,
-            modifiedBy: review.expertName,
-            modifiedAt: review.reviewedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
-            oldMeal: originalMeal?.toModificationSnapshot(),
-            newMeal: meal.toModificationSnapshot(),
-          );
-        }
-      }
-    }
+    final keepExisting = existing != null && existing.originalDietPlan.hasDays;
+    final DietPlanContent? knownOriginal = keepExisting ? existing.originalDietPlan : review.originalPlanData;
+    final currentRaw = _planMapWithMealLists(reviewedRaw);
+    final current = DietPlanContent.fromMap(currentRaw);
+    final when = review.reviewedAt?.toIso8601String() ?? DateTime.now().toIso8601String();
 
     final newStorage = DietStorage(
-      originalDietPlan: original,
-      currentDietPlan: original,
-      expertModifications: mods,
+      originalDietPlan: knownOriginal ?? current,
+      currentDietPlan: current,
+      originalRaw: keepExisting ? existing.originalRaw : (knownOriginal != null ? review.originalPlanDataRaw : currentRaw),
+      currentRaw: currentRaw,
+      expertModifications: _badgeModifications(current, knownOriginal, review.expertName, when),
       isExpertPlan: true,
       expertName: review.expertName,
       expertId: review.expertId,
       expertNotes: review.expertNotes,
-      reviewedAt: review.reviewedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      reviewedAt: when,
       reviewStatus: 'completed',
       planSource: 'expert_reviewed',
       reviewId: review.id,
@@ -911,6 +848,70 @@ class DietController extends ChangeNotifier {
 
     await _repository.saveDietStorage(uid, newStorage);
     await _repository.markReviewAccepted(review.id);
+  }
+
+  /// A deep copy of a stored plan with every day's `meals` as a list (older
+  /// reviews stored an object keyed by meal name) — the shape both clients read.
+  static Map<String, dynamic> _planMapWithMealLists(Map<String, dynamic> raw) {
+    Object? copy(Object? v) {
+      if (v is Map) return {for (final e in v.entries) e.key.toString(): copy(e.value)};
+      if (v is List) return [for (final x in v) copy(x)];
+      return v;
+    }
+
+    final out = (copy(raw) as Map).cast<String, dynamic>();
+    final days = out['days'];
+    if (days is List) {
+      out['days'] = [
+        for (final d in days)
+          if (d is Map)
+            {
+              ...d.cast<String, dynamic>(),
+              'meals': d['meals'] is Map ? (d['meals'] as Map).values.toList() : (d['meals'] ?? const []),
+            }
+          else
+            d,
+      ];
+    }
+    return out;
+  }
+
+  /// Badges only — see [acceptExpertReview]. A meal is marked when the
+  /// expert's editor flagged it, or when it differs from (or is absent in) a
+  /// known original.
+  static Map<String, Map<String, ExpertMealModification>> _badgeModifications(
+    DietPlanContent reviewed,
+    DietPlanContent? original,
+    String? expertName,
+    String when,
+  ) {
+    final mods = <String, Map<String, ExpertMealModification>>{};
+    for (var d = 0; d < reviewed.days.length; d++) {
+      final origMeals =
+          (original != null && d < original.days.length) ? original.days[d].meals : const <DietMeal>[];
+      for (final meal in reviewed.days[d].meals) {
+        DietMeal? orig;
+        for (final m in origMeals) {
+          if (m.mealKey == meal.mealKey) {
+            orig = m;
+            break;
+          }
+        }
+        final snap = meal.toModificationSnapshot();
+        final changed = meal.edited ||
+            (original != null &&
+                (orig == null || jsonEncode(orig.toModificationSnapshot()) != jsonEncode(snap)));
+        if (!changed) continue;
+        mods.putIfAbsent('$d', () => {})[meal.mealKey] = ExpertMealModification(
+          modified: true,
+          modifiedBy: meal.modifiedBy ?? expertName,
+          modifiedAt: meal.modifiedAt ?? when,
+          oldMeal: orig?.toModificationSnapshot() ?? const {'foods': <String>[]},
+          newMeal: snap,
+        );
+      }
+    }
+    return mods;
   }
 
   void _safeNotify() {
@@ -928,4 +929,14 @@ class DietController extends ChangeNotifier {
     _checkinSub?.cancel();
     super.dispose();
   }
+}
+
+/// An expert review that cannot be accepted. Nothing was written.
+class DietAcceptException implements Exception {
+  const DietAcceptException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
 }

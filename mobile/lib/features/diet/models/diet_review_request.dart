@@ -9,11 +9,17 @@ DateTime? _asDate(dynamic v) {
   return null;
 }
 
+Map<String, dynamic>? _asMapOrNull(dynamic v) => v is Map ? v.cast<String, dynamic>() : null;
+
 /// One entry in a review's `mealChangeHistory` — the diff record an expert
-/// leaves behind when editing a meal (`buildMealChangeHistory()` /
-/// `buildHistory()` on the website). Used both to build the effective
-/// `expertModifications` map on accept, and to show a "what changed"
-/// summary to the athlete.
+/// leaves behind when editing a meal. Used to show a "what changed" summary
+/// to the athlete.
+///
+/// TWO HISTORICAL SHAPES, read identically (the website's
+/// `normalizeHistoryEntry()` in `assets/js/diet-review.js` does the same):
+///  * the canonical flat record — `oldFoods/newFoods/oldCalories/…` — written
+///    by expert-dashboard.js, the app's editor and, now, modify-diet.js;
+///  * older modify-diet.js records — `oldMeal`/`newMeal` objects.
 class MealChangeEntry {
   const MealChangeEntry({
     required this.dayIndex,
@@ -46,19 +52,36 @@ class MealChangeEntry {
   String get mealKey => mealName.toLowerCase().trim().replaceAll(RegExp(r'[^a-z0-9]+'), '_');
 
   factory MealChangeEntry.fromMap(Map<String, dynamic> m) {
+    final om = _asMapOrNull(m['oldMeal']);
+    final nm = _asMapOrNull(m['newMeal']);
+    // A present flat list wins (even empty), exactly like `h.oldFoods || …`.
+    List<String> foods(String flat, String snake, Map<String, dynamic>? meal) {
+      if (m[flat] != null) return asStringList(m[flat]);
+      if (m[snake] != null) return asStringList(m[snake]);
+      return meal == null ? const [] : asStringList(meal['foods']);
+    }
+
+    num? pick(String flat, String snake, Map<String, dynamic>? meal, String field) =>
+        asNum(m[flat]) ?? asNum(m[snake]) ?? (meal == null ? null : asNum(meal[field]));
+
     return MealChangeEntry(
-      dayIndex: asInt(m['dayIndex']) ?? 0,
-      mealName: asText(m['mealName']) ?? 'Meal',
-      dayLabel: asText(m['dayLabel']),
-      oldFoods: asStringList(m['oldFoods']),
-      newFoods: asStringList(m['newFoods']),
-      oldCalories: asNum(m['oldCalories']),
-      newCalories: asNum(m['newCalories']),
-      oldProtein: asNum(m['oldProtein']),
-      newProtein: asNum(m['newProtein']),
-      reason: asText(m['reason']),
-      modifiedBy: asText(m['modifiedBy']),
-      modifiedAt: asText(m['modifiedAt']),
+      dayIndex: asInt(m['dayIndex']) ?? asInt(m['day_index']) ?? 0,
+      mealName: asText(m['mealName']) ??
+          asText(m['meal_name']) ??
+          asText(nm?['meal_name']) ??
+          asText(nm?['name']) ??
+          asText(om?['meal_name']) ??
+          'Meal',
+      dayLabel: asText(m['dayLabel']) ?? asText(m['dayName']),
+      oldFoods: foods('oldFoods', 'old_foods', om),
+      newFoods: foods('newFoods', 'new_foods', nm),
+      oldCalories: pick('oldCalories', 'old_calories', om, 'calories'),
+      newCalories: pick('newCalories', 'new_calories', nm, 'calories'),
+      oldProtein: pick('oldProtein', 'old_protein', om, 'protein_g'),
+      newProtein: pick('newProtein', 'new_protein', nm, 'protein_g'),
+      reason: asText(m['reason']) ?? asText(nm?['notes']),
+      modifiedBy: asText(m['modifiedBy']) ?? asText(m['modified_by']),
+      modifiedAt: asText(m['modifiedAt']) ?? asText(m['modified_at']),
     );
   }
 }
@@ -85,6 +108,8 @@ class DietReviewRequest {
     this.mealChangeHistory = const [],
     this.reviewedDietPlan,
     this.originalPlanData,
+    this.reviewedDietPlanRaw,
+    this.originalPlanDataRaw,
   });
 
   final String id;
@@ -103,15 +128,18 @@ class DietReviewRequest {
   final bool athleteAccepted;
   final List<MealChangeEntry> mealChangeHistory;
 
-  /// The expert-edited plan, present once the review is complete. Its
-  /// individual meals may carry `_edited: true` — scanned as a supplement/
-  /// override to `mealChangeHistory` when building the accepted wrapper,
-  /// exactly like `_buildDietStorageFromReview()`/`acceptExpertPlan()`.
+  /// The expert-edited plan, present once the review is complete — parsed for
+  /// display.
   final DietPlanContent? reviewedDietPlan;
 
   /// `planData` on the raw doc — the plan snapshot as it was when the
-  /// review was requested (used as `originalDietPlan` fallback on accept).
+  /// review was requested.
   final DietPlanContent? originalPlanData;
+
+  /// The reviewed plan EXACTLY as stored. Accept persists this map, not the
+  /// parsed model, so nothing the model does not know about is dropped.
+  final Map<String, dynamic>? reviewedDietPlanRaw;
+  final Map<String, dynamic>? originalPlanDataRaw;
 
   bool get isCompleted => status == 'review_completed' || status == 'completed';
   bool get isPending => status == 'pending';
@@ -120,15 +148,15 @@ class DietReviewRequest {
 
   factory DietReviewRequest.fromMap(String id, Map<String, dynamic> m) {
     final rawHistory = m['mealChangeHistory'] as List?;
-    Map<String, dynamic>? asMap(dynamic v) => v is Map ? v.cast<String, dynamic>() : null;
 
     // `planData` may itself be wrapper-shaped (originalDietPlan/currentDietPlan)
     // per cprofile.js's unwrap logic — handle both.
-    Map<String, dynamic>? planData = asMap(m['planData']);
+    Map<String, dynamic>? planData = _asMapOrNull(m['planData']);
     if (planData != null &&
         (planData['originalDietPlan'] != null || planData['currentDietPlan'] != null)) {
-      planData = asMap(planData['currentDietPlan']) ?? asMap(planData['originalDietPlan']);
+      planData = _asMapOrNull(planData['currentDietPlan']) ?? _asMapOrNull(planData['originalDietPlan']);
     }
+    final reviewedRaw = _asMapOrNull(m['reviewedDietPlan']);
 
     return DietReviewRequest(
       id: id,
@@ -148,8 +176,10 @@ class DietReviewRequest {
               .map((e) => MealChangeEntry.fromMap(e.cast<String, dynamic>()))
               .toList() ??
           const [],
-      reviewedDietPlan: DietPlanContent.fromMap(asMap(m['reviewedDietPlan'])),
+      reviewedDietPlan: DietPlanContent.fromMap(reviewedRaw),
       originalPlanData: planData != null ? DietPlanContent.fromMap(planData) : null,
+      reviewedDietPlanRaw: reviewedRaw,
+      originalPlanDataRaw: planData,
     );
   }
 }

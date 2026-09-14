@@ -107,10 +107,16 @@ service cloud.firestore {
     // backend-only (set by the admin approval endpoint via Admin SDK).
     match /experts/{uid} {
       allow read: if signedIn();
+      // programPricing (Personal Coaching Program prices, integer paise) is
+      // written ONLY by PUT /api/coaching-programs/pricing, which validates
+      // it server-side — the expert's own client can neither set, change nor
+      // remove it. Everyone signed in can still READ it (marketplace).
       allow create: if isUser(uid)
-        && createOmits(['verified', 'approved', 'verification', 'verificationStatus']);
+        && createOmits(['verified', 'approved', 'verification', 'verificationStatus',
+                        'programPricing']);
       allow update: if isUser(uid)
-        && updateKeeps(['verified', 'approved', 'verification', 'verificationStatus']);
+        && updateKeeps(['verified', 'approved', 'verification', 'verificationStatus',
+                        'programPricing']);
       allow delete: if false;
 
       // PRIVATE coach notes — the coach's own working notes on an athlete.
@@ -221,6 +227,17 @@ service cloud.firestore {
         && changedOnly(['status', 'priorStatus', 'resetAt', 'endedAt', 'endedBy', 'reason'])
         && request.resource.data.status in ['reset', 'ended'];
       allow create, delete: if false;  // backend (Admin SDK) only
+    }
+
+    // ── coaching_program_requests/{requestId} ──
+    // Personal Coaching Programs (Phase 2). Backend-only in BOTH directions:
+    // athletes and experts create, list, accept and decline through
+    // /api/coaching-programs (backend/routes/coaching_programs.py), which
+    // decides the price, status and paymentStatus server-side. Identical to
+    // the default deny — spelled out so nobody "fixes" a missing block by
+    // opening it to client writes.
+    match /coaching_program_requests/{requestId} {
+      allow read, write: if false;
     }
 
     // ── personal_coach_requests — backend-only writes ──

@@ -302,23 +302,30 @@ async def notify_plan_updated(body: PlanBody, caller: dict = Depends(verify_fire
         raise HTTPException(status_code=403, detail="not_active_coach_of_user")
 
     coach_name = rel.get("coachName") or _name_of(db, caller["uid"], "Your coach")
-    is_diet = kind == "diet"
+    res = send_plan_updated(db, body.athleteId, caller["uid"], coach_name, kind)
+    return {"success": True, **res}
 
-    res = notification_service.send(
-        db, body.athleteId,
+
+def send_plan_updated(db, athlete_id: str, coach_uid: str, coach_name: str | None,
+                      kind: str) -> dict:
+    """The plan-updated notification itself — used by the route above and,
+    after a committed save, by POST /api/coaching-plans/{athleteId}/diet.
+    The caller has already verified the coach; this only delivers."""
+    is_diet = kind == "diet"
+    return notification_service.send(
+        db, athlete_id,
         "🥗 Diet plan updated" if is_diet else "💪 Workout plan updated",
-        f"{coach_name} updated your {'diet' if is_diet else 'training'} plan.",
+        f"{coach_name or 'Your coach'} updated your {'diet' if is_diet else 'training'} plan.",
         category="diet" if is_diet else "training",
         type="diet_updated" if is_diet else "workout_updated",
         action="diet" if is_diet else "training",
         priority="high",
         data={
             "type": "diet_updated" if is_diet else "workout_updated",
-            "coachingId": body.athleteId,
-            "coachId": caller["uid"],
+            "coachingId": athlete_id,
+            "coachId": coach_uid,
         },
         # One logical update = one notification, even if the coach's save path
         # writes several documents (plan + version snapshot + selections).
-        collapse_key=f"plan_{kind}_{body.athleteId}",
+        collapse_key=f"plan_{kind}_{athlete_id}",
     )
-    return {"success": True, **res}

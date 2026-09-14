@@ -23,6 +23,46 @@
 
   <main class="pr-main">
 
+    <!-- Personal Coaching Program pricing — saved through the backend
+         (program-pricing.js → PUT /api/coaching-programs/pricing), never a
+         direct Firestore write. Has its own Save button: the one at the
+         bottom of the page still saves only the prices below it. -->
+    <section class="pr-card" id="prProgramCard">
+      <div class="pr-card-head">
+        <span class="pr-card-icon">🗓️</span>
+        <div>
+          <h2 class="pr-card-title">Personal Coaching Program Pricing</h2>
+          <p class="pr-card-hint">Your price for each program. Leave a program blank to stop offering it. <span id="prProgramLimits"></span></p>
+        </div>
+      </div>
+      <div class="pr-field">
+        <label class="pr-label" for="prProgram10Day">10-Day Program · 10 days</label>
+        <div class="pr-input-wrap">
+          <span class="pr-rupee">₹</span>
+          <input class="pr-input" type="text" inputmode="decimal" autocomplete="off" id="prProgram10Day" placeholder="Not offered" />
+        </div>
+        <p class="pr-field-error" id="prProgram10DayError" hidden></p>
+      </div>
+      <div class="pr-field">
+        <label class="pr-label" for="prProgram1Month">1-Month Program · 30 days</label>
+        <div class="pr-input-wrap">
+          <span class="pr-rupee">₹</span>
+          <input class="pr-input" type="text" inputmode="decimal" autocomplete="off" id="prProgram1Month" placeholder="Not offered" />
+        </div>
+        <p class="pr-field-error" id="prProgram1MonthError" hidden></p>
+      </div>
+      <div class="pr-field">
+        <label class="pr-label" for="prProgram3Month">3-Month Program · 90 days</label>
+        <div class="pr-input-wrap">
+          <span class="pr-rupee">₹</span>
+          <input class="pr-input" type="text" inputmode="decimal" autocomplete="off" id="prProgram3Month" placeholder="Not offered" />
+        </div>
+        <p class="pr-field-error" id="prProgram3MonthError" hidden></p>
+      </div>
+      <button class="pr-save-btn" id="prProgramSaveBtn" type="button">Save Pricing</button>
+      <p class="pr-card-hint">Athletes see these prices when they choose a program. A request keeps the price it was sent at, even if you change it later.</p>
+    </section>
+
     <section class="pr-card">
       <div class="pr-card-head">
         <span class="pr-card-icon">📋</span>
@@ -113,5 +153,6 @@
   <div class="pr-toast" id="prToast"></div>
 
   <script src="pricing.js"></script>
+  <script src="program-pricing.js?v=20260913"></script>
 </body>
 </html>

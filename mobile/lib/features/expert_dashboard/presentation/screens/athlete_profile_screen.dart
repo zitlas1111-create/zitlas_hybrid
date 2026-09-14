@@ -103,7 +103,7 @@ class AthleteProfileScreen extends StatelessWidget {
                     if (_isCoachView) ...[
                       _PlanActions(
                         planDoc: planDoc,
-                        onEditDiet: () => _openDietEditor(context, plans, data, profile, planDoc),
+                        onEditDiet: () => _openDietEditor(context, plans, profile, planDoc),
                         onHistory: () => showPlanHistorySheet(
                           context,
                           athleteId: athleteId,
@@ -155,7 +155,6 @@ class AthleteProfileScreen extends StatelessWidget {
   Future<void> _openDietEditor(
     BuildContext context,
     CoachingPlanRepository plans,
-    Map<String, dynamic> athleteDoc,
     DietProfile profile,
     CoachingPlanDoc planDoc,
   ) {
@@ -169,7 +168,9 @@ class AthleteProfileScreen extends StatelessWidget {
           planType: planType,
           initialPlan: planDoc.diet,
           athleteProfile: profile,
-          athletePlanId: athleteDoc['planId'] as String?,
+          // The version this editor starts from: a publish on top of a newer
+          // plan (another device, the website) is refused, never overwritten.
+          baseVersion: planDoc.dietVersion,
           repository: plans,
         ),
       ),

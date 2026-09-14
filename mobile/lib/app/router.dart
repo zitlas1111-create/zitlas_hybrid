@@ -14,6 +14,7 @@ import '../features/auth/presentation/screens/expert_application_review_screen.d
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/splash_screen.dart';
 import '../features/chat/presentation/screens/chat_screen.dart';
+import '../features/coaching_programs/presentation/coaching_programs_screen.dart';
 import '../features/coaching_webview/coaching_webview_screen.dart';
 import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/diet/presentation/screens/diet_screen.dart';
@@ -270,6 +271,10 @@ GoRouter buildRouter(AuthState authState) {
       // admin-review pages. The screen itself claim-gates (backend `admin`
       // custom claim); a non-admin who reaches it sees an access-denied view.
       GoRoute(path: '/admin', builder: (context, state) => const AdminScreen()),
+      // Personal Coaching starts here (Phase 1): the three programs, replacing
+      // the old Diet / Training / Complete picker as the entry point. Native,
+      // not the WebView — see coaching_programs_screen.dart.
+      coachingProgramsRoute(),
       GoRoute(path: '/membership', builder: (context, state) => const MembershipScreen()),
       GoRoute(path: '/profile/personal-info', builder: (context, state) => const PersonalInfoScreen()),
       GoRoute(path: '/profile/help-support', builder: (context, state) => const HelpSupportScreen()),

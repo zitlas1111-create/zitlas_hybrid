@@ -265,13 +265,20 @@
   function validateDietStorage(storage) {
     if (!isNewDietSchema(storage)) return 'stale';
     var current = _currentPlanId();
+    /* THE shared plan-id safety rule (assets/js/diet-precedence.js and the
+       app's DietController, identical): only two PRESENT ids that differ
+       disagree. A stamped wrapper with no live planId yet is kept — never
+       deleted — exactly as the app keeps it. */
     if (storage.planId) {
-      return (current && storage.planId === current) ? 'valid' : 'stale';
+      return (!current || storage.planId === current) ? 'valid' : 'stale';
     }
-    var hasExpertLayer = !!storage.isExpertPlan ||
-      !!(storage.expertModifications && Object.keys(storage.expertModifications).length);
-    if (hasExpertLayer) return 'stale';
-    if (!current) return 'stale'; /* no active goal — nothing may render */
+    var mods = storage.expertModifications;
+    var hasExpertLayer = !!storage.isExpertPlan || !!(mods && Object.keys(mods).some(function (k) {
+      var v = mods[k];
+      return !!(v && typeof v === 'object' && Object.keys(v).length);
+    }));
+    if (hasExpertLayer) return 'stale'; /* an unstamped expert claim cannot prove its goal */
+    if (!current) return 'valid';       /* nothing to stamp against yet — keep it */
     storage.planId = current;
     return 'adopted';
   }
@@ -1934,48 +1941,29 @@
 
   var _PC_EMOJI = { breakfast: '🍳', lunch: '🍛', snacks: '🍎', snack: '🍎', dinner: '🥗' };
 
-  /* Goal-identity guard: a coach plan is only valid for the plan
-     generation (planId) it was authored against. When the athlete
-     regenerates/resets, the old coach plan silently retires here and the
-     fresh AI plan renders until the coach publishes for the new goal.
-     Fail-closed: a coach plan stamped with a different planId — or an
-     unstamped legacy plan while a current planId exists — never renders. */
-  function _pcCoachPlanIsCurrent(coachPlan) {
-    if (!coachPlan) return false;
-    var current = localStorage.getItem('zitlas_plan_id') || null;
-    if (!current) return false;
-    return coachPlan.planId === current;
-  }
-
-  /* PLAN PRIORITY (product spec): an expert-reviewed plan outranks the
-     coach plan, which outranks the raw AI plan.
-       1. expert-reviewed plan (completed review being previewed, or the
-          accepted expert wrapper in zitlas_diet_plan)
-       2. coach plan (active, or ended-but-kept)
-       3. AI plan
-     Without this yield, applyCoachDiet() unconditionally replaced
-     weeklyPlan on EVERY coaching_plans/personal_coaching snapshot — so a
-     nutritionist's reviewed plan (delivered via review-sync) rendered for
-     a moment and was then silently clobbered back to the coach's frozen
-     plan, and an ACCEPTED expert plan could never display at all while an
-     ended coaching relationship existed. That was the "expert reviewed
-     diet plan is not reflecting for users" bug whenever the athlete had
-     ever had a coach. */
-  function _pcExpertPlanActive() {
-    if (planSource === 'expert') return true;
-    /* loadDietStorage() is validated (stale/foreign-goal wrappers are
-       discarded inside it), so isExpertPlan here is trustworthy. */
-    var st = loadDietStorage();
-    return !!(st && st.isExpertPlan);
-  }
+  /* Which diet wins is decided by ONE rule shared with the app —
+     assets/js/diet-precedence.js (see applyCoachDiet below). The old local
+     rules it replaces hid an ACTIVE coaching diet whenever an expert review
+     had been accepted, whenever the athlete had no AI plan (no planId), and
+     whenever the coach plan carried a null planId — none of which the app
+     did, so the two clients showed different diets for the same account. */
 
   function applyCoachDiet() {
     var coachDiet = _pcPlanDoc && _pcPlanDoc.diet;
-    if (!_pcShowsCoachPlan() || !coachDiet || !coachDiet.days || !coachDiet.days.length ||
-        !_pcCoachPlanIsCurrent(coachDiet) || _pcExpertPlanActive()) {
-      /* Not eligible / no coach plan / outranked by an expert-reviewed
-         plan — leave the AI/expert flow exactly as-is. If we had been
-         showing a coach plan and it lost eligibility, reload to restore
+    /* THE diet precedence rule (assets/js/diet-precedence.js — the app runs
+       the identical rule against the same fixture): an ACTIVE coaching diet
+       is the athlete's current diet. An accepted expert review, a missing AI
+       plan or a null planId does not hide it; only an inactive/ended/expired
+       relationship, no diet coverage, no meals, another coach's leftover
+       plan, or two PRESENT planIds that differ. */
+    var eligible = typeof ZitlasDietPrecedence !== 'undefined' &&
+      ZitlasDietPrecedence.coachDietActive({
+        relationship: _pcRel, coachingPlan: _pcPlanDoc,
+        livePlanId: _currentPlanId(), now: new Date(),
+      });
+    if (!eligible || !coachDiet || !Array.isArray(coachDiet.days)) {
+      /* Not eligible — leave the AI/expert flow exactly as-is. If we had
+         been showing a coach plan and it lost eligibility, reload to restore
          the pristine pipeline rather than half-reverting state. */
       if (_pcActive) { _pcActive = false; window.location.reload(); }
       return;
@@ -3127,6 +3115,9 @@
        leave the user planless. ── */
     _recoverFromMaster().then(function (recovered) {
       if (recovered) return;
+      /* Never "No Plan Yet" over an active coaching diet — an athlete who
+         is coached has a plan even without an AI one. */
+      if (_pcActive) return;
       console.log('[DIET CACHE] No diet plan found (master recovery unavailable) — showing assessment CTA');
       showLoading(false);
       renderAssessmentCta();
@@ -3136,13 +3127,15 @@
   function _recoverFromMaster() {
     var currentPlanId = _currentPlanId();
     var uid = _pcUid();
-    if (!currentPlanId || !uid || typeof ZitlasDB === 'undefined') return Promise.resolve(false);
+    if (!uid || typeof ZitlasDB === 'undefined') return Promise.resolve(false);
     return ZitlasDB.collection('users').doc(uid).get().then(function (snap) {
       var master = snap.exists ? snap.data().dietPlanMaster : null;
-      if (!master || !master.plan || !master.plan.days || !master.plan.days.length) return false;
-      /* Same fail-closed goal-identity rule as everything else: the
-         master only restores the CURRENT generation's plan. */
-      if (master.planId !== currentPlanId) {
+      /* Written as {planId, plan: {days}} (ai-coach.js); a flat copy is read too. */
+      var masterPlan = master && master.plan && master.plan.days ? master.plan : master;
+      if (!masterPlan || !masterPlan.days || !masterPlan.days.length) return false;
+      /* The shared plan-id rule: a master stamped for a DIFFERENT goal is
+         never restored; a missing id on either side is not a contradiction. */
+      if (master.planId && currentPlanId && master.planId !== currentPlanId) {
         console.log('[DIET RECOVERY] master exists but belongs to plan', master.planId, '— not', currentPlanId);
         return false;
       }
@@ -3150,15 +3143,18 @@
       /* Rebuild the pure-AI wrapper; saveDietStorage also re-writes the
          cloud working copy, healing every other device. */
       saveDietStorage({
-        originalDietPlan:    master.plan,
-        currentDietPlan:     master.plan,
+        originalDietPlan:    masterPlan,
+        currentDietPlan:     masterPlan,
         expertModifications: {},
         isExpertPlan:        false,
         expertName:          null,
         reviewedAt:          null,
-        planId:              master.planId,
+        planId:              master.planId || currentPlanId || null,
       });
-      weeklyPlan = normalizePlan(JSON.parse(JSON.stringify(master.plan)));
+      /* An active coaching diet may already own the screen — the recovered
+         AI plan is stored underneath, never painted over it. */
+      if (_pcActive) return true;
+      weeklyPlan = normalizePlan(JSON.parse(JSON.stringify(masterPlan)));
       planSource = 'ai';
       showLoading(false);
       renderPlanMeta();
@@ -3615,154 +3611,69 @@
   }
 
   function acceptExpertPlan(review) {
-    console.log("ACCEPT EXPERT PLAN CALLED");
-    console.log(review);
-
-    /* Build expertModifications — support multiple field name conventions from expert dashboard */
-    var _mods    = {};
-    var _history = review.mealChangeHistory || review.meal_change_history || review.changeHistory || review.changes || [];
-    var _expName = review.expertName || review.expert_name || 'Expert';
-
-    console.log("[REVIEW HISTORY]", review.mealChangeHistory);
-    console.log("[REVIEWED PLAN]", review.reviewedDietPlan);
-    console.log("_history", _history);
-
-    _history.forEach(function (change) {
-      /* Support both camelCase and snake_case field names */
-      var _rawDayIdx = change.dayIndex != null ? change.dayIndex : (change.day_index != null ? change.day_index : 0);
-      var _dk        = String(_rawDayIdx);
-      var _rawName   = change.mealName || change.meal_name || change.name || '';
-      var _mk        = _mealKey(_rawName);
-      if (!_mods[_dk]) _mods[_dk] = {};
-      _mods[_dk][_mk] = {
-        modified:   true,
-        modifiedBy: change.modifiedBy || change.modified_by || _expName,
-        modifiedAt: change.modifiedAt || change.modified_at || review.reviewedAt || new Date().toISOString(),
-        oldMeal: {
-          foods:     change.oldFoods  || change.old_foods  || [],
-          calories:  change.oldCalories  || change.old_calories  || null,
-          protein_g: change.oldProtein   || change.old_protein   || null,
-        },
-        newMeal: {
-          foods:     change.newFoods  || change.new_foods  || [],
-          calories:  change.newCalories || change.new_calories || null,
-          protein_g: change.newProtein  || change.new_protein  || null,
-        },
-      };
+    /* LOSSLESS (assets/js/diet-review.js): the COMPLETE reviewed plan is
+       stored — nothing rebuilt by matching meal names — and "saved" means the
+       SERVER has it (users/{uid}.dietPlan through cloud sync), so it survives
+       a reload, the next hydrate, and the app. */
+    if (typeof ZitlasDietReview === 'undefined') {
+      showToast('⚠️ Could not apply the plan — please reload and try again.');
+      return;
+    }
+    var current = _currentPlanId();
+    if (review.planId && current && review.planId !== current) {
+      showToast('⚠️ This review was for a previous plan — ask your expert to review your current plan.');
+      return;
+    }
+    var existing = loadDietStorage();
+    var storage = ZitlasDietReview.buildAcceptedStorage(review, {
+      originalPlan: existing && (existing.originalDietPlan || existing.currentDietPlan),
+      currentPlanId: current,
     });
-
-    console.log("[MODS GENERATED]", _mods);
-
-    /* originalDietPlan = plan before expert touched it.
-       Prefer: existing stored original → review.planData → review.context.diet_plan (unwrap if new schema) */
-    var _existingStorage = loadDietStorage();
-    /* review.context.diet_plan may be in new-schema format — unwrap it */
-    var _contextRaw  = review.planData || (review.context && review.context.diet_plan) || null;
-    var _contextPlan = _contextRaw;
-    if (_contextRaw && (_contextRaw.originalDietPlan || _contextRaw.currentDietPlan)) {
-      _contextPlan = _contextRaw.originalDietPlan || _contextRaw.currentDietPlan;
+    if (!storage) { showToast('⚠️ This review has no plan to apply.'); return; }
+    if (!storage.planId) {
+      /* Nothing to stamp the plan with. Both clients discard an expert plan
+         that cannot prove which goal it belongs to (shared precedence rule),
+         so writing it would look applied and then vanish on the next load. */
+      showToast("⚠️ This review can't be matched to your current plan, so it wasn't applied — ask your expert to review your latest plan.");
+      return;
     }
-    var _originalPlan = (_existingStorage && _existingStorage.originalDietPlan)
-                     || (_existingStorage && _existingStorage.currentDietPlan)
-                     || _contextPlan
-                     || null;
-
-    /* Always scan reviewedDietPlan for _edited meals.
-       - Creates entries for meals missed by mealChangeHistory (history empty or key mismatch)
-       - Fixes entries where newFoods arrived empty from history (reviewedDietPlan is authoritative for foods) */
-    if (review.reviewedDietPlan) {
-      var reviewedPlan = review.reviewedDietPlan;
-      console.log('[REVIEWED PLAN]', reviewedPlan);
-      var _revDays  = reviewedPlan.days || [];
-      var _origDays = _originalPlan ? (_originalPlan.days || []) : [];
-      _revDays.forEach(function (revDay, dayIdx) {
-        console.log('[DAY]', revDay);
-        console.log('[MEALS]', revDay.meals);
-        console.log('[TYPE]', typeof revDay.meals);
-        console.log('[IS ARRAY]', Array.isArray(revDay.meals));
-        var _revMealsArr = _mealsToArray(revDay.meals);
-        _revMealsArr.forEach(function (revMeal) {
-          if (!revMeal._edited) return;
-          var _mealName = revMeal.meal_name || revMeal.name || '';
-          var _dk       = String(dayIdx);
-          var _mk       = revMeal._mealKey || _mealKey(_mealName);
-          var _origDay  = _origDays[dayIdx];
-          var _origMeal = _origDay ? _findMealByKey(_origDay.meals, _mk) : null;
-          if (!_mods[_dk]) _mods[_dk] = {};
-          if (!_mods[_dk][_mk]) {
-            /* Entry not built from history — create it from _edited flag */
-            _mods[_dk][_mk] = {
-              modified:   true,
-              modifiedBy: _expName,
-              modifiedAt: review.reviewedAt || new Date().toISOString(),
-              oldMeal: _origMeal
-                ? { foods: _origMeal.foods || [], calories: _origMeal.calories || null, protein_g: _origMeal.protein_g || null }
-                : { foods: [] },
-              newMeal: { foods: revMeal.foods || [], calories: revMeal.calories || null, protein_g: revMeal.protein_g || null },
-            };
-          } else {
-            /* Entry exists from history — fix foods if history had empty newFoods */
-            if (!_mods[_dk][_mk].newMeal) _mods[_dk][_mk].newMeal = {};
-            if (!_mods[_dk][_mk].newMeal.foods || !_mods[_dk][_mk].newMeal.foods.length) {
-              _mods[_dk][_mk].newMeal.foods = revMeal.foods || [];
-            }
-            if (!_mods[_dk][_mk].newMeal.calories && revMeal.calories) {
-              _mods[_dk][_mk].newMeal.calories = revMeal.calories;
-            }
-            if (!_mods[_dk][_mk].newMeal.protein_g && revMeal.protein_g) {
-              _mods[_dk][_mk].newMeal.protein_g = revMeal.protein_g;
-            }
-          }
-        });
-      });
-    }
-
-    console.log("_mods before save", _mods);
-    console.log("[FINAL MODS]", _mods);
-
-    saveDietStorage({
-      originalDietPlan:    _originalPlan || review.reviewedDietPlan,
-      currentDietPlan:     _originalPlan || review.reviewedDietPlan,
-      expertModifications: _mods,
-      isExpertPlan:        true,
-      expertName:          _expName,
-      expertId:            review.expertId || null,
-      expertNotes:         review.expertNotes || null,
-      reviewedAt:          review.reviewedAt || new Date().toISOString(),
-      /* Same explicit review metadata the expert-side auto-apply writes —
-         one schema regardless of which path delivered the plan. */
-      reviewStatus:        'completed',
-      planSource:          'expert_reviewed',
-      reviewId:            review.id || null,
-      version:             review.version || 1,
-      lastUpdated:         new Date().toISOString(),
-      /* Goal-identity stamp — this accepted expert layer belongs to the
-         plan generation the review was made for. */
-      planId:              review.planId || _currentPlanId(),
+    var previousRaw = localStorage.getItem('zitlas_diet_plan');
+    var persist = (typeof ZitlasCloudSync !== 'undefined' && typeof ZitlasCloudSync.saveStrict === 'function')
+      ? ZitlasCloudSync.saveStrict('dietPlan', storage)
+      : Promise.reject(new Error('cloud_sync_unavailable'));
+    persist.then(function () {
+      /* The review itself: accepted (the athlete may set this). */
+      if (typeof ZitlasDB !== 'undefined' && review.id) {
+        ZitlasDB.collection('review_requests').doc(review.id)
+          .update({ athleteAccepted: true, acceptedAt: new Date().toISOString() })
+          .catch(function (e) { console.warn('[ACCEPT] could not mark the review accepted', e); });
+      }
+      var all = safeJSON('expert_plan_reviews', []);
+      var idx = all.findIndex(function (r) { return r.id === review.id; });
+      if (idx !== -1) {
+        all[idx].athleteAccepted = true;
+        try { localStorage.setItem('expert_plan_reviews', JSON.stringify(all)); } catch (_) {}
+      }
+      activePlanReview = Object.assign({}, review, { athleteAccepted: true });
+      hideExpertReviewBanner();
+      closeDietCompSheet();
+      /* An active coaching diet keeps the screen (shared precedence); the
+         accepted plan is stored underneath it. */
+      if (planSource !== 'coach') {
+        weeklyPlan = normalizePlan(buildEffectivePlan(loadDietStorage() || storage));
+        planSource = 'expert';
+        renderFocusCard(weeklyPlan, null);
+        renderDay(currentDay);
+      }
+      showToast("✅ Expert's plan saved to your diet!");
+    }, function (e) {
+      console.error('[ACCEPT] cloud save failed — the plan was NOT saved', e);
+      try {
+        if (previousRaw === null) localStorage.removeItem('zitlas_diet_plan');
+        else localStorage.setItem('zitlas_diet_plan', previousRaw);
+      } catch (_) {}
+      showToast("⚠️ Couldn't save the expert's plan — check your connection and try again.");
     });
-    console.log("AFTER SAVE", JSON.parse(localStorage.getItem("zitlas_diet_plan")));
-
-    /* Immediately rebuild in-memory plan so the UI reflects expert changes without a refresh */
-    var _acceptedStorage = loadDietStorage();
-    console.log("[ACCEPT] Storage", _acceptedStorage);
-    weeklyPlan = normalizePlan(buildEffectivePlan(_acceptedStorage));
-    planSource = 'expert';
-    console.log("[ACCEPT] WeeklyPlan", weeklyPlan);
-    console.log("[ACCEPT] Day", weeklyPlan && weeklyPlan.days && weeklyPlan.days[currentDay]);
-
-    /* Mark accepted in expert_plan_reviews */
-    var all = safeJSON('expert_plan_reviews', []);
-    var idx = all.findIndex(function (r) { return r.id === review.id; });
-    if (idx !== -1) {
-      all[idx].athleteAccepted = true;
-      try { localStorage.setItem('expert_plan_reviews', JSON.stringify(all)); } catch (_) {}
-    }
-    activePlanReview = Object.assign({}, review, { athleteAccepted: true });
-    hideExpertReviewBanner();
-    closeDietCompSheet();
-    renderFocusCard(weeklyPlan, null);
-    renderDay(currentDay);
-    showToast("✅ Expert's plan saved to your diet!");
   }
 
   /* ══════════════════════════════════════════
@@ -3772,7 +3683,11 @@
     var container = document.getElementById('expertChangeSummary');
     if (!container) return;
 
-    var history = review.mealChangeHistory || [];
+    /* Both history formats (flat oldFoods/newFoods, and older oldMeal/newMeal
+       records) read the same way — assets/js/diet-review.js. */
+    var history = (typeof ZitlasDietReview !== 'undefined')
+      ? ZitlasDietReview.normalizeHistory(review.mealChangeHistory)
+      : (review.mealChangeHistory || []);
     container.style.display = '';
 
     if (!history.length) {
@@ -3845,7 +3760,10 @@
   /* Look up the change record for a specific meal (by dayIndex + mealIndex or mealName) */
   function getChangeForMeal(dayIndex, mi, mealName) {
     if (!activePlanReview || !Array.isArray(activePlanReview.mealChangeHistory)) return null;
-    return activePlanReview.mealChangeHistory.find(function(c) {
+    var list = (typeof ZitlasDietReview !== 'undefined')
+      ? ZitlasDietReview.normalizeHistory(activePlanReview.mealChangeHistory)
+      : activePlanReview.mealChangeHistory;
+    return list.find(function(c) {
       return c.dayIndex === dayIndex && (c.mealIndex === mi || c.mealName === mealName);
     }) || null;
   }
@@ -4104,17 +4022,12 @@
      only applies to the base AI plan. */
   function _reloadAndRenderPlan() {
     if (planSource === 'coach') {
-      /* Expert-reviewed plan outranks the coach plan (product priority:
-         expert > coach > AI). When an expert-applied plan arrives
-         remotely (users/{uid}.dietPlan updated by the nutritionist's
-         Complete Review) while the coach plan owns the screen, exit
-         coach mode via the same clean full-reload transition
-         applyCoachDiet() itself uses — after reload, init() renders the
-         expert wrapper and applyCoachDiet() yields to it. Without this,
-         the guard below silently swallowed the live update whenever the
-         athlete had an active/ended coaching relationship. */
-      var _incoming = loadDietStorage();
-      if (_incoming && _incoming.isExpertPlan) { window.location.reload(); }
+      /* The ACTIVE coaching diet outranks the users/{uid}.dietPlan wrapper
+         (shared precedence — assets/js/diet-precedence.js), so a remote
+         change to the AI/expert plan never unseats it; applyCoachDiet()
+         hands the screen back when coaching stops being eligible. The
+         wrapper is still validated and cached underneath. */
+      loadDietStorage();
       return;
     }
     var storage = loadDietStorage();

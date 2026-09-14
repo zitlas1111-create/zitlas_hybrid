@@ -98,9 +98,14 @@ class _PlanHistorySheetState extends State<_PlanHistorySheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _restoring = null);
+      // The backend's reason (coaching ended, a newer publish, no connection)
+      // is worth more than a generic failure.
+      final reason = e is CoachPlanConflictException || e is CoachPlanSaveException
+          ? e.toString()
+          : 'Could not restore. Please try again.';
       messenger
         ..hideCurrentSnackBar()
-        ..showSnackBar(const SnackBar(content: Text('Could not restore. Please try again.')));
+        ..showSnackBar(SnackBar(content: Text(reason)));
     }
   }
 

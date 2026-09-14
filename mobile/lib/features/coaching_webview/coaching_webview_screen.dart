@@ -21,6 +21,7 @@ import '../../core/notifications/fcm_service.dart';
 import '../../core/notifications/presentation/push_permission_banner.dart';
 import '../../core/widgets/zitlas_loading_ring.dart';
 import '../auth/auth_state.dart';
+import '../coaching_programs/coaching_programs.dart';
 
 /// Personal Coaching, served by the Website inside a secure, chromeless
 /// WebView until native Flutter reaches feature parity. This is the ONLY
@@ -37,7 +38,9 @@ import '../auth/auth_state.dart';
 ///  * logout (the native app owns the real session, so the website hands
 ///    logout back to Flutter to finish — see [_onLogout]);
 ///  * OS-level capabilities: the camera/gallery file chooser for chat photos,
-///    and camera/mic permission grants for coach voice/video calls.
+///    and camera/mic permission grants for coach voice/video calls;
+///  * the way INTO Personal Coaching: the website's Personal Coach buttons
+///    open the native Programs screen (Phase 1) — see [_openPrograms].
 /// The Android back button already walks the Website's OWN page history first
 /// (see the `PopScope` in [build]) and only leaves this screen — back to the
 /// native Experts list — once that history is exhausted.
@@ -90,8 +93,13 @@ class CoachingWebViewScreen extends StatefulWidget {
   /// verified against the live site, not the older `getCoachId()` helper
   /// (dead code, never called) that only reads `id=`.
   factory CoachingWebViewScreen.coachProfile({required String expertId, String? action}) {
+    // `nativePrograms=1` tells cprofile.js this app has the native Personal
+    // Coaching Programs screen, so its Personal Coach buttons hand the tap
+    // back here (`open-programs:<expertId>`) instead of opening the old plan
+    // picker. A build without the flag keeps the website's picker, so the
+    // button never goes dead whichever side ships first.
     var path = '/pages/coaches/cprofile.html'
-        '?expertId=${Uri.encodeComponent(expertId)}&webview=1';
+        '?expertId=${Uri.encodeComponent(expertId)}&webview=1&nativePrograms=1';
     if (action != null && action.isNotEmpty) path += '&action=$action';
     return CoachingWebViewScreen(relativePath: path, title: 'Coach Profile');
   }
@@ -329,9 +337,20 @@ class _CoachingWebViewScreenState extends State<CoachingWebViewScreen> {
       _onAuthOk(m);
     } else if (m.startsWith('auth-fail:')) {
       _onAuthFail(m.substring('auth-fail:'.length));
+    } else if (isOpenProgramsBridgeMessage(m)) {
+      _openPrograms(expertIdFromProgramsBridgeMessage(m));
     }
     // Everything else (bridge-active, token-claims, auth-state, session-restored)
     // is diagnostic and already logged above.
+  }
+
+  /// Personal Coaching starts on the native Programs screen (Phase 1). The
+  /// website's Personal Coach buttons post `open-programs:<expertId>` instead
+  /// of opening their own Diet / Training / Complete picker; the screen opens
+  /// on top of this WebView, so back returns to the coach's profile.
+  void _openPrograms(String? expertId) {
+    if (!mounted) return;
+    GoRouter.of(context).push(coachingProgramsLocation(expertId: expertId));
   }
 
   /// Mints a custom token for the CURRENT native user and hands it to the page,

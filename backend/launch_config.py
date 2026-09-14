@@ -69,6 +69,16 @@ PERSONAL_COACHING_PRICE: int = int(os.getenv("PERSONAL_COACHING_PRICE", "0"))
 EXPERT_SERVICES_PAYMENT_REQUIRED: bool = _env_bool(
     "EXPERT_SERVICES_PAYMENT_REQUIRED", False)
 
+#: Personal Coaching PROGRAMS (10-Day / 1-Month / 3-Month) — each expert's
+#: own price, paid in full from the ZITLAS Wallet after the expert accepts
+#: (routes/coaching_programs.py). A SEPARATE switch from
+#: PERSONAL_COACHING_PAYMENT_REQUIRED on purpose: the existing monthly
+#: Personal Coaching plans (routes/coaching.py) stay free, and turning this
+#: off refuses every program payment (503, nothing charged) without touching
+#: any other flow.
+COACHING_PROGRAMS_PAYMENT_ENABLED: bool = _env_bool(
+    "COACHING_PROGRAMS_PAYMENT_ENABLED", True)
+
 #: Expert verification/onboarding — frozen. The three approved experts stay
 #: authorized; there is no public application, and no fee for becoming one.
 EXPERT_VERIFICATION_ENABLED: bool = _env_bool("EXPERT_VERIFICATION_ENABLED", False)
@@ -189,6 +199,14 @@ def assert_expert_service_charge_allowed(amount: float) -> None:
     raise _frozen("expert_services_are_free",
                   "This expert service is free — no payment is required.",
                   amount=amount)
+
+
+def assert_program_payment_enabled() -> None:
+    """Refuse Personal Coaching Program payments while they are switched off."""
+    if COACHING_PROGRAMS_PAYMENT_ENABLED:
+        return
+    raise _frozen("program_payments_disabled",
+                  "Program payments are not available right now. Nothing was charged.")
 
 
 def assert_expert_verification_open() -> None:

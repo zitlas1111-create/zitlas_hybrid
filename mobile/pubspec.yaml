@@ -117,6 +117,12 @@ flutter:
     - assets/images/zino.png
     - assets/images/zino_intro.png
     - assets/images/zino_done.png
+    # Personal Coaching Programs (Phase 1) — the three program banners, used
+    # exactly as supplied. Their file names contain spaces; Flutter bundles
+    # them under these exact keys.
+    - assets/images/10 program.png
+    - assets/images/1 month program.png
+    - assets/images/3 month.png
     # Rest Timer completion chime — a synthesized two-note ascending sine
     # tone (E6->A6, ~0.6s), not a licensed/stock sound. Played via audioplayers
     # (already a dependency) only while the app is foregrounded; the

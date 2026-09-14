@@ -30,7 +30,7 @@
   <script src="../../assets/js/webrtc-call.js"></script>
   <script src="../../assets/js/call-ui.js?v=20260723"></script>
   <script src="../../assets/js/chat-attachments.js?v=20260825a"></script>
-  <script src="../../components/coaching-workspace.js?v=20260827a"></script>
+  <script src="../../components/coaching-workspace.js?v=20260913"></script>
   <script src="../../assets/js/certificate-manager.js?v=20260717"></script>
 </head>
 <body class="zitlas-premium-bg">
@@ -173,6 +173,24 @@
     <!-- ── SECTION: Personal Coaching ── -->
     <section class="ed-section" id="sectionCoaching">
       <div class="ed-section-label">Personal Coaching</div>
+
+      <!-- Personal Coaching Program Requests (program-requests.js). Read and
+           decided through /api/coaching-programs; accepting does not charge
+           the athlete or start coaching — payment comes in a later phase. -->
+      <div class="cpr-block" id="cprBlock">
+        <div class="cpr-head">
+          <div class="ed-section-label">Personal Coaching Program Requests</div>
+          <span class="pr-tab-badge" id="cprPendingCount" style="display:none">0</span>
+          <button class="cpr-refresh" id="cprRefresh" type="button" aria-label="Refresh program requests">Refresh</button>
+        </div>
+        <div id="cprRequestList">
+          <div class="ed-empty-state" id="cprEmpty">
+            <span class="ed-empty-icon">🗓️</span>
+            <p class="ed-empty-title">No program requests yet</p>
+            <p class="ed-empty-sub">When an athlete requests one of your programs, it appears here.</p>
+          </div>
+        </div>
+      </div>
 
       <div class="pr-inbox-tabs">
         <button class="pr-inbox-tab pr-inbox-tab--active" data-coaching-tab="pending">
@@ -630,7 +648,9 @@
 
   <script src="../../assets/js/expert-profile.js"></script>
   <script src="../../assets/js/role-service.js?v=20260825a"></script>
-  <script src="expert-dashboard.js?v=20260825b"></script>
+  <script src="../../assets/js/diet-review.js?v=20260913"></script>
+  <script src="expert-dashboard.js?v=20260913"></script>
+  <script src="program-requests.js?v=20260913"></script>
   <script src="../../assets/js/push-notifications.js?v=20260912"></script>
 </body>
 </html>
