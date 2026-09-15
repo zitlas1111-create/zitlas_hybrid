@@ -80,7 +80,21 @@ class CoachingProgramsController extends ChangeNotifier {
 
   Future<void> load() async {
     final repo = repository;
-    final id = expertId;
+    var id = expertId;
+    if (repo != null && (id == null || id.isEmpty)) {
+      // Opened without an expert: restore the athlete's current program —
+      // waiting or running — from the server, so an app restart never hides
+      // it. A failure just leaves "choose an expert" in place.
+      try {
+        final current = await repo.fetchCurrentRequest();
+        if (current != null && current.expertId.isNotEmpty) {
+          _expertId = id = current.expertId;
+        }
+      } catch (e) {
+        debugPrint('[COACHING PROGRAMS] could not restore the current program: $e');
+      }
+      if (_disposed) return;
+    }
     if (repo == null || id == null || id.isEmpty) {
       _offer = null;
       _state = ProgramsLoadState.ready;

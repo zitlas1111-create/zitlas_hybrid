@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>ZITLAS — Personal Coaching Programs</title>
+  <link rel="stylesheet" href="../../assets/css/theme.css" />
+  <link rel="stylesheet" href="coaching-programs.css?v=20260915" />
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+  <script src="../../assets/js/firebase-config.js?v=20260718a"></script>
+  <script src="../../assets/js/cloud-sync.js?v=20260913"></script>
+  <script src="../../assets/js/payment-service.js?v=20260722"></script>
+</head>
+<body>
+
+  <header class="cpg-header">
+    <button class="cpg-back" id="cpgBack" type="button" aria-label="Go back">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+  </header>
+
+  <main class="cpg-main">
+    <section class="cpg-intro">
+      <div class="cpg-eyebrow cpg-eyebrow--brand">ZITLAS PERSONAL COACHING</div>
+      <h1 class="cpg-title">Personal Coaching Programs</h1>
+      <p class="cpg-sub">Work 1:1 with a ZITLAS expert on your nutrition. Choose the program that fits your goal.</p>
+      <div class="cpg-expert-line" id="cpgExpert"></div>
+      <div id="cpgNotice"></div>
+    </section>
+
+    <div class="cpg-list" id="cpgList" aria-live="polite"></div>
+  </main>
+
+  <!-- Choose your expert -->
+  <div class="cpg-overlay" id="cpgPicker" hidden>
+    <div class="cpg-sheet" role="dialog" aria-modal="true" aria-labelledby="cpgPickerTitle">
+      <div class="cpg-sheet-head">
+        <h2 id="cpgPickerTitle">Choose your expert</h2>
+        <button class="cpg-close" id="cpgPickerClose" type="button" aria-label="Close">&times;</button>
+      </div>
+      <p class="cpg-sheet-sub" id="cpgPickerSub"></p>
+      <div class="cpg-sheet-body" id="cpgPickerBody"></div>
+    </div>
+  </div>
+
+  <!-- Review the program before sending -->
+  <div class="cpg-overlay" id="cpgReview" hidden>
+    <div class="cpg-dialog" role="dialog" aria-modal="true" aria-labelledby="cpgReviewTitle">
+      <h2 id="cpgReviewTitle"></h2>
+      <p class="cpg-dialog-body" id="cpgReviewBody"></p>
+      <div class="cpg-dialog-actions">
+        <button class="cpg-btn cpg-btn--ghost" id="cpgReviewCancel" type="button">Cancel</button>
+        <button class="cpg-btn cpg-btn--primary" id="cpgReviewSend" type="button">Send Request</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="cpg-toast" id="cpgToast" role="status" aria-live="polite"></div>
+
+  <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+  <script src="../../components/wallet.js?v=20260718"></script>
+  <script src="../../assets/js/coaching-programs-flow.js?v=20260915"></script>
+  <script src="coaching-programs.js?v=20260915"></script>
+</body>
+</html>

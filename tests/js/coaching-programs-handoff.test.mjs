@@ -1,12 +1,15 @@
 /**
- * ZITLAS — Personal Coaching Programs, Phase 1 (tests/js/coaching-programs-handoff.test.mjs)
+ * ZITLAS — Personal Coaching Programs: every way in (tests/js/coaching-programs-handoff.test.mjs)
  *
- * Inside the Flutter app, Personal Coaching starts on the NATIVE Programs
- * screen. cprofile.js's Personal Coach buttons therefore hand the tap to
- * Flutter (`open-programs:<expertId>`) instead of opening the old Diet /
- * Training / Complete plan sheet — but ONLY when the app advertises that
- * screen (`nativePrograms=1`). A normal browser, and an older app build,
- * keep the sheet, so the button can never go dead.
+ * The coach profile's Personal Coach buttons start Personal Coaching on the
+ * PROGRAMS flow, on both clients:
+ *   * inside the Flutter app (the page advertises `nativePrograms=1`) the tap
+ *     is handed to Flutter as `open-programs:<expertId>` — the native screen;
+ *   * in a browser (or an older app build without the native screen) it
+ *     opens the website's Programs page, /pages/coaching-programs/, with the
+ *     same expert — the same programs and the same /api/coaching-programs flow.
+ * The old Diet / Training / Complete plan sheet is no longer opened by any
+ * entry.
  *
  * Run:  node tests/js/coaching-programs-handoff.test.mjs
  */
@@ -48,6 +51,14 @@ function handOff({ search = '', channel = 'ok' } = {}) {
   return { handedOff: ctx._cpHandOffToNativePrograms('coach-9'), posted: [...posted] };
 }
 
+/* Runs the real _cpProgramsUrl. */
+function programsUrl(expertId) {
+  const ctx = {};
+  vm.createContext(ctx);
+  vm.runInContext(extractFn(CP, '_cpProgramsUrl'), ctx);
+  return ctx._cpProgramsUrl(expertId);
+}
+
 const APP_WITH_PROGRAMS = '?expertId=coach-9&webview=1&nativePrograms=1';
 const OLDER_APP = '?expertId=coach-9&webview=1';
 
@@ -62,24 +73,24 @@ it('inside an app that has the Programs screen, the tap goes to Flutter', () => 
   assert.deepEqual(posted, ['open-programs:coach-9']);
 });
 
-it('an older app build (no flag) keeps the existing plan sheet', () => {
+it('an older app build (no flag) is not handed off — it gets the website Programs page', () => {
   const { handedOff, posted } = handOff({ search: OLDER_APP });
   assert.equal(handedOff, false);
   assert.deepEqual(posted, [], 'nothing may be posted to an app that cannot handle it');
 });
 
-it('a normal browser keeps the existing plan sheet', () => {
+it('a normal browser is not handed off — it gets the website Programs page', () => {
   const { handedOff, posted } = handOff({ search: '?expertId=coach-9', channel: 'none' });
   assert.equal(handedOff, false);
   assert.deepEqual(posted, []);
 });
 
-it('the flag without the app channel (a copied link) keeps the sheet', () => {
+it('the flag without the app channel (a copied link) is not handed off', () => {
   const { handedOff } = handOff({ search: APP_WITH_PROGRAMS, channel: 'none' });
   assert.equal(handedOff, false);
 });
 
-it('a failing channel falls back to the sheet rather than a dead button', () => {
+it('a failing channel falls back to the website page rather than a dead button', () => {
   const { handedOff } = handOff({ search: APP_WITH_PROGRAMS, channel: 'throws' });
   assert.equal(handedOff, false);
 });
@@ -90,15 +101,21 @@ it('only an exact nativePrograms=1 counts', () => {
   assert.equal(handOff({ search: '?nativePrograms=1&webview=1' }).handedOff, true);
 });
 
+it('the website Programs page carries the same expert', () => {
+  assert.equal(programsUrl('coach-9'), '/pages/coaching-programs/coaching-programs.html?expertId=coach-9');
+  assert.equal(programsUrl('a b/c'), '/pages/coaching-programs/coaching-programs.html?expertId=a%20b%2Fc');
+  assert.equal(programsUrl(''), '/pages/coaching-programs/coaching-programs.html');
+});
+
 /* ── Where it is wired ────────────────────────────────────────────────── */
 
 const entrySlice = CP.slice(CP.indexOf('/* Entry buttons */'), CP.indexOf('/* Send Coaching Request'));
 
-it('the Personal Coach buttons open Personal Coaching through the hand-off', () => {
+it('the Personal Coach buttons open Personal Coaching through the one entry', () => {
   assert.ok(entrySlice.length > 0, 'entry-button block not found');
   assert.match(entrySlice, /openCoachingEntry\(\);/);
   assert.doesNotMatch(entrySlice, /openCoachingSheet\(\);/,
-    'the buttons must no longer open the plan sheet directly');
+    'the buttons must not open the plan sheet directly');
 });
 
 it('active coaching and pending requests are still handled first, as before', () => {
@@ -110,9 +127,12 @@ it('active coaching and pending requests are still handled first, as before', ()
     'an athlete who is already coaching still reaches their workspace, not Programs');
 });
 
-it('openCoachingEntry tries the hand-off before the sheet', () => {
+it('openCoachingEntry: the app hand-off first, otherwise the website Programs page', () => {
   const body = extractFn(CP, 'openCoachingEntry');
-  assert.ok(body.indexOf('_cpHandOffToNativePrograms(coach.id)') < body.indexOf('openCoachingSheet()'));
+  const handoff = body.indexOf('_cpHandOffToNativePrograms(coach.id)');
+  const page = body.indexOf('_cpProgramsUrl(coach.id)');
+  assert.ok(handoff !== -1 && page !== -1 && handoff < page);
+  assert.doesNotMatch(body, /openCoachingSheet\(\)/, 'no entry opens the old plan sheet any more');
 });
 
 it('"Continue with Personal Coaching" (trial ended) uses the same entry', () => {

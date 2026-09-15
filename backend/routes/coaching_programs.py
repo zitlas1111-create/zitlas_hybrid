@@ -38,6 +38,7 @@ import re
 import secrets
 import time
 import traceback
+from datetime import datetime, timezone
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, HTTPException
@@ -195,6 +196,30 @@ async def get_expert_programs(expert_id: str, caller: dict = Depends(verify_fire
     }
 
 
+def _text(value: Any) -> str | None:
+    return value.strip() if isinstance(value, str) and value.strip() else None
+
+
+def _photo_url(expert: dict) -> str | None:
+    """The expert's profile photo — the same fields the apps' expert cards
+    read — and only an http(s) URL, never a data: blob or a storage path."""
+    for key in ("profilePhoto", "photo", "image", "photoURL", "photoUrl"):
+        value = _text(expert.get(key))
+        if value and value.lower().startswith(("https://", "http://")):
+            return value
+    return None
+
+
+def _expertise(expert: dict) -> list[str]:
+    """Up to four areas the expert works in, from their own profile."""
+    raw = expert.get("specialties") or expert.get("expertise")
+    if isinstance(raw, str):
+        raw = re.split(r"[,/]", raw)
+    if not isinstance(raw, list):
+        return []
+    return [s.strip() for s in raw if isinstance(s, str) and s.strip()][:4]
+
+
 @router.get("/programs/{program_id}/experts")
 async def list_program_experts(program_id: str, caller: dict = Depends(verify_firebase_token)):
     """GET STARTED's "choose your expert" step: the approved experts who offer
@@ -216,12 +241,13 @@ async def list_program_experts(program_id: str, caller: dict = Depends(verify_fi
         price = cp.stored_price(data, program_id)
         if price is None:
             continue
-        specialization = data.get("specialization") or data.get("speciality") or data.get("role")
         experts.append({
             "expertId": snap.id,
             "expertName": data.get("name") or "Expert",
-            "specialization": (specialization.strip()
-                               if isinstance(specialization, str) and specialization.strip() else None),
+            "specialization": _text(data.get("specialization") or data.get("speciality")
+                                    or data.get("role")),
+            "photoUrl": _photo_url(data),
+            "expertise": _expertise(data),
             "pricePaise": price,
         })
     experts.sort(key=lambda e: (str(e["expertName"]).lower(), e["expertId"]))
@@ -347,6 +373,44 @@ async def create_program_request(body: ProgramRequestBody,
 
     return {"success": True, "alreadyRequested": result["already"],
             "request": cp.public_request(req)}
+
+
+def _running(req: dict, moment: datetime) -> bool:
+    """A paid program that has not reached its end date."""
+    if req.get("status") != cp.STATUS_ACTIVE:
+        return False
+    ends = req.get("endsAt")
+    if not ends:
+        return True
+    try:
+        end = datetime.fromisoformat(str(ends))
+    except ValueError:
+        return True
+    if end.tzinfo is None:
+        end = end.replace(tzinfo=timezone.utc)
+    return end > moment
+
+
+@router.get("/requests/me")
+async def my_program_requests(caller: dict = Depends(verify_firebase_token)):
+    """The caller's own program requests, newest first, and `current` — the
+    one still waiting (on the expert or on payment) or still running. Both
+    clients restore the Programs screen from this after an app restart or a
+    page refresh, so what the athlete sees is always the server's state.
+    Read-only."""
+    db = _db()
+    uid = caller.get("uid") or ""
+    mine = _by_newest([
+        d.to_dict() or {}
+        for d in db.collection(cp.REQUESTS_COLLECTION)
+        .where(filter=FieldFilter("athleteId", "==", uid)).stream()
+    ])
+    moment = now()
+    current = next((r for r in mine if cp.is_open(r) or _running(r, moment)), None)
+    return {
+        "requests": [cp.public_request(r) for r in mine[:50]],
+        "current": cp.public_request(current) if current else None,
+    }
 
 
 # ── Expert: my program requests, accept / decline ────────────────────────────

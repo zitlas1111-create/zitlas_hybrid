@@ -4442,6 +4442,13 @@
     }
   }
 
+  /* The website's Personal Coaching Programs page — the same three programs
+     and the same /api/coaching-programs flow as the app's native screen. */
+  function _cpProgramsUrl(expertId) {
+    return '/pages/coaching-programs/coaching-programs.html' +
+      (expertId ? '?expertId=' + encodeURIComponent(expertId) : '');
+  }
+
   function initPersonalCoaching(coach) {
     var backdrop    = document.getElementById('coachingBackdrop');
     var stepPlans   = document.getElementById('coachingStepPlans');
@@ -4802,11 +4809,13 @@
       });
     }
     /* Every way INTO Personal Coaching goes through here: inside the app it
-       opens the native Programs screen (see _cpHandOffToNativePrograms);
-       anywhere else, the existing plan-picker sheet. */
+       opens the native Programs screen (see _cpHandOffToNativePrograms); in
+       a browser, the website's Programs page — the same programs, prices,
+       requests and wallet payment, from the same backend. The old plan sheet
+       stays in this file (kept for later phases) but no entry opens it. */
     function openCoachingEntry() {
       if (_cpHandOffToNativePrograms(coach.id)) return;
-      openCoachingSheet();
+      window.location.href = _cpProgramsUrl(coach.id);
     }
     /* "Continue with Personal Coaching" on the Trial Ended screen uses the
        same entry — no new flow needed. */

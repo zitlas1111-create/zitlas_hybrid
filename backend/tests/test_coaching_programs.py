@@ -745,3 +745,90 @@ def test_the_listed_price_is_the_price_the_request_records(db, app, client):
     assert r.status_code == 200, r.text
     assert r.json()["request"]["pricePaise"] == listed["pricePaise"]
     assert r.json()["request"]["durationDays"] == 30
+
+
+# ═════════ Athlete: my current program — restored after a restart or refresh ═════════
+
+def test_my_requests_are_empty_before_asking(db, app, client):
+    _as(app, ATHLETE)
+    r = client.get(f"{BASE}/requests/me")
+    assert r.status_code == 200, r.text
+    assert r.json() == {"requests": [], "current": None}
+
+
+def test_my_open_request_is_the_current_one(db, app, client):
+    _set_prices(db)
+    rid = _request(app, client, "1_month").json()["request"]["requestId"]
+    _as(app, ATHLETE)
+    body = client.get(f"{BASE}/requests/me").json()
+    assert body["current"]["requestId"] == rid
+    assert body["current"]["status"] == cp.STATUS_PENDING
+    assert body["current"]["durationDays"] == 30
+    assert body["current"]["pricePaise"] == PRICES["1_month"]
+    assert [r["requestId"] for r in body["requests"]] == [rid]
+
+
+def test_an_accepted_request_is_still_current(db, app, client):
+    _set_prices(db)
+    rid = _request(app, client).json()["request"]["requestId"]
+    assert _decide(app, client, rid, "accept").status_code == 200
+    _as(app, ATHLETE)
+    assert client.get(f"{BASE}/requests/me").json()["current"]["status"] == cp.STATUS_ACCEPTED
+
+
+def test_a_declined_request_is_history_not_current(db, app, client):
+    _set_prices(db)
+    rid = _request(app, client).json()["request"]["requestId"]
+    _decide(app, client, rid, "decline")
+    _as(app, ATHLETE)
+    body = client.get(f"{BASE}/requests/me").json()
+    assert body["current"] is None
+    assert body["requests"][0]["status"] == cp.STATUS_DECLINED
+
+
+@pytest.mark.parametrize("ends_in_days,is_current", [(5, True), (-1, False)])
+def test_a_paid_program_is_current_only_while_it_runs(db, app, client, ends_in_days, is_current):
+    _set_prices(db)
+    rid = _request(app, client).json()["request"]["requestId"]
+    end = now() + timedelta(days=ends_in_days)
+    db.store[f"{REQ_PREFIX}{rid}"].update({
+        "status": cp.STATUS_ACTIVE, "paymentStatus": cp.PAYMENT_PAID, "endsAt": end.isoformat()})
+    _as(app, ATHLETE)
+    current = client.get(f"{BASE}/requests/me").json()["current"]
+    assert (current is not None) == is_current
+
+
+def test_a_completed_program_is_history_not_current(db, app, client):
+    _set_prices(db)
+    rid = _request(app, client).json()["request"]["requestId"]
+    db.store[f"{REQ_PREFIX}{rid}"].update({"status": cp.STATUS_COMPLETED, "paymentStatus": cp.PAYMENT_PAID})
+    _as(app, ATHLETE)
+    body = client.get(f"{BASE}/requests/me").json()
+    assert body["current"] is None
+    assert body["requests"][0]["status"] == cp.STATUS_COMPLETED
+
+
+def test_my_requests_are_mine_only_and_need_sign_in(db, app, client):
+    assert client.get(f"{BASE}/requests/me").status_code == 401
+    _set_prices(db)
+    _request(app, client, athlete=OTHER_ATHLETE)
+    _as(app, ATHLETE)
+    assert client.get(f"{BASE}/requests/me").json() == {"requests": [], "current": None}
+
+
+def test_the_expert_list_shows_photo_and_expertise_when_the_profile_has_them(db, app, client):
+    _set_prices(db)
+    db.store[f"experts/{EXPERT}"].update({
+        "specialization": "Sports Nutritionist",
+        "profilePhoto": "https://cdn.example/coach-one.jpg",
+        "specialties": ["Fat loss", "Muscle gain", " ", 7, "PCOS", "Diabetes", "Athletes"],
+    })
+    _set_prices(db, expert=OTHER_EXPERT)
+    db.store[f"experts/{OTHER_EXPERT}"]["photo"] = "data:image/png;base64,AAAA"
+    _as(app, ATHLETE)
+    by_id = {e["expertId"]: e for e in client.get(f"{BASE}/programs/10_day/experts").json()["experts"]}
+    assert by_id[EXPERT]["specialization"] == "Sports Nutritionist"
+    assert by_id[EXPERT]["photoUrl"] == "https://cdn.example/coach-one.jpg"
+    assert by_id[EXPERT]["expertise"] == ["Fat loss", "Muscle gain", "PCOS", "Diabetes"]
+    assert by_id[OTHER_EXPERT]["photoUrl"] is None, "only an http(s) URL is a photo"
+    assert by_id[OTHER_EXPERT]["expertise"] == []

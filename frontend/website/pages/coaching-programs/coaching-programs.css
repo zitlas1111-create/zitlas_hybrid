@@ -1,0 +1,386 @@
+/* ZITLAS — Personal Coaching Programs page. Theme tokens from assets/css/theme.css. */
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg-primary, #FAFAF7);
+  color: #1B1F1C;
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.cpg-header {
+  position: sticky;
+  top: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  padding: 12px 16px;
+  background: var(--bg-primary, #FAFAF7);
+}
+
+.cpg-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  color: #1B1F1C;
+  cursor: pointer;
+}
+.cpg-back:hover { background: rgba(35, 75, 53, 0.08); }
+
+.cpg-main {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 0 16px 48px;
+}
+
+.cpg-eyebrow {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  color: #6B7280;
+  margin: 16px 0 10px;
+}
+.cpg-eyebrow--brand { color: #3FA26B; margin: 4px 0 6px; letter-spacing: 1.4px; }
+
+.cpg-title {
+  margin: 0;
+  font-size: 30px;
+  line-height: 1.15;
+  font-weight: 800;
+  color: #1B1F1C;
+}
+
+.cpg-sub {
+  margin: 8px 0 0;
+  font-size: 14.5px;
+  line-height: 1.5;
+  color: #4B5563;
+}
+
+.cpg-expert-line {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #374151;
+}
+.cpg-expert-line:empty { display: none; }
+
+.cpg-list {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  margin-top: 22px;
+}
+
+.cpg-card {
+  background: var(--bg-card, #FFFFFF);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 22px;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(15, 23, 20, 0.06);
+}
+
+.cpg-art {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1983 / 793;
+  object-fit: cover;
+  background: linear-gradient(135deg, var(--primary-dark, #1A3A2A), var(--primary, #234B35));
+}
+
+.cpg-card-body { padding: 18px 18px 20px; }
+
+.cpg-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.cpg-card-head h2 {
+  flex: 1;
+  margin: 0;
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.cpg-chip {
+  flex-shrink: 0;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(63, 162, 107, 0.12);
+  color: var(--primary, #234B35);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.cpg-price {
+  margin-top: 10px;
+  font-size: 24px;
+  font-weight: 800;
+  color: var(--primary, #234B35);
+}
+.cpg-price--muted {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #6B7280;
+}
+
+.cpg-desc {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #4B5563;
+}
+
+.cpg-checks {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+}
+.cpg-checks li {
+  position: relative;
+  padding: 0 0 9px 28px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #1B1F1C;
+}
+.cpg-checks li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #3FA26B;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 18px;
+  text-align: center;
+}
+
+.cpg-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 14px;
+  font: inherit;
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.cpg-btn--block { width: 100%; }
+.cpg-btn--small { min-height: 36px; padding: 0 14px; font-size: 13.5px; border-radius: 12px; }
+.cpg-btn--primary { background: var(--primary, #234B35); color: #fff; }
+.cpg-btn--primary:hover:not([disabled]) { background: var(--primary-hover, #2E5F47); }
+.cpg-btn--secondary { background: rgba(35, 75, 53, 0.1); color: var(--primary, #234B35); }
+.cpg-btn--ghost { background: transparent; color: #374151; }
+.cpg-btn[disabled] {
+  background: #E5E7EB;
+  color: #9CA3AF;
+  cursor: not-allowed;
+}
+
+.cpg-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 800;
+  color: var(--primary, #234B35);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.cpg-note {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #6B7280;
+}
+
+.cpg-panel {
+  margin: 0 0 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: rgba(0, 0, 0, 0.04);
+}
+.cpg-panel--accepted, .cpg-panel--active { background: rgba(63, 162, 107, 0.1); }
+.cpg-panel--pending { background: rgba(245, 158, 11, 0.12); }
+.cpg-panel--declined { background: rgba(231, 111, 81, 0.12); }
+
+.cpg-panel-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+.cpg-panel-body {
+  margin: 4px 0 8px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #4B5563;
+}
+
+.cpg-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 3px 0;
+  font-size: 13.5px;
+  color: #4B5563;
+}
+.cpg-row strong { color: #1B1F1C; font-weight: 800; text-align: right; }
+
+.cpg-short {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #FFF7ED;
+  border: 1px solid rgba(245, 158, 11, 0.35);
+}
+.cpg-short-title { font-weight: 800; margin-bottom: 4px; }
+
+.cpg-error {
+  margin-top: 14px;
+  padding: 10px 14px;
+  border-radius: 14px;
+  background: rgba(231, 111, 81, 0.1);
+  font-size: 13.5px;
+  color: #1B1F1C;
+}
+
+.cpg-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  background: rgba(15, 23, 20, 0.45);
+}
+.cpg-overlay[hidden] { display: none; }
+
+.cpg-sheet {
+  width: 100%;
+  max-width: 560px;
+  max-height: 78vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px 18px;
+  border-radius: 22px 22px 0 0;
+  background: var(--bg-card, #FFFFFF);
+}
+@media (min-width: 640px) {
+  .cpg-overlay { align-items: center; }
+  .cpg-sheet { border-radius: 22px; }
+}
+
+.cpg-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.cpg-sheet-head h2 { margin: 0; font-size: 19px; font-weight: 800; }
+.cpg-close {
+  border: 0;
+  background: none;
+  font-size: 26px;
+  line-height: 1;
+  color: #6B7280;
+  cursor: pointer;
+}
+.cpg-sheet-sub { margin: 4px 0 10px; font-size: 13px; line-height: 1.4; color: #4B5563; }
+.cpg-sheet-body { overflow-y: auto; }
+
+.cpg-expert {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+.cpg-expert:last-child { border-bottom: 0; }
+
+.cpg-avatar-wrap {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+.cpg-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(35, 75, 53, 0.12);
+  color: var(--primary, #234B35);
+  font-weight: 800;
+}
+.cpg-avatar--photo {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+}
+
+.cpg-expert-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  font-size: 12.5px;
+  color: #4B5563;
+}
+.cpg-expert-info strong { font-size: 14.5px; color: #1B1F1C; }
+.cpg-expert-areas { color: #6B7280; font-size: 12px; }
+.cpg-expert-price { margin-top: 2px; font-size: 15px; font-weight: 800; color: var(--primary, #234B35); }
+
+.cpg-loading, .cpg-empty { padding: 18px 0; font-size: 13.5px; color: #4B5563; }
+
+.cpg-dialog {
+  width: calc(100% - 32px);
+  max-width: 420px;
+  margin: auto;
+  padding: 20px;
+  border-radius: 20px;
+  background: var(--bg-card, #FFFFFF);
+}
+.cpg-dialog h2 { margin: 0 0 8px; font-size: 18px; font-weight: 800; }
+.cpg-dialog-body { margin: 0; white-space: pre-line; font-size: 14px; line-height: 1.5; color: #374151; }
+.cpg-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.cpg-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  z-index: 60;
+  max-width: calc(100% - 32px);
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: #1B1F1C;
+  color: #fff;
+  font-size: 14px;
+  transform: translate(-50%, 20px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.cpg-toast--show { opacity: 1; transform: translate(-50%, 0); }

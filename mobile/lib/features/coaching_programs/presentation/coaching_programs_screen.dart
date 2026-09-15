@@ -297,6 +297,7 @@ class _CoachingProgramsScreenState extends State<CoachingProgramsScreen> {
                   now: c.now(),
                   payment: payment,
                   onGetStarted: () => _getStarted(program),
+                  expertName: c.offer?.expertName,
                 ),
                 const SizedBox(height: 24),
               ],
@@ -416,6 +417,7 @@ class _ProgramCard extends StatelessWidget {
     required this.now,
     required this.payment,
     required this.onGetStarted,
+    this.expertName,
   });
 
   final CoachingProgram program;
@@ -440,6 +442,9 @@ class _ProgramCard extends StatelessWidget {
   final DateTime now;
   final _PaymentActions payment;
   final VoidCallback onGetStarted;
+
+  /// Whose program this is — shown on a paid program's details.
+  final String? expertName;
 
   @override
   Widget build(BuildContext context) {
@@ -521,7 +526,7 @@ class _ProgramCard extends StatelessWidget {
                   if (r.awaitingPayment)
                     _PaymentPanel(program: program, request: r, actions: payment)
                   else
-                    _RequestStatus(programId: program.id, request: r, now: now),
+                    _RequestStatus(program: program, request: r, now: now, expertName: expertName),
                   if (!hideStart) const SizedBox(height: 12),
                 ],
                 if (!hideStart) ...[
@@ -745,36 +750,43 @@ class _Detail extends StatelessWidget {
 }
 
 /// Where a request stands when there is nothing to pay: waiting on the
-/// expert, declined, or a paid program (running or ended).
+/// expert, declined, or a paid program — running, ended or completed — with
+/// the SERVER's program, expert, amount and dates (the app computes none).
 class _RequestStatus extends StatelessWidget {
-  const _RequestStatus({required this.programId, required this.request, required this.now});
+  const _RequestStatus({
+    required this.program,
+    required this.request,
+    required this.now,
+    this.expertName,
+  });
 
-  final String programId;
+  final CoachingProgram program;
   final ProgramRequest request;
   final DateTime now;
+
+  /// The offer's expert name, used when the request itself carries none.
+  final String? expertName;
 
   @override
   Widget build(BuildContext context) {
     final started = request.startedAt;
     final ends = request.endsAt;
     final paid = request.amountPaidPaise;
+    final running = request.isRunning(now);
+    final completed = request.status == ProgramRequestStatus.completed;
+    final paidProgram = request.status == ProgramRequestStatus.active || completed;
     final (IconData icon, Color color, String title, String body) = switch (request.status) {
-      ProgramRequestStatus.active when request.isRunning(now) => (
+      ProgramRequestStatus.active when running => (
           Icons.play_circle_fill_rounded,
           ZitlasTokens.freshGreen,
           kProgramActiveTitle,
-          [
-            if (started != null) 'Started ${formatProgramDate(started)}',
-            if (ends != null) 'Ends ${formatProgramDate(ends)}',
-          ].join(' · '),
+          '',
         ),
-      ProgramRequestStatus.active => (
+      ProgramRequestStatus.active || ProgramRequestStatus.completed => (
           Icons.flag_rounded,
           ZitlasTokens.textMuted,
-          'Program ended',
-          ends == null
-              ? 'You can start a new program.'
-              : 'Ended ${formatProgramDate(ends)}. You can start a new program.',
+          completed ? kProgramCompletedTitle : kProgramEndedTitle,
+          'You can start a new program.',
         ),
       ProgramRequestStatus.declined => (
           Icons.cancel_rounded,
@@ -782,17 +794,23 @@ class _RequestStatus extends StatelessWidget {
           kProgramDeclinedTitle,
           kProgramDeclinedBody,
         ),
-      _ => (
+      ProgramRequestStatus.pendingExpertAcceptance => (
           Icons.hourglass_top_rounded,
           ZitlasTokens.fitnessOrange,
           kProgramPendingTitle,
           kProgramPendingBody,
         ),
+      _ => (
+          Icons.help_outline_rounded,
+          ZitlasTokens.textMuted,
+          kProgramStatusUnknownTitle,
+          kProgramStatusUnknownBody,
+        ),
     };
     final price = request.pricePaise;
     final pending = request.status == ProgramRequestStatus.pendingExpertAcceptance;
     return Container(
-      key: Key('coachingProgramStatus_$programId'),
+      key: Key('coachingProgramStatus_${program.id}'),
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
@@ -816,11 +834,13 @@ class _RequestStatus extends StatelessWidget {
                     color: ZitlasTokens.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  body,
-                  style: const TextStyle(fontSize: 12.5, height: 1.4, color: ZitlasTokens.textSecondary),
-                ),
+                if (body.isNotEmpty) ...[
+                  const SizedBox(height: 3),
+                  Text(
+                    body,
+                    style: const TextStyle(fontSize: 12.5, height: 1.4, color: ZitlasTokens.textSecondary),
+                  ),
+                ],
                 if (pending && price != null) ...[
                   const SizedBox(height: 4),
                   Text(
@@ -828,11 +848,29 @@ class _RequestStatus extends StatelessWidget {
                     style: const TextStyle(fontSize: 12.5, color: ZitlasTokens.textSecondary),
                   ),
                 ],
-                if (request.isRunning(now) && paid != null) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    'Paid ${formatProgramPrice(paid)} from your ZITLAS Wallet',
-                    style: const TextStyle(fontSize: 12.5, color: ZitlasTokens.textSecondary),
+                if (paidProgram) ...[
+                  const SizedBox(height: 8),
+                  _Detail(label: 'Program', value: program.title),
+                  _Detail(label: 'Expert', value: request.expertName ?? expertName ?? '—'),
+                  _Detail(
+                    key: Key('coachingProgramPaid_${program.id}'),
+                    label: 'Amount Paid',
+                    value: paid == null ? '—' : formatProgramPrice(paid),
+                  ),
+                  _Detail(
+                    key: Key('coachingProgramStart_${program.id}'),
+                    label: 'Start Date',
+                    value: started == null ? '—' : formatProgramDate(started),
+                  ),
+                  _Detail(
+                    key: Key('coachingProgramEnd_${program.id}'),
+                    label: 'End Date',
+                    value: ends == null ? '—' : formatProgramDate(ends),
+                  ),
+                  _Detail(
+                    key: Key('coachingProgramState_${program.id}'),
+                    label: 'Status',
+                    value: running ? 'Active' : (completed ? 'Completed' : 'Ended'),
                   ),
                 ],
               ],
@@ -1087,30 +1125,114 @@ class _ExpertPickerSheetState extends State<_ExpertPickerSheet> {
                     shrinkWrap: true,
                     itemCount: experts.length,
                     separatorBuilder: (_, _) => const Divider(height: 1),
-                    itemBuilder: (context, i) {
-                      final expert = experts[i];
-                      final spec = expert.specialization;
-                      return ListTile(
-                        key: Key('programExpert_${expert.expertId}'),
-                        contentPadding: EdgeInsets.zero,
-                        title: Text(
-                          expert.expertName,
-                          style: const TextStyle(fontWeight: FontWeight.w800, color: ZitlasTokens.textPrimary),
-                        ),
-                        subtitle: spec == null ? null : Text(spec),
-                        trailing: Text(
-                          formatProgramPrice(expert.pricePaise),
-                          style: const TextStyle(fontWeight: FontWeight.w800, color: ZitlasTokens.primary),
-                        ),
-                        onTap: () => Navigator.of(context).pop(expert),
-                      );
-                    },
+                    itemBuilder: (context, i) => _ExpertRow(
+                      expert: experts[i],
+                      onSelect: () => Navigator.of(context).pop(experts[i]),
+                    ),
                   );
                 },
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// One expert in "choose your expert": photo (or initials), name, what they
+/// work on, their SERVER price for this program, and Select.
+class _ExpertRow extends StatelessWidget {
+  const _ExpertRow({required this.expert, required this.onSelect});
+
+  final ProgramExpertOption expert;
+  final VoidCallback onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final spec = expert.specialization;
+    final areas = expert.expertise.take(3).join(' · ');
+    return InkWell(
+      key: Key('programExpert_${expert.expertId}'),
+      onTap: onSelect,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Row(
+          children: [
+            _ExpertAvatar(name: expert.expertName, photoUrl: expert.photoUrl),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    expert.expertName,
+                    style: const TextStyle(
+                      fontSize: 14.5,
+                      fontWeight: FontWeight.w800,
+                      color: ZitlasTokens.textPrimary,
+                    ),
+                  ),
+                  if (spec != null)
+                    Text(spec, style: const TextStyle(fontSize: 12.5, color: ZitlasTokens.textSecondary)),
+                  if (areas.isNotEmpty)
+                    Text(
+                      areas,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12, color: ZitlasTokens.textMuted),
+                    ),
+                  const SizedBox(height: 3),
+                  Text(
+                    formatProgramPrice(expert.pricePaise),
+                    style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: ZitlasTokens.primary),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            FilledButton(
+              key: Key('programExpertSelect_${expert.expertId}'),
+              onPressed: onSelect,
+              style: FilledButton.styleFrom(
+                backgroundColor: ZitlasTokens.primary,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Select'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The expert's photo when their profile has one, otherwise their initials.
+class _ExpertAvatar extends StatelessWidget {
+  const _ExpertAvatar({required this.name, this.photoUrl});
+
+  final String name;
+  final String? photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = name
+        .trim()
+        .split(RegExp(r'\s+'))
+        .where((w) => w.isNotEmpty)
+        .take(2)
+        .map((w) => w[0].toUpperCase())
+        .join();
+    final url = photoUrl;
+    return CircleAvatar(
+      radius: 22,
+      backgroundColor: ZitlasTokens.primary.withValues(alpha: 0.12),
+      foregroundImage: url == null ? null : NetworkImage(url),
+      onForegroundImageError: url == null ? null : (_, _) {},
+      child: Text(
+        initials.isEmpty ? '?' : initials,
+        style: const TextStyle(fontWeight: FontWeight.w800, color: ZitlasTokens.primary),
       ),
     );
   }

@@ -118,6 +118,10 @@ const kProgramAcceptedTitle = 'Your expert accepted the program';
 const kProgramAcceptedBody = 'Pay from your ZITLAS Wallet to start your program.';
 const kProgramPayLabel = 'Pay & Start Program';
 const kProgramActiveTitle = 'Program active';
+const kProgramEndedTitle = 'Program ended';
+const kProgramCompletedTitle = 'Program completed';
+const kProgramStatusUnknownTitle = 'Status unavailable';
+const kProgramStatusUnknownBody = "We couldn't read this request's status. Please refresh.";
 const kProgramStarted = 'Payment successful — your program has started.';
 const kProgramAlreadyPaid = 'This program is already paid for.';
 

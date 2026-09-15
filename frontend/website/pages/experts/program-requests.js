@@ -64,7 +64,11 @@
     if (req.status === 'accepted') return '✅ Accepted — payment pending';
     if (req.status === 'active') {
       return '💳 Paid — program active' +
-        (req.endsAt ? ' until ' + formatRequestedDate(req.endsAt) : '');
+        (req.endsAt ? ' until ' + formatRequestedDate(req.endsAt) : '') +
+        (req.startedAt ? ' (started ' + formatRequestedDate(req.startedAt) + ')' : '');
+    }
+    if (req.status === 'completed') {
+      return '🏁 Program completed' + (req.endsAt ? ' on ' + formatRequestedDate(req.endsAt) : '');
     }
     if (req.status === 'declined') return '❌ Declined';
     return String(req.status || '');

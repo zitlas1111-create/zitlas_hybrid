@@ -110,6 +110,15 @@ class CoachingProgramsRepository {
     return [for (final e in experts) ?ProgramExpertOption.fromJson(e)];
   }
 
+  /// `GET /api/coaching-programs/requests/me` — the athlete's request that is
+  /// still waiting (on the expert or on payment) or still running, or null.
+  /// The Programs screen restores it on open, so after a restart it shows
+  /// the server's state even when it was opened without an expert.
+  Future<ProgramRequest?> fetchCurrentRequest() async {
+    final res = await _api.get('/api/coaching-programs/requests/me');
+    return res is Map ? ProgramRequest.fromJson(res['current']) : null;
+  }
+
   Future<ProgramRequestResult> requestProgram({
     required String expertId,
     required String programId,

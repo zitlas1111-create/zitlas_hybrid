@@ -6,13 +6,15 @@
 /// simply not offered ("Currently unavailable"), never ₹0.
 library;
 
-enum ProgramRequestStatus { pendingExpertAcceptance, accepted, declined, active, unknown }
+enum ProgramRequestStatus { pendingExpertAcceptance, accepted, declined, active, completed, unknown }
 
 ProgramRequestStatus _statusFrom(Object? raw) => switch (raw) {
       'pending_expert_acceptance' => ProgramRequestStatus.pendingExpertAcceptance,
       'accepted' => ProgramRequestStatus.accepted,
       'declined' => ProgramRequestStatus.declined,
       'active' => ProgramRequestStatus.active,
+      // Set by the expiry sweep once a paid program's end date has passed.
+      'completed' => ProgramRequestStatus.completed,
       _ => ProgramRequestStatus.unknown,
     };
 
@@ -157,6 +159,8 @@ class ProgramExpertOption {
     required this.expertName,
     required this.pricePaise,
     this.specialization,
+    this.photoUrl,
+    this.expertise = const [],
   });
 
   final String expertId;
@@ -167,6 +171,12 @@ class ProgramExpertOption {
   final int pricePaise;
   final String? specialization;
 
+  /// The expert's profile photo (an http(s) URL), when they have one.
+  final String? photoUrl;
+
+  /// A few areas the expert works in, from their own profile.
+  final List<String> expertise;
+
   static ProgramExpertOption? fromJson(Object? json) {
     if (json is! Map) return null;
     final id = json['expertId'];
@@ -174,11 +184,19 @@ class ProgramExpertOption {
     if (id is! String || id.isEmpty || price == null) return null;
     final name = json['expertName'];
     final spec = json['specialization'];
+    final photo = json['photoUrl'];
+    final areas = json['expertise'];
     return ProgramExpertOption(
       expertId: id,
       expertName: name is String && name.trim().isNotEmpty ? name.trim() : 'Expert',
       pricePaise: price,
       specialization: spec is String && spec.trim().isNotEmpty ? spec.trim() : null,
+      photoUrl: photo is String && (photo.startsWith('https://') || photo.startsWith('http://'))
+          ? photo
+          : null,
+      expertise: areas is List
+          ? [for (final a in areas) if (a is String && a.trim().isNotEmpty) a.trim()]
+          : const [],
     );
   }
 }

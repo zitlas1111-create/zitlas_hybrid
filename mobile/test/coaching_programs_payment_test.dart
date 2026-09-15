@@ -265,12 +265,16 @@ void main() {
 
       expect(_pay, findsNothing, reason: 'nothing left to pay');
       expect(find.descendant(of: _status, matching: find.text(kProgramActiveTitle)), findsOneWidget);
-      final started = formatProgramDate(rig.programs.startedAt!);
-      final ends = formatProgramDate(rig.programs.endsAt!);
-      expect(find.descendant(of: _status, matching: find.text('Started $started · Ends $ends')),
+      // The program's details, every value from the server's answer.
+      Finder detail(String key, String text) =>
+          find.descendant(of: find.byKey(Key(key)), matching: find.text(text));
+      expect(detail('coachingProgramStart_10_day', formatProgramDate(rig.programs.startedAt!)),
           findsOneWidget);
-      expect(find.descendant(of: _status, matching: find.text('Paid ₹4,999 from your ZITLAS Wallet')),
+      expect(detail('coachingProgramEnd_10_day', formatProgramDate(rig.programs.endsAt!)),
           findsOneWidget);
+      expect(detail('coachingProgramPaid_10_day', '₹4,999'), findsOneWidget);
+      expect(detail('coachingProgramState_10_day', 'Active'), findsOneWidget);
+      expect(find.descendant(of: _status, matching: find.text('Asha Rao')), findsOneWidget);
       expect(find.text(kProgramOtherRunning), findsNWidgets(2), reason: 'one program at a time');
       expect(rig.checkout.opened, 0);
     });

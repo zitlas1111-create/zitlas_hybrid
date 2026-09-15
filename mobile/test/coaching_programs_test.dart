@@ -256,12 +256,13 @@ void main() {
         ],
       );
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(find.text(kProgramChooseExpertToPrice), findsNWidgets(kCoachingPrograms.length));
       expect(find.text(kProgramUnavailable), findsNothing);
       expect(find.textContaining('₹'), findsNothing, reason: 'never ₹0, never a made-up price');
-      expect(listed, isEmpty, reason: 'nothing is fetched until the athlete asks');
+      expect(listed.map((u) => u.path), ['/api/coaching-programs/requests/me'],
+          reason: "on open, only the athlete's current program is restored");
       for (final p in kCoachingPrograms) {
         final key = Key('coachingProgramGetStarted_${p.id}');
         expect(tester.widget<FilledButton>(find.byKey(key)).onPressed, isNotNull,
@@ -271,7 +272,7 @@ void main() {
       await tester.tap(find.byKey(const Key('coachingProgramGetStarted_10_day')));
       await tester.pumpAndSettle();
       expect(find.byKey(const Key('programExpertPicker')), findsOneWidget);
-      expect(listed.single.path, '/api/coaching-programs/programs/10_day/experts');
+      expect(listed.last.path, '/api/coaching-programs/programs/10_day/experts');
       expect(find.text(kProgramNoExperts), findsOneWidget);
       expect(find.byType(CoachingProgramsScreen), findsOneWidget);
     });
