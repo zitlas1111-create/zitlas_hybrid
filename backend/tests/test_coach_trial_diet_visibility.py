@@ -117,7 +117,11 @@ class TestBothClientsApplyTheSameRule:
     GATES = [
         ("frontend/website/pages/diet/diet.js", "_pcShowsCoachPlan"),
         ("frontend/website/pages/dashboard/weekly-plan/weekly-plan.js", None),
-        ("mobile/lib/features/diet/diet_controller.dart", None),
+        # The DIET gate is one shared rule per client (Phase 4): the app's
+        # DietController and the website's diet.js both call it, and the two
+        # are pinned against each other by tests/fixtures/diet_precedence_cases.json.
+        ("mobile/lib/features/diet/diet_precedence.dart", None),
+        ("frontend/website/assets/js/diet-precedence.js", None),
         ("mobile/lib/features/workout/models/coach_training_plan.dart", None),
     ]
 
@@ -127,7 +131,7 @@ class TestBothClientsApplyTheSameRule:
         if not path.exists():
             pytest.skip(f"{rel_path} not reachable")
         src = path.read_text(encoding="utf-8")
-        assert re.search(r"planType \|\| 'complete'|planType \?\? 'complete'", src), (
+        assert re.search(r"[pP]lanType \|\| 'complete'|[pP]lanType \?\? 'complete'", src), (
             f"{rel_path} does not default a null planType to full coverage — "
             "free-trial athletes will not see their coach's plan there")
 

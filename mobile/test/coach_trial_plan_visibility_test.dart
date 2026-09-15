@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:zitlas_mobile/features/diet/diet_precedence.dart';
 import 'package:zitlas_mobile/features/workout/models/coach_training_plan.dart';
 
 /// A FREE TRIAL MUST SHOW THE COACH'S PLAN.
@@ -46,11 +47,20 @@ void main() {
     });
 
     test('the diet gate uses the same rule', () {
-      // DietController._coachDietRelationshipActive is private, so the shared
-      // rule is asserted at its source of truth instead.
-      final src =
-          File('lib/features/diet/diet_controller.dart').readAsStringSync();
-      expect(src.contains("rel.planType ?? 'complete'"), isTrue,
+      // The diet gate is the shared precedence rule (diet_precedence.dart,
+      // identical to the website's diet-precedence.js), so it is exercised
+      // directly with a trial's null planType.
+      final trial = DietPrecedenceInput(
+        now: DateTime.now(),
+        hasRelationship: true,
+        relStatus: 'active',
+        relCoachId: 'expert_1',
+        relPlanType: null,
+        hasCoachPlan: true,
+        coachPlanCoachId: 'expert_1',
+        coachMealCount: 1,
+      );
+      expect(coachDietActive(trial), isTrue,
           reason: 'the diet gate must default a null planType to full '
               'coverage, exactly as the training gate and the coach side do');
     });
