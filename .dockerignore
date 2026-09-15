@@ -1,0 +1,74 @@
+# ZITLAS — build context for the Railway production image (root .dockerignore)
+#
+# The root Dockerfile builds ONLY the FastAPI backend; Railway uses it ("Railway
+# will always build with a Dockerfile if it finds one"). This file decides what
+# is sent to the builder as the build context.
+#
+# DEFAULT-DENY. Everything is excluded, then exactly the paths the backend
+# reads at runtime are re-included, so a new directory (a Flutter build, a test
+# harness, node_modules) can never leak into the image by accident.
+#
+# What the backend reads at runtime (audited from backend/main.py and
+# backend/services/*; pinned by backend/tests/test_production_image.py):
+#   backend/            the app: routes, services, data/, vector_store/,
+#                       recipes/data/, workout/, the knowledge-base PDFs
+#   frontend/website/   served by main.py's StaticFiles mount — startup raises
+#                       RuntimeError when it is missing
+#   food_profiles/      services/food_engine.py _PROFILES_DIR
+#   food_dataset/zitlas_food_database_enriched_canonical.json
+#                       services/food_engine.py _DATASET_PATH — the NEW
+#                       dataset, the only one the food engine serves
+#   mobile/assets/images/{10 program,1 month program,3 month}.png
+#                       main.py _program_artwork — the program banners
+# Not read at runtime: the OLD 4,520-food dataset (the engine refuses it by
+# path, without opening it), every other food_dataset file, the rest of
+# mobile/ (Flutter is not part of this container), tests/, docs/.
+
+*
+
+!Dockerfile
+!requirements.txt
+!backend
+!frontend/website
+!food_profiles
+!food_dataset/zitlas_food_database_enriched_canonical.json
+!mobile/assets/images/10 program.png
+!mobile/assets/images/1 month program.png
+!mobile/assets/images/3 month.png
+
+# ── Never in the image, even inside a re-included path ──────────────────────
+# Secrets. Production reads credentials from Railway environment variables
+# (FIREBASE_SERVICE_ACCOUNT_JSON, the API keys) — never from a baked-in file.
+**/.env
+**/*.env
+**/*firebase-adminsdk*.json
+**/*serviceAccountKey*.json
+# Tests, caches and local runtime state.
+backend/tests
+backend/.pytest_cache
+backend/uploads
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.DS_Store
+**/node_modules
+# A local, untracked copy of the program banners. main.py serves the tracked
+# originals from mobile/assets/images instead.
+frontend/website/assets/images/programs
+
+# ── Named explicitly (the default-deny above already excludes them) ─────────
+.git
+.claude
+mobile/build
+mobile/.dart_tool
+mobile/android/.gradle
+mobile/android/build
+mobile/ios/Pods
+mobile/ios/.symlinks
+**/*.apk
+**/*.aab
+tests
+zitlas_test
+docs
+food_dataset/build
+food_dataset/zitlas_food_database_enriched.json
