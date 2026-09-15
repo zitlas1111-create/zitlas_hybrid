@@ -28,7 +28,10 @@ GoRoute coachingProgramsRoute({CoachingProgramsRepository? repository}) => GoRou
 /// PERSONAL COACHING PROGRAMS — where Personal Coaching starts.
 ///
 /// Each program shows the selected expert's OWN price, read from the server
-/// (never a number in the app). Get Started sends a request; once the expert
+/// (never a number in the app). Get Started is never a dead end: with no
+/// expert chosen — or one who doesn't offer that program — it first opens
+/// "choose your expert" (the approved experts who offer it, at their server
+/// prices). Then the athlete reviews and sends the request; once the expert
 /// accepts, Pay & Start Program pays the price the SERVER recorded, in full,
 /// from the ZITLAS Wallet, and the program starts. A short wallet shows the
 /// existing insufficient-balance card with Add Funds (the existing flow) —
@@ -44,8 +47,8 @@ class CoachingProgramsScreen extends StatefulWidget {
     this.addFundsFlow,
   });
 
-  /// The expert whose Personal Coach button opened this screen. Without one
-  /// there is nothing to price, and every program is unavailable.
+  /// The expert whose Personal Coach button opened this screen. Without one,
+  /// Get Started asks the athlete to choose an expert first.
   final String? expertId;
 
   final List<CoachingProgram> programs;
@@ -70,6 +73,9 @@ class _CoachingProgramsScreenState extends State<CoachingProgramsScreen> {
   bool _ownsFlow = false;
   bool _addingFunds = false;
 
+  /// Set while one Get Started flow is open, so a double tap starts one flow.
+  bool _starting = false;
+
   @override
   void initState() {
     super.initState();
@@ -77,7 +83,9 @@ class _CoachingProgramsScreenState extends State<CoachingProgramsScreen> {
     final hasExpert = id != null && id.isNotEmpty;
     _controller = CoachingProgramsController(
       expertId: hasExpert ? id : null,
-      repository: hasExpert ? (widget.repository ?? CoachingProgramsRepository.live()) : null,
+      // Always there: without an expert, Get Started still needs the server
+      // to list who offers a program. No call is made until it is tapped.
+      repository: widget.repository ?? CoachingProgramsRepository.live(),
     )..load();
   }
 
@@ -94,7 +102,74 @@ class _CoachingProgramsScreenState extends State<CoachingProgramsScreen> {
       ..showSnackBar(SnackBar(content: Text(message), behavior: SnackBarBehavior.floating));
   }
 
-  Future<void> _getStarted(CoachingProgram program, int pricePaise) async {
+  /// GET STARTED — the existing request flow for [program]:
+  ///   choose an expert (when none is chosen, or this one doesn't offer it)
+  ///   -> review the program at that expert's SERVER price -> Send Request.
+  /// Nothing is charged here; paying comes after the expert accepts.
+  Future<void> _getStarted(CoachingProgram program) async {
+    if (_starting) return;
+    setState(() => _starting = true);
+    try {
+      final c = _controller;
+      if (c.expertId == null || c.priceFor(program.id) == null) {
+        final chosen = await _chooseExpert(program);
+        if (chosen == null || !mounted) return;
+        await c.selectExpert(chosen.expertId);
+        if (!mounted) return;
+        if (c.state != ProgramsLoadState.ready) {
+          _snack(kProgramExpertLoadFailed);
+          return;
+        }
+        // The server knows this athlete's requests with that expert: one
+        // already waiting (or running) is shown on its card, never duplicated.
+        final open = c.openRequest;
+        if (open != null) {
+          if (open.programId == program.id) {
+            _snack(open.isOpen ? kProgramAlreadyRequested : kProgramOtherRunning);
+          } else {
+            _snack(open.status == ProgramRequestStatus.active
+                ? kProgramOtherRunning
+                : kProgramOtherRequestOpen);
+          }
+          return;
+        }
+      }
+      final price = c.priceFor(program.id);
+      if (price == null) {
+        final who = c.offer?.expertName ?? 'This expert';
+        _snack("$who doesn't offer the ${program.title} right now. Choose another expert.");
+        return;
+      }
+      await _confirmAndRequest(program, price);
+    } finally {
+      if (mounted) setState(() => _starting = false);
+    }
+  }
+
+  /// "Choose your expert" — the approved experts who offer [program], each at
+  /// their own server price. Returns the chosen one; nothing is sent here.
+  Future<ProgramExpertOption?> _chooseExpert(CoachingProgram program) {
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.75;
+    return showModalBottomSheet<ProgramExpertOption>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: ZitlasTokens.bgCard,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      builder: (_) => ConstrainedBox(
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: _ExpertPickerSheet(
+          program: program,
+          load: () => _controller.expertsFor(program.id),
+        ),
+      ),
+    );
+  }
+
+  /// Review, then send. The request carries only the expert and the program;
+  /// the server decides the price and records it on the request.
+  Future<void> _confirmAndRequest(CoachingProgram program, int pricePaise) async {
     final expertName = _controller.offer?.expertName ?? 'your expert';
     final confirmed = await showDialog<bool>(
       context: context,
@@ -199,6 +274,10 @@ class _CoachingProgramsScreenState extends State<CoachingProgramsScreen> {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
             children: [
               const _Header(),
+              if (c.offer != null) ...[
+                const SizedBox(height: 10),
+                _ExpertLine(name: c.offer!.expertName),
+              ],
               if (c.state == ProgramsLoadState.failed) ...[
                 const SizedBox(height: 14),
                 _LoadError(onRetry: c.load),
@@ -211,11 +290,13 @@ class _CoachingProgramsScreenState extends State<CoachingProgramsScreen> {
                   pricePaise: c.priceFor(program.id),
                   request: c.request?.programId == program.id ? c.request : null,
                   blockedBy: blocking != null && blocking.programId != program.id ? blocking : null,
+                  hasExpert: c.expertId != null,
+                  failed: c.state == ProgramsLoadState.failed,
                   submitting: c.submittingProgramId == program.id,
-                  busy: c.submittingProgramId != null || c.paying,
+                  busy: c.submittingProgramId != null || c.paying || _starting,
                   now: c.now(),
                   payment: payment,
-                  onGetStarted: (price) => _getStarted(program, price),
+                  onGetStarted: () => _getStarted(program),
                 ),
                 const SizedBox(height: 24),
               ],
@@ -328,6 +409,8 @@ class _ProgramCard extends StatelessWidget {
     required this.pricePaise,
     required this.request,
     required this.blockedBy,
+    required this.hasExpert,
+    required this.failed,
     required this.submitting,
     required this.busy,
     required this.now,
@@ -346,11 +429,17 @@ class _ProgramCard extends StatelessWidget {
 
   /// Another program with this expert that is still open or running.
   final ProgramRequest? blockedBy;
+
+  /// An expert is chosen (so an unpriced program means THEY don't offer it).
+  final bool hasExpert;
+
+  /// That expert's prices could not be loaded — Retry is shown instead.
+  final bool failed;
   final bool submitting;
   final bool busy;
   final DateTime now;
   final _PaymentActions payment;
-  final ValueChanged<int> onGetStarted;
+  final VoidCallback onGetStarted;
 
   @override
   Widget build(BuildContext context) {
@@ -359,7 +448,12 @@ class _ProgramCard extends StatelessWidget {
     // payment) or already running.
     final hideStart = r != null && (r.isOpen || r.isRunning(now));
     final price = pricePaise;
-    final canStart = !loading && price != null && blockedBy == null && !busy;
+    // Never a dead end: with no expert chosen — or one who doesn't offer this
+    // program — Get Started opens "choose your expert". Only a load that is
+    // running or failed, another open program, or a flow already under way
+    // disables it.
+    final canStart = !loading && !failed && blockedBy == null && !busy;
+    final chooseAnother = hasExpert && !loading && !failed && price == null;
     return Container(
       key: Key('coachingProgram_${program.id}'),
       clipBehavior: Clip.antiAlias,
@@ -395,7 +489,12 @@ class _ProgramCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 8),
-                _PriceLine(programId: program.id, loading: loading, pricePaise: price),
+                _PriceLine(
+                  programId: program.id,
+                  loading: loading,
+                  pricePaise: price,
+                  hasExpert: hasExpert,
+                ),
                 const SizedBox(height: 8),
                 Text(
                   program.description,
@@ -439,16 +538,16 @@ class _ProgramCard extends StatelessWidget {
                     width: double.infinity,
                     child: FilledButton(
                       key: Key('coachingProgramGetStarted_${program.id}'),
-                      onPressed: canStart ? () => onGetStarted(price) : null,
+                      onPressed: canStart ? onGetStarted : null,
                       style: _primaryButtonStyle,
                       child: submitting
                           ? const _ButtonSpinner()
-                          : const Row(
+                          : Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text('Get Started'),
-                                SizedBox(width: 8),
-                                Icon(Icons.arrow_forward_rounded, size: 18),
+                                Text(chooseAnother ? kProgramChooseAnotherExpert : 'Get Started'),
+                                const SizedBox(width: 8),
+                                const Icon(Icons.arrow_forward_rounded, size: 18),
                               ],
                             ),
                     ),
@@ -488,11 +587,19 @@ class _ButtonSpinner extends StatelessWidget {
 
 /// The expert's price, or "Currently unavailable" — never ₹0.
 class _PriceLine extends StatelessWidget {
-  const _PriceLine({required this.programId, required this.loading, required this.pricePaise});
+  const _PriceLine({
+    required this.programId,
+    required this.loading,
+    required this.pricePaise,
+    this.hasExpert = true,
+  });
 
   final String programId;
   final bool loading;
   final int? pricePaise;
+
+  /// False before an expert is chosen: there is no price to show YET.
+  final bool hasExpert;
 
   @override
   Widget build(BuildContext context) {
@@ -520,9 +627,9 @@ class _PriceLine extends StatelessWidget {
         ),
       );
     } else {
-      child = const Text(
-        kProgramUnavailable,
-        style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: ZitlasTokens.textMuted),
+      child = Text(
+        hasExpert ? kProgramUnavailable : kProgramChooseExpertToPrice,
+        style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: ZitlasTokens.textMuted),
       );
     }
     return KeyedSubtree(key: Key('coachingProgramPrice_$programId'), child: child);
@@ -859,6 +966,151 @@ class _Highlight extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Whose prices these are — shown once an expert is known.
+class _ExpertLine extends StatelessWidget {
+  const _ExpertLine({required this.name});
+
+  final String name;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      key: const Key('coachingProgramsExpert'),
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Row(
+        children: [
+          const Icon(Icons.person_rounded, size: 16, color: ZitlasTokens.primary),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Your expert: $name',
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: ZitlasTokens.textSecondary,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Choose your expert" — the approved experts who offer [program], each at
+/// their OWN server-side price. Pops with the chosen one; sends nothing.
+class _ExpertPickerSheet extends StatefulWidget {
+  const _ExpertPickerSheet({required this.program, required this.load});
+
+  final CoachingProgram program;
+  final Future<List<ProgramExpertOption>> Function() load;
+
+  @override
+  State<_ExpertPickerSheet> createState() => _ExpertPickerSheetState();
+}
+
+class _ExpertPickerSheetState extends State<_ExpertPickerSheet> {
+  late Future<List<ProgramExpertOption>> _experts = widget.load();
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        key: const Key('programExpertPicker'),
+        padding: const EdgeInsets.fromLTRB(18, 16, 18, 12),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              kProgramPickExpertTitle,
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: ZitlasTokens.textPrimary),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              '${widget.program.title} · ${widget.program.durationLabel}. '
+              "You'll review the price before anything is sent.",
+              style: const TextStyle(fontSize: 12.5, height: 1.4, color: ZitlasTokens.textSecondary),
+            ),
+            const SizedBox(height: 12),
+            Flexible(
+              child: FutureBuilder<List<ProgramExpertOption>>(
+                future: _experts,
+                builder: (context, snap) {
+                  if (snap.connectionState != ConnectionState.done) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 24),
+                      child: Center(child: CircularProgressIndicator(color: ZitlasTokens.primary)),
+                    );
+                  }
+                  if (snap.hasError) {
+                    final error = snap.error;
+                    return Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          error is ProgramRequestException ? error.message : kProgramExpertsLoadFailed,
+                          key: const Key('programExpertPickerError'),
+                          style: const TextStyle(fontSize: 13, color: ZitlasTokens.textPrimary),
+                        ),
+                        TextButton(
+                          key: const Key('programExpertPickerRetry'),
+                          onPressed: () {
+                            final next = widget.load();
+                            setState(() {
+                              _experts = next;
+                            });
+                          },
+                          child: const Text('Retry'),
+                        ),
+                      ],
+                    );
+                  }
+                  final experts = snap.data ?? const <ProgramExpertOption>[];
+                  if (experts.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      child: Text(
+                        kProgramNoExperts,
+                        key: Key('programExpertPickerEmpty'),
+                        style: TextStyle(fontSize: 13, color: ZitlasTokens.textSecondary),
+                      ),
+                    );
+                  }
+                  return ListView.separated(
+                    shrinkWrap: true,
+                    itemCount: experts.length,
+                    separatorBuilder: (_, _) => const Divider(height: 1),
+                    itemBuilder: (context, i) {
+                      final expert = experts[i];
+                      final spec = expert.specialization;
+                      return ListTile(
+                        key: Key('programExpert_${expert.expertId}'),
+                        contentPadding: EdgeInsets.zero,
+                        title: Text(
+                          expert.expertName,
+                          style: const TextStyle(fontWeight: FontWeight.w800, color: ZitlasTokens.textPrimary),
+                        ),
+                        subtitle: spec == null ? null : Text(spec),
+                        trailing: Text(
+                          formatProgramPrice(expert.pricePaise),
+                          style: const TextStyle(fontWeight: FontWeight.w800, color: ZitlasTokens.primary),
+                        ),
+                        onTap: () => Navigator.of(context).pop(expert),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -195,6 +195,45 @@ async def get_expert_programs(expert_id: str, caller: dict = Depends(verify_fire
     }
 
 
+@router.get("/programs/{program_id}/experts")
+async def list_program_experts(program_id: str, caller: dict = Depends(verify_firebase_token)):
+    """GET STARTED's "choose your expert" step: the approved experts who offer
+    `program_id`, each at their OWN server-side price — the same validated
+    price GET /experts/{id} quotes. Read-only: POST /requests re-reads the
+    chosen expert's price and snapshots it, so nothing here can set a price."""
+    program = cp.PROGRAMS.get(program_id)
+    if program is None:
+        raise HTTPException(status_code=400, detail="invalid_program")
+    db = _db()
+    caller_uid = caller.get("uid") or ""
+    experts = []
+    for snap in db.collection("experts").where(filter=FieldFilter("approved", "==", True)).stream():
+        data = snap.to_dict() or {}
+        # Re-checked rather than trusting the query alone; and an expert is
+        # never offered their own program (POST /requests refuses it).
+        if data.get("approved") is not True or snap.id == caller_uid:
+            continue
+        price = cp.stored_price(data, program_id)
+        if price is None:
+            continue
+        specialization = data.get("specialization") or data.get("speciality") or data.get("role")
+        experts.append({
+            "expertId": snap.id,
+            "expertName": data.get("name") or "Expert",
+            "specialization": (specialization.strip()
+                               if isinstance(specialization, str) and specialization.strip() else None),
+            "pricePaise": price,
+        })
+    experts.sort(key=lambda e: (str(e["expertName"]).lower(), e["expertId"]))
+    return {
+        "programId": program_id,
+        "title": program["title"],
+        "durationDays": program["durationDays"],
+        "currency": cp.CURRENCY,
+        "experts": experts,
+    }
+
+
 class ProgramRequestBody(BaseModel):
     # ONLY these two. Anything else a client sends (a price, a status, a
     # duration, an athleteId…) is ignored — the server decides all of it.

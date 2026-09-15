@@ -137,16 +137,19 @@ void main() {
       }
     });
 
-    testWidgets('an unpriced program is "Currently unavailable" — never ₹0 — and cannot start',
+    testWidgets('an unpriced program is "Currently unavailable" — never ₹0 — and offers another expert',
         (tester) async {
       await _pump(tester, _Backend(prices: {'10_day': 499900, '1_month': null, '3_month': null}));
 
       expect(_inCard('1_month', find.text(kProgramUnavailable)), findsOneWidget);
       expect(_inCard('3_month', find.text(kProgramUnavailable)), findsOneWidget);
       expect(find.textContaining('₹0'), findsNothing);
-      expect(_enabled(tester, '10_day'), isTrue);
-      expect(_enabled(tester, '1_month'), isFalse);
-      expect(_enabled(tester, '3_month'), isFalse);
+      expect(_inCard('10_day', find.text('Get Started')), findsOneWidget);
+      expect(_inCard('1_month', find.text(kProgramChooseAnotherExpert)), findsOneWidget);
+      expect(_inCard('3_month', find.text(kProgramChooseAnotherExpert)), findsOneWidget);
+      for (final p in kCoachingPrograms) {
+        expect(_enabled(tester, p.id), isTrue, reason: '${p.id}: never a dead end');
+      }
     });
 
     test('a zero, negative, fractional or string price is not a price', () {

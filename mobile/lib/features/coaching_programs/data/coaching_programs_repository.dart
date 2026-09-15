@@ -78,6 +78,38 @@ class CoachingProgramsRepository {
     return ProgramOffer.fromJson(res);
   }
 
+  /// `GET /api/coaching-programs/programs/{programId}/experts` — the approved
+  /// experts who offer this program, each at their OWN server-side price.
+  /// Get Started's "choose your expert" step; nothing is requested here, and
+  /// the server re-reads the chosen expert's price when the request is made.
+  Future<List<ProgramExpertOption>> fetchProgramExperts(String programId) async {
+    final dynamic res;
+    try {
+      res = await _api.get(
+        '/api/coaching-programs/programs/${Uri.encodeComponent(programId)}/experts',
+      );
+    } on ApiException catch (e) {
+      final code = codeOf(e);
+      final known = code == 'invalid_program' ||
+          e.statusCode == 401 ||
+          e.statusCode == 403 ||
+          e.isNetworkError ||
+          e.isServerError;
+      throw ProgramRequestException(
+        known ? messageFor(e) : "Couldn't load experts for this program. Please try again.",
+        code: code,
+        statusCode: e.statusCode,
+      );
+    }
+    final experts = res is Map ? res['experts'] : null;
+    if (experts is! List) {
+      throw const ProgramRequestException(
+        "Couldn't load experts for this program. Please try again.",
+      );
+    }
+    return [for (final e in experts) ?ProgramExpertOption.fromJson(e)];
+  }
+
   Future<ProgramRequestResult> requestProgram({
     required String expertId,
     required String programId,

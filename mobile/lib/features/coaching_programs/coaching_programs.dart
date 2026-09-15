@@ -85,7 +85,21 @@ const kCoachingPrograms = <CoachingProgram>[
 /// its price could not be loaded. Never "₹0", never "free".
 const kProgramUnavailable = 'Currently unavailable';
 
-const kProgramRequestSent = 'Request sent. Your expert will review it.';
+/// Shown instead of a price before an expert is chosen — each expert sets
+/// their own price, so there is no honest number to show yet.
+const kProgramChooseExpertToPrice = 'Choose an expert to see their price';
+
+/// The card's button when the current expert doesn't offer that program.
+const kProgramChooseAnotherExpert = 'Choose Another Expert';
+
+/// Get Started's "choose your expert" step.
+const kProgramPickExpertTitle = 'Choose your expert';
+const kProgramNoExperts = 'No expert offers this program right now. Please check back soon.';
+const kProgramExpertsLoadFailed = "Couldn't load experts for this program. Please try again.";
+const kProgramExpertLoadFailed = "Couldn't load this expert's prices. Please try again.";
+
+const kProgramRequestSent =
+    "Request sent to your expert. You won't be charged unless they accept and you pay.";
 const kProgramAlreadyRequested = "You've already requested this program.";
 const kProgramOtherRequestOpen = 'You already have a program request with this expert.';
 const kProgramOtherRunning = 'You already have a program running with this expert.';
@@ -100,7 +114,7 @@ const kProgramPaymentUnconfirmed =
 /// the ZITLAS Wallet (Pay & Start Program) — at the price the server recorded.
 const kProgramPendingTitle = 'Pending expert acceptance';
 const kProgramPendingBody = 'Your request has been sent. Your expert will accept or decline it.';
-const kProgramAcceptedTitle = 'Program accepted by your expert';
+const kProgramAcceptedTitle = 'Your expert accepted the program';
 const kProgramAcceptedBody = 'Pay from your ZITLAS Wallet to start your program.';
 const kProgramPayLabel = 'Pay & Start Program';
 const kProgramActiveTitle = 'Program active';

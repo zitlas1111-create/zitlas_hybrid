@@ -234,25 +234,46 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('without an expert nothing is priced, and nothing can be started', (tester) async {
+    testWidgets('without an expert nothing is priced — and Get Started asks who to work with',
+        (tester) async {
       _tallView(tester);
+      final listed = <Uri>[];
       final router = GoRouter(
         initialLocation: kCoachingProgramsPath,
-        routes: [coachingProgramsRoute()],
+        routes: [
+          coachingProgramsRoute(
+            repository: CoachingProgramsRepository(
+              apiClient: ApiClient(
+                baseUrl: 'https://api.test',
+                httpClient: MockClient((r) async {
+                  listed.add(r.url);
+                  return http.Response('{"programId":"10_day","experts":[]}', 200,
+                      headers: {'content-type': 'application/json; charset=utf-8'});
+                }),
+              ),
+            ),
+          ),
+        ],
       );
       await tester.pumpWidget(MaterialApp.router(routerConfig: router));
       await tester.pump();
 
-      expect(find.text(kProgramUnavailable), findsNWidgets(kCoachingPrograms.length));
+      expect(find.text(kProgramChooseExpertToPrice), findsNWidgets(kCoachingPrograms.length));
+      expect(find.text(kProgramUnavailable), findsNothing);
       expect(find.textContaining('₹'), findsNothing, reason: 'never ₹0, never a made-up price');
+      expect(listed, isEmpty, reason: 'nothing is fetched until the athlete asks');
       for (final p in kCoachingPrograms) {
         final key = Key('coachingProgramGetStarted_${p.id}');
-        expect(tester.widget<FilledButton>(find.byKey(key)).onPressed, isNull, reason: p.id);
-        await tester.tap(find.byKey(key), warnIfMissed: false);
-        await tester.pump();
-        expect(router.canPop(), isFalse, reason: 'Get Started must not push anything');
-        expect(find.byType(CoachingProgramsScreen), findsOneWidget);
+        expect(tester.widget<FilledButton>(find.byKey(key)).onPressed, isNotNull,
+            reason: '${p.id}: Get Started is never a dead end');
       }
+
+      await tester.tap(find.byKey(const Key('coachingProgramGetStarted_10_day')));
+      await tester.pumpAndSettle();
+      expect(find.byKey(const Key('programExpertPicker')), findsOneWidget);
+      expect(listed.single.path, '/api/coaching-programs/programs/10_day/experts');
+      expect(find.text(kProgramNoExperts), findsOneWidget);
+      expect(find.byType(CoachingProgramsScreen), findsOneWidget);
     });
 
     test('the Programs feature pays only through its own endpoint and the existing Add Funds', () {

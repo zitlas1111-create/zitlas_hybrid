@@ -148,6 +148,41 @@ class ProgramOffer {
       ProgramOffer(expertId: expertId, expertName: expertName, prices: prices, request: request);
 }
 
+/// One expert who offers a program, at their OWN server-side price — a row
+/// in Get Started's "choose your expert" step
+/// (`GET /api/coaching-programs/programs/{programId}/experts`).
+class ProgramExpertOption {
+  const ProgramExpertOption({
+    required this.expertId,
+    required this.expertName,
+    required this.pricePaise,
+    this.specialization,
+  });
+
+  final String expertId;
+  final String expertName;
+
+  /// The price the server quotes today. The request re-reads the expert's
+  /// price when it is made, so this number is never charged by itself.
+  final int pricePaise;
+  final String? specialization;
+
+  static ProgramExpertOption? fromJson(Object? json) {
+    if (json is! Map) return null;
+    final id = json['expertId'];
+    final price = _positivePaise(json['pricePaise']);
+    if (id is! String || id.isEmpty || price == null) return null;
+    final name = json['expertName'];
+    final spec = json['specialization'];
+    return ProgramExpertOption(
+      expertId: id,
+      expertName: name is String && name.trim().isNotEmpty ? name.trim() : 'Expert',
+      pricePaise: price,
+      specialization: spec is String && spec.trim().isNotEmpty ? spec.trim() : null,
+    );
+  }
+}
+
 /// 499900 → `₹4,999` · 49950 → `₹499.50` (Indian grouping, like the wallet).
 String formatProgramPrice(int paise) {
   final rupees = paise ~/ 100;

@@ -24,18 +24,24 @@ class ProgramRequestOutcome {
 /// the athlete's request with them, sending a request, and paying for an
 /// accepted one from the ZITLAS Wallet.
 ///
-/// Without an expert there is nothing to price, so every program is simply
-/// unavailable — no network call is made.
+/// Without an expert nothing is priced and no call is made — until the
+/// athlete chooses one in Get Started's "choose your expert" step
+/// ([expertsFor], then [selectExpert]).
 class CoachingProgramsController extends ChangeNotifier {
   CoachingProgramsController({
-    required this.expertId,
+    required String? expertId,
     this.repository,
     DateTime Function()? clock,
-  }) : _clock = clock ?? DateTime.now;
+  })  : _expertId = expertId, // ignore: prefer_initializing_formals
+        _clock = clock ?? DateTime.now;
 
-  final String? expertId;
   final CoachingProgramsRepository? repository;
   final DateTime Function() _clock;
+
+  /// The expert whose prices are shown and whom Get Started asks — the one
+  /// the screen opened from, or the one the athlete chose.
+  String? _expertId;
+  String? get expertId => _expertId;
 
   ProgramsLoadState _state = ProgramsLoadState.loading;
   ProgramOffer? _offer;
@@ -209,6 +215,29 @@ class CoachingProgramsController extends ChangeNotifier {
     }
     _notify();
     return _shortfall == null;
+  }
+
+  /// The athlete chose an expert in Get Started's "choose your expert" step:
+  /// show THEIR prices and their existing request, so a request already
+  /// waiting is shown rather than duplicated. Nothing is sent here.
+  Future<void> selectExpert(String expertId) async {
+    final id = expertId.trim();
+    if (id.isEmpty) return;
+    if (id == _expertId && _state == ProgramsLoadState.ready && _offer != null) return;
+    _expertId = id;
+    _offer = null;
+    _shortfall = null;
+    _payment = ProgramPaymentState.idle;
+    await load();
+  }
+
+  /// The approved experts who offer [programId], each at their own price.
+  Future<List<ProgramExpertOption>> expertsFor(String programId) {
+    final repo = repository;
+    if (repo == null) {
+      return Future.error(const ProgramRequestException(kProgramExpertsLoadFailed));
+    }
+    return repo.fetchProgramExperts(programId);
   }
 
   void _notify() {

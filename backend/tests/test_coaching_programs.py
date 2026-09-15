@@ -680,3 +680,68 @@ def test_the_program_modules_never_reach_razorpay_premium_or_the_escrow():
             elif isinstance(node, ast.Import):
                 names.update(a.name.rsplit(".", 1)[-1] for a in node.names)
         assert not (names & forbidden), f"{rel} imports {names & forbidden}"
+
+
+# ═══════════════ Athlete: Get Started — choose an expert for a program ══════════
+
+def test_the_expert_list_offers_only_approved_experts_who_price_the_program(db, app, client):
+    _set_prices(db, expert=EXPERT)
+    _set_prices(db, expert=OTHER_EXPERT, prices={"10_day": 39900})
+    _set_prices(db, expert=UNAPPROVED)
+    _as(app, ATHLETE)
+    r = client.get(f"{BASE}/programs/10_day/experts")
+    assert r.status_code == 200, r.text
+    body = r.json()
+    assert body["programId"] == "10_day"
+    assert [(e["expertId"], e["expertName"], e["pricePaise"]) for e in body["experts"]] == [
+        (EXPERT, "Coach One", 49900), (OTHER_EXPERT, "Coach Two", 39900)]
+    three = client.get(f"{BASE}/programs/3_month/experts").json()
+    assert [e["expertId"] for e in three["experts"]] == [EXPERT], "only experts who price it"
+
+
+@pytest.mark.parametrize("program,days", [("10_day", 10), ("1_month", 30), ("3_month", 90)])
+def test_the_expert_list_carries_the_servers_price_and_duration(db, app, client, program, days):
+    _set_prices(db)
+    _as(app, ATHLETE)
+    body = client.get(f"{BASE}/programs/{program}/experts").json()
+    assert body["durationDays"] == days
+    assert body["experts"][0]["pricePaise"] == PRICES[program]
+
+
+@pytest.mark.parametrize("stored", [0, -5, 99, "49900", 49900.0, True, None])
+def test_a_tampered_price_keeps_an_expert_off_the_list(db, app, client, stored):
+    db.store[f"experts/{EXPERT}"]["programPricing"] = {
+        "10_day": {"pricePaise": stored, "currency": "INR"}}
+    _as(app, ATHLETE)
+    assert client.get(f"{BASE}/programs/10_day/experts").json()["experts"] == []
+
+
+def test_an_expert_is_never_offered_their_own_program(db, app, client):
+    _set_prices(db)
+    _as(app, EXPERT, expert=True)
+    assert client.get(f"{BASE}/programs/10_day/experts").json()["experts"] == []
+
+
+def test_the_expert_list_needs_sign_in_and_a_real_program(db, app, client):
+    assert client.get(f"{BASE}/programs/10_day/experts").status_code == 401
+    _as(app, ATHLETE)
+    r = client.get(f"{BASE}/programs/7_day/experts")
+    assert r.status_code == 400 and r.json()["detail"] == "invalid_program"
+
+
+def test_listing_experts_writes_nothing_and_moves_no_money(db, app, client):
+    _set_prices(db)
+    before = copy.deepcopy(db.store)
+    _as(app, ATHLETE)
+    assert client.get(f"{BASE}/programs/1_month/experts").status_code == 200
+    assert db.store == before
+
+
+def test_the_listed_price_is_the_price_the_request_records(db, app, client):
+    _set_prices(db)
+    _as(app, ATHLETE)
+    listed = client.get(f"{BASE}/programs/1_month/experts").json()["experts"][0]
+    r = _request(app, client, "1_month", expert=listed["expertId"])
+    assert r.status_code == 200, r.text
+    assert r.json()["request"]["pricePaise"] == listed["pricePaise"]
+    assert r.json()["request"]["durationDays"] == 30
