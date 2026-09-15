@@ -174,10 +174,16 @@ async def get_expert_programs(expert_id: str, caller: dict = Depends(verify_fire
     expert = snap.to_dict() or {}
     approved = expert.get("approved") is True
 
-    programs = [
-        {k: v for k, v in p.items() if k != "updatedAt"}
-        for p in cp.pricing_view(expert if approved else {})
-    ]
+    # An unavailable program says WHY, so the clients show the real state
+    # rather than one catch-all: this expert hasn't priced it yet, or isn't
+    # taking program requests at all. The price is still only ever the
+    # validated stored one — nothing here invents a number.
+    programs = []
+    for p in cp.pricing_view(expert if approved else {}):
+        view = {k: v for k, v in p.items() if k != "updatedAt"}
+        view["unavailableReason"] = (
+            None if p["available"] else ("not_priced" if approved else "expert_unavailable"))
+        programs.append(view)
 
     mine = [
         d.to_dict() or {}
@@ -190,6 +196,7 @@ async def get_expert_programs(expert_id: str, caller: dict = Depends(verify_fire
     return {
         "expertId": expert_id,
         "expertName": expert.get("name") or "Expert",
+        "expertAvailable": approved,
         "currency": cp.CURRENCY,
         "programs": programs,
         "request": cp.public_request(current) if current else None,

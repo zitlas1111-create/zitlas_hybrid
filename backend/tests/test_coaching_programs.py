@@ -320,6 +320,59 @@ def test_an_unapproved_expert_offers_nothing(db, app, client):
     assert _request(app, client, "10_day", expert=UNAPPROVED).status_code == 404
 
 
+def test_each_unavailable_program_says_why(db, app, client):
+    _set_prices(db, prices={"10_day": 49900})
+    _as(app, ATHLETE)
+    body = client.get(f"{BASE}/experts/{EXPERT}").json()
+    assert body["expertAvailable"] is True
+    reasons = {p["programId"]: p["unavailableReason"] for p in body["programs"]}
+    assert reasons == {"10_day": None, "1_month": "not_priced", "3_month": "not_priced"}
+
+
+def test_an_unapproved_expert_is_reported_as_not_taking_requests(db, app, client):
+    _set_prices(db, expert=UNAPPROVED)
+    _as(app, ATHLETE)
+    body = client.get(f"{BASE}/experts/{UNAPPROVED}").json()
+    assert body["expertAvailable"] is False
+    assert {p["unavailableReason"] for p in body["programs"]} == {"expert_unavailable"}
+
+
+def test_legacy_monthly_coaching_prices_never_price_a_program(db, app, client):
+    """The live regression: the assigned expert had saved only the older
+    monthly Personal Coaching prices (experts/{uid}.pricing) and never a
+    program price. Those belong to the escrow coaching product; no program
+    price is ever derived from them — the program is 'not priced', and a
+    request for it is refused rather than charged at a guessed amount."""
+    db.store[f"experts/{EXPERT}"]["pricing"] = {
+        "coachingDietPrice": 5000, "coachingTrainingPrice": 5000, "coachingCompletePrice": 5000}
+    _as(app, ATHLETE)
+    body = client.get(f"{BASE}/experts/{EXPERT}").json()
+    assert all(p["pricePaise"] is None and p["unavailableReason"] == "not_priced"
+               for p in body["programs"])
+    assert _request(app, client, "1_month").json()["detail"] == "program_unavailable"
+    assert _requests(db) == {}
+
+
+@pytest.mark.parametrize("program", list(PRICES))
+def test_assigned_expert_with_a_valid_offer_starts_every_program(db, app, client, sent, program):
+    """The flow the athlete expected: an assigned expert who prices the
+    program -> Get Started creates the request, pending and unpaid, at the
+    server's price — and nothing else moves."""
+    _set_prices(db)
+    before = _everything_but_requests(db)
+    _as(app, ATHLETE)
+    offer = {p["programId"]: p for p in client.get(f"{BASE}/experts/{EXPERT}").json()["programs"]}
+    assert offer[program]["available"] is True and offer[program]["unavailableReason"] is None
+    r = _request(app, client, program)
+    assert r.status_code == 200, r.text
+    doc = _only_request(db)
+    assert (doc["athleteId"], doc["expertId"], doc["programId"]) == (ATHLETE, EXPERT, program)
+    assert doc["pricePaise"] == PRICES[program]
+    assert doc["status"] == "pending_expert_acceptance"
+    assert doc["paymentStatus"] == "unpaid"
+    assert _everything_but_requests(db) == before, "no wallet, ledger or coaching change"
+
+
 def test_unknown_expert_is_404_and_viewing_needs_sign_in(db, app, client):
     assert client.get(f"{BASE}/experts/{EXPERT}").status_code == 401
     _as(app, ATHLETE)

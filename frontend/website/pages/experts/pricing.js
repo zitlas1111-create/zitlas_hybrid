@@ -121,6 +121,15 @@
       })
       .then(function () {
         if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save Pricing'; }
+        // This button used to save only the prices below it: program prices
+        // typed into the Personal Coaching Program card above were dropped,
+        // the expert saw "Pricing saved", and athletes found every program
+        // unpriced. Unsaved program prices are now saved too — through their
+        // own backend endpoint (program-pricing.js), never a Firestore write.
+        var programs = window.ZitlasProgramPricing;
+        if (programs && typeof programs.isDirty === 'function' && programs.isDirty()) {
+          return programs.save();
+        }
       });
   }
 

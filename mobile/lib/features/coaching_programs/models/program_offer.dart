@@ -2,8 +2,8 @@
 /// request with them stands — as the server reports it.
 ///
 /// Every number here comes from `GET /api/coaching-programs/experts/{id}`.
-/// Nothing is priced in the app: a program the server does not price is
-/// simply not offered ("Currently unavailable"), never ₹0.
+/// Nothing is priced in the app: a program the server does not price is not
+/// offered by that expert (and the screen says so), never ₹0.
 library;
 
 enum ProgramRequestStatus { pendingExpertAcceptance, accepted, declined, active, completed, unknown }
@@ -113,11 +113,17 @@ class ProgramOffer {
     required this.expertId,
     required this.expertName,
     required this.prices,
+    this.expertAvailable = true,
     this.request,
   });
 
   final String expertId;
   final String expertName;
+
+  /// False only when the server says this expert takes no program requests
+  /// (`expertAvailable: false`). An older server that doesn't send it means
+  /// available — an unpriced program is then "not offered by this expert".
+  final bool expertAvailable;
 
   /// programId → price in paise, for the programs actually offered.
   final Map<String, int> prices;
@@ -142,12 +148,18 @@ class ProgramOffer {
       expertId: json['expertId'] is String ? json['expertId'] as String : '',
       expertName: json['expertName'] is String ? json['expertName'] as String : 'your expert',
       prices: Map.unmodifiable(prices),
+      expertAvailable: json['expertAvailable'] != false,
       request: ProgramRequest.fromJson(json['request']),
     );
   }
 
-  ProgramOffer withRequest(ProgramRequest request) =>
-      ProgramOffer(expertId: expertId, expertName: expertName, prices: prices, request: request);
+  ProgramOffer withRequest(ProgramRequest request) => ProgramOffer(
+        expertId: expertId,
+        expertName: expertName,
+        prices: prices,
+        expertAvailable: expertAvailable,
+        request: request,
+      );
 }
 
 /// One expert who offers a program, at their OWN server-side price — a row

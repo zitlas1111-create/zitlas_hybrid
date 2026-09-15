@@ -24,9 +24,9 @@ for _stream in (sys.stdout, sys.stderr):
         _stream.reconfigure(encoding="utf-8", errors="replace")
 
 from dotenv import load_dotenv
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 # Load environment variables from .env before anything else
@@ -55,7 +55,7 @@ from routes import expert_ratings
 from routes import creator_recipes
 from routes import entitlements as entitlements_routes
 from routes import trial_report
-from services import rag_service
+from services import food_engine, rag_service
 
 # ── Directory paths ──────────────────────────────────────────────────────────
 BASE_DIR     = Path(__file__).resolve().parent               # backend/
@@ -308,6 +308,15 @@ app = FastAPI(
     openapi_url="/openapi.json" if _DOCS_ON else None,
 )
 
+
+# The NEW food dataset is the only source diet plans and meal swaps are built
+# from — there is no fallback file. When it is missing or invalid, every route
+# that needs it (the offline fallbacks included, since they read the same
+# dataset) answers 503 with the reason rather than a bare 500.
+@app.exception_handler(food_engine.FoodDatasetError)
+async def _food_dataset_unavailable(_request, exc: food_engine.FoodDatasetError):
+    return JSONResponse(status_code=503, content={"detail": f"Food dataset unavailable: {exc}"})
+
 # ── CORS (needed once frontend calls APIs) ───────────────────────────────────
 # Same-origin calls (the website's own JS fetching '/api/...' from the same
 # host FastAPI serves it from, including inside the Flutter coaching WebView)
@@ -416,6 +425,31 @@ else:
     # Never fail app startup over the admin console: the API and the whole
     # website matter more than one internal tool being reachable.
     print(f"[STARTUP] admin portal directory missing, /admin/ not mounted: {_ADMIN_DIR}")
+
+# ── Personal Coaching Program artwork ────────────────────────────────────────
+# The website's program cards show the SAME three banners as the app. The
+# tracked originals live with the app (mobile/assets/images, listed in
+# pubspec.yaml); the website asks for them at /assets/images/programs/<name>.
+# Serving those exact files keeps ONE copy of each image — the website never
+# had a committed copy of its own, which is why its cards showed a broken
+# image in production. Registered before the catch-all mount below.
+_PROGRAM_ART_DIR = BASE_DIR.parent / "mobile" / "assets" / "images"
+_PROGRAM_ART = {
+    "10-day-program.png": "10 program.png",
+    "1-month-program.png": "1 month program.png",
+    "3-month-program.png": "3 month.png",
+}
+
+
+@app.get("/assets/images/programs/{name}", include_in_schema=False)
+def _program_artwork(name: str):
+    source = _PROGRAM_ART.get(name)
+    path = _PROGRAM_ART_DIR / source if source else None
+    if path is None or not path.is_file():
+        raise HTTPException(status_code=404, detail="Not Found")
+    return FileResponse(path, media_type="image/png",
+                        headers={"Cache-Control": "public, max-age=86400"})
+
 
 # ── Cache policy for the website ─────────────────────────────────────────────
 # WHY THIS EXISTS. StaticFiles sends an ETag and Last-Modified but NO

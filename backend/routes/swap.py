@@ -18,7 +18,7 @@ from __future__ import annotations
 import time
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from services.auth_service import verify_firebase_token
@@ -71,6 +71,23 @@ def _availability_label(food: dict, user_state: str | None) -> str:
         return "Available across India"
     region = food.get("region")
     return f"Common in {region} India" if region else "Availability varies"
+
+
+def _diet_type_label(food: dict) -> str:
+    """"Vegetarian" / "Egg" / "Non-Vegetarian" — the dataset's own type, with
+    egg dishes named as such so an eggetarian can tell them apart."""
+    if food.get("type") == "Vegetarian":
+        return "Vegetarian"
+    if food.get("category") == "Eggs":
+        return "Egg"
+    return "Non-Vegetarian"
+
+
+def _cuisine_label(food: dict) -> str:
+    """The dish's regional cuisine from the dataset; empty for everyday
+    pan-Indian food, where a label would add nothing."""
+    cuisine = food.get("cuisine") or ""
+    return "" if cuisine in ("Pan-Indian", "Indian") else cuisine
 
 
 def _workout_swap_options(
@@ -162,7 +179,12 @@ async def deterministic_swap(
     swap_uid = caller.get("uid") or ""
     entitlements.require(swap_uid, entitlements.MEAL_SWAP)
 
-    engine = food_engine.get_engine()
+    try:
+        engine = food_engine.get_engine()
+    except food_engine.FoodDatasetError as e:
+        # Fail clearly: a swap is never served from anything but the NEW dataset.
+        print(f"[SWAP] FOOD DATASET UNAVAILABLE: {e}")
+        raise HTTPException(status_code=503, detail=f"Food dataset unavailable: {e}")
     ld = body.lifestyle_data or {}
     ctx = groq_service._engine_query_context(body.user_profile, ld)
 
@@ -281,8 +303,10 @@ async def deterministic_swap(
         quality_labels: list[str] = []
         if target and target.get("protein") and macros["protein"] - target["protein"] >= 2:
             quality_labels.append("Better protein match")
+        # A portion-size signal, not a calorie count — the current diet
+        # experience doesn't track calories.
         if target and target.get("calories") and abs(macros["calories"] - target["calories"]) <= target["calories"] * 0.05:
-            quality_labels.append("Similar calories")
+            quality_labels.append("Comparable portion")
         if goal_key == "transformation" and food_engine.nutrition_quality_score(anchor, goal_key="transformation") >= 0.60:
             quality_labels.append("Transformation friendly")
 
@@ -304,6 +328,8 @@ async def deterministic_swap(
                 "high_protein": bool(anchor.get("high_protein")),
                 "high_fiber": bool(anchor.get("high_fiber")),
                 "quality_labels": quality_labels,
+                "diet_type": _diet_type_label(anchor),
+                "cuisine": _cuisine_label(anchor),
             }
         )
 

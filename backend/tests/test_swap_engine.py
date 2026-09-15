@@ -42,17 +42,26 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from services import food_engine as fe  # noqa: E402
 from services import groq_service as gs  # noqa: E402
 
-# Two of the three foods named in the reported defect (id=142, "Dabeli
-# (Home Style)", is deliberately not asserted against directly — it is a
-# legitimately reasonable home-style candidate; the complaint was about
-# it OUTRANKING better options, not about its own existence).
-MISAL_PAV_RESTAURANT = 1981
-THALIPEETH_RESTAURANT = 1987
+# The defect named "Misal Pav (Restaurant Style)" and "Thalipeeth (Restaurant
+# Style)" by the OLD dataset's ids. The NEW dataset the engine now serves is
+# canonical — one record per dish, venue variants folded — so neither record
+# exists any more (see test_restaurant_style_variants_are_folded_away). The
+# assertions below are therefore made against what those two foods WERE:
+# restaurant-prepared, low-protein candidates.
 
 
 @pytest.fixture(scope="module")
 def engine():
     return fe.get_engine()
+
+
+def _by_name(engine, name):
+    return next(f for f in engine.by_id.values() if f["name"] == name)
+
+
+def _first_restaurant_food(engine):
+    return next(engine.by_id[i] for i in sorted(engine.by_id)
+                if engine.by_id[i].get("restaurant_food") is True)
 
 
 def _swap(engine, *, fitness_goal, current_foods, meal_slot="breakfast",
@@ -106,11 +115,10 @@ def test_goal_key_label_for_transformation():
 # ── nutrition_quality_score: the actual scoring components ─────────────────
 
 def test_restaurant_food_is_penalised_relative_to_home_cooked(engine):
-    misal_restaurant = engine.by_id[MISAL_PAV_RESTAURANT]
-    assert misal_restaurant.get("restaurant_food") is True
-    q_restaurant = fe.nutrition_quality_score(misal_restaurant)
+    restaurant = _first_restaurant_food(engine)
+    q_restaurant = fe.nutrition_quality_score(restaurant)
     # Same food, forced home_cooked/restaurant_food flip, isolates the signal.
-    home_variant = dict(misal_restaurant, restaurant_food=False, home_cooked=True)
+    home_variant = dict(restaurant, restaurant_food=False, home_cooked=True)
     q_home = fe.nutrition_quality_score(home_variant)
     assert q_home > q_restaurant
 
@@ -128,12 +136,22 @@ def test_transformation_goal_key_widens_protein_and_fiber_reward():
     assert fe.nutrition_quality_score(high_protein_food, goal_key="muscle_gain") == q_plain
 
 
-def test_thalipeeth_restaurant_style_quality_is_low_on_its_own_merits(engine):
-    """Not a name blacklist — it scores low because it genuinely has low
-    protein (3g) for its calories, is restaurant-prepared, AND real recipe
-    data. This is the exact food named in the reported defect."""
-    thalipeeth = engine.by_id[THALIPEETH_RESTAURANT]
-    q = fe.nutrition_quality_score(thalipeeth, goal_key="transformation")
+def test_restaurant_style_variants_are_folded_away(engine):
+    """The two foods named in the defect were venue variants of home dishes.
+    The NEW dataset keeps one record per dish, so they cannot come back."""
+    names = {f["name"] for f in engine.by_id.values()}
+    assert "Misal Pav (Restaurant Style)" not in names
+    assert "Thalipeeth (Restaurant Style)" not in names
+    assert _by_name(engine, "Thalipeeth").get("restaurant_food") is not True
+
+
+def test_low_protein_restaurant_food_quality_is_low_on_its_own_merits(engine):
+    """Not a name blacklist — Khaman Dhokla (restaurant-prepared, 2 g protein
+    for 226 kcal) scores low for the same reasons Thalipeeth (Restaurant
+    Style) did in the reported defect."""
+    khaman = _by_name(engine, "Khaman Dhokla")
+    assert khaman.get("restaurant_food") is True
+    q = fe.nutrition_quality_score(khaman, goal_key="transformation")
     assert q < 0.70
 
 
@@ -180,17 +198,18 @@ def test_poha_body_transformation_swap_does_not_lead_with_flagged_foods(engine):
         location={"state": "Maharashtra"},
     )
     assert combos, "swap must return at least one option"
-    assert target is not None and target["calories"] == pytest.approx(181.0)
+    # "Poha (Home Style)" resolves to the NEW dataset's single Poha record.
+    poha = _by_name(engine, "Poha")
+    assert target is not None and target["calories"] == pytest.approx(poha["calories"])
     assert ctx["goal_key"] == "transformation"
 
-    top_ids = [combo[0]["id"] for combo in combos]
-    top3_ids = top_ids[:3]
-
-    # The two specifically-flagged low-quality candidates must not be
-    # AHEAD of the pack — if they appear at all, it must not be in the top
-    # slot with nothing better shown alongside them.
-    assert MISAL_PAV_RESTAURANT not in top3_ids or len(combos) > 1
-    assert THALIPEETH_RESTAURANT not in top3_ids or len(combos) > 1
+    # What the flagged foods were — restaurant-prepared and low-quality —
+    # must not lead the results, and nothing junk may appear at all.
+    for combo in combos[:3]:
+        assert combo[0].get("restaurant_food") is not True, combo[0]["name"]
+    for combo in combos:
+        for f in combo:
+            assert not fe.is_junk_for_recommendation(f), f["name"]
 
     # Positive claim, not just an absence: the TOP result must clear a real
     # quality bar for this goal — not merely "closest calories". 0.60 is a

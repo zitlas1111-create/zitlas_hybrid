@@ -187,6 +187,7 @@ body {
 .cpg-btn--primary:hover:not([disabled]) { background: var(--primary-hover, #2E5F47); }
 .cpg-btn--secondary { background: rgba(35, 75, 53, 0.1); color: var(--primary, #234B35); }
 .cpg-btn--ghost { background: transparent; color: #374151; }
+.cpg-btn--stacked { margin-top: 8px; }
 .cpg-btn[disabled] {
   background: #E5E7EB;
   color: #9CA3AF;

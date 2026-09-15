@@ -1097,6 +1097,9 @@
     }
 
     const foods = swap.foods || [];
+    /* No calorie/macro chips: ZITLAS doesn't make calorie tracking part of the
+       current diet experience. The numbers stay on the swap object (and in the
+       dataset) for the backend and future use — only the display is gone. */
     card.innerHTML = `
       <div class="swap-result-name">🥣 ${esc(swap.name || _swapMealName)}</div>
       <div class="swap-result-foods-section">
@@ -1104,11 +1107,6 @@
         <ul class="swap-result-foods-list">
           ${foods.map(f => `<li>${esc(f)}</li>`).join('')}
         </ul>
-      </div>
-      <div class="swap-result-macros">
-        ${swap.calories  ? `<span class="swap-macro-chip">🔥 ${esc(String(swap.calories))} kcal</span>`   : ''}
-        ${swap.protein_g ? `<span class="swap-macro-chip">💪 ${esc(String(swap.protein_g))}g protein</span>` : ''}
-        ${meal.calories_saved ? `<span class="swap-macro-chip swap-macro-chip--green">−${esc(String(meal.calories_saved))} kcal saved</span>` : ''}
       </div>
       ${swap.reason ? `<div class="swap-result-reason"><span class="swap-result-label">Why this works:</span><p>${esc(swap.reason)}</p></div>` : ''}
     `;

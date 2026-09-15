@@ -17,7 +17,7 @@
  * Run:  node tests/js/coaching-programs-web.test.mjs
  */
 
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import vm from 'node:vm';
@@ -90,7 +90,9 @@ function dartPrograms() {
 }
 
 const MESSAGE_TO_DART = {
-  unavailable: 'kProgramUnavailable',
+  notOffered: 'kProgramNotOffered',
+  expertUnavailable: 'kProgramExpertUnavailable',
+  priceLoadFailed: 'kProgramPriceLoadFailed',
   chooseExpertToPrice: 'kProgramChooseExpertToPrice',
   chooseAnotherExpert: 'kProgramChooseAnotherExpert',
   pickExpertTitle: 'kProgramPickExpertTitle',
@@ -138,6 +140,8 @@ function backend(opts = {}) {
     pays: 0,
     meStatus: 200,
     expertsStatus: 200,
+    offerStatus: 200,
+    expertAvailable: true, // false: the expert takes no program requests
     postAnswer: null,     // [status, body]
     payAnswer: null,      // [status, body]
     offline: false,
@@ -180,9 +184,15 @@ function backend(opts = {}) {
     if (method === 'GET' && m) {
       const id = decodeURIComponent(m[1]);
       if (!PRICES[id]) return Promise.resolve(res(404, { detail: 'expert_not_found' }));
+      if (b.offerStatus !== 200) return Promise.resolve(res(b.offerStatus, { detail: 'firestore_unavailable' }));
+      const avail = b.expertAvailable;
       return Promise.resolve(res(200, {
-        expertId: id, expertName: NAMES[id], currency: 'INR',
-        programs: Object.keys(DAYS).map((pid) => ({ programId: pid, pricePaise: PRICES[id][pid] ?? null, available: !!PRICES[id][pid] })),
+        expertId: id, expertName: NAMES[id], expertAvailable: avail, currency: 'INR',
+        programs: Object.keys(DAYS).map((pid) => {
+          const price = avail ? PRICES[id][pid] ?? null : null;
+          return { programId: pid, pricePaise: price, available: !!price,
+            unavailableReason: price ? null : (avail ? 'not_priced' : 'expert_unavailable') };
+        }),
         request: b.request && b.request.expertId === id ? b.request : null,
       }));
     }
@@ -460,6 +470,133 @@ it('a refused payment says why (not accepted / no longer payable)', async () => 
   const c = controller(b, 'coach-1');
   await c.load();
   assert.equal((await c.payAndStart()).message, 'This program can no longer be paid for.');
+});
+
+/* ── The card: one explicit state, never a catch-all ─────────────────── */
+
+it('REGRESSION: an assigned expert with a valid offer shows "Get Started", enabled, for all three programs', async () => {
+  const b = backend();
+  const c = controller(b, 'coach-1');
+  await c.load();
+  for (const pid of ['10_day', '1_month', '3_month']) {
+    const card = c.cardFor(pid, false);
+    assert.equal(card.availability, 'available', pid);
+    assert.equal(card.startEnabled, true, pid);
+    assert.equal(card.showChooseAnother, false, `${pid}: the assigned expert stays selected`);
+    assert.equal(card.priceText, F.formatPrice(PRICES['coach-1'][pid]), pid);
+  }
+  assert.ok(!Object.values(plain(F.MESSAGES)).includes('Currently unavailable'), 'no catch-all message exists');
+  assert.doesNotMatch(PAGE_JS, /Currently unavailable|M\.unavailable/);
+});
+
+for (const pid of ['10_day', '1_month', '3_month']) {
+  it(`${pid}: Get Started creates the EXISTING request with the assigned expert — pending, unpaid, nothing charged`, async () => {
+    const b = backend();
+    const c = controller(b, 'coach-1');
+    await c.load();
+    const out = await c.requestProgram(pid);
+    assert.equal(out.ok, true);
+    assert.deepEqual(b.posts, [{ expertId: 'coach-1', programId: pid }], 'only the expert and the program');
+    const r = c.requestFor(pid);
+    assert.equal(r.status, 'pending_expert_acceptance');
+    assert.equal(r.paymentStatus, 'unpaid');
+    assert.equal(r.pricePaise, PRICES['coach-1'][pid], "the SERVER's price snapshot");
+    assert.equal(b.pays, 0, 'no wallet charge at Get Started');
+    assert.ok(!b.calls.some((x) => /\/pay$/.test(x)), 'no payment call');
+    assert.equal(c.cardFor(pid, false).showStart, false, 'the card now shows the pending request');
+  });
+}
+
+it('an assigned expert who has not priced a program: the card says so; switching is a separate, explicit button', async () => {
+  const b = backend();
+  const c = controller(b, 'coach-2');
+  await c.load();
+  const card = c.cardFor('3_month', false);
+  assert.equal(card.availability, 'not_offered');
+  assert.equal(card.priceText, F.MESSAGES.notOffered);
+  assert.equal(card.startEnabled, false, 'the server could not create this request');
+  assert.equal(card.showChooseAnother, true);
+  assert.equal(c.state().expertId, 'coach-2', 'never switched automatically');
+  assert.equal(c.cardFor('10_day', false).availability, 'available', 'what they DO price still starts');
+});
+
+it('an expert taking no program requests is told apart from "not priced"', async () => {
+  const b = backend();
+  b.expertAvailable = false;
+  const c = controller(b, 'coach-1');
+  await c.load();
+  const card = c.cardFor('10_day', false);
+  assert.equal(card.availability, 'expert_unavailable');
+  assert.equal(card.priceText, F.MESSAGES.expertUnavailable);
+  assert.equal(card.startEnabled, false);
+  assert.equal(card.showChooseAnother, true);
+});
+
+it('a failed load is an error with Retry — never "not offered", and nothing can start', async () => {
+  const b = backend();
+  b.offerStatus = 503;
+  const c = controller(b, 'coach-1');
+  await c.load();
+  for (const pid of ['10_day', '1_month', '3_month']) {
+    const card = c.cardFor(pid, false);
+    assert.equal(card.availability, 'failed');
+    assert.equal(card.priceText, F.MESSAGES.priceLoadFailed);
+    assert.equal(card.startEnabled, false);
+    assert.equal(card.showChooseAnother, false);
+  }
+});
+
+it('loading, and no expert yet, are their own states', async () => {
+  const b = backend();
+  const c = controller(b, 'coach-1');
+  const pending = c.load();
+  assert.equal(c.cardFor('10_day', false).availability, 'loading');
+  assert.equal(c.cardFor('10_day', false).startEnabled, false);
+  await pending;
+  const none = controller(backend());
+  await none.load();
+  const card = none.cardFor('10_day', false);
+  assert.equal(card.availability, 'choose_expert');
+  assert.equal(card.priceText, F.MESSAGES.chooseExpertToPrice);
+  assert.equal(card.startEnabled, true, 'Get Started opens "choose your expert"');
+  assert.equal(card.showChooseAnother, false);
+});
+
+it('after a decline: the same expert can be asked again, and Choose Another Expert is offered', async () => {
+  const b = backend();
+  b.request = b.req('coach-1', '10_day', 'declined');
+  const c = controller(b, 'coach-1');
+  await c.load();
+  const card = c.cardFor('10_day', false);
+  assert.equal(card.request.status, 'declined');
+  assert.equal(card.showStart, true);
+  assert.equal(card.startEnabled, true);
+  assert.equal(card.showChooseAnother, true);
+});
+
+it('while a flow is open or a request is being sent, nothing else can start', async () => {
+  const b = backend();
+  const c = controller(b, 'coach-1');
+  await c.load();
+  assert.equal(c.cardFor('10_day', true).startEnabled, false);
+  assert.equal(c.cardFor('10_day', true).chooseAnotherEnabled, false);
+});
+
+it('an older server that does not send expertAvailable is read as available', () => {
+  assert.equal(F.parseOffer({}).expertAvailable, true);
+  assert.equal(F.parseOffer({ expertAvailable: false }).expertAvailable, false);
+});
+
+it("the program artwork is the app's own tracked banners, served by the backend — no second copy", () => {
+  const MAIN = read('backend', 'main.py');
+  for (const p of F.PROGRAMS) {
+    assert.ok(p.image.startsWith('/assets/images/programs/'), p.image);
+    const name = p.image.split('/').pop();
+    const m = MAIN.match(new RegExp(`"${name.replace(/\./g, '\\.')}":\\s*"([^"]+)"`));
+    assert.ok(m, `${name} is served by backend/main.py`);
+    assert.ok(existsSync(join(ROOT, 'mobile', 'assets', 'images', m[1])), `mobile/assets/images/${m[1]} exists`);
+    assert.ok(DART_COPY.includes(`'assets/images/${m[1]}'`), `${m[1]} is the app's own banner for ${p.id}`);
+  }
 });
 
 /* ── 3. The page renders the flow — nothing more ─────────────────────── */

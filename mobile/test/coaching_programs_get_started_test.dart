@@ -260,13 +260,18 @@ void main() {
       ]);
     });
 
-    testWidgets("an expert who doesn't offer a program: Choose Another Expert", (tester) async {
+    testWidgets(
+        "an expert who doesn't offer a program: it says so, and Choose Another Expert is the athlete's choice",
+        (tester) async {
       final server = _Server();
       await _pump(tester, server, expertId: 'coach-2');
 
-      expect(_inCard('3_month', find.text(kProgramUnavailable)), findsOneWidget);
-      expect(_inCard('3_month', find.text(kProgramChooseAnotherExpert)), findsOneWidget);
-      await _tap(tester, _start('3_month'));
+      expect(_inCard('3_month', find.text(kProgramNotOffered)), findsOneWidget);
+      expect(_inCard('3_month', find.text('Get Started')), findsOneWidget);
+      expect(tester.widget<FilledButton>(_start('3_month')).onPressed, isNull,
+          reason: 'Get Started only when the server can create the request');
+      expect(find.text('Your expert: Vikram Shah'), findsOneWidget, reason: 'never switched automatically');
+      await _tap(tester, find.byKey(const Key('coachingProgramChooseAnother_3_month')));
       expect(_picker, findsOneWidget);
       expect(find.byKey(const Key('programExpert_coach-2')), findsNothing,
           reason: 'only experts who offer the program are listed');
@@ -277,6 +282,24 @@ void main() {
         {'expertId': 'coach-1', 'programId': '3_month'},
       ]);
       expect(find.text('Your expert: Asha Rao'), findsOneWidget);
+    });
+
+    testWidgets('after a decline: the decline is shown, Get Started can ask again, and another expert can be chosen',
+        (tester) async {
+      final server = _Server();
+      server.request = server.req('coach-1', '10_day', 'declined');
+      await _pump(tester, server, expertId: 'coach-1');
+
+      expect(_inCard('10_day', find.text(kProgramDeclinedTitle)), findsOneWidget);
+      expect(tester.widget<FilledButton>(_start('10_day')).onPressed, isNotNull);
+      await _tap(tester, find.byKey(const Key('coachingProgramChooseAnother_10_day')));
+      expect(_picker, findsOneWidget);
+      await _choose(tester, 'coach-2');
+      await _tap(tester, _send);
+      expect(server.posts, [
+        {'expertId': 'coach-2', 'programId': '10_day'},
+      ]);
+      expect(find.text('Your expert: Vikram Shah'), findsOneWidget);
     });
 
     testWidgets("an expert's photo is shown when they have one — a broken one falls back",

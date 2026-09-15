@@ -10,7 +10,8 @@
  * here prices, dates or activates anything. tests/js/coaching-programs-web.test.mjs
  * pins the parity with the app.
  *
- *   Get Started -> choose your expert (GET /programs/{id}/experts)
+ *   Get Started -> choose your expert, only if none is chosen yet
+ *     (GET /programs/{id}/experts)
  *     -> review -> POST /requests -> pending -> the expert accepts
  *     -> Pay & Start Program (POST /requests/{id}/pay) -> active
  *
@@ -80,7 +81,9 @@
 
   /* The app's words (coaching_programs.dart), key for key. */
   var MESSAGES = {
-    unavailable: 'Currently unavailable',
+    notOffered: "Your expert hasn't set a price for this program yet.",
+    expertUnavailable: "Your expert isn't taking program requests right now.",
+    priceLoadFailed: "Couldn't load the price.",
     chooseExpertToPrice: 'Choose an expert to see their price',
     chooseAnotherExpert: 'Choose Another Expert',
     pickExpertTitle: 'Choose your expert',
@@ -195,6 +198,9 @@
     return {
       expertId: typeof j.expertId === 'string' ? j.expertId : '',
       expertName: (typeof j.expertName === 'string' && j.expertName) ? j.expertName : 'your expert',
+      // false only when the server says this expert takes no program requests;
+      // an older server that doesn't send it means "available".
+      expertAvailable: j.expertAvailable !== false,
       prices: prices,
       request: parseRequest(j.request)
     };
@@ -351,6 +357,58 @@
       return Object.prototype.hasOwnProperty.call(s.offer.prices, programId) ? s.offer.prices[programId] : null;
     }
 
+    /* What ONE program card is, as one explicit state — the app's
+       CoachingProgramsController.availabilityFor:
+         loading · failed · choose_expert · available · not_offered · expert_unavailable
+       Get Started works in choose_expert and available only — the two states
+       in which the server can create the request. A missing price is never a
+       catch-all "unavailable": the card says WHY. */
+    function availabilityFor(programId) {
+      if (s.state === 'loading') return 'loading';
+      if (s.state === 'failed') return 'failed';
+      if (!s.expertId || !s.offer) return 'choose_expert';
+      if (priceFor(programId) !== null) return 'available';
+      return s.offer.expertAvailable ? 'not_offered' : 'expert_unavailable';
+    }
+
+    var PRICE_TEXT = {
+      loading: 'Loading price…',
+      failed: MESSAGES.priceLoadFailed,
+      choose_expert: MESSAGES.chooseExpertToPrice,
+      not_offered: MESSAGES.notOffered,
+      expert_unavailable: MESSAGES.expertUnavailable
+    };
+
+    /* Everything one card shows, decided here so the page only renders it.
+       `busy` is the page's own "a flow is already open". */
+    function cardFor(programId, busy) {
+      var availability = availabilityFor(programId);
+      var price = priceFor(programId);
+      var req = requestFor(programId);
+      var open = openRequest();
+      var blockedBy = open && open.programId !== programId ? open : null;
+      var working = !!busy || s.submitting !== null || s.paying;
+      // Nothing to start while this program waits (on the expert or on
+      // payment) or runs.
+      var showStart = !(req && (isOpen(req) || isRunning(req, clock())));
+      var startable = availability === 'available' || availability === 'choose_expert';
+      return {
+        availability: availability,
+        price: price,
+        priceText: price !== null ? formatPrice(price) : (PRICE_TEXT[availability] || ''),
+        request: req,
+        blockedBy: blockedBy,
+        showStart: showStart,
+        startEnabled: showStart && startable && !blockedBy && !working,
+        // Switching experts is the athlete's explicit choice — its own button,
+        // offered when this expert doesn't offer the program or declined it.
+        showChooseAnother: showStart && !blockedBy && !!s.expertId &&
+          (availability === 'not_offered' || availability === 'expert_unavailable' ||
+           (!!req && req.status === STATUS.DECLINED)),
+        chooseAnotherEnabled: !working
+      };
+    }
+
     function loadOffer(id) {
       s.state = 'loading';
       emit();
@@ -408,7 +466,7 @@
     /* Sends ONLY the expert and the program. The server decides the price. */
     function requestProgram(programId) {
       if (!s.expertId || s.submitting !== null) {
-        return Promise.resolve({ ok: false, message: MESSAGES.unavailable });
+        return Promise.resolve({ ok: false, message: s.expertId ? '' : MESSAGES.chooseExpertToPrice });
       }
       var expertId = s.expertId;
       s.submitting = programId;
@@ -492,6 +550,8 @@
       state: function () { return s; },
       now: clock,
       priceFor: priceFor,
+      availabilityFor: availabilityFor,
+      cardFor: cardFor,
       requestFor: requestFor,
       openRequest: openRequest,
       load: load,

@@ -21,13 +21,15 @@ Run: python -m pytest tests/test_diet_personalization.py -q
 """
 
 import json
+import re
 from pathlib import Path
 
 import pytest
 
 from services import food_engine as fe
 
-_DATASET = Path(__file__).resolve().parents[2] / "food_dataset" / "zitlas_food_database_enriched.json"
+# The same NEW authoritative dataset the engine serves — never the frozen old one.
+_DATASET = fe._DATASET_PATH
 
 
 @pytest.fixture(scope="module")
@@ -177,8 +179,9 @@ class TestGeneratedWeekPlan:
     def test_pure_vegetarian_never_gets_eggs(self, engine):
         """TEST 1 — the hard rule."""
         names = " | ".join(f["name"] for f in _all_foods(_week(engine, "vegetarian"))).lower()
+        # Word-start match: "anda" (egg) must not fire inside "standard".
         for banned in ("egg", "omelette", "anda", "chicken", "fish", "mutton", "prawn"):
-            assert banned not in names, f"pure vegetarian plan contained {banned!r}"
+            assert not re.search(rf"\b{banned}", names), f"pure vegetarian plan contained {banned!r}"
 
     def test_vegan_gets_no_dairy_or_eggs(self, engine):
         """TEST 2."""

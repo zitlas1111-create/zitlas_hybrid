@@ -8,6 +8,29 @@ import '../models/program_offer.dart';
 
 enum ProgramsLoadState { loading, ready, failed }
 
+/// What one program card is — the website's `availabilityFor`, state for
+/// state. Get Started works in [chooseExpert] and [available] only: the two
+/// states in which the server can create the request.
+enum ProgramAvailability {
+  /// The expert's prices are loading.
+  loading,
+
+  /// They could not be loaded — an error with Retry, never "not offered".
+  failed,
+
+  /// No expert chosen yet: Get Started opens "choose your expert".
+  chooseExpert,
+
+  /// The chosen expert prices this program: Get Started -> review -> send.
+  available,
+
+  /// The chosen expert hasn't priced this program.
+  notOffered,
+
+  /// The chosen expert takes no program requests at all.
+  expertUnavailable,
+}
+
 enum ProgramPaymentState { idle, paying, insufficient }
 
 /// What happened when the athlete acted — the screen shows [message] (an
@@ -62,9 +85,23 @@ class CoachingProgramsController extends ChangeNotifier {
 
   DateTime now() => _clock();
 
-  /// The server's price for [programId], or null — "Currently unavailable".
+  /// The server's price for [programId], or null when there is none to show
+  /// — [availabilityFor] says why.
   int? priceFor(String programId) =>
       _state == ProgramsLoadState.ready ? _offer?.priceFor(programId) : null;
+
+  /// What [programId]'s card is right now. A missing price is never a
+  /// catch-all "unavailable": loading, a failed load, no expert yet, an
+  /// expert who hasn't priced it and an expert taking no requests are all
+  /// told apart.
+  ProgramAvailability availabilityFor(String programId) {
+    if (_state == ProgramsLoadState.loading) return ProgramAvailability.loading;
+    if (_state == ProgramsLoadState.failed) return ProgramAvailability.failed;
+    final offer = _offer;
+    if (_expertId == null || offer == null) return ProgramAvailability.chooseExpert;
+    if (offer.priceFor(programId) != null) return ProgramAvailability.available;
+    return offer.expertAvailable ? ProgramAvailability.notOffered : ProgramAvailability.expertUnavailable;
+  }
 
   /// The athlete's request with this expert (open, or the most recent).
   ProgramRequest? get request => _offer?.request;
@@ -122,7 +159,7 @@ class CoachingProgramsController extends ChangeNotifier {
     final repo = repository;
     final id = expertId;
     if (repo == null || id == null || _submitting != null) {
-      return const ProgramRequestOutcome(ok: false, message: kProgramUnavailable);
+      return ProgramRequestOutcome(ok: false, message: id == null ? kProgramChooseExpertToPrice : '');
     }
     _submitting = programId;
     _notify();

@@ -4,9 +4,11 @@ import '../../../../core/theme/zitlas_tokens.dart';
 import '../../models/diet_calculations.dart';
 import '../../models/diet_plan_content.dart';
 
-/// Plan name + calorie/protein/water targets, matching the summary strip at
-/// the top of `diet.js`'s rendered plan. Targets come from
+/// Plan name + protein/water targets. Targets come from
 /// `users/{uid}.calculations` (server-computed), never recalculated here.
+/// The calorie target is intentionally not shown: ZITLAS doesn't make calorie
+/// tracking part of the current diet experience (the value stays in
+/// [DietCalculations] for the backend and future use).
 class DietPlanHeaderCard extends StatelessWidget {
   const DietPlanHeaderCard({
     super.key,
@@ -70,7 +72,6 @@ class DietPlanHeaderCard extends StatelessWidget {
           const SizedBox(height: 14),
           Row(
             children: [
-              _Target(label: 'Calories', value: _fmt(calculations.calorieTargetKcal, 'kcal')),
               _Target(label: 'Protein', value: _fmt(calculations.proteinTargetG, 'g')),
               _Target(label: 'Water', value: _fmt(calculations.waterTargetLiters, 'L')),
             ],

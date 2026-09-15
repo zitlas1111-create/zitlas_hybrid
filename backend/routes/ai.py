@@ -12,7 +12,7 @@ from pydantic import BaseModel, Field
 from typing import Any
 
 from services.auth_service import verify_firebase_token
-from services import entitlements, groq_service, location_food_engine, offline_fallback, rag_service
+from services import entitlements, food_engine, groq_service, location_food_engine, offline_fallback, rag_service
 
 router = APIRouter()
 
@@ -659,6 +659,11 @@ async def nutrition_weekly_plan(body: NutritionWeeklyPlanRequest) -> dict[str, A
             lifestyle_data=body.lifestyle_data,
             rejected_foods=body.rejected_foods,
         )
+    except food_engine.FoodDatasetError as e:
+        # The NEW food dataset is missing/invalid. Fail clearly — the offline
+        # fallback reads the same dataset, and nothing may stand in for it.
+        print(f"[nutrition-weekly-plan] FOOD DATASET UNAVAILABLE: {e}")
+        raise HTTPException(status_code=503, detail=f"Food dataset unavailable: {e}")
     except EnvironmentError as e:
         print(f"[nutrition-weekly-plan] EnvironmentError: {e}")
         raise HTTPException(status_code=503, detail=str(e))
@@ -783,6 +788,10 @@ async def swap_meal(
             fitness_goal=fitness_goal,
             rag_context=rag_context,
         )
+    except food_engine.FoodDatasetError as e:
+        # Same rule as the weekly plan: no swap from anywhere but the NEW dataset.
+        print(f"[swap-meal] FOOD DATASET UNAVAILABLE: {e}")
+        raise HTTPException(status_code=503, detail=f"Food dataset unavailable: {e}")
     except EnvironmentError as e:
         print(f"[swap-meal] EnvironmentError: {e}")
         raise HTTPException(status_code=503, detail=str(e))

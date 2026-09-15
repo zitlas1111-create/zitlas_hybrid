@@ -259,7 +259,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text(kProgramChooseExpertToPrice), findsNWidgets(kCoachingPrograms.length));
-      expect(find.text(kProgramUnavailable), findsNothing);
+      expect(find.text(kProgramNotOffered), findsNothing);
+      expect(find.text('Currently unavailable'), findsNothing);
       expect(find.textContaining('₹'), findsNothing, reason: 'never ₹0, never a made-up price');
       expect(listed.map((u) => u.path), ['/api/coaching-programs/requests/me'],
           reason: "on open, only the athlete's current program is restored");

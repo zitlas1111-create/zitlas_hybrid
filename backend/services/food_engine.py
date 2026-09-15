@@ -1,8 +1,13 @@
 """
 ZITLAS — Food Recommendation Engine (backend/services/food_engine.py)
 
-Loads food_dataset/zitlas_food_database_enriched.json ONCE at import time and
-serves every diet/meal/swap feature from it. This is the single source of
+Loads the NEW authoritative food dataset,
+food_dataset/zitlas_food_database_enriched_canonical.json, once (on first use,
+via get_engine()) and serves every diet/meal/swap feature from it — with NO
+fallback: a missing, unreadable or invalid file raises FoodDatasetError
+instead of quietly serving the frozen OLD dataset
+(zitlas_food_database_enriched.json, kept on disk only for rollback and
+reference). This is the single source of
 truth for "what food can we recommend" — the LLM never invents a food name;
 it only arranges foods this engine selected into a readable plan (see
 groq_service.generate_nutrition_weekly_plan / generate_meal_swap, which call
@@ -38,7 +43,13 @@ from typing import Any
 from services import medical_conditions
 
 _ROOT = Path(__file__).parent.parent.parent
-_DATASET_PATH = _ROOT / "food_dataset" / "zitlas_food_database_enriched.json"
+# The NEW authoritative dataset (canonical line): one record per genuinely
+# distinct food, built by food_dataset/build/expand_v5.py and enriched by
+# backend/enrich_canonical_dataset.py.
+_DATASET_PATH = _ROOT / "food_dataset" / "zitlas_food_database_enriched_canonical.json"
+# The OLD production dataset (4,520 foods). Frozen — kept only as a rollback/
+# reference copy. load_food_dataset() refuses to serve it.
+_FROZEN_OLD_DATASET = _ROOT / "food_dataset" / "zitlas_food_database_enriched.json"
 _PROFILES_DIR = _ROOT / "food_profiles"
 
 # CONDITION_RULES key (services/medical_conditions.py) -> diseaseSuitable tag
@@ -325,49 +336,64 @@ def combo_meets_nutrition(
     )
 
 
+#: What a food IS on a plate, in words — from enrich_food_dataset_v3's meal_role.
+_MEAL_ROLE_PHRASE: dict[str, str] = {
+    "complete_meal": "complete meal",
+    "breakfast_dish": "breakfast dish",
+    "protein_source": "protein dish",
+    "carb_source": "staple",
+    "vegetable": "vegetable dish",
+    "side_dish": "side dish",
+    "soup_salad": "light soup or salad",
+    "dairy": "dairy dish",
+    "snack_item": "snack",
+    "fruit": "fruit",
+    "beverage": "drink",
+    "dessert": "sweet",
+    "single_ingredient": "simple side",
+    "supplement": "supplement",
+}
+
+
+def _diet_word(food: dict) -> str:
+    """The dataset's own type, naming egg dishes as such for eggetarians."""
+    if food.get("type") == "Vegetarian":
+        return "vegetarian"
+    if food.get("category") == "Eggs":
+        return "egg"
+    return "non-vegetarian"
+
+
 def describe_swap(
     combo: list[dict], target: dict[str, float] | None,
     goal_tags: list[str] | None = None, goal_label: str | None = None,
 ) -> str:
-    """The explanation shown to the athlete, generated FROM THE ACTUAL NUMBERS.
+    """The explanation shown to the athlete — read from the dataset's own
+    fields, never model prose.
 
     Never a template and never model prose: an LLM asked to justify a swap
     will cheerfully call a deep-fried bhajiya "good protein and healthy
     carbs", because it is writing plausible text rather than reading the
-    values. Every clause below is derived from real dataset figures, so a
-    claim can only appear when the numbers support it.
+    values. Every clause below comes from the data, so a claim can only
+    appear when the dataset supports it.
+
+    Deliberately calorie-free: ZITLAS doesn't make calorie tracking part of
+    the current diet experience, so the reason says WHAT the swap is (meal
+    role, diet type) and WHY it fits (protein, fibre, goal, portion, region)
+    — never "149 kcal" or "12% fewer calories". The numbers still drive the
+    ranking; they just aren't the message.
     """
     m = _combo_macros(combo)
-    name = combo[0].get("name", "This")
-    parts: list[str] = []
-
-    if target and target.get("calories"):
-        delta = m["calories"] - target["calories"]
-        pct = abs(delta) / target["calories"] * 100
-        if pct < 5:
-            parts.append(f"almost identical calories ({m['calories']:.0f} vs {target['calories']:.0f} kcal)")
-        elif delta < 0:
-            parts.append(f"{pct:.0f}% fewer calories ({m['calories']:.0f} vs {target['calories']:.0f} kcal)")
-        else:
-            parts.append(f"{pct:.0f}% more calories ({m['calories']:.0f} vs {target['calories']:.0f} kcal)")
-    else:
-        parts.append(f"{m['calories']:.0f} kcal")
-
-    if target and target.get("protein"):
-        pdelta = m["protein"] - target["protein"]
-        # "More protein" is only claimed on a difference worth naming — a
-        # 0.3 g edge is noise, and calling it an upgrade is the exact kind of
-        # overclaim this function exists to prevent.
-        if pdelta >= 2:
-            parts.append(f"more protein ({m['protein']:.1f}g vs {target['protein']:.1f}g)")
-        elif pdelta <= -2:
-            parts.append(f"a little less protein ({m['protein']:.1f}g vs {target['protein']:.1f}g)")
-        else:
-            parts.append(f"about the same protein ({m['protein']:.1f}g)")
-    else:
-        parts.append(f"{m['protein']:.1f}g protein")
-
-    sentence = f"{name} — " + ", ".join(parts) + "."
+    anchor = combo[0]
+    name = anchor.get("name", "This")
+    diet = _diet_word(anchor)
+    role = _MEAL_ROLE_PHRASE.get(anchor.get("meal_role"), "dish")
+    article = "an" if diet[0] in "aeiou" else "a"
+    sentence = f"{name} — {article} {diet} {role}"
+    sides = [f.get("name") for f in combo[1:] if f.get("name")]
+    if sides:
+        sentence += " with " + " and ".join(sides[:2])
+    sentence += "."
 
     # Only state what the data actually says.
     extras: list[str] = []
@@ -384,6 +410,16 @@ def describe_swap(
         # maps transformation onto; goal_tags[0] stays as the fallback for
         # callers that don't have a canonical goal_key at all).
         extras.append(f"suited to your {goal_label or goal_tags[0].lower()} goal")
+    # "More protein" only on a difference worth naming — a 0.3 g edge is
+    # noise, and calling it an upgrade is the exact overclaim to avoid.
+    if target and target.get("protein") and m["protein"] - target["protein"] >= 2:
+        extras.append("more protein than the meal it replaces")
+    if target and target.get("calories") and \
+            abs(m["calories"] - target["calories"]) <= target["calories"] * 0.15:
+        extras.append("a similar-sized portion")
+    origin = combo[0].get("state_of_origin") or []
+    if origin:
+        extras.append(f"a traditional dish from {origin[0]}")
     if combo[0].get("hostel_friendly"):
         extras.append("easy to get in a hostel mess")
     if extras:
@@ -413,9 +449,10 @@ _DEEP_FRIED_KEYWORDS = (
     # covers every dish's Restaurant Style variant at once, without a
     # per-dish keyword list that both misses styles it doesn't guess at and
     # can never fire for a dish that hasn't been added to it by name.
-    "pav bhaji", "mirchi bhaji",
-    "vada", "puri", "bhatura", "jalebi", "gulab jamun", "chips", "fries",
+    "pav bhaji", "mirchi bhaji", "kanda bhaji", "onion bhaji",
+    "vada", "puri", "bhatura", "bhature", "jalebi", "gulab jamun", "chips", "fries",
     "fried", "deep fry", "medu", "murukku", "chakli", "sev ", "namkeen",
+    "bhujia", "kurkure", "farsan",
     "papad", "wafer", "nugget", "cutlet", "spring roll", "manchurian",
 )
 
@@ -439,6 +476,25 @@ _HEALTH_GOALS = frozenset({
 def _name_matches(name: str, keywords) -> bool:
     n = _norm(name)
     return any(k in n for k in keywords)
+
+
+_WORD_RE_CACHE: dict[str, re.Pattern] = {}
+
+
+def _mentions(text: str, keyword: str) -> bool:
+    """Whole-word match of an athlete-supplied keyword (a favourite food,
+    cuisine or region) inside an already-normalised name/category string.
+
+    Plain substring matching let the Assamese favourite "Khar" select
+    "Kathiyawadi Dahi Tikhari" (ti-KHAR-i) as a favourite for every slot of
+    an Assam week. A trailing s/es still matches, so "idli" finds "Idlis"."""
+    if not keyword or keyword not in text:
+        return False
+    pattern = _WORD_RE_CACHE.get(keyword)
+    if pattern is None:
+        pattern = re.compile(r"(?<![a-z0-9])" + re.escape(keyword) + r"(?:e?s)?(?![a-z0-9])")
+        _WORD_RE_CACHE[keyword] = pattern
+    return pattern.search(text) is not None
 
 
 # Goals where protein/fibre ADEQUACY (not just the flat baseline weighting)
@@ -549,9 +605,130 @@ def is_health_plan_appropriate(
     return nutrition_quality_score(food, goal_key=goal_key) >= _MIN_QUALITY_FOR_HEALTH_GOALS
 
 
+# ── Normal-recommendation junk gate (EVERY goal) ────────────────────────────
+#
+# is_health_plan_appropriate() above only runs for health-oriented goals, and
+# its caller keeps the whole pool when nothing passes. That left a real gap: a
+# muscle-gain or six-pack plan could still be offered Vada Pav or Pav Bhaji as
+# an ordinary meal. These foods stay in the catalogue — the expert food search
+# still finds them and an expert can still place one by hand — but no
+# generated plan, swap or offline fallback offers them as a normal meal.
+_JUNK_SCREENED_CATEGORIES = frozenset({"Street Foods", "Desserts & Sweets"})
+
+
+def is_junk_for_recommendation(food: dict) -> bool:
+    """True for deep-fried, ultra-processed and calorie-dense street/junk food
+    that must never be a normal diet-plan or swap recommendation.
+
+    Every signal is the dataset's own: the dish name (deep-fried and
+    ultra-processed preparations), the description (new foods say
+    "deep-fried" in so many words), the category (Fast Foods outright;
+    Street Foods and sweets unless their nutrition quality clears the same
+    bar health-goal plans use — a boiled-chana ghugni is fine, a samosa is
+    not)."""
+    name = food.get("name", "")
+    if _name_matches(name, _DEEP_FRIED_KEYWORDS) or _name_matches(name, _ULTRA_PROCESSED_KEYWORDS):
+        return True
+    description = _norm(food.get("description", ""))
+    if "deep-fried" in description or "deep fried" in description:
+        return True
+    category = food.get("category")
+    if category == "Fast Foods":
+        return True
+    if category in _JUNK_SCREENED_CATEGORIES and \
+            nutrition_quality_score(food) < _MIN_QUALITY_FOR_HEALTH_GOALS:
+        return True
+    return False
+
+
+# ── Loading: the NEW dataset or nothing ─────────────────────────────────────
+
+class FoodDatasetError(RuntimeError):
+    """The NEW food dataset is missing, unreadable or invalid. Raised instead
+    of silently serving recommendations from anything else."""
+
+
+_REQUIRED_TEXT_FIELDS = ("name", "category", "type")
+_REQUIRED_NUMERIC_FIELDS = ("calories", "protein", "carbs", "fat")
+_FOOD_TYPES = frozenset({"Vegetarian", "Non-Vegetarian"})
+
+
+def validate_food_records(raw: Any) -> list[str]:
+    """Every reason a dataset is unfit to serve, as readable strings — empty
+    when it is valid. Duplicate ids, duplicate names, missing or blank
+    required fields, an unknown food type and negative or non-numeric
+    nutrition are all rejected."""
+    if not isinstance(raw, list) or not raw:
+        return ["the dataset must be a non-empty JSON list of food records"]
+    problems: list[str] = []
+    seen_ids: dict[int, Any] = {}
+    seen_names: dict[str, Any] = {}
+    for i, food in enumerate(raw):
+        if not isinstance(food, dict):
+            problems.append(f"record #{i} is not an object")
+            continue
+        fid = food.get("id")
+        where = f"record #{i} (id={fid!r})"
+        if not isinstance(fid, int) or isinstance(fid, bool) or fid <= 0:
+            problems.append(f"{where}: invalid id")
+        elif fid in seen_ids:
+            problems.append(f"duplicate id {fid} ({seen_ids[fid]!r} and {food.get('name')!r})")
+        else:
+            seen_ids[fid] = food.get("name")
+        for field in _REQUIRED_TEXT_FIELDS:
+            value = food.get(field)
+            if not isinstance(value, str) or not value.strip():
+                problems.append(f"{where}: missing {field}")
+        if food.get("type") not in _FOOD_TYPES:
+            problems.append(f"{where}: unknown type {food.get('type')!r}")
+        for field in _REQUIRED_NUMERIC_FIELDS:
+            value = food.get(field)
+            if not isinstance(value, (int, float)) or isinstance(value, bool) or value < 0:
+                problems.append(f"{where}: invalid {field} {value!r}")
+        name = food.get("name")
+        if isinstance(name, str) and name.strip():
+            key = name.strip().lower()
+            if key in seen_names:
+                problems.append(f"duplicate name {name!r} (ids {seen_names[key]} and {fid})")
+            else:
+                seen_names[key] = fid
+    return problems
+
+
+def load_food_dataset(path: Path = _DATASET_PATH) -> list[dict]:
+    """The NEW dataset's records, validated — or FoodDatasetError. Never
+    returns records from any other file."""
+    path = Path(path)
+    if path.resolve() == _FROZEN_OLD_DATASET.resolve():
+        raise FoodDatasetError(
+            f"{path.name} is the frozen OLD production dataset — it is kept only for "
+            f"rollback and is never served. Diet generation and Meal Swap use "
+            f"{_DATASET_PATH.name}.")
+    if not path.exists():
+        raise FoodDatasetError(
+            f"NEW food dataset not found at {path}. Diet generation and Meal Swap refuse "
+            f"to fall back to the old dataset — regenerate it with "
+            f"`python backend/enrich_canonical_dataset.py --overwrite`.")
+    try:
+        raw = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise FoodDatasetError(f"NEW food dataset at {path} could not be read: {exc}") from exc
+    problems = validate_food_records(raw)
+    if problems:
+        raise FoodDatasetError(
+            f"NEW food dataset at {path} is invalid ({len(problems)} problem(s)): "
+            + "; ".join(problems[:5]))
+    return raw
+
+
 class FoodRecommendationEngine:
     def __init__(self, path: Path = _DATASET_PATH):
-        raw: list[dict] = json.loads(path.read_text(encoding="utf-8"))
+        # Fails loudly on a missing/invalid NEW dataset and refuses the frozen
+        # OLD one — there is no fallback file.
+        raw: list[dict] = load_food_dataset(path)
+        self.dataset_path = Path(path)
+        # ids is_junk_for_recommendation() flags — computed once, lazily.
+        self._junk_cache: set[int] | None = None
 
         # A record with no `id` used to raise a bare KeyError here, killing
         # backend startup with a traceback that says nothing about which food
@@ -672,7 +849,7 @@ class FoodRecommendationEngine:
                 print(f"    cause: {no_id:,} record(s) with no id")
 
         print(line)
-        print(f"  Source        : {_DATASET_PATH.name}")
+        print(f"  Source        : {self.dataset_path.name}")
         print(f"  States Covered: {len(self._idx_state)}")
         print()
 
@@ -846,11 +1023,12 @@ class FoodRecommendationEngine:
             bad = {
                 fid for fid, food in self.by_id.items()
                 if diet_violation(food.get("name", ""), diet_key)
+                or allergen_diet_violation(food, diet_key)
             }
         self._diet_violation_cache[cache_key] = bad
         if bad:
             print(f"[FOOD ENGINE] diet={diet_key}: excluded {len(bad)} mislabelled "
-                  f"row(s) by name-level check (e.g. omelettes tagged Vegetarian)")
+                  f"row(s) by name/allergen check (e.g. omelettes tagged Vegetarian)")
         return bad
 
     def _budget_ids(self, budget_tier: str) -> set[int]:
@@ -887,9 +1065,17 @@ class FoodRecommendationEngine:
                     continue
                 f = self.by_id[i]
                 haystack = f"{_norm(f['name'])} {_norm(f.get('category', ''))} {_norm(f.get('region', ''))}"
-                if any(kw in haystack for kw in fav_lc):
+                if any(_mentions(haystack, kw) for kw in fav_lc):
                     eligible.add(i)
         return eligible
+
+    def _junk_ids(self) -> set[int]:
+        """Foods is_junk_for_recommendation() keeps out of every normal
+        recommendation. The dataset is immutable for the life of the process,
+        so this is computed once."""
+        if self._junk_cache is None:
+            self._junk_cache = {i for i, f in self.by_id.items() if is_junk_for_recommendation(f)}
+        return self._junk_cache
 
     def _pipeline_ids(
         self,
@@ -922,6 +1108,11 @@ class FoodRecommendationEngine:
         if disliked_foods:
             disliked_lc = [_norm(d) for d in disliked_foods if d]
             base = {i for i in base if not any(d in _norm(self.by_id[i]["name"]) for d in disliked_lc)}
+
+        # Junk gate — every goal, never relaxed. Deep-fried, ultra-processed
+        # and calorie-dense street food is never a normal plan or swap pick
+        # (see is_junk_for_recommendation); the foods stay in the catalogue.
+        base -= self._junk_ids()
 
         # Stage 3: Diet Preference — never relaxed (never serve meat to a
         # vegetarian just because the candidate pool got thin).
@@ -1054,7 +1245,7 @@ class FoodRecommendationEngine:
         explicit_override = False
         if fav_lc:
             haystack = f"{_norm(food['name'])} {_norm(food.get('category', ''))} {_norm(food_region)}"
-            explicit_override = any(kw in haystack for kw in fav_lc)
+            explicit_override = any(_mentions(haystack, kw) for kw in fav_lc)
         if explicit_override:
             return 0.50
         if compatible_regions and food_region in compatible_regions:
@@ -1107,7 +1298,7 @@ class FoodRecommendationEngine:
         # they love this" and "we have no signal" has to be wide enough to
         # actually move ranking — a 1.0/0.5 split under a 0.26 weight is what
         # makes "I already have this at home" win.
-        liked = any(_norm(f) in name_lc for f in favorite_foods if f)
+        liked = any(_mentions(name_lc, _norm(f)) for f in favorite_foods if f)
         pref_component = 1.0 if liked else 0.45
 
         # A stated dislike is a soft-zero rather than a hard filter here: the
@@ -1510,12 +1701,18 @@ class FoodRecommendationEngine:
                     # the RANKING, and a balanced complete lunch serves the
                     # goal better than a lone bowl of curd. Medical/diet
                     # filters are inside the pipeline and never relax.
+                    # The retry carries the same per-slot dish-family charge as
+                    # the first attempt. It used to pass bare usage_counts, so
+                    # in a thin pool (a vegan dinner) every failed first
+                    # attempt fell back to the same family — khichdi at five
+                    # dinners out of seven.
                     wide_pool = self.recommend(
                         meal_slot=slot, goal_tags=[], diet_tags=diet_tags,
                         living_situation=living_situation, budget_tier=budget_tier,
                         disease_tags=disease_tags, allergens=allergens,
                         favorite_foods=favorite_foods, disliked_foods=disliked_foods,
-                        usage_counts=usage_counts, top_n=40,
+                        usage_counts=self._with_slot_family_penalty(usage_counts, slot_family_usage[slot]),
+                        top_n=40,
                         profile=profile, subgoal_tag=None, season_tag=season_tag,
                         max_prep_minutes=max_prep_minutes,
                         user_state=user_state, compatible_regions=compatible_regions,
@@ -1746,7 +1943,7 @@ class FoodRecommendationEngine:
                     "preferred" if user_state and user_state in states else
                     "common" if (f.get("region", "Pan-India") == "Pan-India" or not states) else
                     "other_region_explicit" if favorite_foods and any(
-                        _norm(kw) in f"{_norm(f['name'])} {_norm(f.get('category',''))} {_norm(f.get('region',''))}"
+                        _mentions(f"{_norm(f['name'])} {_norm(f.get('category',''))} {_norm(f.get('region',''))}", _norm(kw))
                         for kw in favorite_foods if kw
                     ) else
                     "other_region_same_zone" if compatible_regions and f.get("region", "Pan-India") in compatible_regions else
@@ -2290,6 +2487,12 @@ _DAIRY_KEYWORDS = (
     "milk", "curd", "yogurt", "yoghurt", "paneer", "cheese", "butter",
     "ghee", "cream", "lassi", "buttermilk", "chaas", "khoya", "malai",
     "condensed", "whey", "casein", "kheer", "shrikhand", "raita",
+    # Dishes that are dairy by definition whatever a row's tags say — the
+    # dataset tags Khichdi with Kadhi, Dal Makhani and Masala Chai as Vegan.
+    "dahi", "kadhi", "makhani", "makhan", "bukhara", "korma", "thandai",
+    "shake", "chai", "latte", "cappuccino", "mocha", "khoa", "mawa",
+    "rabri", "rabdi", "basundi", "kulfi", "payasam", "payesh", "chhena",
+    "chhana", "rasmalai", "sandesh", "mor", "moru", "majjige", "kalan", "avial",
 )
 
 # Which keyword families each canonical key FORBIDS.
@@ -2313,7 +2516,32 @@ _KEYWORD_FALSE_POSITIVES = (
     "milk thistle", "butter bean", "buttermilk squash", "butternut",
     "coconut cream", "vegan butter", "vegan cheese", "vegan mayo",
     "meat substitute", "meat-free", "mock meat", "soya chunks",
+    # Besan, tamarind and vegetables — no curd, unlike every other kadhi.
+    "sindhi kadhi",
 )
+
+# Allergens that also decide diet eligibility. Newer records carry real
+# allergens ("Milk", "Egg", "Shellfish/Fish"), so a dairy dish whose NAME
+# doesn't say so (Mor Kali, Kathiyawadi Dahi Tikhari) is still caught.
+_MILK_ALLERGENS = frozenset({"milk", "dairy", "lactose"})
+_EGG_ALLERGENS = frozenset({"egg", "eggs"})
+_FISH_ALLERGENS = frozenset({"shellfish/fish", "fish", "shellfish"})
+_DIET_KEY_FORBIDDEN_ALLERGENS: dict[str, frozenset[str]] = {
+    DIET_PURE_VEGETARIAN: _EGG_ALLERGENS | _FISH_ALLERGENS,
+    DIET_VEGAN:           _MILK_ALLERGENS | _EGG_ALLERGENS | _FISH_ALLERGENS,
+    DIET_EGGETARIAN:      _FISH_ALLERGENS,
+    DIET_JAIN:            _EGG_ALLERGENS | _FISH_ALLERGENS,
+    DIET_NON_VEGETARIAN:  frozenset(),
+}
+
+
+def allergen_diet_violation(food: dict, diet_key: str) -> str | None:
+    """The allergen on this database row that `diet_key` forbids, else None."""
+    forbidden = _DIET_KEY_FORBIDDEN_ALLERGENS.get(diet_key, frozenset())
+    for allergen in food.get("allergens") or []:
+        if _norm(str(allergen)) in forbidden:
+            return f"allergen={allergen}"
+    return None
 
 
 def canonical_diet_key(diet_type: str) -> str:
@@ -2371,7 +2599,7 @@ def food_violates_diet(food: dict, diet_key: str) -> str | None:
     tags = set(food.get("dietSuitable") or [])
     if allowed and tags and not (tags & allowed):
         return f"dietSuitable={sorted(tags)}"
-    return diet_violation(food.get("name", ""), diet_key)
+    return diet_violation(food.get("name", ""), diet_key) or allergen_diet_violation(food, diet_key)
 
 
 # Max times one dish may appear across a 7-day plan before it reads as "the

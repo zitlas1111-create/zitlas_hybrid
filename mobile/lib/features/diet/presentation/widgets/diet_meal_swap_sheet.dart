@@ -289,7 +289,7 @@ class _MealSwapSheetState extends State<_MealSwapSheet> {
         const SizedBox(height: 8),
 
         for (var i = 0; i < result.options.length; i++)
-          _OptionCard(
+          SwapOptionCard(
             option: result.options[i],
             rank: i + 1,
             selected: i == _selected,
@@ -330,11 +330,14 @@ class _MealSwapSheetState extends State<_MealSwapSheet> {
   }
 }
 
-/// One engine-ranked option. Shows the macros, the data-derived reason,
-/// availability and budget — everything the athlete needs to choose, straight
-/// from the response.
-class _OptionCard extends StatelessWidget {
-  const _OptionCard({
+/// One engine-ranked option: the dish, the data-derived reason, diet type,
+/// cuisine, availability, budget and suitability tags — straight from the
+/// response. Calories and macros are deliberately NOT shown: ZITLAS doesn't
+/// track calories in the current diet experience (the numbers stay in
+/// [SwapOption] and the dataset).
+class SwapOptionCard extends StatelessWidget {
+  const SwapOptionCard({
+    super.key,
     required this.option,
     required this.rank,
     required this.selected,
@@ -345,6 +348,14 @@ class _OptionCard extends StatelessWidget {
   final int rank;
   final bool selected;
   final VoidCallback onTap;
+
+  /// The dataset's own diet type as a tag; null when the backend didn't send one.
+  static String? _dietLabel(String dietType) => switch (dietType) {
+        'Vegetarian' => '🟢 Veg',
+        'Egg' => '🥚 Egg',
+        'Non-Vegetarian' => '🔴 Non-veg',
+        _ => null,
+      };
 
   @override
   Widget build(BuildContext context) {
@@ -384,12 +395,6 @@ class _OptionCard extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 6),
-                Text(
-                  '${option.calories} kcal · ${option.proteinG}g P · '
-                  '${option.carbsG}g C · ${option.fatG}g F',
-                  style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: ZitlasTokens.textSecondary),
-                ),
-                const SizedBox(height: 4),
                 Text(option.reason,
                     style: const TextStyle(fontSize: 11, height: 1.35, color: ZitlasTokens.textMuted)),
                 const SizedBox(height: 6),
@@ -397,6 +402,8 @@ class _OptionCard extends StatelessWidget {
                   spacing: 6,
                   runSpacing: 4,
                   children: [
+                    if (_dietLabel(option.dietType) != null) _Tag(text: _dietLabel(option.dietType)!),
+                    if (option.cuisine.isNotEmpty) _Tag(text: '🍛 ${option.cuisine}'),
                     _Tag(text: '📍 ${option.availability}'),
                     _Tag(text: '💰 ${option.budgetLevel}'),
                     if (option.highProtein) const _Tag(text: '💪 High protein'),

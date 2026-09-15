@@ -81,15 +81,24 @@ const kCoachingPrograms = <CoachingProgram>[
   ),
 ];
 
-/// Shown instead of a price when the expert does not offer a program, or
-/// its price could not be loaded. Never "₹0", never "free".
-const kProgramUnavailable = 'Currently unavailable';
+/// Shown instead of a price when the chosen expert has not priced this
+/// program (the server's `unavailableReason: not_priced`). Never "₹0", never
+/// "free" — and never a stand-in for a failed load.
+const kProgramNotOffered = "Your expert hasn't set a price for this program yet.";
+
+/// The chosen expert takes no program requests at all
+/// (`unavailableReason: expert_unavailable`).
+const kProgramExpertUnavailable = "Your expert isn't taking program requests right now.";
+
+/// The expert's prices could not be loaded — an error, not "not offered".
+const kProgramPriceLoadFailed = "Couldn't load the price.";
 
 /// Shown instead of a price before an expert is chosen — each expert sets
 /// their own price, so there is no honest number to show yet.
 const kProgramChooseExpertToPrice = 'Choose an expert to see their price';
 
-/// The card's button when the current expert doesn't offer that program.
+/// A separate button under Get Started when the chosen expert doesn't offer
+/// that program (or declined it). Experts are switched only by tapping it.
 const kProgramChooseAnotherExpert = 'Choose Another Expert';
 
 /// Get Started's "choose your expert" step.

@@ -17,7 +17,8 @@ import 'package:zitlas_mobile/features/coaching_programs/presentation/coaching_p
 ///
 /// What these protect:
 ///   * every price on screen is the selected expert's, from the server — an
-///     unpriced program is "Currently unavailable", never ₹0;
+///     unpriced program says the expert hasn't priced it, never ₹0, and a
+///     failed load is an error, never "not offered";
 ///   * Get Started sends ONLY the expert and the program (never a price);
 ///   * the athlete sees pending / accepted (with Pay & Start) / declined.
 ///     Paying itself is covered by coaching_programs_payment_test.dart.
@@ -56,16 +57,27 @@ class _Backend {
   int postStatus;
   Map<String, dynamic>? postBody;
 
+  /// False: the expert takes no program requests (`expertAvailable: false`).
+  bool expertAvailable = true;
+
   final gets = <Uri>[];
   final posts = <Map<String, dynamic>>[];
 
   Map<String, dynamic> _offer() => {
         'expertId': 'coach-1',
         'expertName': 'Asha Rao',
+        'expertAvailable': expertAvailable,
         'currency': 'INR',
         'programs': [
           for (final p in kCoachingPrograms)
-            {'programId': p.id, 'pricePaise': prices[p.id], 'available': prices[p.id] != null},
+            {
+              'programId': p.id,
+              'pricePaise': expertAvailable ? prices[p.id] : null,
+              'available': expertAvailable && prices[p.id] != null,
+              'unavailableReason': expertAvailable && prices[p.id] != null
+                  ? null
+                  : (expertAvailable ? 'not_priced' : 'expert_unavailable'),
+            },
         ],
         'request': request,
       };
@@ -123,6 +135,40 @@ Future<void> _getStarted(WidgetTester tester, String id, {bool send = true}) asy
 }
 
 void main() {
+  group('REGRESSION: an assigned expert with a valid offer', () {
+    testWidgets('shows "Get Started" — enabled — for all three programs, never "Currently unavailable"',
+        (tester) async {
+      await _pump(tester, _Backend());
+
+      expect(find.text('Currently unavailable'), findsNothing);
+      expect(find.text(kProgramChooseAnotherExpert), findsNothing,
+          reason: 'the assigned expert stays selected');
+      for (final p in kCoachingPrograms) {
+        expect(_inCard(p.id, find.text('Get Started')), findsOneWidget, reason: p.id);
+        expect(_enabled(tester, p.id), isTrue, reason: p.id);
+      }
+    });
+
+    for (final program in kCoachingPrograms) {
+      testWidgets(
+          '${program.title}: Get Started sends the existing request to the assigned expert — nothing charged',
+          (tester) async {
+        final backend = _Backend();
+        await _pump(tester, backend);
+
+        await _getStarted(tester, program.id);
+
+        expect(backend.posts, [
+          {'expertId': 'coach-1', 'programId': program.id},
+        ], reason: 'the assigned expert and the program — never a price');
+        expect(find.text(kProgramRequestSent), findsOneWidget);
+        expect(_inCard(program.id, find.text(kProgramPendingTitle)), findsOneWidget);
+        expect(backend.gets.every((u) => u.path == '/api/coaching-programs/experts/coach-1'), isTrue,
+            reason: 'no payment call at Get Started');
+      });
+    }
+  });
+
   group('prices come from the server', () {
     testWidgets("each program shows the selected expert's own price", (tester) async {
       final backend = _Backend();
@@ -137,18 +183,37 @@ void main() {
       }
     });
 
-    testWidgets('an unpriced program is "Currently unavailable" — never ₹0 — and offers another expert',
+    testWidgets(
+        "an unpriced program says the expert hasn't priced it — never ₹0 — and switching experts is a separate choice",
         (tester) async {
       await _pump(tester, _Backend(prices: {'10_day': 499900, '1_month': null, '3_month': null}));
 
-      expect(_inCard('1_month', find.text(kProgramUnavailable)), findsOneWidget);
-      expect(_inCard('3_month', find.text(kProgramUnavailable)), findsOneWidget);
+      expect(_inCard('1_month', find.text(kProgramNotOffered)), findsOneWidget);
+      expect(_inCard('3_month', find.text(kProgramNotOffered)), findsOneWidget);
       expect(find.textContaining('₹0'), findsNothing);
-      expect(_inCard('10_day', find.text('Get Started')), findsOneWidget);
-      expect(_inCard('1_month', find.text(kProgramChooseAnotherExpert)), findsOneWidget);
-      expect(_inCard('3_month', find.text(kProgramChooseAnotherExpert)), findsOneWidget);
+      expect(find.text('Currently unavailable'), findsNothing);
       for (final p in kCoachingPrograms) {
-        expect(_enabled(tester, p.id), isTrue, reason: '${p.id}: never a dead end');
+        expect(_inCard(p.id, find.text('Get Started')), findsOneWidget,
+            reason: '${p.id}: the main button is always Get Started');
+      }
+      expect(_enabled(tester, '10_day'), isTrue);
+      expect(_enabled(tester, '1_month'), isFalse, reason: 'the server could not create this request');
+      expect(_enabled(tester, '3_month'), isFalse);
+      expect(find.byKey(const Key('coachingProgramChooseAnother_10_day')), findsNothing);
+      expect(find.byKey(const Key('coachingProgramChooseAnother_1_month')), findsOneWidget);
+      expect(find.byKey(const Key('coachingProgramChooseAnother_3_month')), findsOneWidget);
+      expect(find.text('Your expert: Asha Rao'), findsOneWidget, reason: 'never switched automatically');
+    });
+
+    testWidgets("an expert taking no program requests is shown as such — not as \"not priced\"",
+        (tester) async {
+      await _pump(tester, _Backend()..expertAvailable = false);
+
+      expect(find.text(kProgramExpertUnavailable), findsNWidgets(3));
+      expect(find.text(kProgramNotOffered), findsNothing);
+      for (final p in kCoachingPrograms) {
+        expect(_enabled(tester, p.id), isFalse, reason: p.id);
+        expect(find.byKey(Key('coachingProgramChooseAnother_${p.id}')), findsOneWidget, reason: p.id);
       }
     });
 
@@ -172,9 +237,12 @@ void main() {
       await _pump(tester, backend);
 
       expect(find.byKey(const Key('coachingProgramsLoadError')), findsOneWidget);
-      expect(find.text(kProgramUnavailable), findsNWidgets(3));
+      expect(find.text(kProgramPriceLoadFailed), findsNWidgets(3),
+          reason: 'a failed load is an error — never "not offered"');
+      expect(find.text(kProgramNotOffered), findsNothing);
       for (final p in kCoachingPrograms) {
         expect(_enabled(tester, p.id), isFalse, reason: p.id);
+        expect(find.byKey(Key('coachingProgramChooseAnother_${p.id}')), findsNothing, reason: p.id);
       }
 
       backend.failOffer = false;

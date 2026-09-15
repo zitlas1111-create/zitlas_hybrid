@@ -326,11 +326,16 @@ def test_maharashtra_with_explicit_appam_preference_allows_it_as_a_candidate():
     # that can legitimately exclude a specific dish for reasons that have
     # nothing to do with region, which would make this test flaky/misleading
     # if it went through the full pipeline instead.
+    #
+    # The goal is weight_loss because Appam's goalSuitable in the NEW dataset
+    # is Endurance / Fat Loss / Weight Loss — under a General Fitness goal the
+    # goal stage (which is NOT what this test is about) would exclude it
+    # before the region stage is ever reached.
     from services.groq_service import _engine_query_context
 
     def _appam_eligible(favorite_foods):
         ctx = _engine_query_context(
-            {"primary_goal": "general_fitness", "location": {"city": "Pune", "state": "Maharashtra"}},
+            {"primary_goal": "weight_loss", "location": {"city": "Pune", "state": "Maharashtra"}},
             {"diet_type": "Vegetarian", "living_situation": "Home", "daily_budget": "Medium",
              "favorite_foods": favorite_foods},
         )
@@ -423,6 +428,11 @@ def test_no_location_behaves_exactly_as_before():
     check("no-location plan still generates a full 7 days", len(wp["days"]) == 7)
 
 
+def _food(name: str) -> dict:
+    """A food by its exact name — ids are dataset-specific, names are not."""
+    return next(f for f in ENGINE.by_id.values() if f["name"] == name)
+
+
 def test_maharashtra_gujarati_dal_swap_does_not_return_khaman_dhokla():
     """The reported bug, reproduced exactly: a Maharashtra user swapping
     "Gujarati Dal" must not be handed "Khaman Dhokla" — another
@@ -447,9 +457,9 @@ def test_maharashtra_gujarati_dal_swap_does_not_return_khaman_dhokla():
           not any("khaman" in n.lower() for n in top_names), top_names)
 
     # Direct score comparison — the actual mechanism, not just the outcome.
-    khaman = ENGINE.by_id[2127]     # Khaman Dhokla: available_states=["Gujarat"]
-    misal = ENGINE.by_id[19]        # Misal Pav: available_states=["Maharashtra"]
-    guj_dal = ENGINE.by_id[2112]    # Gujarati Dal: available_states=["Gujarat"]
+    khaman = _food("Khaman Dhokla")   # state_of_origin=["Gujarat"]
+    misal = _food("Misal Pav")        # state_of_origin=["Maharashtra"]
+    guj_dal = _food("Gujarati Dal")   # state_of_origin=[], available_states=["Gujarat"]
     common_kwargs = dict(
         goal_tags=["General Fitness"], living_tag="Home", budget_tier="Low",
         favorite_foods=[], usage_count=0, profile=None,
@@ -476,15 +486,15 @@ def test_region_ranking_generalizes_beyond_maharashtra():
     preferredDietRegion must change which foods rank as 'preferred' vs
     'other-state', with no per-state hardcoding anywhere in the engine."""
     cases = [
-        ("Punjab", 2127, "Khaman Dhokla"),      # Gujarat dish should NOT be preferred for a Punjab user
-        ("Tamil Nadu", 2112, "Gujarati Dal"),
-        ("West Bengal", 19, "Misal Pav"),        # Maharashtra dish should NOT be preferred for a WB user
+        ("Punjab", "Khaman Dhokla"),      # Gujarat dish should NOT be preferred for a Punjab user
+        ("Tamil Nadu", "Gujarati Dal"),
+        ("West Bengal", "Misal Pav"),     # Maharashtra dish should NOT be preferred for a WB user
     ]
-    for state, other_state_food_id, food_label in cases:
+    for state, food_label in cases:
         location = {"state": state}
         user_state = location_food_engine.resolve_state(location)
         compatible_regions = location_food_engine.compatible_regions(location)
-        food = ENGINE.by_id[other_state_food_id]
+        food = _food(food_label)
         component = ENGINE._region_component(food, user_state, compatible_regions, [])
         check(f"{food_label} is NOT the 'preferred' tier for a {state} user",
               component < 1.00, f"component={component}")

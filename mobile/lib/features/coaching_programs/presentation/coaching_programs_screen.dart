@@ -28,10 +28,13 @@ GoRoute coachingProgramsRoute({CoachingProgramsRepository? repository}) => GoRou
 /// PERSONAL COACHING PROGRAMS — where Personal Coaching starts.
 ///
 /// Each program shows the selected expert's OWN price, read from the server
-/// (never a number in the app). Get Started is never a dead end: with no
-/// expert chosen — or one who doesn't offer that program — it first opens
-/// "choose your expert" (the approved experts who offer it, at their server
-/// prices). Then the athlete reviews and sends the request; once the expert
+/// (never a number in the app). Get Started is enabled whenever the server
+/// can create the request: with the chosen expert's price it goes straight to
+/// review; with no expert chosen yet it first opens "choose your expert" (the
+/// approved experts who offer it, at their server prices). When the chosen
+/// expert hasn't priced a program the card says so, and "Choose Another
+/// Expert" is a separate button — the expert is never switched for the
+/// athlete. Then the athlete reviews and sends the request; once the expert
 /// accepts, Pay & Start Program pays the price the SERVER recorded, in full,
 /// from the ZITLAS Wallet, and the program starts. A short wallet shows the
 /// existing insufficient-balance card with Add Funds (the existing flow) —
@@ -103,15 +106,23 @@ class _CoachingProgramsScreenState extends State<CoachingProgramsScreen> {
   }
 
   /// GET STARTED — the existing request flow for [program]:
-  ///   choose an expert (when none is chosen, or this one doesn't offer it)
+  ///   choose an expert (only when none is chosen yet)
   ///   -> review the program at that expert's SERVER price -> Send Request.
   /// Nothing is charged here; paying comes after the expert accepts.
-  Future<void> _getStarted(CoachingProgram program) async {
+  ///
+  /// [chooseAnother] is the card's separate "Choose Another Expert" button:
+  /// the athlete asked to switch, so the picker opens although an expert is
+  /// chosen. Get Started itself never switches experts.
+  Future<void> _getStarted(CoachingProgram program, {bool chooseAnother = false}) async {
     if (_starting) return;
+    final c = _controller;
+    final needExpert = chooseAnother || c.expertId == null;
+    // With an expert, Get Started works only when THEY price this program —
+    // the button is disabled otherwise; this guards a stale tap.
+    if (!needExpert && c.availabilityFor(program.id) != ProgramAvailability.available) return;
     setState(() => _starting = true);
     try {
-      final c = _controller;
-      if (c.expertId == null || c.priceFor(program.id) == null) {
+      if (needExpert) {
         final chosen = await _chooseExpert(program);
         if (chosen == null || !mounted) return;
         await c.selectExpert(chosen.expertId);
@@ -286,17 +297,17 @@ class _CoachingProgramsScreenState extends State<CoachingProgramsScreen> {
               for (final program in widget.programs) ...[
                 _ProgramCard(
                   program: program,
-                  loading: c.state == ProgramsLoadState.loading,
+                  availability: c.availabilityFor(program.id),
                   pricePaise: c.priceFor(program.id),
                   request: c.request?.programId == program.id ? c.request : null,
                   blockedBy: blocking != null && blocking.programId != program.id ? blocking : null,
                   hasExpert: c.expertId != null,
-                  failed: c.state == ProgramsLoadState.failed,
                   submitting: c.submittingProgramId == program.id,
                   busy: c.submittingProgramId != null || c.paying || _starting,
                   now: c.now(),
                   payment: payment,
                   onGetStarted: () => _getStarted(program),
+                  onChooseAnother: () => _getStarted(program, chooseAnother: true),
                   expertName: c.offer?.expertName,
                 ),
                 const SizedBox(height: 24),
@@ -406,24 +417,26 @@ class _LoadError extends StatelessWidget {
 class _ProgramCard extends StatelessWidget {
   const _ProgramCard({
     required this.program,
-    required this.loading,
+    required this.availability,
     required this.pricePaise,
     required this.request,
     required this.blockedBy,
     required this.hasExpert,
-    required this.failed,
     required this.submitting,
     required this.busy,
     required this.now,
     required this.payment,
     required this.onGetStarted,
+    required this.onChooseAnother,
     this.expertName,
   });
 
   final CoachingProgram program;
-  final bool loading;
 
-  /// The expert's server-side price; null = "Currently unavailable".
+  /// What this card is right now — see [ProgramAvailability].
+  final ProgramAvailability availability;
+
+  /// The expert's server-side price, when they offer this program.
   final int? pricePaise;
 
   /// The athlete's request for THIS program, if any.
@@ -432,16 +445,18 @@ class _ProgramCard extends StatelessWidget {
   /// Another program with this expert that is still open or running.
   final ProgramRequest? blockedBy;
 
-  /// An expert is chosen (so an unpriced program means THEY don't offer it).
+  /// An expert is chosen — the one the screen opened from, or the one the
+  /// athlete picked.
   final bool hasExpert;
-
-  /// That expert's prices could not be loaded — Retry is shown instead.
-  final bool failed;
   final bool submitting;
   final bool busy;
   final DateTime now;
   final _PaymentActions payment;
   final VoidCallback onGetStarted;
+
+  /// The separate "Choose Another Expert" button — the only way experts are
+  /// switched; Get Started never does it for the athlete.
+  final VoidCallback onChooseAnother;
 
   /// Whose program this is — shown on a paid program's details.
   final String? expertName;
@@ -453,12 +468,19 @@ class _ProgramCard extends StatelessWidget {
     // payment) or already running.
     final hideStart = r != null && (r.isOpen || r.isRunning(now));
     final price = pricePaise;
-    // Never a dead end: with no expert chosen — or one who doesn't offer this
-    // program — Get Started opens "choose your expert". Only a load that is
-    // running or failed, another open program, or a flow already under way
-    // disables it.
-    final canStart = !loading && !failed && blockedBy == null && !busy;
-    final chooseAnother = hasExpert && !loading && !failed && price == null;
+    // Get Started is enabled exactly when the server can create the request:
+    // the chosen expert prices this program, or no expert is chosen yet (it
+    // then opens "choose your expert"). A load running or failed, an expert
+    // who hasn't priced it, another open program or a flow already under way
+    // disables it — each shown for what it is, never as a catch-all.
+    final startable = availability == ProgramAvailability.available ||
+        availability == ProgramAvailability.chooseExpert;
+    final canStart = startable && blockedBy == null && !busy;
+    final chooseAnother = hasExpert &&
+        blockedBy == null &&
+        (availability == ProgramAvailability.notOffered ||
+            availability == ProgramAvailability.expertUnavailable ||
+            r?.status == ProgramRequestStatus.declined);
     return Container(
       key: Key('coachingProgram_${program.id}'),
       clipBehavior: Clip.antiAlias,
@@ -496,9 +518,8 @@ class _ProgramCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 _PriceLine(
                   programId: program.id,
-                  loading: loading,
+                  availability: availability,
                   pricePaise: price,
-                  hasExpert: hasExpert,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -547,16 +568,34 @@ class _ProgramCard extends StatelessWidget {
                       style: _primaryButtonStyle,
                       child: submitting
                           ? const _ButtonSpinner()
-                          : Row(
+                          : const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Text(chooseAnother ? kProgramChooseAnotherExpert : 'Get Started'),
-                                const SizedBox(width: 8),
-                                const Icon(Icons.arrow_forward_rounded, size: 18),
+                                Text('Get Started'),
+                                SizedBox(width: 8),
+                                Icon(Icons.arrow_forward_rounded, size: 18),
                               ],
                             ),
                     ),
                   ),
+                  if (chooseAnother) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        key: Key('coachingProgramChooseAnother_${program.id}'),
+                        onPressed: busy ? null : onChooseAnother,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: ZitlasTokens.primary,
+                          side: const BorderSide(color: ZitlasTokens.primary),
+                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w800),
+                        ),
+                        child: const Text(kProgramChooseAnotherExpert),
+                      ),
+                    ),
+                  ],
                 ],
               ],
             ),
@@ -590,27 +629,25 @@ class _ButtonSpinner extends StatelessWidget {
   }
 }
 
-/// The expert's price, or "Currently unavailable" — never ₹0.
+/// The expert's price — or, when there is none, WHY: loading, couldn't load,
+/// choose an expert, not priced by this expert, or this expert takes no
+/// requests. Never ₹0.
 class _PriceLine extends StatelessWidget {
   const _PriceLine({
     required this.programId,
-    required this.loading,
+    required this.availability,
     required this.pricePaise,
-    this.hasExpert = true,
   });
 
   final String programId;
-  final bool loading;
+  final ProgramAvailability availability;
   final int? pricePaise;
-
-  /// False before an expert is chosen: there is no price to show YET.
-  final bool hasExpert;
 
   @override
   Widget build(BuildContext context) {
     final price = pricePaise;
     final Widget child;
-    if (loading) {
+    if (availability == ProgramAvailability.loading) {
       child = const Row(
         children: [
           SizedBox(
@@ -633,7 +670,12 @@ class _PriceLine extends StatelessWidget {
       );
     } else {
       child = Text(
-        hasExpert ? kProgramUnavailable : kProgramChooseExpertToPrice,
+        switch (availability) {
+          ProgramAvailability.failed => kProgramPriceLoadFailed,
+          ProgramAvailability.notOffered => kProgramNotOffered,
+          ProgramAvailability.expertUnavailable => kProgramExpertUnavailable,
+          _ => kProgramChooseExpertToPrice,
+        },
         style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: ZitlasTokens.textMuted),
       );
     }

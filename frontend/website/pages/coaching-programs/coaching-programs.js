@@ -46,14 +46,11 @@
 
   /* ── One program card ───────────────────────────────────────────────── */
 
-  function priceLine(p, st) {
-    if (st.state === 'loading') return '<div class="cpg-price cpg-price--muted" data-price="' + esc(p.id) + '">Loading price…</div>';
-    var price = ctl.priceFor(p.id);
-    if (price !== null) {
-      return '<div class="cpg-price" data-price="' + esc(p.id) + '">' + esc(F.formatPrice(price)) + '</div>';
-    }
-    return '<div class="cpg-price cpg-price--muted" data-price="' + esc(p.id) + '">' +
-      esc(st.expertId ? M.unavailable : M.chooseExpertToPrice) + '</div>';
+  /* The expert's price — or, when there is none, WHY (the flow decides). */
+  function priceLine(p, card) {
+    return '<div class="cpg-price' + (card.price === null ? ' cpg-price--muted' : '') +
+      '" data-price="' + esc(p.id) + '" data-availability="' + esc(card.availability) + '">' +
+      esc(card.priceText) + '</div>';
   }
 
   /* Accepted: the price the SERVER recorded, and Pay & Start. */
@@ -118,37 +115,33 @@
   }
 
   function cardHtml(p, st) {
-    var loading = st.state === 'loading';
-    var failed = st.state === 'failed';
-    var price = ctl.priceFor(p.id);
-    var req = ctl.requestFor(p.id);
-    var open = ctl.openRequest();
-    var blockedBy = open && open.programId !== p.id ? open : null;
-    var hideStart = !!req && (F.isOpen(req) || F.isRunning(req, ctl.now()));
     var busy = st.submitting !== null || st.paying || flowOpen;
-    // Never a dead end: with no expert chosen — or one who doesn't offer this
-    // program — Get Started opens "choose your expert".
-    var canStart = !loading && !failed && !blockedBy && !busy;
-    var chooseAnother = !!st.expertId && !loading && !failed && price === null;
+    var card = ctl.cardFor(p.id, busy);
+    var req = card.request;
 
     var html = '<article class="cpg-card" data-program="' + esc(p.id) + '">' +
       '<img class="cpg-art" src="' + esc(p.image) + '" alt="' + esc(p.title) + ' artwork" />' +
       '<div class="cpg-card-body">' +
         '<div class="cpg-card-head"><h2>' + esc(p.title) + '</h2>' +
           '<span class="cpg-chip">🕒 ' + esc(p.durationLabel) + '</span></div>' +
-        priceLine(p, st) +
+        priceLine(p, card) +
         '<p class="cpg-desc">' + esc(p.description) + '</p>' +
         '<div class="cpg-eyebrow">WHAT YOU GET</div>' +
         '<ul class="cpg-checks">' + p.highlights.map(function (h) { return '<li>' + esc(h) + '</li>'; }).join('') + '</ul>';
     if (req) html += F.awaitingPayment(req) ? paymentPanel(p, req, st) : statusPanel(p, req, st);
-    if (!hideStart) {
-      if (blockedBy) {
-        html += '<p class="cpg-note">' + esc(blockedBy.status === F.STATUS.ACTIVE ? M.otherRunning : M.otherRequestOpen) + '</p>';
+    if (card.showStart) {
+      if (card.blockedBy) {
+        html += '<p class="cpg-note">' + esc(card.blockedBy.status === F.STATUS.ACTIVE ? M.otherRunning : M.otherRequestOpen) + '</p>';
       }
+      // Always "Get Started" — it never switches experts behind the athlete's back.
       html += '<button class="cpg-btn cpg-btn--primary cpg-btn--block" type="button" data-start="' + esc(p.id) + '"' +
-        (canStart ? '' : ' disabled') + '>' +
-        (st.submitting === p.id ? 'Sending…' : esc(chooseAnother ? M.chooseAnotherExpert : 'Get Started') + ' →') +
-        '</button>';
+        (card.startEnabled ? '' : ' disabled') + '>' +
+        (st.submitting === p.id ? 'Sending…' : 'Get Started →') + '</button>';
+      if (card.showChooseAnother) {
+        html += '<button class="cpg-btn cpg-btn--secondary cpg-btn--block cpg-btn--stacked" type="button" ' +
+          'data-choose-another="' + esc(p.id) + '"' + (card.chooseAnotherEnabled ? '' : ' disabled') + '>' +
+          esc(M.chooseAnotherExpert) + '</button>';
+      }
     }
     return html + '</div></article>';
   }
@@ -172,6 +165,9 @@
     if (retry) retry.addEventListener('click', function () { ctl.load(); });
     Array.prototype.forEach.call(list.querySelectorAll('[data-start]'), function (b) {
       b.addEventListener('click', function () { getStarted(b.getAttribute('data-start')); });
+    });
+    Array.prototype.forEach.call(list.querySelectorAll('[data-choose-another]'), function (b) {
+      b.addEventListener('click', function () { getStarted(b.getAttribute('data-choose-another'), true); });
     });
     Array.prototype.forEach.call(list.querySelectorAll('[data-pay]'), function (b) {
       b.addEventListener('click', pay);
@@ -288,17 +284,23 @@
     } catch (_) { /* old browser: /requests/me still restores it */ }
   }
 
-  /* GET STARTED — choose an expert (when none is chosen, or this one
-     doesn't offer it) -> review at that expert's SERVER price -> send. */
-  function getStarted(programId) {
+  /* GET STARTED — choose an expert (only when none is chosen yet) -> review
+     at that expert's SERVER price -> send. `chooseAnother` is the card's
+     separate "Choose Another Expert" button: the athlete asked to switch, so
+     the list opens although an expert is chosen. Get Started itself never
+     switches experts. */
+  function getStarted(programId, chooseAnother) {
     if (flowOpen) return;
     var p = F.programById(programId);
     if (!p) return;
+    var needExpert = !!chooseAnother || !ctl.state().expertId;
+    // With an expert, Get Started works only when THEY price this program
+    // (the button is disabled otherwise) — this guards a stale click.
+    if (!needExpert && ctl.availabilityFor(programId) !== 'available') return;
     flowOpen = true;
     render();
-    var st = ctl.state();
     var chain = Promise.resolve(null);
-    if (!st.expertId || ctl.priceFor(programId) === null) {
+    if (needExpert) {
       chain = openPicker(p).then(function (chosen) {
         if (!chosen) return 'stop';
         return ctl.selectExpert(chosen.expertId).then(function () {

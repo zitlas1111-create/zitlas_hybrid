@@ -21,6 +21,8 @@ class SwapOption {
     this.highProtein = false,
     this.highFiber = false,
     this.qualityLabels = const [],
+    this.dietType = '',
+    this.cuisine = '',
   });
 
   final String name;
@@ -46,12 +48,20 @@ class SwapOption {
   final bool highFiber;
 
   /// Subtle, data-backed labels beyond the two flat booleans above (e.g.
-  /// "Better protein match", "Similar calories", "Transformation
+  /// "Better protein match", "Comparable portion", "Transformation
   /// friendly") — see routes/swap.py's quality_labels for exactly which
   /// real numbers justify each one. Absent/empty is normal; nothing here
   /// is a health claim the backend didn't already verify against the
   /// dataset.
   final List<String> qualityLabels;
+
+  /// "Vegetarian" / "Egg" / "Non-Vegetarian" — the dataset's own type for
+  /// the option's main dish. Empty when an older backend didn't send it.
+  final String dietType;
+
+  /// The dish's cuisine (e.g. "Bengali", "Kerala (South Indian)") from the
+  /// dataset; empty for everyday pan-Indian food.
+  final String cuisine;
 
   static SwapOption? fromMap(Map<String, dynamic> m) {
     final name = m['name'];
@@ -72,6 +82,8 @@ class SwapOption {
       qualityLabels: [
         for (final l in (m['quality_labels'] as List? ?? const [])) l.toString(),
       ],
+      dietType: m['diet_type'] as String? ?? '',
+      cuisine: m['cuisine'] as String? ?? '',
     );
   }
 }

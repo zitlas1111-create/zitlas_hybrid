@@ -23,6 +23,10 @@
      replaced by the server's own limits as soon as they load. */
   var limits = { minPaise: 100, maxPaise: 5000000 };
 
+  /* The prices the server last confirmed (paise; null = not offered) — what
+     "unsaved changes" is measured against. */
+  var savedPaise = {};
+
   var SERVER_ERRORS = {
     price_not_integer_paise: 'Enter a price in rupees, like 499 or 499.50.',
     price_must_be_positive:  'Price must be more than ₹0.',
@@ -108,13 +112,34 @@
     var byId = {};
     ((body && body.programs) || []).forEach(function (p) { byId[p.programId] = p; });
     PROGRAMS.forEach(function (p) {
+      var price = byId[p.id] && byId[p.id].pricePaise;
+      savedPaise[p.id] = (typeof price === 'number' && price > 0) ? price : null;
       var input = $(p.el);
       if (!input) return;
-      var price = byId[p.id] && byId[p.id].pricePaise;
-      input.value = (typeof price === 'number' && price > 0) ? paiseToRupeesText(price) : '';
+      input.value = savedPaise[p.id] !== null ? paiseToRupeesText(savedPaise[p.id]) : '';
       setFieldError(p, '');
     });
     renderLimits();
+    renderNotice();
+  }
+
+  /* Athletes can request a program only once it has a price. Until one is
+     saved, say so plainly — the monthly Personal Coaching prices further
+     down the page do NOT price any program. */
+  function renderNotice() {
+    var notice = $('prProgramNotice');
+    if (!notice) return;
+    notice.hidden = PROGRAMS.some(function (p) { return !!savedPaise[p.id]; });
+  }
+
+  /* True when a program price was typed but not saved yet. */
+  function isDirty() {
+    return PROGRAMS.some(function (p) {
+      var input = $(p.el);
+      if (!input) return false;
+      var saved = savedPaise[p.id] ? paiseToRupeesText(savedPaise[p.id]) : '';
+      return String(input.value || '').trim().replace(/,/g, '') !== saved;
+    });
   }
 
   function api(method, body) {
@@ -142,20 +167,23 @@
     }).catch(function (e) { console.warn('[PROGRAM PRICING] load failed', e); });
   }
 
+  /* Resolves true only when the server confirmed the save. */
   function saveProgramPricing() {
     var values = {};
     PROGRAMS.forEach(function (p) { var i = $(p.el); values[p.id] = i ? i.value : ''; });
     var result = collectProgramPrices(values, limits);
     PROGRAMS.forEach(function (p) { setFieldError(p, result.errors[p.id]); });
-    if (!result.ok) { showToast('Please fix the highlighted prices.'); return; }
+    if (!result.ok) { showToast('Please fix the highlighted prices.'); return Promise.resolve(false); }
 
     var btn = $('prProgramSaveBtn');
     if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
-    api('PUT', { prices: result.prices }).then(function (r) {
+    return api('PUT', { prices: result.prices }).then(function (r) {
       if (r.status === 200 && r.data && r.data.success) {
         fillFromServer(r.data);
         showToast('✅ Program pricing saved.');
-      } else if (r.status === 400 && r.data && r.data.detail && r.data.detail.error) {
+        return true;
+      }
+      if (r.status === 400 && r.data && r.data.detail && r.data.detail.error) {
         var p = PROGRAMS.filter(function (x) { return x.id === r.data.detail.programId; })[0];
         var msg = SERVER_ERRORS[r.data.detail.error] || 'Please check this price.';
         if (p) setFieldError(p, msg);
@@ -168,13 +196,20 @@
         console.error('[PROGRAM PRICING] save failed', r);
         showToast('Could not save program pricing — please try again.');
       }
+      return false;
     }).catch(function (e) {
       console.error('[PROGRAM PRICING] save failed', e);
       showToast('Could not save program pricing — please try again.');
-    }).then(function () {
+      return false;
+    }).then(function (ok) {
       if (btn) { btn.disabled = false; btn.textContent = 'Save Pricing'; }
+      return ok === true;
     });
   }
+
+  /* For pricing.js: the page's bottom Save Pricing also saves program prices
+     that were typed but not saved (see savePricing there). */
+  window.ZitlasProgramPricing = { isDirty: isDirty, save: saveProgramPricing };
 
   function init() {
     if (!$('prProgramCard')) return;

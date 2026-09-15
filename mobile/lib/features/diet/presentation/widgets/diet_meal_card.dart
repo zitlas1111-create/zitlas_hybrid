@@ -4,9 +4,11 @@ import '../../../../core/theme/zitlas_tokens.dart';
 import '../../models/diet_meal.dart';
 import '../../models/meal_slot.dart';
 
-/// A single meal card: name/time/emoji, foods list, calories/protein, and
-/// (when applicable) the expert-modified badge + swap action — matches
-/// `renderDay()`'s meal card markup in `diet.js`.
+/// A single meal card: name/time/emoji, foods list and (when applicable) the
+/// expert-modified badge + swap action — matches `renderDay()`'s meal card
+/// markup in `diet.js`. No calorie/protein figures: ZITLAS doesn't make
+/// calorie tracking part of the current diet experience (the values stay on
+/// [DietMeal] for sync and the backend).
 class DietMealCard extends StatelessWidget {
   const DietMealCard({
     super.key,
@@ -107,18 +109,6 @@ class DietMealCard extends StatelessWidget {
           if (slot.isWorkoutSlot) ...[
             const SizedBox(height: 6),
             _PurposeBadge(slot: slot),
-          ],
-          if (meal.calories != null || meal.proteinG != null) ...[
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                if (meal.calories != null) _Stat(label: 'kcal', value: meal.calories!),
-                if (meal.proteinG != null) ...[
-                  const SizedBox(width: 14),
-                  _Stat(label: 'g protein', value: meal.proteinG!),
-                ],
-              ],
-            ),
           ],
           if (onGetRecipe != null || onSwap != null) ...[
             const SizedBox(height: 10),
@@ -250,27 +240,3 @@ class _PurposeBadge extends StatelessWidget {
   }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value});
-
-  final String label;
-  final num value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text.rich(
-      TextSpan(
-        children: [
-          TextSpan(
-            text: '${value % 1 == 0 ? value.toInt() : value} ',
-            style: const TextStyle(fontSize: 12.5, fontWeight: FontWeight.w800, color: ZitlasTokens.textPrimary),
-          ),
-          TextSpan(
-            text: label,
-            style: const TextStyle(fontSize: 11, color: ZitlasTokens.textMuted),
-          ),
-        ],
-      ),
-    );
-  }
-}
